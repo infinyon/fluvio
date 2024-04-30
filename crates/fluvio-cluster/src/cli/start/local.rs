@@ -9,10 +9,8 @@ use crate::{LocalInstaller, LocalConfig};
 
 use super::StartOpt;
 
-/// Attempts to start a local Fluvio cluster
-///
-/// Returns `Ok(true)` on success, `Ok(false)` if pre-checks failed and are
-/// reported, or `Err(e)` if something unexpected occurred.
+/// Attempts to either start a local Fluvio cluster or check (and fix) the preliminery preflight checks.
+/// Pass opt.setup = false, to only run the checks.
 pub async fn process_local(opt: StartOpt, platform_version: Version) -> Result<()> {
     let mut builder = LocalConfig::builder(platform_version);
     builder
@@ -44,7 +42,7 @@ pub async fn process_local(opt: StartOpt, platform_version: Version) -> Result<(
     let config = builder.build()?;
     let installer = LocalInstaller::from_config(config);
     if opt.setup {
-        setup_local(&installer).await?;
+        preflight_check(&installer).await?;
     } else {
         install_local(&installer).await?;
     }
@@ -52,12 +50,12 @@ pub async fn process_local(opt: StartOpt, platform_version: Version) -> Result<(
     Ok(())
 }
 
-pub async fn install_local(installer: &LocalInstaller) -> Result<()> {
+async fn install_local(installer: &LocalInstaller) -> Result<()> {
     installer.install().await?;
     Ok(())
 }
 
-pub async fn setup_local(installer: &LocalInstaller) -> Result<()> {
+async fn preflight_check(installer: &LocalInstaller) -> Result<()> {
     installer.preflight_check(false).await?;
 
     Ok(())

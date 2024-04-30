@@ -230,6 +230,9 @@ pub enum UnrecoverableCheckStatus {
     #[error("Local Fluvio cluster still running")]
     ExistingLocalCluster,
 
+    #[error("Local Fluvio cluster wasn't deleted. Use 'resume' to resume created cluster or 'delete' before starting a new one")]
+    CreateLocalConfigError,
+
     #[error("Helm client error")]
     HelmClientError,
 
@@ -691,6 +694,35 @@ impl ClusterCheck for LocalClusterCheck {
     }
 }
 
+/// check for non deleted local cluster
+#[derive(Debug)]
+struct CleanLocalClusterCheck;
+
+#[async_trait]
+impl ClusterCheck for CleanLocalClusterCheck {
+    async fn perform_check(&self, _pb: &ProgressRenderer) -> CheckResult {
+        use crate::start::local::LOCAL_CONFIG_PATH;
+
+        let can_create_config = LOCAL_CONFIG_PATH
+            .as_ref()
+            .map(|p| !p.is_file())
+            .unwrap_or(false);
+        if !can_create_config {
+            return Ok(CheckStatus::Unrecoverable(
+                UnrecoverableCheckStatus::CreateLocalConfigError,
+            ));
+        }
+
+        Ok(CheckStatus::pass(
+            "Previous local fluvio installation not found",
+        ))
+    }
+
+    fn label(&self) -> &str {
+        "Clean Fluvio Local Installation"
+    }
+}
+
 /// Manages all cluster check operations
 ///
 /// A `ClusterChecker` can be configured with different sets of checks to run.
@@ -745,10 +777,17 @@ impl ClusterChecker {
         self
     }
 
-    pub fn with_no_k8_checks(mut self) -> Self {
-        let checks: Vec<Box<(dyn ClusterCheck)>> = vec![Box::new(LocalClusterCheck)];
-        self.checks.extend(checks);
-        self
+    pub fn with_no_k8_checks(self) -> Self {
+        self.without_installed_local_cluster()
+            .with_clean_local_cluster()
+    }
+
+    pub fn without_installed_local_cluster(self) -> Self {
+        self.with_check(LocalClusterCheck)
+    }
+
+    pub fn with_clean_local_cluster(self) -> Self {
+        self.with_check(CleanLocalClusterCheck)
     }
 
     /// Adds all checks required for starting a cluster on minikube.
