@@ -36,7 +36,7 @@ impl Client {
         let res_status = res.status();
 
         if res_status.is_success() {
-            let pkgset_record = res.json::<PackageSetRecord>().await.map_err(|err| {
+            let pkgset_record = res.json::<PackageSetRecord>().map_err(|err| {
                 tracing::debug!(?err, "Failed to parse PackageSet from Hub");
                 Error::msg("Failed to parse server's response")
             })?;
@@ -45,7 +45,7 @@ impl Client {
             return Ok(pkgset_record.into());
         }
 
-        let error = res.json::<ApiError>().await.map_err(|err| {
+        let error = res.json::<ApiError>().map_err(|err| {
             tracing::debug!(?err, "Failed to parse API Error from Hub");
             Error::msg(format!("Server responded with status code {}", res_status))
         })?;
