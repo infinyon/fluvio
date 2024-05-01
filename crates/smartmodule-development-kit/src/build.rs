@@ -8,7 +8,7 @@ use cargo_builder::package::PackageInfo;
 use cargo_builder::cargo::Cargo;
 
 use crate::cmd::PackageCmd;
-use crate::ENV_SMDK_WASI;
+use crate::ENV_SMDK_NOWASI;
 
 pub(crate) const BUILD_TARGET: &str = "wasm32-unknown-unknown";
 pub(crate) const BUILD_TARGET_WASI: &str = "wasm32-wasi";
@@ -23,9 +23,9 @@ pub struct BuildCmd {
     #[arg(raw = true)]
     extra_arguments: Vec<String>,
 
-    /// Build wasi target
-    #[arg(long, env = ENV_SMDK_WASI)]
-    wasi: bool,
+    /// Build a non wasi target (only use if needed for backward compatiblity)
+    #[arg(long, env = ENV_SMDK_NOWASI, hide_short_help = true)]
+    nowasi: bool,
 }
 
 impl BuildCmd {
@@ -33,10 +33,10 @@ impl BuildCmd {
         let opt = self.package.as_opt();
         let p = PackageInfo::from_options(&opt)?;
 
-        let build_target = if self.wasi {
-            BUILD_TARGET_WASI
-        } else {
+        let build_target = if self.nowasi {
             BUILD_TARGET
+        } else {
+            BUILD_TARGET_WASI
         };
         let cargo = Cargo::build()
             .profile(opt.release)

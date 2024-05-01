@@ -14,7 +14,7 @@ use hubutil::{
 use tracing::debug;
 
 use crate::cmd::PackageCmd;
-use crate::ENV_SMDK_WASI;
+use crate::ENV_SMDK_NOWASI;
 
 pub const SMARTMODULE_TOML: &str = "SmartModule.toml";
 
@@ -45,8 +45,8 @@ pub struct PublishCmd {
     #[arg(long, hide_short_help = true)]
     remote: Option<String>,
 
-    #[arg(long, env=ENV_SMDK_WASI)]
-    wasi: bool,
+    #[arg(long, env=ENV_SMDK_NOWASI, hide_short_help = true)]
+    nowasi: bool,
 }
 
 impl PublishCmd {
@@ -101,7 +101,7 @@ impl PublishCmd {
 
         Self::cleanup(&hubdir)?;
 
-        init_package_template(&package_info, self.wasi)?;
+        init_package_template(&package_info, self.nowasi)?;
         check_package_meta_visiblity(&package_info)?;
 
         Ok(hubdir)
@@ -170,7 +170,7 @@ pub fn package_push(opts: &PublishCmd, pkgpath: &str, access: &HubAccess) -> Res
     Ok(())
 }
 
-pub fn init_package_template(package_info: &PackageInfo, wasi: bool) -> Result<()> {
+pub fn init_package_template(package_info: &PackageInfo, nowasi: bool) -> Result<()> {
     let sm_toml_path = find_smartmodule_toml(package_info)?;
     let sm_metadata = SmartModuleMetadata::from_toml(&sm_toml_path)?;
 
@@ -202,10 +202,10 @@ pub fn init_package_template(package_info: &PackageInfo, wasi: bool) -> Result<(
         })?,
     );
 
-    let wasmpath = if wasi {
-        package_info.target_wasm32_wasi_path()?
-    } else {
+    let wasmpath = if nowasi {
         package_info.target_wasm32_path()?
+    } else {
+        package_info.target_wasm32_wasi_path()?
     };
     pm.manifest.push(
         package_meta_relative_path(&package_meta_path, &wasmpath).ok_or_else(|| {

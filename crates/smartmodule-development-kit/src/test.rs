@@ -7,7 +7,7 @@ use clap::Parser;
 use fluvio_future::task::run_block_on;
 use fluvio_smartengine::{SmartModuleChainBuilder, SmartModuleConfig, Lookback};
 use crate::cmd::PackageCmd;
-use crate::ENV_SMDK_WASI;
+use crate::ENV_SMDK_NOWASI;
 
 use fluvio_cli_common::smartmodule::{BaseTestCmd, WithChainBuilder};
 #[derive(Debug, Parser)]
@@ -19,8 +19,8 @@ pub struct TestCmd {
     package: PackageCmd,
     #[arg(long, group = "TestSmartModule")]
     wasm_file: Option<PathBuf>,
-    #[arg(long, env=ENV_SMDK_WASI)]
-    wasi: bool,
+    #[arg(long, env=ENV_SMDK_NOWASI, hide_short_help = true)]
+    nowasi: bool,
 }
 
 impl TestCmd {
@@ -35,10 +35,10 @@ impl TestCmd {
                     wasm_file
                 } else {
                     let package_info = PackageInfo::from_options(&self.package.as_opt())?;
-                    if self.wasi {
-                        package_info.target_wasm32_wasi_path()?
-                    } else {
+                    if self.nowasi {
                         package_info.target_wasm32_path()?
+                    } else {
+                        package_info.target_wasm32_wasi_path()?
                     }
                 };
                 build_chain_ad_hoc(crate::read_bytes_from_path(&wasm_file)?, params, lookback)

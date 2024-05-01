@@ -450,8 +450,6 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install Rust Stable
         uses: dtolnay/rust-toolchain@stable
-      - name: install wasm target
-        run: rustup target add wasm32-unknown-unknown
       - name: Build Regex SmartModule
         run: make -C smartmodule/regex-filter
 
