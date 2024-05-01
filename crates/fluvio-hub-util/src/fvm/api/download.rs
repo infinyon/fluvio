@@ -15,15 +15,12 @@ use crate::htclient;
 
 /// Verifies downloaded artifact checksums against the upstream checksums
 async fn checksum(artf: &Artifact, path: &PathBuf) -> Result<()> {
-    use htclient::ResponseExt;
-
     let local_file_shasum = sha256_digest(path)?;
-    let upstream_shasum = htclient::get(&artf.sha256_url)
+    let body_shasum = htclient::get(&artf.sha256_url)
         .await
         .map_err(|err| Error::msg(err.to_string()))?
-        .body_string()
-        .await
-        .map_err(|err| Error::msg(err.to_string()))?;
+        .into_body();
+    let upstream_shasum = String::from_utf8_lossy(&body_shasum);
 
     if local_file_shasum != upstream_shasum {
         return Err(Error::msg(format!(
@@ -48,8 +45,6 @@ pub trait Download {
 impl Download for Artifact {
     #[instrument(skip(self, target_dir))]
     async fn download(&self, target_dir: PathBuf) -> Result<PathBuf> {
-        use htclient::ResponseExt;
-
         tracing::info!(
             name = self.name,
             download_url = ?self.download_url,
@@ -60,14 +55,12 @@ impl Download for Artifact {
             .await
             .map_err(|err| Error::msg(err.to_string()))?;
 
-        if res.status() == StatusCode::OK {
+        let status = http::StatusCode::from_u16(res.status().as_u16())?;
+        if status == StatusCode::OK {
             let out_path = target_dir.join(&self.name);
             let mut file = File::create(&out_path)?;
-            let mut buf = Cursor::new(
-                res.bytes()
-                    .await
-                    .map_err(|err| Error::msg(err.to_string()))?,
-            );
+            let bytes = res.into_body();
+            let mut buf = Cursor::new(&bytes);
 
             copy(&mut buf, &mut file)?;
             checksum(self, &out_path).await?;
@@ -113,7 +106,7 @@ mod test {
     #[ignore]
     #[fluvio_future::test]
     async fn downloaded_artifact_matches_upstream_checksum() {
-        use fluvio_future::http_client::ResponseExt;
+        use htclient::ResponseExt;
 
         let target_dir = TempDir::new().unwrap().into_path().to_path_buf();
         let artifact = Artifact {
@@ -127,12 +120,11 @@ mod test {
 
         let binary_path = target_dir.join("fluvio");
         let downstream_shasum = sha256_digest(&binary_path).unwrap();
-        let upstream_shasum = fluvio_future::http_client::get(&artifact.sha256_url)
+        let upstream_shasum = htclient::get(&artifact.sha256_url)
             .await
             .map_err(|err| Error::msg(err.to_string()))
             .unwrap()
             .body_string()
-            .await
             .map_err(|err| Error::msg(err.to_string()))
             .unwrap();
 

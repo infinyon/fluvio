@@ -4,7 +4,8 @@ version: 0.0.1
 group: infinyon
 description: Describe the module here
 license: e.g. Apache2
-visibility: private
 manifest:
 - module.wasm
+repository_url: null
 tags: null
+visibility: private
