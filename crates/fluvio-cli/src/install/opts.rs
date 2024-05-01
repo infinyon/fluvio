@@ -285,17 +285,12 @@ impl InstallOpt {
             code => {
                 let body_err_message = resp
                     .body_string()
-                    .await
                     .unwrap_or_else(|_err| "couldn't fetch error message".to_string());
                 let msg = format!("Status({code}) {body_err_message}");
                 return Err(crate::CliError::HubError(msg).into());
             }
         }
-        let data = resp
-            .bytes()
-            .await
-            .map_err(|_| crate::CliError::HubError("Data unpack failure".into()))?
-            .to_vec();
+        let data = resp.body().to_vec();
         Ok(data)
     }
 }

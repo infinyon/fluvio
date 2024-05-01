@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-smartengine"
-version = "0.7.10"
+version = "0.7.11"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -15,7 +15,7 @@ description = "The official Fluvio SmartEngine"
 engine = ["wasmtime"]
 wasi = ["wasmtime-wasi", "engine"]
 transformation = ["serde_json", "serde_yaml", "humantime-serde"]
-default = ["engine"]
+default = ["engine", "wasi"]
 
 
 [dependencies]

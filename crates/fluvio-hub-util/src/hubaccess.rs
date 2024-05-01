@@ -159,10 +159,9 @@ impl HubAccess {
         let status_code = resp.status();
         match status_code {
             StatusCode::OK => {
-                let action_token = resp.body_string().await.map_err(|e| {
-                    debug!("err {e}");
-                    HubError::HubAccess("Failed to parse reply".to_string())
-                })?;
+                let action_token = resp
+                    .body_string()
+                    .map_err(|e| HubError::General(format!("couldn't parse body {e}")))?;
                 Ok(action_token)
             }
             StatusCode::UNAUTHORIZED => Err(HubError::HubAccess(
@@ -327,7 +326,6 @@ fn get_hubref() -> Option<String> {
             .map_err(|e| anyhow!("hubref error {e}"))?;
         let reply = resp
             .json::<ReplyHubref>()
-            .await
             .map_err(|e| anyhow!("hubref parse error {e}"))?;
 
         // fluvio profile switch does not switch the cloud login

@@ -36,7 +36,9 @@ pub async fn get_pkg_list(endpoint: &str, remote: &Option<String>) -> Result<Pac
         .await
         .map_err(|e| anyhow!("list api access error {e}"))?;
 
-    resp.json::<PackageListMeta>()
-        .await
-        .map_err(|e| anyhow!("list api data parse error {e}"))
+    resp.json::<PackageListMeta>().map_err(|e| {
+        let body = resp.body_string().unwrap_or_default();
+        tracing::debug!(body, "parse err");
+        anyhow!("list api data parse error {e}")
+    })
 }

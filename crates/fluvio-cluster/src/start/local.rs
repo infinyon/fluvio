@@ -408,6 +408,11 @@ impl LocalInstaller {
             self.preflight_check(true).await?;
         };
 
+        self.install_only().await
+    }
+
+    #[instrument(skip(self))]
+    pub async fn install_only(&self) -> Result<StartStatus> {
         let pb = self.pb_factory.create()?;
 
         debug!("using log dir: {}", self.config.log_dir.display());
