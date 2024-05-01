@@ -198,7 +198,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.10.11"
+version = "0.10.13"
 dependencies = [
  "bytes",
  "content_inspector",
@@ -252,7 +252,7 @@ name = "fluvio-smartmodule"
 version = "0.7.3"
 dependencies = [
  "eyre",
- "fluvio-protocol 0.10.11",
+ "fluvio-protocol 0.10.13",
  "fluvio-smartmodule-derive 0.6.2",
  "thiserror",
  "tracing",
