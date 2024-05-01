@@ -10,7 +10,7 @@ use fluvio_future::task::run_block_on;
 use cargo_builder::package::PackageInfo;
 
 use crate::cmd::PackageCmd;
-use crate::ENV_SMDK_WASI;
+use crate::ENV_SMDK_NOWASI;
 
 pub const DEFAULT_META_LOCATION: &str = "SmartModule.toml";
 
@@ -40,8 +40,8 @@ pub struct LoadCmd {
     dry_run: bool,
 
     /// Build wasi target
-    #[arg(long, env = ENV_SMDK_WASI)]
-    wasi: bool,
+    #[arg(long, env = ENV_SMDK_NOWASI, hide_short_help = true)]
+    nowasi: bool,
 }
 impl LoadCmd {
     pub(crate) fn process(self) -> Result<()> {
@@ -70,10 +70,10 @@ impl LoadCmd {
         let raw_bytes = match &self.wasm_file {
             Some(wasm_file) => crate::read_bytes_from_path(wasm_file)?,
             None => {
-                let tgtpath = if self.wasi {
-                    package_info.target_wasm32_wasi_path()?
-                } else {
+                let tgtpath = if self.nowasi {
                     package_info.target_wasm32_path()?
+                } else {
+                    package_info.target_wasm32_wasi_path()?
                 };
                 crate::read_bytes_from_path(&tgtpath)?
             }
