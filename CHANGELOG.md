@@ -2,7 +2,30 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
-## Platform Version 0.11.7 - UNRELEASED
+## Platform Version 0.11.7 - 2024-05-01
+
+### Added
+* Forbid `fluvio cluster start` when it should be resumed ([#3695](https://github.com/infinyon/fluvio/pull/3965))
+* Default to wasi supported build arch ([#3981](https://github.com/infinyon/fluvio/issues/3981))
+* Add cmd to create mirror topics ([#3962](https://github.com/infinyon/fluvio/issues/3962))
+
+### Fixed
+
+* Use fluvio_bin env instead fluvio directly ([#3960](https://github.com/infinyon/fluvio/issues/3960))
+* Typos for `Pacakge` in documentation ([#3964](https://github.com/infinyon/fluvio/issues/3964))
+* Upadate http client, better client isolation ([#3980](https://github.com/infinyon/fluvio/issues/3980))
+
+### Other
+
+* Enable `repository_url` ([#3961](https://github.com/infinyon/fluvio/issues/3961))
+* Rename mirroring cmds to home and remote ([#3959](https://github.com/infinyon/fluvio/issues/3959))
+* Rename SpuSocket to StreamSocket ([#3958](https://github.com/infinyon/fluvio/issues/3958))
+* Rename remote, edge and core to mirror, remote and home ([#3966](https://github.com/infinyon/fluvio/issues/3966))
+* Graceful period for stream interruption ([#3969](https://github.com/infinyon/fluvio/issues/3969))
+* Sc-to-sc mirroring connection ([#3946](https://github.com/infinyon/fluvio/issues/3946))
+* Allow enabling wasi for connectors ([#3977](https://github.com/infinyon/fluvio/issues/3977))
+* Set default offset flush interval to 2s ([#3976](https://github.com/infinyon/fluvio/issues/3976))
+* `v0.11.6` post-release ([#3955](https://github.com/infinyon/fluvio/issues/3955))
 
 ## Platform Version 0.11.6 - 2024-04-20
 
