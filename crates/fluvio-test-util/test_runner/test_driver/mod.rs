@@ -134,7 +134,7 @@ impl TestDriver {
     pub async fn get_consumer_with_config(
         &self,
         config: ConsumerConfigExt,
-    ) -> impl ConsumerStream<Item = Result<Record, ErrorCode>> + Unpin {
+    ) -> impl ConsumerStream<Item = Result<Record, ErrorCode>> {
         let fluvio_client = self.create_client().await.expect("cant' create client");
         match fluvio_client.consumer_with_config(config).await {
             Ok(client) => {
@@ -152,7 +152,7 @@ impl TestDriver {
         topic: &str,
         partition: PartitionId,
         offset_start: Offset,
-    ) -> impl ConsumerStream<Item = Result<Record, ErrorCode>> + Unpin {
+    ) -> impl ConsumerStream<Item = Result<Record, ErrorCode>> {
         let config = ConsumerConfigExtBuilder::default()
             .topic(topic)
             .partition(partition)

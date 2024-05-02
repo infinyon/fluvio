@@ -1,3 +1,4 @@
+use std::fmt::{Display, Formatter};
 use syn::meta::ParseNestedMeta;
 use syn::{ItemFn, Error as SynError, Result as SynResult, Signature};
 use syn::spanned::Spanned;
@@ -33,8 +34,8 @@ pub enum SmartModuleKind {
     FilterMap,
 }
 
-impl ToString for SmartModuleKind {
-    fn to_string(&self) -> String {
+impl Display for SmartModuleKind {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let string = match self {
             SmartModuleKind::Init => "init",
             SmartModuleKind::LookBack => "look_back",
@@ -45,7 +46,7 @@ impl ToString for SmartModuleKind {
             SmartModuleKind::FilterMap => "filter_map",
         };
 
-        string.to_string()
+        write!(f, "{}", string)
     }
 }
 

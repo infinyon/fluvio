@@ -268,10 +268,10 @@ where
 
     /// remove existing value
     /// if successful, remove are added to history
-    pub fn remove<Q: ?Sized>(&mut self, k: &Q) -> Option<DualEpochCounter<V>>
+    pub fn remove<Q>(&mut self, k: &Q) -> Option<DualEpochCounter<V>>
     where
         K: Borrow<Q>,
-        Q: Hash + Eq,
+        Q: ?Sized + Hash + Eq,
         V: Clone,
     {
         if let Some((_, mut old_value)) = self.values.remove_entry(k) {

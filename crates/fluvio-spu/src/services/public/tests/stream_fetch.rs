@@ -259,7 +259,7 @@ async fn adhoc_test<Fut, TestFn>(
 {
     let test_path = temp_dir().join(test_name);
     let mut spu_config = SpuConfig::default();
-    spu_config.log.base_dir = test_path.clone();
+    spu_config.log.base_dir.clone_from(&test_path);
 
     let ctx = GlobalContext::new_shared_context(spu_config);
     let wasm = zip(read_wasm_module(module_name));
@@ -282,7 +282,7 @@ async fn adhoc_chain_test<Fut, TestFn>(
 {
     let test_path = temp_dir().join(test_name);
     let mut spu_config = SpuConfig::default();
-    spu_config.log.base_dir = test_path.clone();
+    spu_config.log.base_dir.clone_from(&test_path);
 
     let ctx = GlobalContext::new_shared_context(spu_config);
     let mut smartmodules = Vec::with_capacity(modules.len());
@@ -310,7 +310,7 @@ async fn predefined_test<Fut, TestFn>(
 {
     let test_path = temp_dir().join(test_name);
     let mut spu_config = SpuConfig::default();
-    spu_config.log.base_dir = test_path.clone();
+    spu_config.log.base_dir.clone_from(&test_path);
 
     let ctx = GlobalContext::new_shared_context(spu_config);
     load_wasm_module(&ctx, module_name);
@@ -333,7 +333,7 @@ async fn predefined_chain_test<Fut, TestFn>(
 {
     let test_path = temp_dir().join(test_name);
     let mut spu_config = SpuConfig::default();
-    spu_config.log.base_dir = test_path.clone();
+    spu_config.log.base_dir.clone_from(&test_path);
 
     let ctx = GlobalContext::new_shared_context(spu_config);
     let mut smartmodules = Vec::with_capacity(modules.len());
@@ -2205,7 +2205,7 @@ async fn test_stream_fetch_filter_with_params(
 async fn test_stream_fetch_invalid_smartmodule_adhoc() {
     let test_path = temp_dir().join("test_stream_fetch_invalid_smartmodule_adhoc");
     let mut spu_config = SpuConfig::default();
-    spu_config.log.base_dir = test_path.clone();
+    spu_config.log.base_dir.clone_from(&test_path);
 
     let ctx = GlobalContext::new_shared_context(spu_config);
     let wasm = zip(include_bytes!("test_data/filter_missing_attribute.wasm").to_vec());
@@ -2222,7 +2222,7 @@ async fn test_stream_fetch_invalid_smartmodule_adhoc() {
 async fn test_stream_fetch_invalid_smartmodule_predefined() {
     let test_path = temp_dir().join("test_stream_fetch_invalid_smartmodule_predefined");
     let mut spu_config = SpuConfig::default();
-    spu_config.log.base_dir = test_path.clone();
+    spu_config.log.base_dir.clone_from(&test_path);
 
     let ctx = GlobalContext::new_shared_context(spu_config);
 

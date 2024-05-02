@@ -139,8 +139,8 @@ impl PackageMeta {
 
         packagename_validate(&spk.name)?;
 
-        self.name = spk.name.clone();
-        self.group = spk.group.clone();
+        self.name.clone_from(&spk.name);
+        self.group.clone_from(&spk.group);
         self.version = spk.version.to_string();
         self.description = spk.description.clone().unwrap_or_default();
         self.visibility = PkgVisibility::from(&spk.visibility);

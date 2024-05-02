@@ -110,7 +110,7 @@ mod fetch {
     use crate::services::auth::AuthServiceContext;
 
     #[instrument(skip(filters, auth_ctx))]
-    pub async fn handle_fetch_request<AC: AuthContext, C: MetadataItem, S>(
+    pub async fn handle_fetch_request<AC, C: MetadataItem, S>(
         filters: ListFilters,
         auth_ctx: &AuthServiceContext<AC, C>,
         object_ctx: &StoreContext<S, C>,

@@ -140,7 +140,9 @@ impl<T: K8MetadataClient> MetadataClient<K8MetaItem> for T {
         };
 
         input_metadata.labels = ctx.item().get_labels();
-        input_metadata.annotations = ctx.item().annotations.clone();
+        input_metadata
+            .annotations
+            .clone_from(&ctx.item().annotations);
 
         trace!("converted metadata: {:#?}", input_metadata);
         let new_k8 = InputK8Obj::new(k8_spec, input_metadata);

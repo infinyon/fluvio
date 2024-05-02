@@ -32,6 +32,7 @@ pub type PartitionLocalStore<C> = LocalStore<PartitionSpec, C>;
 pub type DefaultPartitionMd = PartitionMetadata<String>;
 pub type DefaultPartitionStore = PartitionLocalStore<u32>;
 
+#[allow(dead_code)]
 pub(crate) trait PartitionMd<C: MetadataItem> {
     fn with_replicas(key: ReplicaKey, replicas: Vec<SpuId>) -> Self;
 
@@ -52,6 +53,7 @@ impl<C: MetadataItem> PartitionMd<C> for PartitionMetadata<C> {
     }
 }
 
+#[allow(dead_code)]
 #[async_trait]
 pub(crate) trait PartitionLocalStorePolicy<C>
 where

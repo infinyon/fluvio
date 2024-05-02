@@ -1,7 +1,7 @@
 [package]
 name = "fluvio-stream-model"
 edition = "2021"
-version = "0.11.1"
+version = "0.11.2"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Fluvio Event Stream Model"
 repository = "https://github.com/infinyon/fluvio"

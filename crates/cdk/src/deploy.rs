@@ -416,7 +416,7 @@ mod local_index {
                         Default::default()
                     }
                 };
-            index.path = index_path.to_owned();
+            index_path.clone_into(&mut index.path);
             Ok(index)
         }
 

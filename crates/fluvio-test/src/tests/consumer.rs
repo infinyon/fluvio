@@ -112,11 +112,10 @@ impl TestOption for ConsumerTestOption {
     }
 }
 
-async fn consume_work<S: ?Sized>(stream: &mut S, consumer_id: u32, test_case: ConsumerTestCase)
+async fn consume_work<S>(stream: &mut S, consumer_id: u32, test_case: ConsumerTestCase)
 where
     //S: Stream<Item = Result<Record, FluvioError>> + std::marker::Unpin,
-    S: Stream<Item = Result<Record, ErrorCode>>,
-    S: Unpin,
+    S: ?Sized + Stream<Item = Result<Record, ErrorCode>> + Unpin,
 {
     let mut records_recvd = 0;
 

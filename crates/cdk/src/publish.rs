@@ -323,8 +323,8 @@ impl PackageMetaConnectorExt for PackageMeta {
         let package = &connector_metadata.package;
         packagename_validate(&package.name)?;
 
-        self.name = package.name.clone();
-        self.group = package.group.clone();
+        self.name.clone_from(&package.name);
+        self.group.clone_from(&package.group);
         self.version = package.version.to_string();
         self.description = package.description.clone().unwrap_or_default();
         self.visibility = from_connectorvis(&package.visibility);

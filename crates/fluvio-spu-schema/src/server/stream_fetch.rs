@@ -112,7 +112,6 @@ where
     type Response = StreamFetchResponse<R>;
 }
 
-///
 #[derive(Debug, Default, Clone, Encoder, Decoder)]
 pub(crate) struct DerivedStreamInvocation {
     pub stream: String,
