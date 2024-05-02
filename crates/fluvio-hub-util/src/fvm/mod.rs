@@ -5,6 +5,7 @@ mod api;
 use std::fmt::Display;
 use std::cmp::Ordering;
 use std::str::FromStr;
+use std::collections::HashMap;
 
 use thiserror::Error;
 use serde::{Deserialize, Serialize};
@@ -154,15 +155,51 @@ pub struct PackageSet {
 }
 
 impl PackageSet {
-    /// Checks if artifacts in `b` are newer that artifacts in `self`
-    fn check_outdated(&self) -> bool {
-        todo!()
+    /// Checks if artifacts in `b` are newer that artifacts in `self`.
+    ///
+    /// Patches included in [`PackageSet`]s are detected comparing versions
+    /// at the `artifacts` level.
+    ///
+    /// Local [`PackageSet`] artifacts are compared with `upstream` to check
+    /// for newer versions of these artifacts being available under the current
+    /// Fluvio version.
+    #[allow(dead_code)]
+    fn check_artifact_updates(&self, upstream: &PackageSet) -> Vec<Artifact> {
+        let ours: HashMap<String, Artifact> =
+            self.artifacts.iter().fold(HashMap::new(), |mut map, art| {
+                map.insert(art.name.to_owned(), art.to_owned());
+                map
+            });
+        let theirs: HashMap<String, Artifact> =
+            upstream
+                .artifacts
+                .iter()
+                .fold(HashMap::new(), |mut map, art| {
+                    map.insert(art.name.to_owned(), art.to_owned());
+                    map
+                });
+        let mut new_artifacts: Vec<Artifact> = Vec::with_capacity(theirs.len());
+
+        for (art_name, our_artifact) in ours {
+            let Some(their_artifact) = theirs.get(&art_name) else {
+                tracing::warn!(%art_name, "Found missing artifact in incoming PackageSet");
+                continue;
+            };
+
+            if their_artifact.version > our_artifact.version {
+                new_artifacts.push(their_artifact.to_owned());
+            }
+        }
+
+        new_artifacts
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::Channel;
+    use std::str::FromStr;
+
+    use super::{Artifact, Channel, PackageSet, Version};
 
     #[test]
     fn parses_latest_channel_from_str() {
@@ -206,11 +243,85 @@ mod tests {
 
     #[test]
     fn determines_if_other_packageset_includes_newer_artifacts() {
-        let stable = Channel::parse("stable").unwrap();
-        let ssdkp1 = Channel::parse("ssdk-preview1").unwrap();
-        let ssdkp2 = Channel::parse("ssdk-preview2").unwrap();
+        let package_sets = vec![
+        (
+            PackageSet {
+                pkgset: Version::from_str("0.11.7").unwrap(),
+                arch: String::from("aarch64-apple-darwin"),
+                artifacts: vec![
+                Artifact {
+                    name: String::from("fluvio-cloud"),
+                    version: Version::from_str("0.2.19").unwrap(),
+                    download_url: String::from("https://packages.fluvio.io/fluvio-cloud/aarch64-apple-darwin/0.2.19"),
+                    sha256_url: String::from("https://packages.fluvio.io/v1/packages/fluvio/fluvio-cloud/0.2.19/aarch64-apple-darwin/fluvio-cloud.sha256"),
+                }
+                ]
+            },
+            PackageSet {
+                pkgset: Version::from_str("0.11.7").unwrap(),
+                arch: String::from("aarch64-apple-darwin"),
+                artifacts: vec![
+                Artifact {
+                    name: String::from("fluvio-cloud"),
+                    version: Version::from_str("0.11.6").unwrap(),
+                    download_url: String::from("https://packages.fluvio.io/fluvio-cloud/aarch64-apple-darwin/0.2.19"),
+                    sha256_url: String::from("https://packages.fluvio.io/v1/packages/fluvio/fluvio-cloud/0.2.19/aarch64-apple-darwin/fluvio-cloud.sha256"),
+                }
+                ]
+            },
+            1
+        ),
+        (
+            PackageSet {
+                pkgset: Version::from_str("0.11.7").unwrap(),
+                arch: String::from("aarch64-apple-darwin"),
+                artifacts: vec![
+                Artifact {
+                    name: String::from("fluvio-cloud"),
+                    version: Version::from_str("0.2.19").unwrap(),
+                    download_url: String::from("https://packages.fluvio.io/fluvio-cloud/aarch64-apple-darwin/0.2.19"),
+                    sha256_url: String::from("https://packages.fluvio.io/v1/packages/fluvio/fluvio-cloud/0.2.19/aarch64-apple-darwin/fluvio-cloud.sha256"),
+                }
+                ]
+            },
+            PackageSet {
+                pkgset: Version::from_str("0.11.7").unwrap(),
+                arch: String::from("aarch64-apple-darwin"),
+                artifacts: vec![
+ Artifact {
+                    name: String::from("fluvio-cloud"),
+                    version: Version::from_str("0.2.19").unwrap(),
+                    download_url: String::from("https://packages.fluvio.io/fluvio-cloud/aarch64-apple-darwin/0.2.19"),
+                    sha256_url: String::from("https://packages.fluvio.io/v1/packages/fluvio/fluvio-cloud/0.2.19/aarch64-apple-darwin/fluvio-cloud.sha256"),
+                }
+                ]
+            },
+            0
+        ),
+                (
+            PackageSet {
+                pkgset: Version::from_str("0.11.7").unwrap(),
+                arch: String::from("aarch64-apple-darwin"),
+                artifacts: vec![
+                Artifact {
+                    name: String::from("fluvio-cloud"),
+                    version: Version::from_str("0.2.19").unwrap(),
+                    download_url: String::from("https://packages.fluvio.io/fluvio-cloud/aarch64-apple-darwin/0.2.19"),
+                    sha256_url: String::from("https://packages.fluvio.io/v1/packages/fluvio/fluvio-cloud/0.2.19/aarch64-apple-darwin/fluvio-cloud.sha256"),
+                }
+                ]
+            },
+            PackageSet {
+                pkgset: Version::from_str("0.11.7").unwrap(),
+                arch: String::from("aarch64-apple-darwin"),
+                artifacts: vec![]
+            },
+            0
+        )
+        ];
 
-        assert!(stable > ssdkp1);
-        assert!(ssdkp2 > ssdkp1);
+        for (ours, theirs, new_pkgs) in package_sets {
+            assert_eq!(ours.check_artifact_updates(&theirs).len(), new_pkgs);
+        }
     }
 }
