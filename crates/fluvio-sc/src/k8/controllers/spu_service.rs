@@ -203,7 +203,9 @@ impl SpuServiceController {
             .ctx()
             .create_child()
             .set_labels(vec![("fluvio.io/spu-name", spu_name)]);
-        ctx.item_mut().annotations = spu_k8_config.lb_service_annotations.clone();
+        ctx.item_mut()
+            .annotations
+            .clone_from(&spu_k8_config.lb_service_annotations);
 
         let obj = MetadataStoreObject::with_spec(svc_name.clone(), k8_service_spec.into())
             .with_context(ctx);

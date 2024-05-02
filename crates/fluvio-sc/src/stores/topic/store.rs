@@ -153,7 +153,7 @@ mod test {
         topic1
             .status
             .set_replica_map(topic2.status.replica_map.clone());
-        topic1.status.reason = topic2.status.reason.clone();
+        topic1.status.reason.clone_from(&topic2.status.reason);
         topic1.status.resolution = topic2.status.resolution.clone();
 
         // topics should be identical

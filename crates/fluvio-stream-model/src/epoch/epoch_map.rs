@@ -185,10 +185,10 @@ mod old_map {
 
         /// remove existing value
         /// if successful, remove are added to history
-        pub fn remove<Q: ?Sized>(&mut self, k: &Q) -> Option<EpochCounter<V>>
+        pub fn remove<Q>(&mut self, k: &Q) -> Option<EpochCounter<V>>
         where
             K: Borrow<Q>,
-            Q: Hash + Eq,
+            Q: ?Sized + Hash + Eq,
             V: Clone,
         {
             if let Some((_, mut old_value)) = self.map.remove_entry(k) {

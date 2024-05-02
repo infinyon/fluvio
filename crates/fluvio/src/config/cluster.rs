@@ -208,7 +208,7 @@ type = "local"
             }
         );
 
-        install.typ = "cloud".to_owned();
+        "cloud".clone_into(&mut install.typ);
 
         config
             .update_metadata_by_name("installation", install)

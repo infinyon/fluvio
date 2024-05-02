@@ -52,7 +52,7 @@ impl AllStats {
     /// configs
     pub fn merge(&mut self, other: &AllStats) {
         for (config, results) in other.iter() {
-            if self.0.get(config).is_none() {
+            if !self.0.contains_key(config) {
                 self.0.insert(config.clone(), results.clone());
             }
         }

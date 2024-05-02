@@ -112,7 +112,7 @@ impl SpuSpec {
 
     pub fn update(&mut self, other: &Self) {
         if self.rack != other.rack {
-            self.rack = other.rack.clone();
+            self.rack.clone_from(&other.rack);
         }
         if self.public_endpoint != other.public_endpoint {
             self.public_endpoint = other.public_endpoint.clone();

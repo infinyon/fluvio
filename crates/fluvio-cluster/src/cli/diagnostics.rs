@@ -386,6 +386,7 @@ impl SystemInfo {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Serialize)]
 struct DiskInfo {
     name: String,

@@ -15,7 +15,7 @@ use fluvio_auth::{AuthContext, TypeAction};
 use fluvio_controlplane_metadata::extended::SpecExt;
 
 #[instrument(skip(filters, auth, object_ctx))]
-pub(crate) async fn fetch_smart_modules<AC: AuthContext, M>(
+pub(crate) async fn fetch_smart_modules<AC, M>(
     filters: Vec<ListFilter>,
     summary: bool,
     auth: &AC,
