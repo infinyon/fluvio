@@ -153,6 +153,13 @@ pub struct PackageSet {
     pub artifacts: Vec<Artifact>,
 }
 
+impl PackageSet {
+    /// Checks if artifacts in `b` are newer that artifacts in `self`
+    fn check_outdated(&self) -> bool {
+        todo!()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::Channel;
@@ -189,6 +196,16 @@ mod tests {
 
     #[test]
     fn determines_otherversion_revisioning() {
+        let stable = Channel::parse("stable").unwrap();
+        let ssdkp1 = Channel::parse("ssdk-preview1").unwrap();
+        let ssdkp2 = Channel::parse("ssdk-preview2").unwrap();
+
+        assert!(stable > ssdkp1);
+        assert!(ssdkp2 > ssdkp1);
+    }
+
+    #[test]
+    fn determines_if_other_packageset_includes_newer_artifacts() {
         let stable = Channel::parse("stable").unwrap();
         let ssdkp1 = Channel::parse("ssdk-preview1").unwrap();
         let ssdkp2 = Channel::parse("ssdk-preview2").unwrap();
