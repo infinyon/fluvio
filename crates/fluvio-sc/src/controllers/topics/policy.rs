@@ -286,8 +286,9 @@ impl<C: MetadataItem> TopicNextState<C> {
                                     mirror_map.insert(
                                         partition as PartitionId,
                                         PartitionMirrorConfig::Remote(RemotePartitionConfig {
-                                            home_spu: *spu,
+                                            home_spu_id: spu.id,
                                             home_cluster: src.home_cluster.clone(),
+                                            home_spu_endpoint: spu.endpoint.clone(),
                                         }),
                                     );
                                 }

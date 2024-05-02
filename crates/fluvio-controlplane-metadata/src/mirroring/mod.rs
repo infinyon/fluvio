@@ -1,11 +1,11 @@
 use std::fmt::Debug;
 
 use fluvio_stream_model::core::{Spec, Status};
-use fluvio_types::ReplicaMap;
 
 use fluvio_protocol::{Decoder, Encoder};
 use fluvio_protocol::api::Request;
 use fluvio_protocol::link::ErrorCode;
+use fluvio_types::SpuId;
 
 use crate::topic::TopicSpec;
 
@@ -104,15 +104,17 @@ impl MirroringStatusResponse {
 pub struct MirroringSpecWrapper<S> {
     pub key: String,
     pub spec: S,
-    pub replica_map: ReplicaMap,
+    pub spu_id: SpuId,
+    pub spu_endpoint: String,
 }
 
 impl<S> MirroringSpecWrapper<S> {
-    pub fn new(key: String, spec: S, replica_map: ReplicaMap) -> Self {
+    pub fn new(key: String, spec: S, spu_id: i32, spu_endpoint: String) -> Self {
         Self {
             key,
             spec,
-            replica_map,
+            spu_id,
+            spu_endpoint,
         }
     }
 }
