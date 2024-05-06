@@ -25,7 +25,7 @@ check-udeps: install-udeps
 	cargo +nightly udeps --all-targets
 
 install-deny:
-	cargo install --locked cargo-deny	
+	cargo install --locked cargo-deny
 
 check-crate-audit: install-deny
 	cargo deny check
@@ -39,8 +39,8 @@ run-all-unit-test: install_rustup_target
 	cargo test -p fluvio-storage $(BUILD_FLAGS)
 	cargo test -p fluvio-channel-cli $(BUILD_FLAGS)
 	cargo test -p fluvio-connector-derive $(BUILD_FLAGS)
-	cargo test -p fluvio-connector-common --all-features $(BUILD_FLAGS) 
-	cargo test -p fluvio-connector-package $(BUILD_FLAGS) 
+	cargo test -p fluvio-connector-common --all-features $(BUILD_FLAGS)
+	cargo test -p fluvio-connector-package $(BUILD_FLAGS)
 	cargo test -p fluvio-controlplane-metadata --features=smartmodule $(BUILD_FLAGS)
 	make test-all -C crates/fluvio-protocol
 
@@ -51,7 +51,7 @@ run-integration-test: build_smartmodules install_rustup_target
 
 	cargo test -p fluvio-smartengine -- --ignored --test-threads=1
 	rustup target add wasm32-wasi
-	cargo test  --features wasi -p fluvio-smartengine -- --ignored --test-threads=1
+	cargo test -p fluvio-smartengine -- --ignored --test-threads=1
 
 run-smartmodule-test:	build_smartmodules
 	cargo test  -p fluvio-smartengine -- --ignored --nocapture
@@ -60,12 +60,12 @@ run-k8-test:	install_rustup_target k8-setup build_k8_image
 	cargo test --lib  -p fluvio-sc  -- --ignored --test-threads=1
 
 
-run-all-doc-test: install_rustup_target 
+run-all-doc-test: install_rustup_target
 	cargo test --all-features --doc  $(BUILD_FLAGS)
 
-run-client-doc-test: install_rustup_target 
+run-client-doc-test: install_rustup_target
 	cargo test --all-features --doc -p fluvio-cli $(BUILD_FLAGS)
-	cargo test --all-features --doc -p fluvio-cluster $(BUILD_FLAGS) 
+	cargo test --all-features --doc -p fluvio-cluster $(BUILD_FLAGS)
 	cargo test --all-features --doc -p fluvio $(BUILD_FLAGS)
 
 
