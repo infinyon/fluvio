@@ -16,6 +16,7 @@ use fluvio_protocol::api::Request;
 use fluvio_protocol::api::RequestMessage;
 use fluvio_protocol::link::ErrorCode;
 use fluvio_protocol::record::ReplicaKey;
+use fluvio_spu_schema::server::mirror::StartMirrorRequest;
 use tracing::{info, debug, trace, instrument};
 use futures_util::StreamExt;
 use anyhow::Result;
@@ -27,6 +28,7 @@ use fluvio_spu_schema::server::SpuServerApiKey;
 use fluvio_types::event::StickyEvent;
 
 use crate::core::DefaultSharedGlobalContext;
+use crate::mirroring::home::connection::MirrorHomeHandler;
 use crate::services::public::consumer_handler::handle_delete_consumer_offset_request;
 use crate::services::public::consumer_handler::handle_fetch_consumer_offsets_request;
 use crate::services::public::consumer_handler::handle_update_consumer_offset_request;
@@ -76,98 +78,117 @@ impl FluvioService for PublicService {
     ) -> Result<()> {
         let (sink, mut stream) = socket.split();
 
-        let mut shared_sink = sink.as_shared();
-        let api_stream = stream.api_stream::<SpuServerRequest, SpuServerApiKey>();
+        let mut mirror_request: Option<RequestMessage<StartMirrorRequest>> = None;
         let shutdown = StickyEvent::shared();
-        let mut event_stream = api_stream.take_until(shutdown.listen_pinned());
-        let mut conn_ctx = ConnectionContext::new();
 
-        loop {
-            let event = event_stream.next().await;
-            match event {
-                Some(Ok(req_message)) => {
-                    debug!(%req_message,"received");
-                    //  println!("req: {:#?}", req_message);
-                    trace!(
-                        "conn: {}, received request: {:#?}",
-                        shared_sink.id(),
-                        req_message
-                    );
-                    match req_message {
-                        SpuServerRequest::ApiVersionsRequest(request) => call_service!(
-                            request,
-                            handle_api_version_request(request),
-                            shared_sink,
-                            "ApiVersionsRequest"
-                        ),
-                        SpuServerRequest::ProduceRequest(request) => call_service!(
-                            request,
-                            handle_produce_request(request, context.clone()),
-                            shared_sink,
-                            "ProduceRequest"
-                        ),
-                        SpuServerRequest::FileFetchRequest(request) => {
-                            handle_fetch_request(request, context.clone(), shared_sink.clone())
-                                .await?
-                        }
-                        SpuServerRequest::FetchOffsetsRequest(request) => call_service!(
-                            request,
-                            handle_offset_request(request, context.clone()),
-                            shared_sink,
-                            "FetchOffsetsRequest"
-                        ),
-                        SpuServerRequest::FileStreamFetchRequest(request) => {
-                            StreamFetchHandler::start(
+        let mut shared_sink = sink.as_shared();
+        {
+            let api_stream = stream.api_stream::<SpuServerRequest, SpuServerApiKey>();
+            let mut event_stream = api_stream.take_until(shutdown.listen_pinned());
+            let mut conn_ctx = ConnectionContext::new();
+
+            loop {
+                let event = event_stream.next().await;
+                match event {
+                    Some(Ok(req_message)) => {
+                        debug!(%req_message,"received");
+                        //  println!("req: {:#?}", req_message);
+                        trace!(
+                            "conn: {}, received request: {:#?}",
+                            shared_sink.id(),
+                            req_message
+                        );
+                        match req_message {
+                            SpuServerRequest::ApiVersionsRequest(request) => call_service!(
                                 request,
-                                context.clone(),
-                                &mut conn_ctx,
-                                shared_sink.clone(),
-                                shutdown.clone(),
-                            )
-                            .await?;
-                        }
-                        SpuServerRequest::UpdateOffsetsRequest(request) => call_service!(
-                            request,
-                            handle_offset_update(request, &mut conn_ctx),
-                            shared_sink,
-                            "UpdateOffsetsRequest"
-                        ),
-                        SpuServerRequest::UpdateConsumerOffsetRequest(request) => call_service!(
-                            request,
-                            handle_update_consumer_offset_request(
-                                request,
-                                context.clone(),
-                                &mut conn_ctx
+                                handle_api_version_request(request),
+                                shared_sink,
+                                "ApiVersionsRequest"
                             ),
-                            shared_sink,
-                            "UpdateConsumerRequest"
-                        ),
-                        SpuServerRequest::DeleteConsumerOffsetRequest(request) => call_service!(
-                            request,
-                            handle_delete_consumer_offset_request(request, context.clone()),
-                            shared_sink,
-                            "DeleteConsumerRequest"
-                        ),
-                        SpuServerRequest::FetchConsumerOffsetsRequest(request) => call_service!(
-                            request,
-                            handle_fetch_consumer_offsets_request(request, context.clone()),
-                            shared_sink,
-                            "FetchConsumersRequest"
-                        ),
+                            SpuServerRequest::ProduceRequest(request) => call_service!(
+                                request,
+                                handle_produce_request(request, context.clone()),
+                                shared_sink,
+                                "ProduceRequest"
+                            ),
+                            SpuServerRequest::FileFetchRequest(request) => {
+                                handle_fetch_request(request, context.clone(), shared_sink.clone())
+                                    .await?
+                            }
+                            SpuServerRequest::FetchOffsetsRequest(request) => call_service!(
+                                request,
+                                handle_offset_request(request, context.clone()),
+                                shared_sink,
+                                "FetchOffsetsRequest"
+                            ),
+                            SpuServerRequest::FileStreamFetchRequest(request) => {
+                                StreamFetchHandler::start(
+                                    request,
+                                    context.clone(),
+                                    &mut conn_ctx,
+                                    shared_sink.clone(),
+                                    shutdown.clone(),
+                                )
+                                .await?;
+                            }
+                            SpuServerRequest::UpdateOffsetsRequest(request) => call_service!(
+                                request,
+                                handle_offset_update(request, &mut conn_ctx),
+                                shared_sink,
+                                "UpdateOffsetsRequest"
+                            ),
+                            SpuServerRequest::UpdateConsumerOffsetRequest(request) => {
+                                call_service!(
+                                    request,
+                                    handle_update_consumer_offset_request(
+                                        request,
+                                        context.clone(),
+                                        &mut conn_ctx
+                                    ),
+                                    shared_sink,
+                                    "UpdateConsumerRequest"
+                                )
+                            }
+                            SpuServerRequest::DeleteConsumerOffsetRequest(request) => {
+                                call_service!(
+                                    request,
+                                    handle_delete_consumer_offset_request(request, context.clone()),
+                                    shared_sink,
+                                    "DeleteConsumerRequest"
+                                )
+                            }
+                            SpuServerRequest::FetchConsumerOffsetsRequest(request) => {
+                                call_service!(
+                                    request,
+                                    handle_fetch_consumer_offsets_request(request, context.clone()),
+                                    shared_sink,
+                                    "FetchConsumersRequest"
+                                )
+                            }
+                            SpuServerRequest::StartMirrorRequest(request) => {
+                                // send mirror mode, afer that mirror cycle will be started
+                                mirror_request = Some(request);
+                                break;
+                            }
+                        }
+                    }
+                    Some(Err(e)) => {
+                        debug!(
+                            sink_id = shared_sink.id(),
+                            "Error decoding message, ending connection: {}", e
+                        );
+                        break;
+                    }
+                    None => {
+                        debug!(sink_id = shared_sink.id(), "No content, end of connection",);
+                        break;
                     }
                 }
-                Some(Err(e)) => {
-                    debug!(
-                        sink_id = shared_sink.id(),
-                        "Error decoding message, ending connection: {}", e
-                    );
-                    break;
-                }
-                None => {
-                    debug!(sink_id = shared_sink.id(), "No content, end of connection",);
-                    break;
-                }
             }
+        }
+
+        if let Some(request) = mirror_request {
+            MirrorHomeHandler::respond(context, request, shared_sink, &mut stream).await;
         }
 
         shutdown.notify();

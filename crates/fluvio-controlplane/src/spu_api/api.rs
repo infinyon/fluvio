@@ -9,6 +9,7 @@ use fluvio_protocol::bytes::Buf;
 use fluvio_protocol::Encoder;
 use fluvio_protocol::Decoder;
 
+use super::update_mirror::UpdateMirrorRequest;
 use super::update_spu::UpdateSpuRequest;
 use super::update_replica::UpdateReplicaRequest;
 use super::update_smartmodule::UpdateSmartModuleRequest;
@@ -21,6 +22,7 @@ pub enum InternalSpuApi {
     UpdateReplica = 1002,
     UpdateSmartModule = 1003,
     // UpdateDerivedStream = 1004,
+    UpdateMirror = 1004,
 }
 
 impl Default for InternalSpuApi {
@@ -37,6 +39,8 @@ pub enum InternalSpuRequest {
     UpdateReplicaRequest(RequestMessage<UpdateReplicaRequest>),
     #[fluvio(tag = 2)]
     UpdateSmartModuleRequest(RequestMessage<UpdateSmartModuleRequest>),
+    #[fluvio(tag = 3)]
+    UpdateMirrorRequest(RequestMessage<UpdateMirrorRequest>),
 }
 
 // Added to satisfy Encoder/Decoder traits
@@ -66,6 +70,9 @@ impl ApiMessage for InternalSpuRequest {
             InternalSpuApi::UpdateReplica => api_decode!(Self, UpdateReplicaRequest, src, header),
             InternalSpuApi::UpdateSmartModule => {
                 api_decode!(Self, UpdateSmartModuleRequest, src, header)
+            }
+            InternalSpuApi::UpdateMirror => {
+                api_decode!(Self, UpdateMirrorRequest, src, header)
             }
         }
     }
