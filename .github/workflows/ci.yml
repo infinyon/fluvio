@@ -936,6 +936,9 @@ jobs:
         exclude:
           - cluster_version:  stable
             cli_version: stable
+          # temporary disable with known error w/ 0.11.7
+          - cluster_version:  stable
+            cli_version: dev
 
     steps:
       - uses: actions/checkout@v4
