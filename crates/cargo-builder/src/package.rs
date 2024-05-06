@@ -186,5 +186,9 @@ mod tests {
             .target_wasm32_path()
             .unwrap()
             .ends_with("wasm32-unknown-unknown/release-lto/cargo_builder.wasm"));
+        assert!(package_info
+            .target_wasm32_wasi_path()
+            .unwrap()
+            .ends_with("wasm32-wasi/release-lto/cargo_builder.wasm"));
     }
 }
