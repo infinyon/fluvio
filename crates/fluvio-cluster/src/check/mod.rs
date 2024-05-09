@@ -235,7 +235,7 @@ pub enum UnrecoverableCheckStatus {
     #[error("Local Fluvio cluster wasn't deleted. Use 'resume' to resume created cluster or 'delete' before starting a new one")]
     CreateLocalConfigError,
 
-    /// The installed version of Kubectl is incompatible
+    /// The installed version of the local cluster is incompatible
     #[error("Must have local platform version {required}. You have {installed}.")]
     IncompatibleLocalClusterVersion {
         /// The currently-installed version

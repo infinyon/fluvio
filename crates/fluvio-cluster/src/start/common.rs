@@ -81,15 +81,19 @@ pub async fn try_connect_to_sc(
             elapsed.as_secs()
         ));
 
-        match try_connect_sc(config, platform_version, Duration::from_secs(10)).await {
+        let (retry_delay, retry_timeout) = (1, 10);
+        match try_connect_sc(config, platform_version, Duration::from_secs(retry_timeout)).await {
             Ok(fluvio) => {
                 debug!("Connection to sc succeed!");
                 return Some(fluvio);
             }
             Err(err) => {
                 if attempt < *MAX_SC_LOOP - 1 {
-                    debug!("Connection failed with {:?}  sleeping 10 seconds", err);
-                    sleep(Duration::from_secs(1)).await;
+                    debug!(
+                        "Connection failed with {:?}  sleeping {} seconds",
+                        err, retry_delay
+                    );
+                    sleep(Duration::from_secs(retry_delay)).await;
                 }
             }
         }
