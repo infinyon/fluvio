@@ -7,7 +7,7 @@ IMAGE_VERSION?=					# If set, this indicates that the image is pre-built and sho
 BUILD_PROFILE=$(if $(RELEASE),release,debug)
 CARGO_BUILDER=$(if $(findstring arm,$(TARGET)),cross,cargo) # If TARGET contains the substring "arm"
 FLUVIO_BIN?=$(if $(TARGET),./target/$(TARGET)/$(BUILD_PROFILE)/fluvio,./target/$(BUILD_PROFILE)/fluvio)
-SMDK_BIN?=$(if $(TARGET),./target/$(TARGET)/$(BUILD_PROFILE)/smdk,./target/$(BUILD_PROFILE)/smdk)
+SMDK_BIN?=$(if $(TARGET),$(shell pwd)/target/$(TARGET)/$(BUILD_PROFILE)/smdk,$(shell pwd)/target/$(BUILD_PROFILE)/smdk)
 CDK_BIN?=$(if $(TARGET),./target/$(TARGET)/$(BUILD_PROFILE)/cdk,./target/$(BUILD_PROFILE)/cdk)
 RELEASE_FLAG=$(if $(RELEASE),--release,)
 TARGET_FLAG=$(if $(TARGET),--target $(TARGET),)
@@ -16,6 +16,9 @@ DEBUG_SMARTMODULE_FLAG=$(if $(DEBUG_SMARTMODULE),--features wasi,)
 SMARTENGINE_FLAG=$(if $(SMARTENGINE),--features smartengine,)
 
 BUILD_FLAGS = $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
+
+smdk_bin:
+	echo ${SMDK_BIN}
 
 include makefiles/build.mk
 include makefiles/test.mk
