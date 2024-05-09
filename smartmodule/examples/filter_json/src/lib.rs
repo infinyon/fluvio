@@ -37,7 +37,7 @@
 //!
 //! ```text
 //! $ cargo build --release -p fluvio-smartmodule-filter-json
-//! $ fluvio consume application-logs -B --smart-stream=target/wasm32-unknown-unknown/release/fluvio-smartmodule-filter-json.wasm
+//! $ fluvio consume application-logs -B --smart-stream=target/wasm32-wasi/release/fluvio-smartmodule-filter-json.wasm
 //! {"level":"info","message":"Server listening on 0.0.0.0:8000"}
 //! {"level":"info","message":"Accepted incoming connection"}
 //! {"level":"warn","message":"Client dropped connection}

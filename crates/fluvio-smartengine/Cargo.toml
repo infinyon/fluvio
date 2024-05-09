@@ -12,10 +12,9 @@ description = "The official Fluvio SmartEngine"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-engine = ["wasmtime"]
-wasi = ["wasmtime-wasi", "engine"]
+engine = ["wasmtime", "wasmtime-wasi"]
 transformation = ["serde_json", "serde_yaml", "humantime-serde"]
-default = ["engine", "wasi"]
+default = ["engine"]
 
 
 [dependencies]

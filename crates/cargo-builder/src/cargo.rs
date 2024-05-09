@@ -132,6 +132,7 @@ mod test {
     use std::ffi::OsStr;
 
     use super::*;
+    const WASM_TARGET: &str = "wasm32-wasi";
 
     #[test]
     fn test_builder_default() {
@@ -164,7 +165,7 @@ mod test {
     fn test_builder_target() {
         let config = Cargo::build()
             .package("foo")
-            .target("wasm32-unknown-unknown")
+            .target(WASM_TARGET)
             .build()
             .expect("should build");
 
@@ -183,7 +184,7 @@ mod test {
                 "-p",
                 "foo",
                 "--target",
-                "wasm32-unknown-unknown"
+                WASM_TARGET
             ]
         );
     }
@@ -192,7 +193,7 @@ mod test {
     fn test_builder_extra_args() {
         let config = Cargo::build()
             .package("foo")
-            .target("wasm32-unknown-unknown")
+            .target(WASM_TARGET)
             .extra_arguments(vec![
                 "--benches".to_string(),
                 "--no-default-features".to_string(),
@@ -215,7 +216,7 @@ mod test {
                 "-p",
                 "foo",
                 "--target",
-                "wasm32-unknown-unknown",
+                WASM_TARGET,
                 "--benches",
                 "--no-default-features"
             ]
@@ -226,7 +227,7 @@ mod test {
     fn test_builder_complains_extra_args_target() {
         let config = Cargo::build()
             .package("foo")
-            .target("wasm32-unknown-unknown")
+            .target(WASM_TARGET)
             .extra_arguments(vec![
                 "--benches".to_string(),
                 "--no-default-features".to_string(),

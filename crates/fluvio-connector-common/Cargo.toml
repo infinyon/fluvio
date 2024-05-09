@@ -10,7 +10,6 @@ description = "Fluvio Connector Common SDK"
 [features]
 default = []
 derive = ["fluvio-connector-derive"]
-wasi = ["fluvio-smartengine/wasi"]
 
 [[test]]
 name = "derive-test"
@@ -33,10 +32,10 @@ fluvio-future = { workspace = true, features = ["subscriber"] }
 fluvio-connector-package = { workspace = true  }
 fluvio-connector-derive = { path = "../fluvio-connector-derive/", optional = true }
 fluvio-sc-schema = { workspace = true }
-fluvio-smartengine = { workspace = true , features = [ "transformation"] }
+fluvio-smartengine = { workspace = true , features = [ "transformation", "engine"] }
 
 
 [dev-dependencies]
-trybuild = { version = "1.0" } # default workspace dep is forked and fails for this crate 
+trybuild = { version = "1.0" } # default workspace dep is forked and fails for this crate
 serde = { workspace = true, features = ["derive"]}
 fluvio = { workspace = true }

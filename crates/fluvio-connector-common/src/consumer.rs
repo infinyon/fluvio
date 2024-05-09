@@ -66,8 +66,12 @@ pub async fn consumer_stream_from_config(
     if let Some(smartmodules) = smartmodule_vec_from_config(config) {
         builder.smartmodule(smartmodules);
     }
-
-    let stream = fluvio.consumer_with_config(builder.build()?).await?;
+    tracing::info!("Building config");
+    let cfg = builder.build().map_err(|e| {
+        tracing::error!("Config build error: {e}");
+        e
+    })?;
+    let stream = fluvio.consumer_with_config(cfg).await?;
 
     Ok((fluvio, stream))
 }

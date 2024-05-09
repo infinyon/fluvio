@@ -66,7 +66,7 @@ fluvio-future = { workspace = true,features = [
     "openssl_tls",
     "zero_copy",
 ] }
-fluvio-smartengine = { workspace = true, optional = true }
+fluvio-smartengine = { workspace = true, optional = true, features = ["engine"] }
 fluvio-smartmodule = { workspace = true}
 fluvio-kv-storage = { workspace = true}
 

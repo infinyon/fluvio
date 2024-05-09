@@ -2,6 +2,22 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## Platform Version 0.11.9 - UNRELEASED
+
+## Platform Version 0.11.8 - 2024-05-07
+
+### Added
+
+* Spu-to-spu mirroring connection ([#3956](https://github.com/infinyon/fluvio/issues/3956))
+
+### Changed
+
+* `PackageSet::check_artifact_updates` method ([#3987](https://github.com/infinyon/fluvio/issues/3987))
+
+### Fixed
+
+* Explicitly enable wasi on smartengine uses ([#3988](https://github.com/infinyon/fluvio/issues/3988))
+
 ## Platform Version 0.11.7 - 2024-05-01
 
 ### Added

@@ -316,7 +316,10 @@ where
                             let batch: Result<Batch, _> = raw_batch.try_into();
                             match batch {
                                 Ok(batch) => Ok(batch),
-                                Err(err) => Err(ErrorCode::Other(err.to_string())),
+                                Err(err) => {
+                                    tracing::error!("{err:?}");
+                                    Err(ErrorCode::Other(err.to_string()))
+                                }
                             }
                         });
                 let error = {
