@@ -1,5 +1,11 @@
 default: build
 
-build:
-	rustup target add wasm32-unknown-unknown
-	cargo build --profile release-lto --target wasm32-unknown-unknown
+setup:
+	rustup target add wasm32-wasi
+
+build: setup
+	cargo run --bin smdk -- build
+
+build-raw:
+	cargo build --target wasm32-wasi
+
