@@ -199,6 +199,10 @@ impl LocalConfig {
         builder
     }
 
+    pub fn platform_version(&self) -> &Version {
+        &self.platform_version
+    }
+
     pub fn launcher_path(&self) -> Option<&Path> {
         self.launcher.as_deref()
     }
@@ -524,13 +528,9 @@ impl LocalInstaller {
         let cluster_config =
             FluvioConfig::new(LOCAL_SC_ADDRESS).with_tls(self.config.client_tls_policy.clone());
 
-        if let Some(fluvio) =
-            try_connect_to_sc(&cluster_config, &self.config.platform_version, pb).await
-        {
-            Ok(fluvio)
-        } else {
-            Err(LocalInstallError::SCServiceTimeout.into())
-        }
+        try_connect_to_sc(&cluster_config, &self.config.platform_version, pb)
+            .await
+            .ok_or(LocalInstallError::SCServiceTimeout.into())
     }
 
     /// set local profile

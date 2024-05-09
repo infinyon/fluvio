@@ -20,6 +20,13 @@ static MAX_SC_LOOP: Lazy<u8> = Lazy::new(|| {
     var_value.parse().unwrap_or(120)
 });
 
+#[derive(Debug)]
+enum TryConnectError {
+    Timeout,
+    UnexpectedVersion,
+    Unexpected,
+}
+
 /// try connection to SC
 #[instrument]
 pub async fn try_connect_to_sc(
@@ -30,34 +37,33 @@ pub async fn try_connect_to_sc(
     async fn try_connect_sc(
         fluvio_config: &FluvioConfig,
         expected_version: &Version,
-    ) -> Option<Fluvio> {
+        timeout: Duration,
+    ) -> Result<Fluvio, TryConnectError> {
         use tokio::select;
 
         select! {
-            _ = &mut sleep(Duration::from_secs(10)) => {
+            _ = &mut sleep(timeout) => {
                 debug!("timer expired");
-                None
+                Err(TryConnectError::Timeout)
             },
 
             connection = Fluvio::connect_with_config(fluvio_config) =>  {
-
                 match connection {
                     Ok(fluvio) => {
                         let current_version = fluvio.platform_version();
                         if current_version == expected_version {
                             debug!("Got updated SC Version{}", &expected_version);
-                            Some(fluvio)
+                            Ok(fluvio)
                         } else {
                             warn!("Current Version {} is not same as expected: {}",current_version,expected_version);
-                            None
+                            Err(TryConnectError::UnexpectedVersion)
                         }
                     }
                     Err(err) => {
                         debug!("couldn't connect: {:#?}", err);
-                        None
+                        Err(TryConnectError::Unexpected)
                     }
                 }
-
             }
         }
     }
@@ -74,12 +80,18 @@ pub async fn try_connect_to_sc(
             config.endpoint,
             elapsed.as_secs()
         ));
-        if let Some(fluvio) = try_connect_sc(config, platform_version).await {
-            debug!("Connection to sc succeed!");
-            return Some(fluvio);
-        } else if attempt < *MAX_SC_LOOP - 1 {
-            debug!("Connection failed.  sleeping 10 seconds");
-            sleep(Duration::from_secs(1)).await;
+
+        match try_connect_sc(config, platform_version, Duration::from_secs(10)).await {
+            Ok(fluvio) => {
+                debug!("Connection to sc succeed!");
+                return Some(fluvio);
+            }
+            Err(err) => {
+                if attempt < *MAX_SC_LOOP - 1 {
+                    debug!("Connection failed with {:?}  sleeping 10 seconds", err);
+                    sleep(Duration::from_secs(1)).await;
+                }
+            }
         }
     }
 
