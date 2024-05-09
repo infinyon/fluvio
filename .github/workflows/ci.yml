@@ -444,13 +444,26 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
+        rust-target: [x86_64-unknown-linux-gnu]
     env:
       RUST_BACKTRACE: full
     steps:
       - uses: actions/checkout@v4
       - name: Install Rust Stable
         uses: dtolnay/rust-toolchain@stable
+      - name: Download artifact - smdk
+        uses: actions/download-artifact@v4
+        with:
+          name: smdk-x86_64-unknown-linux-musl
+          path: ~/bin
+      - name: mark smdk
+        if: matrix.test == 'smdk'
+        run: |
+          chmod +x ~/bin/smdk
+          echo "~/bin" >> $GITHUB_PATH
       - name: Build Regex SmartModule
+        env:
+          SMDK_BIN: ~/bin/smdk
         run: make -C smartmodule/regex-filter
 
   check_wasm:
@@ -1030,6 +1043,7 @@ jobs:
         run: |
           chmod +x ~/bin/smdk
           echo "~/bin" >> $GITHUB_PATH
+
       - name: Run SMDK smoke tests
         if: matrix.test == 'smdk'
         timeout-minutes: 20
