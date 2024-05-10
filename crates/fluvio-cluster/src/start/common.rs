@@ -11,7 +11,7 @@ use tracing::{debug, error, info, instrument, warn};
 
 use fluvio::{Fluvio, FluvioConfig};
 use fluvio_future::{
-    retry::{retry, ExponentialBackoff},
+    retry::{retry, ExponentialBackoff, RetryExt},
     timer::sleep,
 };
 
@@ -45,36 +45,27 @@ pub async fn try_connect_to_sc(
     async fn try_connect_sc(
         fluvio_config: &FluvioConfig,
         expected_version: &Version,
-        timeout: Duration,
     ) -> Result<Fluvio, TryConnectError> {
-        use tokio::select;
-
-        select! {
-            _ = &mut sleep(timeout) => {
-                debug!("timer expired");
-                Err(TryConnectError::Timeout)
-            },
-
-            connection = Fluvio::connect_with_config(fluvio_config) =>  {
-                match connection {
-                    Ok(fluvio) => {
-                        let current_version = fluvio.platform_version();
-                        if current_version == expected_version {
-                            debug!("Got updated SC Version{}", &expected_version);
-                            Ok(fluvio)
-                        } else {
-                            warn!("Current Version {} is not same as expected: {}",current_version,expected_version);
-                            Err(TryConnectError::UnexpectedVersion {
-                                expected: expected_version.clone(),
-                                current: current_version.clone()
-                            })
-                        }
-                    }
-                    Err(err) => {
-                        warn!("couldn't connect: {:#?}", err);
-                        Err(TryConnectError::Unexpected(err))
-                    }
+        match Fluvio::connect_with_config(fluvio_config).await {
+            Ok(fluvio) => {
+                let current_version = fluvio.platform_version();
+                if current_version == expected_version {
+                    debug!("Got updated SC Version{}", &expected_version);
+                    Ok(fluvio)
+                } else {
+                    warn!(
+                        "Current Version {} is not same as expected: {}",
+                        current_version, expected_version
+                    );
+                    Err(TryConnectError::UnexpectedVersion {
+                        expected: expected_version.clone(),
+                        current: current_version.clone(),
+                    })
                 }
+            }
+            Err(err) => {
+                warn!("couldn't connect: {:#?}", err);
+                Err(TryConnectError::Unexpected(err))
             }
         }
     }
@@ -96,14 +87,17 @@ pub async fn try_connect_to_sc(
         ));
         async move {
             let retry_timeout = 10;
-            match try_connect_sc(config, platform_version, Duration::from_secs(retry_timeout)).await
+            match try_connect_sc(config, platform_version)
+                .timeout(Duration::from_secs(retry_timeout))
+                .await
+                .unwrap_or(Err(TryConnectError::Timeout))
             {
                 Ok(fluvio) => {
                     info!("Connection to sc succeed!");
                     Ok(fluvio)
                 }
                 Err(err) => {
-                    debug!("Connection failed with {:?}", err);
+                    warn!("Connection failed with {:?}", err);
                     Err(err)
                 }
             }
