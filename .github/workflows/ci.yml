@@ -417,6 +417,7 @@ jobs:
   # Run integration test. This always run on release mode
   check_integration:
     name: Rust integration test (${{ matrix.rust-target }})
+    needs: build_primary_binaries
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -435,22 +436,32 @@ jobs:
         timeout-minutes: 10
         with:
           key: ${{ matrix.rust-target }}-check-integration
+      - name: Download smdk
+        uses: ./.github/actions/dl-smdk
       - name: Integration test
+        env:
+          SMDK_BIN: ~/bin/smdk
         run: make run-integration-test
 
   build_smartmodule:
     name: Build SmartModule
     runs-on: ${{ matrix.os }}
+    needs: build_primary_binaries
     strategy:
       matrix:
         os: [ubuntu-latest]
+        rust-target: [x86_64-unknown-linux-gnu]
     env:
       RUST_BACKTRACE: full
     steps:
       - uses: actions/checkout@v4
       - name: Install Rust Stable
         uses: dtolnay/rust-toolchain@stable
+      - name: Download smdk
+        uses: ./.github/actions/dl-smdk
       - name: Build Regex SmartModule
+        env:
+          SMDK_BIN: ~/bin/smdk
         run: make -C smartmodule/regex-filter
 
   check_wasm:
@@ -972,6 +983,8 @@ jobs:
       - name: Mark fluvio-run as executable
         run: |
           chmod +x ~/bin/fluvio-run
+      - name: Download smdk
+        uses: ./.github/actions/dl-smdk
 
      # Set FLUVIO_BIN to either stable or dev, this is needed by CLI test
       - name: set DEV fluvio for as test CLI
@@ -1009,6 +1022,8 @@ jobs:
           ~/bin/fluvio-dev cluster start --local --spu ${{ env.SPU }}
 
       - name: Build smartmodules for E2E test
+        env:
+          SMDK_BIN: ~/bin/smdk
         run: |
           make build_smartmodules
 
@@ -1019,17 +1034,6 @@ jobs:
         run: make cli-fluvio-smoke
 
       # test smdk
-      - name: Download artifact - smdk
-        if: matrix.test == 'smdk'
-        uses: actions/download-artifact@v4
-        with:
-          name: smdk-x86_64-unknown-linux-musl
-          path: ~/bin
-      - name: mark smdk
-        if: matrix.test == 'smdk'
-        run: |
-          chmod +x ~/bin/smdk
-          echo "~/bin" >> $GITHUB_PATH
       - name: Run SMDK smoke tests
         if: matrix.test == 'smdk'
         timeout-minutes: 20

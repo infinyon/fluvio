@@ -50,5 +50,5 @@ topic to send data to.
 ```bash
 $ fluvio topic create smartmodule-test
 $ cargo build --release
-$ fluvio consume smartmodule-test -B --{{smartmodule-type}}="target/wasm32-wasi/release/{{project-name}}"
+$ fluvio consume smartmodule-test -B --{{smartmodule-type}}="target/wasm32-wasi/release-lto/{{project-name}}"
 ```
