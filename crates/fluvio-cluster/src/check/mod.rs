@@ -748,7 +748,7 @@ impl ClusterCheck for LocalClusterVersionCheck {
             .and_then(|p| LocalConfig::load_from(p).ok())
             .map(|conf| conf.platform_version().clone())
             .ok_or(anyhow::Error::msg(
-                "Unexpectedly couldn't load platform version",
+                "Could not load local config's platform version",
             ))?;
 
         if installed_version != self.0 {

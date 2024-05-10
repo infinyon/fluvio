@@ -7,7 +7,7 @@ use fluvio_controlplane_metadata::spu::SpuSpec;
 use k8_client::SharedK8Client;
 use once_cell::sync::Lazy;
 use semver::Version;
-use tracing::{debug, error, instrument, warn};
+use tracing::{debug, error, info, instrument, warn};
 
 use fluvio::{Fluvio, FluvioConfig};
 use fluvio_future::timer::sleep;
@@ -23,8 +23,13 @@ static MAX_SC_LOOP: Lazy<u8> = Lazy::new(|| {
 #[derive(Debug)]
 enum TryConnectError {
     Timeout,
-    UnexpectedVersion,
-    Unexpected,
+    #[allow(dead_code)]
+    UnexpectedVersion {
+        expected: Version,
+        current: Version,
+    },
+    #[allow(dead_code)]
+    Unexpected(anyhow::Error),
 }
 
 /// try connection to SC
@@ -56,12 +61,15 @@ pub async fn try_connect_to_sc(
                             Ok(fluvio)
                         } else {
                             warn!("Current Version {} is not same as expected: {}",current_version,expected_version);
-                            Err(TryConnectError::UnexpectedVersion)
+                            Err(TryConnectError::UnexpectedVersion {
+                                expected: expected_version.clone(),
+                                current: current_version.clone()
+                            })
                         }
                     }
                     Err(err) => {
-                        debug!("couldn't connect: {:#?}", err);
-                        Err(TryConnectError::Unexpected)
+                        warn!("couldn't connect: {:#?}", err);
+                        Err(TryConnectError::Unexpected(err))
                     }
                 }
             }
@@ -84,7 +92,7 @@ pub async fn try_connect_to_sc(
         let (retry_delay, retry_timeout) = (1, 10);
         match try_connect_sc(config, platform_version, Duration::from_secs(retry_timeout)).await {
             Ok(fluvio) => {
-                debug!("Connection to sc succeed!");
+                info!("Connection to sc succeed!");
                 return Some(fluvio);
             }
             Err(err) => {
