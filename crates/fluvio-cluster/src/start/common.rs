@@ -10,7 +10,10 @@ use semver::Version;
 use tracing::{debug, error, info, instrument, warn};
 
 use fluvio::{Fluvio, FluvioConfig};
-use fluvio_future::timer::sleep;
+use fluvio_future::{
+    retry::{retry, ExponentialBackoff},
+    timer::sleep,
+};
 
 use crate::render::ProgressRenderer;
 
@@ -76,8 +79,11 @@ pub async fn try_connect_to_sc(
         }
     }
 
+    let mut attempt = 0u16;
     let time = SystemTime::now();
-    for attempt in 0..*MAX_SC_LOOP {
+    let operation = || {
+        attempt += 1;
+
         debug!(
             "Trying to connect to sc at: {}, attempt: {}",
             config.endpoint, attempt
@@ -88,27 +94,31 @@ pub async fn try_connect_to_sc(
             config.endpoint,
             elapsed.as_secs()
         ));
-
-        let (retry_delay, retry_timeout) = (1, 10);
-        match try_connect_sc(config, platform_version, Duration::from_secs(retry_timeout)).await {
-            Ok(fluvio) => {
-                info!("Connection to sc succeed!");
-                return Some(fluvio);
-            }
-            Err(err) => {
-                if attempt < *MAX_SC_LOOP - 1 {
-                    debug!(
-                        "Connection failed with {:?}  sleeping {} seconds",
-                        err, retry_delay
-                    );
-                    sleep(Duration::from_secs(retry_delay)).await;
+        async move {
+            let retry_timeout = 10;
+            match try_connect_sc(config, platform_version, Duration::from_secs(retry_timeout)).await
+            {
+                Ok(fluvio) => {
+                    info!("Connection to sc succeed!");
+                    Ok(fluvio)
+                }
+                Err(err) => {
+                    debug!("Connection failed with {:?}", err);
+                    Err(err)
                 }
             }
         }
-    }
+    };
 
-    error!("fail to connect to sc at: {}", config.endpoint);
-    None
+    retry(
+        ExponentialBackoff::from_millis(2)
+            .max_delay(Duration::from_secs(10))
+            .take(*MAX_SC_LOOP as usize),
+        operation,
+    )
+    .await
+    .map_err(|_| error!("fail to connect to sc at: {}", config.endpoint))
+    .ok()
 }
 
 // hack
