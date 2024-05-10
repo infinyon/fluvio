@@ -46,7 +46,7 @@ deduplication:
       uses: $DEDUP_FILTER_NAME
 EOF
 
-    run timeout 15s "$FLUVIO_BIN" sm create --wasm-file smartmodule/examples/target/wasm32-wasi/release/fluvio_smartmodule_filter.wasm "$DEDUP_FILTER_NAME"
+    run timeout 15s "$FLUVIO_BIN" sm create --wasm-file smartmodule/examples/target/wasm32-wasi/release-lto/fluvio_smartmodule_filter.wasm "$DEDUP_FILTER_NAME"
     assert_success
 }
 
