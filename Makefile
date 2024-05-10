@@ -17,9 +17,6 @@ SMARTENGINE_FLAG=$(if $(SMARTENGINE),--features smartengine,)
 
 BUILD_FLAGS = $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
-smdk_bin:
-	echo ${SMDK_BIN}
-
 include makefiles/build.mk
 include makefiles/test.mk
 include makefiles/check.mk
