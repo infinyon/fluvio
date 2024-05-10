@@ -36,15 +36,15 @@ impl ScopeBindings {
 
 #[derive(Debug)]
 pub struct X509Authenticator {
-    scope_bindings: ScopeBindings,
+    scope_bindings: Option<ScopeBindings>,
 }
 
 impl X509Authenticator {
-    pub fn new(scope_binding_file_path: &Path) -> Self {
-        Self {
-            scope_bindings: ScopeBindings::load(scope_binding_file_path)
-                .expect("unable to create ScopeBindings"),
-        }
+    pub fn new(scope_binding_file_path: Option<&Path>) -> Self {
+        let scope_bindings = scope_binding_file_path.map(|scope_binding_file_path| {
+            ScopeBindings::load(scope_binding_file_path).expect("unable to create ScopeBindings")
+        });
+        Self { scope_bindings }
     }
 
     async fn send_authorization_request(
@@ -79,13 +79,9 @@ impl X509Authenticator {
     fn principal_from_tls_stream(tls_stream: &DefaultServerTlsStream) -> Result<String, IoError> {
         trace!("tls_stream {:?}", tls_stream);
 
-        let peer_certificate = tls_stream.peer_certificate();
-
-        trace!("peer_certificate {:?}", peer_certificate);
-
         let client_certificate = tls_stream.peer_certificate().ok_or(IoErrorKind::NotFound)?;
 
-        trace!("client_certificate {:?}", tls_stream);
+        trace!("client_certificate {:?}", client_certificate);
 
         let principal = Self::principal_from_raw_certificate(
             &client_certificate
@@ -96,7 +92,7 @@ impl X509Authenticator {
         Ok(principal)
     }
 
-    fn principal_from_raw_certificate(certificate_bytes: &[u8]) -> Result<String, IoError> {
+    pub fn principal_from_raw_certificate(certificate_bytes: &[u8]) -> Result<String, IoError> {
         parse_x509_certificate(certificate_bytes)
             .map_err(|err| IoError::new(IoErrorKind::InvalidData, err))
             .and_then(|(_, parsed_cert)| Self::common_name_from_parsed_certificate(parsed_cert))
@@ -131,7 +127,13 @@ impl Authenticator for X509Authenticator {
         target_tcp_stream: &TcpStream,
     ) -> Result<bool, IoError> {
         let principal = Self::principal_from_tls_stream(incoming_tls_stream)?;
-        let scopes = self.scope_bindings.get_scopes(&principal);
+
+        let scopes = if let Some(scope_bindings) = &self.scope_bindings {
+            scope_bindings.get_scopes(&principal)
+        } else {
+            Vec::new()
+        };
+
         let authorization_request = AuthRequest::new(principal, scopes);
         let success =
             Self::send_authorization_request(target_tcp_stream, authorization_request).await?;

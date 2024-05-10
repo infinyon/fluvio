@@ -148,9 +148,8 @@ mod proxy {
     pub use fluvio_future::openssl::TlsAcceptor;
 
     use fluvio_auth::x509::X509Authenticator;
-    use flv_tls_proxy::{
-        start as proxy_start, start_with_authenticator as proxy_start_with_authenticator,
-    };
+    use flv_tls_proxy::start_with_authenticator as proxy_start_with_authenticator;
+    use flv_tls_proxy::start as proxy_start;
 
     use crate::{config::ScConfig, cli::TlsConfig};
 
@@ -168,14 +167,17 @@ mod proxy {
         let target = config.public_endpoint;
         info!("starting TLS proxy: {}", proxy_addr);
 
-        let result = if let Some(x509_auth_scopes) = config.x509_auth_scopes {
-            let authenticator = Box::new(X509Authenticator::new(&x509_auth_scopes));
+        let proxy_result = if let Some(x509_auth_scopes) = config.x509_auth_scopes {
+            let authenticator = Box::new(X509Authenticator::new(Some(&x509_auth_scopes)));
+            proxy_start_with_authenticator(&proxy_addr, tls_acceptor, target, authenticator).await
+        } else if config.tls {
+            let authenticator = Box::new(X509Authenticator::new(None));
             proxy_start_with_authenticator(&proxy_addr, tls_acceptor, target, authenticator).await
         } else {
             proxy_start(&proxy_addr, tls_acceptor, target).await
         };
 
-        if let Err(err) = result {
+        if let Err(err) = proxy_result {
             print_cli_err!(err);
             process::exit(-1);
         }

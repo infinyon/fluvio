@@ -376,7 +376,7 @@ impl ScDispatcher<FileReplica> {
     ) -> anyhow::Result<()> {
         let (_, request) = req_msg.get_header_request();
 
-        debug!( message = ?request,"starting remote cluster update");
+        debug!("starting remote cluster update");
 
         let actions = if !request.all.is_empty() {
             debug!(

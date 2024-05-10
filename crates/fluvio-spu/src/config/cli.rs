@@ -8,6 +8,7 @@ use std::io::Error as IoError;
 use std::process;
 use std::io::ErrorKind;
 
+use fluvio_future::openssl::SslVerifyMode;
 use tracing::debug;
 use tracing::info;
 use clap::Parser;
@@ -145,6 +146,8 @@ impl SpuOpt {
 
         config.peer_max_bytes = self.peer_max_bytes;
 
+        config.tls = self.tls.tls;
+
         if let Some(smart_engine_max_memory) = self.smart_engine_max_memory {
             info!(
                 "overriding smart engine max memory: {}",
@@ -178,6 +181,7 @@ impl SpuOpt {
                 .ok_or_else(|| IoError::new(ErrorKind::NotFound, "missing ca cert"))?;
             TlsAcceptor::builder()
                 .map_err(|err| err.into_io_error())?
+                .with_ssl_verify_mode(SslVerifyMode::PEER)
                 .with_ca_from_pem_file(ca_path)
                 .map_err(|err| err.into_io_error())?
         } else {

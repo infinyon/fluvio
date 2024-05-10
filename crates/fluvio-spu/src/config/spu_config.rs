@@ -111,6 +111,8 @@ pub struct SpuConfig {
     pub peer_max_bytes: u32,
 
     pub smart_engine: SmartEngineConfig,
+
+    pub tls: bool,
 }
 
 impl Default for SpuConfig {
@@ -126,6 +128,7 @@ impl Default for SpuConfig {
             log: Log::default(),
             peer_max_bytes: fluvio_storage::FileReplica::PREFER_MAX_LEN,
             smart_engine: SmartEngineConfig::default(),
+            tls: false,
         }
     }
 }

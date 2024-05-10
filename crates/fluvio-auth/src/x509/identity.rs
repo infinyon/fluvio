@@ -37,11 +37,12 @@ impl X509Identity {
                             principal: req_msg.request.principal,
                         },
                     },
-                    Err(_e) => {
+                    Err(err) => {
+                        tracing::error!(%err, "error decoding auth request");
                         return Err(std::io::Error::new(
                             std::io::ErrorKind::Interrupted,
                             "connection closed",
-                        ))
+                        ));
                     }
                 }
             } else {

@@ -1,4 +1,3 @@
-use std::time::Duration;
 use fluvio_protocol::{Encoder, Decoder};
 
 #[derive(Encoder, Decoder, Default, Debug, Clone, Eq, PartialEq)]
@@ -63,7 +62,7 @@ pub struct ConnectionStat {
 
 impl MirrorStatus {
     #[cfg(feature = "use_serde")]
-    pub fn last_seen(&self, since: Duration) -> String {
+    pub fn last_seen(&self, since: std::time::Duration) -> String {
         use humantime_serde::re::humantime;
 
         let since_sec = since.as_secs();
@@ -87,9 +86,9 @@ impl std::fmt::Display for MirrorStatus {
             (MirrorPairStatus::Disabled, ConnectionStatus::Online) => "Disabled",
             (MirrorPairStatus::Waiting, ConnectionStatus::Online) => "Waiting",
             (MirrorPairStatus::Succesful, ConnectionStatus::Offline) => "Offline",
-            (MirrorPairStatus::Failed, ConnectionStatus::Offline) => "Failed",
-            (MirrorPairStatus::Disabled, ConnectionStatus::Offline) => "Disabled",
-            (MirrorPairStatus::Waiting, ConnectionStatus::Offline) => "Waiting",
+            (MirrorPairStatus::Failed, ConnectionStatus::Offline) => "Offline",
+            (MirrorPairStatus::Disabled, ConnectionStatus::Offline) => "Offline",
+            (MirrorPairStatus::Waiting, ConnectionStatus::Offline) => "Offline",
         };
         write!(f, "{}", status)
     }
@@ -120,6 +119,7 @@ impl std::fmt::Display for ConnectionStatus {
 #[cfg(test)]
 mod test {
     use super::*;
+    use std::time::Duration;
 
     #[test]
     fn test_last_seen() {

@@ -70,6 +70,11 @@ impl AuthContext for BasicAuthContext {
     ) -> Result<bool, AuthError> {
         Ok(true)
     }
+
+    // check if remote id is allowed
+    fn allow_remote_id(&self, id: &str) -> bool {
+        self.identity.principal == id
+    }
 }
 
 /// basic policy module

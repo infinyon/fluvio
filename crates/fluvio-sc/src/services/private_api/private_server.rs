@@ -505,7 +505,7 @@ async fn send_mirror_changes<C: MetadataItem>(
         UpdateMirrorRequest::with_changes(epoch, changes)
     };
 
-    debug!(?request, "sending mirror to spu");
+    debug!("sending mirror to spu");
 
     let mut message = RequestMessage::new_request(request);
     message.get_mut_header().set_client_id("sc");

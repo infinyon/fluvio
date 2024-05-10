@@ -9,14 +9,14 @@ use fluvio_future::{task::spawn, timer::sleep};
 use fluvio_protocol::api::{RequestHeader, ResponseMessage};
 use fluvio_sc_schema::{
     core::MetadataItem,
-    mirror::{ConnectionStatus, MirrorPairStatus, MirrorStatus},
+    mirror::{ConnectionStatus, MirrorPairStatus, MirrorStatus, MirrorType},
     spu::SpuSpec,
     store::ChangeListener,
     topic::{MirrorConfig, ReplicaSpec, TopicSpec},
 };
 use fluvio_socket::ExclusiveFlvSink;
 use fluvio_types::event::StickyEvent;
-use tracing::{debug, error, info, instrument, trace};
+use tracing::{debug, error, info, instrument, trace, warn};
 use anyhow::{Result, anyhow};
 
 use crate::core::Context;
@@ -55,6 +55,21 @@ impl<C: MetadataItem> RemoteFetchingFromHomeController<C> {
     #[instrument(skip(self), name = "RemoteFetchingFromHomeControllerLoop")]
     async fn dispatch_loop(mut self) {
         use tokio::select;
+
+        // check if remote cluster exists
+        let mirrors = self.ctx.mirrors().store().value(&self.req.remote_id).await;
+        let remote = mirrors
+            .iter()
+            .find(|mirror| match &mirror.spec.mirror_type {
+                MirrorType::Remote(r) => r.id == self.req.remote_id,
+                _ => false,
+            });
+
+        if remote.is_none() {
+            warn!("remote cluster not found: {}", self.req.remote_id);
+            return;
+        }
+
         info!(
             name = self.req.remote_id,
             "received mirroring connect request"

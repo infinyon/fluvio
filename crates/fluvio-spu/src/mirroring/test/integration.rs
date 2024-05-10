@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
 use tracing::debug;
 
@@ -6,7 +6,10 @@ use fluvio_controlplane_metadata::partition::{RemotePartitionConfig, HomePartiti
 use fluvio_future::timer::sleep;
 use fluvio_protocol::{fixture::create_raw_recordset, record::ReplicaKey};
 
-use crate::services::public::create_public_server;
+use crate::services::{
+    auth::{root::SpuRootAuthorization, SpuAuthGlobalContext},
+    public::create_public_server,
+};
 
 use super::fixture::{ReplicaConfig, local_port};
 
@@ -64,7 +67,10 @@ async fn test_mirroring_new_records() {
 
     // start home server
     debug!("starting home server");
-    let _remote_end = create_public_server(home_port.clone(), home_gctx.clone()).run();
+
+    let auth_global_ctx =
+        SpuAuthGlobalContext::new(home_gctx.clone(), Arc::new(SpuRootAuthorization::new()));
+    let _remote_end = create_public_server(home_port.to_owned(), auth_global_ctx.clone()).run();
 
     // sleep 1 seconds
     debug!("waiting for home public server to up");

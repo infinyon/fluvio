@@ -34,6 +34,9 @@ pub trait AuthContext: Debug {
         action: InstanceAction,
         key: &str,
     ) -> Result<bool, AuthError>;
+
+    /// check if remote id is allowed
+    fn allow_remote_id(&self, id: &str) -> bool;
 }
 
 #[async_trait]

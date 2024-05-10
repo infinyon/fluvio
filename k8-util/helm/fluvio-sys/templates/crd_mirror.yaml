@@ -46,14 +46,17 @@ spec:
                           type: string
                         publicEndpoint:
                           type: string
-                keyPair:
-                  type: object
-                  required: ["privateKey", "publicKey"]
-                  properties:
-                    publicKey:
-                      type: string
-                    privateKey:
-                      type: string
+                        tls:
+                          type: object
+                          properties:
+                            domain:
+                              type: string
+                            caCert:
+                              type: string
+                            clientCert:
+                              type: string
+                            clientKey:
+                              type: string
       additionalPrinterColumns:
         - name: Mirror Type
           type: string

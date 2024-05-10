@@ -131,6 +131,8 @@ impl ScOpt {
         config.white_list = self.white_list.into_iter().collect();
         config.read_only_metadata = self.run_mode.read_only.is_some();
 
+        config.tls = self.tls.tls;
+
         // Set Configuration Authorization Policy
 
         let policy = match self.auth_policy {

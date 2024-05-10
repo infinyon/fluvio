@@ -50,6 +50,7 @@ mimalloc = { workspace = true }
 
 # Fluvio dependencies
 fluvio = { workspace = true }
+fluvio-auth = { workspace = true }
 fluvio-types = { workspace = true, features = ["events"] }
 fluvio-storage = { workspace = true, features = ["iterators"] }
 fluvio-compression = { workspace = true }

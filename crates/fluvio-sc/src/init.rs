@@ -124,6 +124,7 @@ where
         use std::sync::Arc;
         use tracing::info;
 
+        use crate::services::auth::remote::RemoteAuthorization;
         use crate::services::start_public_server;
         use crate::core::SharedContext;
 
@@ -141,6 +142,12 @@ where
                 start_public_server(AuthGlobalContext::new(
                     ctx,
                     Arc::new(BasicAuthorization::new(policy)),
+                ));
+            } else if ctx.config().tls {
+                info!("using spu remote authorization");
+                start_public_server(AuthGlobalContext::new(
+                    ctx,
+                    Arc::new(RemoteAuthorization::new()),
                 ));
             } else if ctx.config().read_only_metadata {
                 info!("using read-only authorization");

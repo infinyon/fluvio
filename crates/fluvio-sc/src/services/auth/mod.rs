@@ -1,4 +1,5 @@
 pub mod basic;
+pub mod remote;
 
 pub use common::*;
 
@@ -78,6 +79,10 @@ mod common {
         ) -> Result<bool, AuthError> {
             Ok(true)
         }
+
+        fn allow_remote_id(&self, _id: &str) -> bool {
+            true
+        }
     }
 
     /// Auth Service Context, this hold individual context that is enough enforce auth
@@ -140,6 +145,10 @@ mod common {
             _key: &str,
         ) -> Result<bool, AuthError> {
             Ok(true)
+        }
+
+        fn allow_remote_id(&self, _id: &str) -> bool {
+            true
         }
     }
 

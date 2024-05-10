@@ -29,6 +29,7 @@ pub struct ScConfig {
     pub namespace: String,
     pub x509_auth_scopes: Option<PathBuf>,
     pub white_list: HashSet<String>,
+    pub tls: bool,
 }
 
 impl ::std::default::Default for ScConfig {
@@ -40,6 +41,7 @@ impl ::std::default::Default for ScConfig {
             namespace: DEFAULT_NAMESPACE.to_owned(),
             x509_auth_scopes: None,
             white_list: HashSet::new(),
+            tls: false,
         }
     }
 }

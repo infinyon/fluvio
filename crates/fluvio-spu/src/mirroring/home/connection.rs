@@ -2,6 +2,8 @@ use std::time::Duration;
 use std::{fmt, sync::Arc};
 use std::sync::atomic::AtomicU64;
 
+use fluvio_auth::AuthContext;
+use fluvio_controlplane_metadata::mirror::MirrorType;
 use tokio::select;
 use tracing::{debug, error, instrument, warn};
 use anyhow::Result;
@@ -10,13 +12,14 @@ use fluvio_future::timer::sleep;
 use fluvio_protocol::api::RequestMessage;
 use fluvio_spu_schema::server::mirror::StartMirrorRequest;
 use futures_util::StreamExt;
-use fluvio_socket::{FluvioStream, ExclusiveFlvSink};
+use fluvio_socket::{ExclusiveFlvSink, FluvioStream};
 
 use crate::core::DefaultSharedGlobalContext;
 use crate::mirroring::remote::api_key::MirrorRemoteApiEnum;
 use crate::mirroring::remote::remote_api::RemoteMirrorRequest;
 use crate::mirroring::remote::sync::DefaultPartitionSyncRequest;
 use crate::replication::leader::SharedFileLeaderState;
+use crate::services::auth::SpuAuthServiceContext;
 
 use super::update_offsets::UpdateHomeOffsetRequest;
 
@@ -59,18 +62,48 @@ impl fmt::Debug for MirrorHomeHandler {
 impl MirrorHomeHandler {
     /// start handling mirror request sync from remote
     /// it is called from public service handler
-    pub(crate) async fn respond(
-        ctx: DefaultSharedGlobalContext,
+    pub(crate) async fn respond<AC: AuthContext>(
         req_msg: RequestMessage<StartMirrorRequest>,
+        auth_ctx: &SpuAuthServiceContext<AC>,
         sink: ExclusiveFlvSink,
-        stream: &mut FluvioStream,
+        stream: FluvioStream,
     ) {
+        // authorization check
+        if !auth_ctx
+            .auth
+            .allow_remote_id(&req_msg.request.remote_cluster_id)
+        {
+            warn!(
+                "identity mismatch for remote_id: {}",
+                req_msg.request.remote_cluster_id
+            );
+            return;
+        }
+
+        // check if remote cluster exists
+        let mirrors = auth_ctx.global_ctx.mirrors_localstore().all_values();
+        let remote = mirrors
+            .iter()
+            .find(|mirror| match &mirror.spec.mirror_type {
+                MirrorType::Remote(r) => r.id == req_msg.request.remote_cluster_id,
+                _ => false,
+            });
+
+        if remote.is_none() {
+            warn!(
+                "remote cluster not found: {}",
+                req_msg.request.remote_cluster_id
+            );
+            return;
+        }
+
         debug!("handling mirror request: {:#?}", req_msg);
         let remote_replica = req_msg.request.remote_replica;
         let remote_cluster_id = req_msg.request.remote_cluster_id;
         let _access_key = req_msg.request.access_key;
 
-        if let Some(leader) = ctx
+        if let Some(leader) = auth_ctx
+            .global_ctx
             .leaders_state()
             .find_mirror_home_leader(&remote_cluster_id, &remote_replica)
             .await
@@ -79,21 +112,19 @@ impl MirrorHomeHandler {
             // map to actual home
             let metrics = Arc::new(MirrorRequestMetrics::new());
 
-            // TODO: perform authorization
             let handler: MirrorHomeHandler = Self {
                 metrics: metrics.clone(),
                 leader,
-                ctx,
+                ctx: auth_ctx.global_ctx.clone(),
             };
 
             if let Err(err) = handler.inner_respond(sink, stream).await {
                 error!("error handling mirror request: {:#?}", err);
             }
         } else {
-            // TODO: handle no home partition
             warn!(
                 remote_replica,
-                remote_cluster_id, "no leader replica found for this"
+                remote_cluster_id, "no leader replica found for this mirror request"
             );
         }
     }
@@ -102,7 +133,7 @@ impl MirrorHomeHandler {
     async fn inner_respond(
         self,
         mut sink: ExclusiveFlvSink,
-        stream: &mut FluvioStream,
+        mut stream: FluvioStream,
     ) -> Result<()> {
         // first send
         let mut api_stream = stream.api_stream::<RemoteMirrorRequest, MirrorRemoteApiEnum>();
