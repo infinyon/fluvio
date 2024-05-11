@@ -709,7 +709,7 @@ mod tests {
                     name: "secret1".parse().unwrap(),
                 }]),
             },
-            transforms: Some(
+            transforms: vec![
                 TransformationStep {
                     uses: "infinyon/json-sql".to_string(),
                     lookback: None,
@@ -722,7 +722,7 @@ mod tests {
                     ]),
                 }
                 .into(),
-            ),
+            ]
         });
 
         //when
@@ -794,7 +794,7 @@ mod tests {
                     name: "secret1".parse().unwrap(),
                 }]),
             },
-            transforms: Some(
+            transforms: vec![
                 TransformationStep {
                     uses: "infinyon/json-sql".to_string(),
                     lookback: None,
@@ -806,8 +806,7 @@ mod tests {
                         ("param".to_string(), "param_value".into()),
                     ]),
                 }
-                .into(),
-            ),
+            ]
         });
 
         //when
@@ -831,7 +830,7 @@ mod tests {
                 consumer: None,
                 secrets: None,
             },
-            transforms: None,
+            transforms: Vec::default(),
         });
 
         //when
@@ -922,7 +921,7 @@ mod tests {
                 consumer: None,
                 secrets: None,
             },
-            transforms: None,
+            transforms: Vec::default(),
         });
 
         //when
@@ -954,7 +953,7 @@ mod tests {
                 consumer: None,
                 secrets: None,
             },
-            transforms: None,
+            transforms: Vec::default(),
         });
 
         //when
@@ -1000,7 +999,7 @@ mod tests {
                 }),
                 secrets: None,
             },
-            transforms: None,
+            transforms: Vec::default(),
         });
 
         //when
@@ -1043,7 +1042,7 @@ mod tests {
                 consumer: None,
                 secrets: None,
             },
-            transforms: None,
+            transforms: Vec::default(),
         });
 
         //when
@@ -1072,22 +1071,22 @@ mod tests {
                 .expect("Failed to deserialize");
 
         //then
-        assert!(connector_spec.transforms().is_some());
+        assert_eq!(connector_spec.transforms().len(), 1);
         assert_eq!(
-            connector_spec.transforms().unwrap().transforms[0]
+            connector_spec.transforms()[0]
                 .uses
                 .as_str(),
             "infinyon/sql"
         );
         assert_eq!(
-            connector_spec.transforms().unwrap().transforms[0].lookback,
+            connector_spec.transforms()[0].lookback,
             Some(Lookback {
                 last: 100,
                 age: Some(Duration::from_secs(3600))
             })
         );
 
-        assert_eq!(connector_spec.transforms().unwrap().transforms[0].with,
+        assert_eq!(connector_spec.transforms()[0].with,
                        BTreeMap::from([("mapping".to_string(), "{\"map-columns\":{\"device_id\":{\"json-key\":\"device.device_id\",\"value\":{\"default\":0,\"required\":true,\"type\":\"int\"}},\"record\":{\"json-key\":\"$\",\"value\":{\"required\":true,\"type\":\"jsonb\"}}},\"table\":\"topic_message\"}".into())]));
     }
 
@@ -1158,8 +1157,8 @@ mod tests {
                 .expect("Failed to deserialize");
 
         //then
-        assert!(connector_spec.transforms().is_some());
-        let transform = &connector_spec.transforms().unwrap().transforms;
+        let transform = &connector_spec.transforms();
+
         assert_eq!(transform.len(), 3);
         assert_eq!(transform[0].uses.as_str(), "infinyon/json-sql");
         assert_eq!(
@@ -1211,7 +1210,7 @@ mod tests {
                 }),
                 secrets: None,
             },
-            transforms: None,
+            transforms: Vec::default(),
         });
 
         assert_eq!(have.name(), "my-test-mqtt");
