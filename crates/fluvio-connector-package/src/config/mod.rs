@@ -1168,6 +1168,23 @@ mod tests {
     }
 
     #[test]
+    fn test_deserialize_transform_invalid() {
+        let connector_spec =
+            ConnectorConfig::from_file("test-data/connectors/with_transform_invalid.yaml");
+
+        assert!(
+            connector_spec.is_err(),
+            "should fail to deserialize into `ConnectorConfig`"
+        );
+
+        let err = connector_spec.unwrap_err();
+
+        assert!(err
+            .to_string()
+            .contains("mapping values are not allowed in this context at line 16 column 17"));
+    }
+
+    #[test]
     fn sample_yaml_test_files() {
         let testfiles = vec!["tests/sample-http.yaml", "tests/sample-mqtt.yaml"];
 
