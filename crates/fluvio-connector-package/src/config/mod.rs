@@ -709,20 +709,17 @@ mod tests {
                     name: "secret1".parse().unwrap(),
                 }]),
             },
-            transforms: vec![
-                TransformationStep {
-                    uses: "infinyon/json-sql".to_string(),
-                    lookback: None,
-                    with: BTreeMap::from([
-                        (
-                            "mapping".to_string(),
-                            "{\"table\":\"topic_message\"}".into(),
-                        ),
-                        ("param".to_string(), "param_value".into()),
-                    ]),
-                }
-                .into(),
-            ]
+            transforms: vec![TransformationStep {
+                uses: "infinyon/json-sql".to_string(),
+                lookback: None,
+                with: BTreeMap::from([
+                    (
+                        "mapping".to_string(),
+                        "{\"table\":\"topic_message\"}".into(),
+                    ),
+                    ("param".to_string(), "param_value".into()),
+                ]),
+            }],
         });
 
         //when
@@ -794,19 +791,17 @@ mod tests {
                     name: "secret1".parse().unwrap(),
                 }]),
             },
-            transforms: vec![
-                TransformationStep {
-                    uses: "infinyon/json-sql".to_string(),
-                    lookback: None,
-                    with: BTreeMap::from([
-                        (
-                            "mapping".to_string(),
-                            "{\"table\":\"topic_message\"}".into(),
-                        ),
-                        ("param".to_string(), "param_value".into()),
-                    ]),
-                }
-            ]
+            transforms: vec![TransformationStep {
+                uses: "infinyon/json-sql".to_string(),
+                lookback: None,
+                with: BTreeMap::from([
+                    (
+                        "mapping".to_string(),
+                        "{\"table\":\"topic_message\"}".into(),
+                    ),
+                    ("param".to_string(), "param_value".into()),
+                ]),
+            }],
         });
 
         //when
@@ -1072,12 +1067,7 @@ mod tests {
 
         //then
         assert_eq!(connector_spec.transforms().len(), 1);
-        assert_eq!(
-            connector_spec.transforms()[0]
-                .uses
-                .as_str(),
-            "infinyon/sql"
-        );
+        assert_eq!(connector_spec.transforms()[0].uses.as_str(), "infinyon/sql");
         assert_eq!(
             connector_spec.transforms()[0].lookback,
             Some(Lookback {

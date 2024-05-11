@@ -6,14 +6,15 @@ pub async fn smartmodule_chain_from_config(
     config: &ConnectorConfig,
 ) -> Result<Option<fluvio::SmartModuleChainBuilder>> {
     use fluvio_sc_schema::smartmodule::SmartModuleApiClient;
-    
+
     let transforms = config.transforms();
 
     if transforms.is_empty() {
         return Ok(None);
     }
-    
-    let api_client = SmartModuleApiClient::connect_with_config(FluvioConfig::load()?.try_into()?).await?;
+
+    let api_client =
+        SmartModuleApiClient::connect_with_config(FluvioConfig::load()?.try_into()?).await?;
     let mut builder = fluvio::SmartModuleChainBuilder::default();
 
     for step in transforms {
@@ -25,7 +26,7 @@ pub async fn smartmodule_chain_from_config(
             .as_raw_wasm()?;
 
         let config = fluvio::SmartModuleConfig::from(step.clone());
-            builder.add_smart_module(config, wasm);
+        builder.add_smart_module(config, wasm);
     }
 
     Ok(Some(builder))
@@ -39,7 +40,7 @@ pub fn smartmodule_vec_from_config(config: &ConnectorConfig) -> Option<Vec<Smart
     }
 
     Some(
-            transforms
+        transforms
             .iter()
             .map(|s| SmartModuleInvocation {
                 wasm: fluvio::SmartModuleInvocationWasm::Predefined(s.uses.clone()),
@@ -71,16 +72,14 @@ mod tests {
         //given
         let config = ConnectorConfig::V0_1_0(ConnectorConfigV1 {
             meta: Default::default(),
-            transforms: vec![
-                TransformationStep {
-                    uses: "local/sm@0.0.0".to_string(),
-                    lookback: Some(Lookback {
-                        last: 2,
-                        age: Some(Duration::from_secs(10)),
-                    }),
-                    ..Default::default()
-                }
-            ],
+            transforms: vec![TransformationStep {
+                uses: "local/sm@0.0.0".to_string(),
+                lookback: Some(Lookback {
+                    last: 2,
+                    age: Some(Duration::from_secs(10)),
+                }),
+                ..Default::default()
+            }],
         });
 
         //when
