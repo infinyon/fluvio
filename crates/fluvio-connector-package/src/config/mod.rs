@@ -6,8 +6,6 @@ use std::path::{PathBuf, Path};
 use std::str::FromStr;
 use std::time::Duration;
 
-use fluvio_controlplane_metadata::topic::config::TopicConfig;
-use fluvio_types::PartitionId;
 use serde::de::{Visitor, SeqAccess};
 use serde::ser::{SerializeMap, SerializeSeq};
 use tracing::debug;
@@ -15,8 +13,11 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize, Deserializer, Serializer};
 use bytesize::ByteSize;
 
-use fluvio_smartengine::transformation::TransformationConfig;
+use fluvio_controlplane_metadata::topic::config::TopicConfig;
+use fluvio_smartengine::transformation::TransformationStep;
 use fluvio_compression::Compression;
+use fluvio_types::PartitionId;
+
 use crate::metadata::Direction;
 
 pub use self::v1::ConnectorConfigV1;
@@ -104,8 +105,8 @@ mod v1 {
     pub struct ConnectorConfigV1 {
         pub meta: MetaConfigV1,
 
-        #[serde(default, flatten, skip_serializing_if = "Option::is_none")]
-        pub transforms: Option<TransformationConfig>,
+        #[serde(default)]
+        pub transforms: Vec<TransformationStep>,
     }
 
     #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
@@ -157,8 +158,8 @@ mod v2 {
     pub struct ConnectorConfigV2 {
         pub meta: MetaConfigV2,
 
-        #[serde(default, flatten, skip_serializing_if = "Option::is_none")]
-        pub transforms: Option<TransformationConfig>,
+        #[serde(default)]
+        pub transforms: Vec<TransformationStep>,
     }
 
     #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
@@ -640,11 +641,11 @@ impl ConnectorConfig {
         }
     }
 
-    pub fn transforms(&self) -> Option<&TransformationConfig> {
+    pub fn transforms(&self) -> Vec<TransformationStep> {
         match self {
-            Self::V0_0_0(config) => config.transforms.as_ref(),
-            Self::V0_1_0(config) => config.transforms.as_ref(),
-            Self::V0_2_0(config) => config.transforms.as_ref(),
+            Self::V0_0_0(config) => config.transforms.clone(),
+            Self::V0_1_0(config) => config.transforms.clone(),
+            Self::V0_2_0(config) => config.transforms.clone(),
         }
     }
 
