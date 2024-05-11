@@ -21,6 +21,8 @@ async fn start(config: CustomConfig, producer: TopicProducer) -> Result<()> {
 }
 
 {% elsif connector-type == "sink" %}
+use futures::StreamExt;
+
 use fluvio_connector_common::{connector, consumer::ConsumerStream, Result};
 
 #[connector(sink)]
