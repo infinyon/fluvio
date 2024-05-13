@@ -11,12 +11,12 @@ use serde::ser::{SerializeMap, SerializeSeq};
 use tracing::debug;
 use anyhow::Result;
 use serde::{Deserialize, Serialize, Deserializer, Serializer};
-use bytesize::ByteSize;
+pub use bytesize::ByteSize;
 
-use fluvio_controlplane_metadata::topic::config::TopicConfig;
-use fluvio_smartengine::transformation::TransformationStep;
-use fluvio_compression::Compression;
-use fluvio_types::PartitionId;
+pub use fluvio_controlplane_metadata::topic::config::TopicConfig;
+pub use fluvio_smartengine::transformation::TransformationStep;
+pub use fluvio_compression::Compression;
+pub use fluvio_types::PartitionId;
 
 use crate::metadata::Direction;
 
