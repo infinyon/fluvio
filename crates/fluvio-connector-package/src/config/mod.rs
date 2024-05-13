@@ -738,7 +738,7 @@ mod tests {
             meta: MetaConfigV2 {
                 name: "my-test-mqtt".to_string(),
                 type_: "mqtt".to_string(),
-                topic: TopicConfig {
+                topic: topic_config::TopicConfig {
                     version: "0.1.0".to_string(),
                     meta: MetaConfig {
                         name: "test-topic".to_string(),
