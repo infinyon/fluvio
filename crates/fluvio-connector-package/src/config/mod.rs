@@ -13,7 +13,7 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize, Deserializer, Serializer};
 pub use bytesize::ByteSize;
 
-pub use fluvio_controlplane_metadata::topic::config::TopicConfig;
+pub use fluvio_controlplane_metadata::topic::config as topic_config;
 pub use fluvio_smartengine::transformation::TransformationStep;
 pub use fluvio_compression::Compression;
 pub use fluvio_types::PartitionId;
@@ -265,7 +265,7 @@ impl MetaConfig<'_> {
         }
     }
 
-    pub fn topic_config(&self) -> Option<&TopicConfig> {
+    pub fn topic_config(&self) -> Option<&topic_config::TopicConfig> {
         match self {
             MetaConfig::V0_1_0(_) => None,
             MetaConfig::V0_2_0(inner) => Some(&inner.topic),
