@@ -50,7 +50,7 @@ pub async fn try_connect_to_sc(
             Ok(fluvio) => {
                 let current_version = fluvio.platform_version();
                 if current_version == expected_version {
-                    debug!("Got updated SC Version{}", &expected_version);
+                    debug!(version = %current_version, "Got updated SC Version");
                     Ok(fluvio)
                 } else {
                     warn!(
