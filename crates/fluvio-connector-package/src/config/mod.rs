@@ -6,8 +6,6 @@ use std::path::{PathBuf, Path};
 use std::str::FromStr;
 use std::time::Duration;
 
-use fluvio_controlplane_metadata::topic::config::TopicConfig;
-use fluvio_types::PartitionId;
 use serde::de::{Visitor, SeqAccess};
 use serde::ser::{SerializeMap, SerializeSeq};
 use tracing::debug;
@@ -15,8 +13,11 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize, Deserializer, Serializer};
 use bytesize::ByteSize;
 
-use fluvio_smartengine::transformation::TransformationConfig;
+use fluvio_controlplane_metadata::topic::config::TopicConfig;
+use fluvio_smartengine::transformation::TransformationStep;
 use fluvio_compression::Compression;
+use fluvio_types::PartitionId;
+
 use crate::metadata::Direction;
 
 pub use self::v1::ConnectorConfigV1;
@@ -104,8 +105,8 @@ mod v1 {
     pub struct ConnectorConfigV1 {
         pub meta: MetaConfigV1,
 
-        #[serde(default, flatten, skip_serializing_if = "Option::is_none")]
-        pub transforms: Option<TransformationConfig>,
+        #[serde(default)]
+        pub transforms: Vec<TransformationStep>,
     }
 
     #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
@@ -157,8 +158,8 @@ mod v2 {
     pub struct ConnectorConfigV2 {
         pub meta: MetaConfigV2,
 
-        #[serde(default, flatten, skip_serializing_if = "Option::is_none")]
-        pub transforms: Option<TransformationConfig>,
+        #[serde(default)]
+        pub transforms: Vec<TransformationStep>,
     }
 
     #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
@@ -640,11 +641,11 @@ impl ConnectorConfig {
         }
     }
 
-    pub fn transforms(&self) -> Option<&TransformationConfig> {
+    pub fn transforms(&self) -> Vec<TransformationStep> {
         match self {
-            Self::V0_0_0(config) => config.transforms.as_ref(),
-            Self::V0_1_0(config) => config.transforms.as_ref(),
-            Self::V0_2_0(config) => config.transforms.as_ref(),
+            Self::V0_0_0(config) => config.transforms.clone(),
+            Self::V0_1_0(config) => config.transforms.clone(),
+            Self::V0_2_0(config) => config.transforms.clone(),
         }
     }
 
@@ -708,20 +709,17 @@ mod tests {
                     name: "secret1".parse().unwrap(),
                 }]),
             },
-            transforms: Some(
-                TransformationStep {
-                    uses: "infinyon/json-sql".to_string(),
-                    lookback: None,
-                    with: BTreeMap::from([
-                        (
-                            "mapping".to_string(),
-                            "{\"table\":\"topic_message\"}".into(),
-                        ),
-                        ("param".to_string(), "param_value".into()),
-                    ]),
-                }
-                .into(),
-            ),
+            transforms: vec![TransformationStep {
+                uses: "infinyon/json-sql".to_string(),
+                lookback: None,
+                with: BTreeMap::from([
+                    (
+                        "mapping".to_string(),
+                        "{\"table\":\"topic_message\"}".into(),
+                    ),
+                    ("param".to_string(), "param_value".into()),
+                ]),
+            }],
         });
 
         //when
@@ -793,20 +791,17 @@ mod tests {
                     name: "secret1".parse().unwrap(),
                 }]),
             },
-            transforms: Some(
-                TransformationStep {
-                    uses: "infinyon/json-sql".to_string(),
-                    lookback: None,
-                    with: BTreeMap::from([
-                        (
-                            "mapping".to_string(),
-                            "{\"table\":\"topic_message\"}".into(),
-                        ),
-                        ("param".to_string(), "param_value".into()),
-                    ]),
-                }
-                .into(),
-            ),
+            transforms: vec![TransformationStep {
+                uses: "infinyon/json-sql".to_string(),
+                lookback: None,
+                with: BTreeMap::from([
+                    (
+                        "mapping".to_string(),
+                        "{\"table\":\"topic_message\"}".into(),
+                    ),
+                    ("param".to_string(), "param_value".into()),
+                ]),
+            }],
         });
 
         //when
@@ -830,7 +825,7 @@ mod tests {
                 consumer: None,
                 secrets: None,
             },
-            transforms: None,
+            transforms: Vec::default(),
         });
 
         //when
@@ -921,7 +916,7 @@ mod tests {
                 consumer: None,
                 secrets: None,
             },
-            transforms: None,
+            transforms: Vec::default(),
         });
 
         //when
@@ -953,7 +948,7 @@ mod tests {
                 consumer: None,
                 secrets: None,
             },
-            transforms: None,
+            transforms: Vec::default(),
         });
 
         //when
@@ -999,7 +994,7 @@ mod tests {
                 }),
                 secrets: None,
             },
-            transforms: None,
+            transforms: Vec::default(),
         });
 
         //when
@@ -1042,7 +1037,7 @@ mod tests {
                 consumer: None,
                 secrets: None,
             },
-            transforms: None,
+            transforms: Vec::default(),
         });
 
         //when
@@ -1071,22 +1066,17 @@ mod tests {
                 .expect("Failed to deserialize");
 
         //then
-        assert!(connector_spec.transforms().is_some());
+        assert_eq!(connector_spec.transforms().len(), 1);
+        assert_eq!(connector_spec.transforms()[0].uses.as_str(), "infinyon/sql");
         assert_eq!(
-            connector_spec.transforms().unwrap().transforms[0]
-                .uses
-                .as_str(),
-            "infinyon/sql"
-        );
-        assert_eq!(
-            connector_spec.transforms().unwrap().transforms[0].lookback,
+            connector_spec.transforms()[0].lookback,
             Some(Lookback {
                 last: 100,
                 age: Some(Duration::from_secs(3600))
             })
         );
 
-        assert_eq!(connector_spec.transforms().unwrap().transforms[0].with,
+        assert_eq!(connector_spec.transforms()[0].with,
                        BTreeMap::from([("mapping".to_string(), "{\"map-columns\":{\"device_id\":{\"json-key\":\"device.device_id\",\"value\":{\"default\":0,\"required\":true,\"type\":\"int\"}},\"record\":{\"json-key\":\"$\",\"value\":{\"required\":true,\"type\":\"jsonb\"}}},\"table\":\"topic_message\"}".into())]));
     }
 
@@ -1157,8 +1147,8 @@ mod tests {
                 .expect("Failed to deserialize");
 
         //then
-        assert!(connector_spec.transforms().is_some());
-        let transform = &connector_spec.transforms().unwrap().transforms;
+        let transform = &connector_spec.transforms();
+
         assert_eq!(transform.len(), 3);
         assert_eq!(transform[0].uses.as_str(), "infinyon/json-sql");
         assert_eq!(
@@ -1175,6 +1165,23 @@ mod tests {
             transform[2].with,
             BTreeMap::from([("regex".to_string(), "\\w".into())])
         );
+    }
+
+    #[test]
+    fn test_deserialize_transform_invalid() {
+        let connector_spec =
+            ConnectorConfig::from_file("test-data/connectors/with_transform_invalid.yaml");
+
+        assert!(
+            connector_spec.is_err(),
+            "should fail to deserialize into `ConnectorConfig`"
+        );
+
+        let err = connector_spec.unwrap_err();
+
+        assert!(err
+            .to_string()
+            .contains("mapping values are not allowed in this context at line 16 column 17"));
     }
 
     #[test]
@@ -1210,7 +1217,7 @@ mod tests {
                 }),
                 secrets: None,
             },
-            transforms: None,
+            transforms: Vec::default(),
         });
 
         assert_eq!(have.name(), "my-test-mqtt");
