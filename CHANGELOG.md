@@ -2,7 +2,17 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
-## Platform Version 0.11.9 - UNRELEASED
+## Platform Version 0.11.9-dev - 2024-05-13
+
+### CI
+
+* Update infinyon/regex-filter@0.2.0 for wasi ([#3997](https://github.com/infinyon/fluvio/issues/3997))
+* Use smdk artifact for ci tests ([#4000](https://github.com/infinyon/fluvio/issues/4000))
+
+### Fixed
+
+* Config parsing ignores invalid `transforms` value ([#4004](https://github.com/infinyon/fluvio/issues/4004))
+* `sink` generation for conns fails to build ([#4005](https://github.com/infinyon/fluvio/issues/4005))
 
 ## Platform Version 0.11.8 - 2024-05-07
 
