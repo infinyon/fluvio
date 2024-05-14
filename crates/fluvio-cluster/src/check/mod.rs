@@ -10,6 +10,7 @@ pub mod render;
 use anyhow::Result;
 use colored::Colorize;
 use fluvio_future::timer::sleep;
+use fluvio_types::config_file::SaveLoadConfig;
 use indicatif::style::TemplateError;
 use tracing::{error, debug};
 use async_trait::async_trait;
@@ -25,6 +26,7 @@ use crate::charts::{DEFAULT_HELM_VERSION, APP_CHART_NAME};
 use crate::progress::ProgressBarFactory;
 use crate::render::ProgressRenderer;
 use crate::charts::{ChartConfig, ChartInstaller, ChartInstallError, SYS_CHART_NAME};
+use crate::LocalConfig;
 
 const KUBE_VERSION: &str = "1.7.0";
 const RESOURCE_SERVICE: &str = "service";
@@ -232,6 +234,15 @@ pub enum UnrecoverableCheckStatus {
 
     #[error("Local Fluvio cluster wasn't deleted. Use 'resume' to resume created cluster or 'delete' before starting a new one")]
     CreateLocalConfigError,
+
+    /// The installed version of the local cluster is incompatible
+    #[error("Check Versions match failed: cannot resume a {installed} cluster with fluvio version {required}.")]
+    IncompatibleLocalClusterVersion {
+        /// The currently-installed version
+        installed: String,
+        /// The required version
+        required: String,
+    },
 
     #[error("Helm client error")]
     HelmClientError,
@@ -723,6 +734,40 @@ impl ClusterCheck for CleanLocalClusterCheck {
     }
 }
 
+// Check local cluster is installed with a compatible version
+#[derive(Debug)]
+struct LocalClusterVersionCheck(Version);
+
+#[async_trait]
+impl ClusterCheck for LocalClusterVersionCheck {
+    async fn perform_check(&self, _pb: &ProgressRenderer) -> CheckResult {
+        use crate::start::local::LOCAL_CONFIG_PATH;
+
+        let installed_version = LOCAL_CONFIG_PATH
+            .as_ref()
+            .and_then(|p| LocalConfig::load_from(p).ok())
+            .map(|conf| conf.platform_version().clone())
+            .ok_or(anyhow::Error::msg(
+                "Could not load local config's platform version",
+            ))?;
+
+        if installed_version != self.0 {
+            Ok(CheckStatus::Unrecoverable(
+                UnrecoverableCheckStatus::IncompatibleLocalClusterVersion {
+                    installed: installed_version.to_string(),
+                    required: self.0.to_string(),
+                },
+            ))
+        } else {
+            Ok(CheckStatus::pass("Platform versions match"))
+        }
+    }
+
+    fn label(&self) -> &str {
+        "Versions match"
+    }
+}
+
 /// Manages all cluster check operations
 ///
 /// A `ClusterChecker` can be configured with different sets of checks to run.
@@ -788,6 +833,10 @@ impl ClusterChecker {
 
     pub fn with_clean_local_cluster(self) -> Self {
         self.with_check(CleanLocalClusterCheck)
+    }
+
+    pub fn with_local_cluster_version(self, version: Version) -> Self {
+        self.with_check(LocalClusterVersionCheck(version))
     }
 
     /// Adds all checks required for starting a cluster on minikube.
