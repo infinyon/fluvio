@@ -166,8 +166,7 @@ impl PackageSet {
     ///
     /// Whenever a version mismatch is found, such artifact is returned as part
     /// of the output.
-    #[allow(dead_code)]
-    fn artifacts_diff(&self, upstream: &PackageSet) -> Vec<Artifact> {
+    pub fn artifacts_diff(&self, upstream: &PackageSet) -> Vec<Artifact> {
         let ours: HashMap<String, Artifact> =
             self.artifacts.iter().fold(HashMap::new(), |mut map, art| {
                 map.insert(art.name.to_owned(), art.to_owned());

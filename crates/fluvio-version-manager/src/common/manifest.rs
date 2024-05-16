@@ -17,7 +17,7 @@ use fluvio_hub_util::fvm::Channel;
 /// The name of the manifest file for the Package Set
 pub const PACKAGE_SET_MANIFEST_FILENAME: &str = "manifest.json";
 
-#[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct VersionedArtifact {
     pub name: String,
     pub version: String,
