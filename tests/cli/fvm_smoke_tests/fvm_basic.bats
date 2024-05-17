@@ -22,6 +22,11 @@ setup_file() {
     export STABLE_VERSION
     debug_msg "Stable Version: $STABLE_VERSION"
 
+    # Fetches current Fluvio Cloud CLI Stable Version
+    FLUVIO_CLOUD_STABLE_VERSION=$(curl "https://packages.fluvio.io/v1/packages/fluvio/fluvio-cloud/tags/stable")
+    export FLUVIO_CLOUD_STABLE_VERSION
+    debug_msg "Fluvio Cloud Stable Version: $FLUVIO_CLOUD_STABLE_VERSION"
+
     # The directory where FVM files live
     FVM_HOME_DIR="$HOME/.fvm"
     export FVM_HOME_DIR
@@ -843,6 +848,56 @@ setup_file() {
 
     # Ensure `~/.fvm/versions/stable` is present
     run bash -c '! test -d $FVM_HOME_DIR/versions/stable'
+    assert_success
+
+    # Removes FVM
+    run bash -c 'fvm self uninstall --yes'
+    assert_success
+
+    # Removes Fluvio
+    rm -rf $FLUVIO_HOME_DIR
+    assert_success
+}
+
+@test "Updates artifacts in the stable channel" {
+    run bash -c '$FVM_BIN self install'
+    assert_success
+
+    # Sets `fvm` in the PATH using the "env" file included in the installation
+    source ~/.fvm/env
+
+    # Install stable version
+    run bash -c 'fvm install stable'
+    assert_success
+
+    # Ensure `~/.fvm/versions/stable` is present
+    run bash -c 'test -d $FVM_HOME_DIR/versions/stable'
+    assert_success
+
+    # Checks for updates
+    run bash -c 'fvm update'
+    assert_line --index 0 "done: You are already up to date"
+    assert_success
+
+    # Updates manifest to trigger update
+    sed -i -e "s/$FLUVIO_CLOUD_STABLE_VERSION/0.2.21/g" $FVM_HOME_DIR/versions/stable/manifest.json
+
+    # Removes current `fluvio-cloud` binary so we check it is re-downloaded
+    rm -rf $FVM_HOME_DIR/versions/stable/fluvio-cloud
+
+    # Ensure `~/.fvm/versions/stable/fluvio-cloud` IS NOT present
+    run bash -c '! test -f $FVM_HOME_DIR/versions/stable/fluvio-cloud'
+    assert_success
+
+    # Downloads the update
+    run bash -c 'fvm update'
+    assert_line --index 0 "info: Found 1 packages in this version that needs update."
+    assert_line --index 1 "info: Downloading (1/1): fluvio-cloud@$FLUVIO_CLOUD_STABLE_VERSION"
+    assert_line --index 2 "info: Updated fluvio-cloud from 0.2.21 to $FLUVIO_CLOUD_STABLE_VERSION"
+    assert_success
+
+    # Ensure `~/.fvm/versions/stable/fluvio-cloud` IS present
+    run bash -c 'test -f $FVM_HOME_DIR/versions/stable/fluvio-cloud'
     assert_success
 
     # Removes FVM

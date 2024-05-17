@@ -8,6 +8,8 @@ use url::Url;
 use fluvio_hub_util::HUB_REMOTE;
 use fluvio_hub_util::fvm::{Client, Channel, PackageSet};
 
+use crate::common::version_directory::VersionDirectory;
+use crate::common::workdir::fvm_versions_path;
 use crate::common::TARGET;
 use crate::common::notify::Notify;
 use crate::common::settings::Settings;
@@ -58,6 +60,25 @@ impl UpdateOpt {
                     return VersionInstaller::new(channel, latest_pkgset, notify)
                         .install()
                         .await;
+                }
+
+                if ps_version == ch_version {
+                    // Check for patches
+                    let curr_version_path = fvm_versions_path()?.join(channel.to_string());
+                    let curr_version_dir = VersionDirectory::open(curr_version_path)?;
+                    let curr_version_pkgset = curr_version_dir.as_package_set()?;
+                    let upstream_artifacts = curr_version_pkgset.artifacts_diff(&latest_pkgset);
+
+                    if !upstream_artifacts.is_empty() {
+                        notify.info(format!(
+                            "Found {} packages in this version that needs update.",
+                            upstream_artifacts.len(),
+                        ));
+
+                        return VersionInstaller::new(channel, latest_pkgset, notify)
+                            .update(&upstream_artifacts)
+                            .await;
+                    }
                 }
 
                 notify.done("You are already up to date");
