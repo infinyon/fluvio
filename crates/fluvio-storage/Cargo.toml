@@ -17,7 +17,7 @@ required-features = ["cli", "fluvio-future/subscriber"]
 [features]
 default = ["iterators"]
 cli = ["clap"]
-iterators = []
+iterators = ["fluvio-compression"]
 fixture = []
 
 
@@ -52,9 +52,9 @@ fluvio-protocol = { workspace = true }
 fluvio-controlplane-metadata = { workspace = true  }
 fluvio-controlplane = { workspace = true }
 fluvio-spu-schema = { workspace = true, features = [ "file"] }
+fluvio-compression = { workspace = true, features = ["compress"], optional = true }
 
 [dev-dependencies]
-fluvio-compression = { workspace = true, features = ["compress"] }
 fluvio-future = { workspace = true, features = ["fixture"] }
 fluvio-socket = { workspace = true,  features = ["file"] }
 fluvio-protocol = { workspace = true,  features = ["fixture"] }
