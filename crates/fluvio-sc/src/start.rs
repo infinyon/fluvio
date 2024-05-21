@@ -5,6 +5,7 @@ use std::{
 };
 
 use anyhow::Result;
+use fluvio_auth::basic::BasicRbacPolicy;
 use tracing::info;
 
 use fluvio_future::{task::run_block_on, timer::sleep};
@@ -14,7 +15,6 @@ use k8_client::{K8Client, K8Config, memory::MemoryClient};
 
 use crate::{
     cli::{ScOpt, TlsConfig, RunMode},
-    services::auth::basic::BasicRbacPolicy,
     config::ScConfig,
     config::DEFAULT_NAMESPACE,
 };

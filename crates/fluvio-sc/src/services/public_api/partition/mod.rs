@@ -9,13 +9,13 @@ use fluvio_sc_schema::partition::PartitionSpec;
 use fluvio_controlplane_metadata::extended::SpecExt;
 use fluvio_auth::{AuthContext, TypeAction};
 
-use crate::services::auth::AuthServiceContext;
+use crate::services::auth::ScAuthServiceContext;
 
 #[instrument(skip(_filters, auth_ctx))]
 pub async fn handle_fetch_request<AC: AuthContext, C: MetadataItem>(
     _filters: ListFilters,
     system: bool,
-    auth_ctx: &AuthServiceContext<AC, C>,
+    auth_ctx: &ScAuthServiceContext<AC, C>,
 ) -> Result<ListResponse<PartitionSpec>> {
     debug!("fetching custom spu list");
 

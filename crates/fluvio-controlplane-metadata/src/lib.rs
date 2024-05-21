@@ -34,6 +34,7 @@ pub mod extended {
         TableFormat,
         DerivedStream,
         Mirror,
+        RemoteConnection,
     }
 
     pub trait SpecExt: Spec {

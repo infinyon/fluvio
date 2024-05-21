@@ -2,12 +2,13 @@ use std::time::Duration;
 use std::{fmt, sync::Arc};
 use std::sync::atomic::AtomicU64;
 
-use fluvio_auth::AuthContext;
-use fluvio_controlplane_metadata::mirror::MirrorType;
 use tokio::select;
 use tracing::{debug, error, instrument, warn};
 use anyhow::Result;
 
+use fluvio_auth::{AuthContext, InstanceAction};
+use fluvio_controlplane_metadata::mirror::MirrorType;
+use fluvio_controlplane_metadata::extended::ObjectType;
 use fluvio_future::timer::sleep;
 use fluvio_protocol::api::RequestMessage;
 use fluvio_spu_schema::server::mirror::StartMirrorRequest;
@@ -69,15 +70,22 @@ impl MirrorHomeHandler {
         stream: FluvioStream,
     ) {
         // authorization check
-        if !auth_ctx
+        if let Ok(authorized) = auth_ctx
             .auth
-            .allow_remote_id(&req_msg.request.remote_cluster_id)
+            .allow_instance_action(
+                ObjectType::RemoteConnection,
+                InstanceAction::Update,
+                &req_msg.request.remote_cluster_id,
+            )
+            .await
         {
-            warn!(
-                "identity mismatch for remote_id: {}",
-                req_msg.request.remote_cluster_id
-            );
-            return;
+            if !authorized {
+                warn!(
+                    "identity mismatch for remote_id: {}",
+                    req_msg.request.remote_cluster_id
+                );
+                return;
+            }
         }
 
         // check if remote cluster exists

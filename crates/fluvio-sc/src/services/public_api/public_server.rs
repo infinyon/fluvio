@@ -27,7 +27,7 @@ use fluvio_service::FluvioService;
 use fluvio_sc_schema::AdminPublicApiKey;
 use fluvio_sc_schema::AdminPublicDecodedRequest;
 
-use crate::services::auth::{AuthGlobalContext, AuthServiceContext};
+use crate::services::auth::{ScAuthGlobalContext, ScAuthServiceContext};
 
 #[derive(Debug)]
 pub struct PublicService<A, C> {
@@ -48,7 +48,7 @@ where
     C: MetadataItem + 'static,
     <A as Authorization>::Context: Send + Sync,
 {
-    type Context = AuthGlobalContext<A, C>;
+    type Context = ScAuthGlobalContext<A, C>;
     type Request = AdminPublicDecodedRequest;
 
     #[instrument(skip(self, ctx))]
@@ -68,7 +68,7 @@ where
             })?;
 
         debug!(?auth_context);
-        let service_context = Arc::new(AuthServiceContext::new(
+        let service_context = Arc::new(ScAuthServiceContext::new(
             ctx.global_ctx.clone(),
             auth_context,
         ));
@@ -110,7 +110,7 @@ where
                 "list handler"
             ),
             AdminPublicDecodedRequest::MirroringRequest(request) =>
-                super::mirroring::handle_mirroring_request(request, &service_context, shared_sink.clone(), end_event.clone())?,
+                super::mirroring::handle_mirroring_request(request, service_context.clone(), shared_sink.clone(), end_event.clone())?,
             AdminPublicDecodedRequest::WatchRequest(request) =>
                 super::watch::handle_watch_request(
                     request,

@@ -9,12 +9,12 @@ use fluvio_auth::{AuthContext, TypeAction};
 use fluvio_controlplane_metadata::store::KeyFilter;
 use fluvio_controlplane_metadata::extended::SpecExt;
 
-use crate::services::auth::AuthServiceContext;
+use crate::services::auth::ScAuthServiceContext;
 
 #[instrument(skip(filters, auth_ctx))]
 pub async fn handle_fetch_custom_spu_request<AC: AuthContext, C: MetadataItem>(
     filters: ListFilters,
-    auth_ctx: &AuthServiceContext<AC, C>,
+    auth_ctx: &ScAuthServiceContext<AC, C>,
 ) -> Result<ListResponse<CustomSpuSpec>> {
     debug!("fetching custom spu list");
 
@@ -62,7 +62,7 @@ pub async fn handle_fetch_custom_spu_request<AC: AuthContext, C: MetadataItem>(
 #[instrument(skip(filters, auth_ctx))]
 pub async fn handle_fetch_spus_request<AC: AuthContext, C: MetadataItem>(
     filters: ListFilters,
-    auth_ctx: &AuthServiceContext<AC, C>,
+    auth_ctx: &ScAuthServiceContext<AC, C>,
 ) -> Result<ListResponse<SpuSpec>> {
     debug!("fetching spu list");
 

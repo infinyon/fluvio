@@ -21,13 +21,13 @@ use fluvio_sc_schema::{Status, TryEncodableFrom};
 use fluvio_sc_schema::objects::{ObjectApiDeleteRequest, DeleteRequest};
 use fluvio_auth::AuthContext;
 
-use crate::services::auth::AuthServiceContext;
+use crate::services::auth::ScAuthServiceContext;
 
 /// Handler for delete topic request
 #[instrument(skip(request, auth_ctx))]
 pub async fn handle_delete_request<AC: AuthContext, C: MetadataItem>(
     request: RequestMessage<ObjectApiDeleteRequest>,
-    auth_ctx: &AuthServiceContext<AC, C>,
+    auth_ctx: &ScAuthServiceContext<AC, C>,
 ) -> Result<ResponseMessage<Status>> {
     let (header, del_req) = request.get_header_request();
 
@@ -75,13 +75,13 @@ mod delete_handler {
     use fluvio_auth::{AuthContext, InstanceAction};
     use fluvio_controlplane_metadata::{core::Spec, extended::SpecExt};
 
-    use crate::services::auth::AuthServiceContext;
+    use crate::services::auth::ScAuthServiceContext;
 
     /// Handler for object delete
     #[instrument(skip(auth_ctx, object_ctx, error_code, not_found_code))]
     pub async fn process<AC: AuthContext, S, F, G, C: MetadataItem>(
         name: String,
-        auth_ctx: &AuthServiceContext<AC, C>,
+        auth_ctx: &ScAuthServiceContext<AC, C>,
         object_ctx: &StoreContext<S, C>,
         error_code: F,
         not_found_code: G,

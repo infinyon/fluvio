@@ -10,12 +10,12 @@ use fluvio_auth::{AuthContext, TypeAction};
 use fluvio_controlplane_metadata::store::KeyFilter;
 use fluvio_controlplane_metadata::extended::SpecExt;
 
-use crate::services::auth::AuthServiceContext;
+use crate::services::auth::ScAuthServiceContext;
 
 #[instrument(skip(filters, auth_ctx))]
 pub async fn handle_fetch_spu_groups_request<AC: AuthContext, C: MetadataItem>(
     filters: ListFilters,
-    auth_ctx: &AuthServiceContext<AC, C>,
+    auth_ctx: &ScAuthServiceContext<AC, C>,
 ) -> Result<ListResponse<SpuGroupSpec>> {
     debug!("fetching spu groups");
 

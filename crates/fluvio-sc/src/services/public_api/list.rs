@@ -18,13 +18,13 @@ use fluvio_sc_schema::{
 };
 use fluvio_auth::AuthContext;
 
-use crate::services::{auth::AuthServiceContext, public_api::mirror::handle_list_mirror};
+use crate::services::{auth::ScAuthServiceContext, public_api::mirror::handle_list_mirror};
 use super::smartmodule::fetch_smart_modules;
 
 #[instrument(skip(request, auth_ctx))]
 pub async fn handle_list_request<AC: AuthContext, C: MetadataItem>(
     request: RequestMessage<ObjectApiListRequest>,
-    auth_ctx: &AuthServiceContext<AC, C>,
+    auth_ctx: &ScAuthServiceContext<AC, C>,
 ) -> Result<ResponseMessage<ObjectApiListResponse>> {
     let (header, req) = request.get_header_request();
     debug!("list header: {:#?}, request: {:#?}", header, req);
@@ -107,12 +107,12 @@ mod fetch {
     use fluvio_controlplane_metadata::extended::SpecExt;
     use fluvio_controlplane_metadata::store::KeyFilter;
 
-    use crate::services::auth::AuthServiceContext;
+    use crate::services::auth::ScAuthServiceContext;
 
     #[instrument(skip(filters, auth_ctx))]
     pub async fn handle_fetch_request<AC, C: MetadataItem, S>(
         filters: ListFilters,
-        auth_ctx: &AuthServiceContext<AC, C>,
+        auth_ctx: &ScAuthServiceContext<AC, C>,
         object_ctx: &StoreContext<S, C>,
     ) -> Result<ListResponse<S>, Error>
     where

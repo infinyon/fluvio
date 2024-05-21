@@ -6,6 +6,7 @@
 //!
 use std::sync::Arc;
 
+use fluvio_auth::basic::BasicRbacPolicy;
 use fluvio_sc_schema::mirror::MirrorSpec;
 use fluvio_stream_dispatcher::metadata::{SharedClient, MetadataClient};
 use fluvio_stream_model::core::MetadataItem;
@@ -19,7 +20,6 @@ use crate::controllers::topics::controller::{TopicController, SystemTopicControl
 use crate::config::ScConfig;
 use crate::services::start_internal_server;
 use crate::dispatcher::dispatcher::MetadataDispatcher;
-use crate::services::auth::basic::BasicRbacPolicy;
 
 pub async fn start_main_loop<C, M>(
     sc_config_policy: (ScConfig, Option<BasicRbacPolicy>),
@@ -122,15 +122,16 @@ where
     mod pub_server {
 
         use std::sync::Arc;
+        use fluvio_auth::basic::{BasicAuthorization, BasicRbacPolicy};
+        use fluvio_auth::remote::RemoteAuthorization;
+        use fluvio_auth::root::{ReadOnlyAuthorization, RootAuthorization};
         use tracing::info;
 
-        use crate::services::auth::remote::RemoteAuthorization;
+        use crate::services::auth::ScAuthGlobalContext;
         use crate::services::start_public_server;
         use crate::core::SharedContext;
 
         use fluvio_controlplane_metadata::core::MetadataItem;
-        use crate::services::auth::{AuthGlobalContext, RootAuthorization, ReadOnlyAuthorization};
-        use crate::services::auth::basic::{BasicAuthorization, BasicRbacPolicy};
 
         pub fn start<C>(ctx: SharedContext<C>, auth_policy_option: Option<BasicRbacPolicy>)
         where
@@ -139,26 +140,28 @@ where
         {
             if let Some(policy) = auth_policy_option {
                 info!("using basic authorization");
-                start_public_server(AuthGlobalContext::new(
+                start_public_server(ScAuthGlobalContext::new(
                     ctx,
                     Arc::new(BasicAuthorization::new(policy)),
                 ));
             } else if ctx.config().tls {
+                // if we are using tls without scopes,
+                // we need at least check remote authorization
                 info!("using spu remote authorization");
-                start_public_server(AuthGlobalContext::new(
+                start_public_server(ScAuthGlobalContext::new(
                     ctx,
                     Arc::new(RemoteAuthorization::new()),
                 ));
             } else if ctx.config().read_only_metadata {
                 info!("using read-only authorization");
 
-                start_public_server(AuthGlobalContext::new(
+                start_public_server(ScAuthGlobalContext::new(
                     ctx,
                     Arc::new(ReadOnlyAuthorization::new()),
                 ));
             } else {
                 info!("using root authorization");
-                start_public_server(AuthGlobalContext::new(
+                start_public_server(ScAuthGlobalContext::new(
                     ctx,
                     Arc::new(RootAuthorization::new()),
                 ));

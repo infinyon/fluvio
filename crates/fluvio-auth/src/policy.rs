@@ -16,10 +16,11 @@ pub enum TypeAction {
 
 pub enum InstanceAction {
     Delete,
+    Update,
 }
 
 #[async_trait]
-pub trait AuthContext: Debug {
+pub trait AuthContext: Debug + Send + Sync + 'static {
     /// check if any allow type specific action can be allowed
     async fn allow_type_action(
         &self,
@@ -34,9 +35,6 @@ pub trait AuthContext: Debug {
         action: InstanceAction,
         key: &str,
     ) -> Result<bool, AuthError>;
-
-    /// check if remote id is allowed
-    fn allow_remote_id(&self, id: &str) -> bool;
 }
 
 #[async_trait]

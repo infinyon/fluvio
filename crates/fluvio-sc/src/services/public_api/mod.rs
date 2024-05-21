@@ -26,17 +26,17 @@ mod server {
     use fluvio_service::FluvioApiServer;
     use fluvio_auth::Authorization;
 
-    use crate::services::auth::AuthGlobalContext;
+    use crate::services::auth::ScAuthGlobalContext;
     use super::public_server::PublicService;
 
     /// create public server
-    pub fn start_public_server<A, C>(ctx: AuthGlobalContext<A, C>)
+    pub fn start_public_server<A, C>(ctx: ScAuthGlobalContext<A, C>)
     where
         A: Authorization + Sync + Send + Debug + 'static,
         C: MetadataItem + 'static,
         C::UId: Send + Sync,
 
-        AuthGlobalContext<A, C>: Clone + Debug,
+        ScAuthGlobalContext<A, C>: Clone + Debug,
         <A as Authorization>::Context: Send + Sync,
     {
         let addr = ctx.global_ctx.config().public_endpoint.clone();

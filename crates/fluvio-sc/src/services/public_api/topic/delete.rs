@@ -14,14 +14,14 @@ use fluvio_controlplane_metadata::topic::TopicSpec;
 use fluvio_auth::{AuthContext, InstanceAction};
 use fluvio_controlplane_metadata::extended::SpecExt;
 
-use crate::services::auth::AuthServiceContext;
+use crate::services::auth::ScAuthServiceContext;
 
 /// Handler for delete topic request
 #[instrument(skip(topic_name, auth_ctx))]
 pub async fn handle_delete_topic<AC: AuthContext, C: MetadataItem>(
     topic_name: String,
     force: bool,
-    auth_ctx: &AuthServiceContext<AC, C>,
+    auth_ctx: &ScAuthServiceContext<AC, C>,
 ) -> Result<Status, Error> {
     info!(%topic_name, "Deleting topic");
 

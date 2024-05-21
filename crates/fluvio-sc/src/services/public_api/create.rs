@@ -14,13 +14,13 @@ use fluvio_sc_schema::{Status, TryEncodableFrom};
 use fluvio_sc_schema::objects::{ObjectApiCreateRequest, CreateRequest};
 use fluvio_auth::AuthContext;
 
-use crate::services::auth::AuthServiceContext;
+use crate::services::auth::ScAuthServiceContext;
 
 /// Handler for create topic request
 #[instrument(skip(request, auth_context))]
 pub async fn handle_create_request<AC: AuthContext, C: MetadataItem>(
     request: Box<RequestMessage<ObjectApiCreateRequest>>,
-    auth_context: &AuthServiceContext<AC, C>,
+    auth_context: &ScAuthServiceContext<AC, C>,
 ) -> Result<ResponseMessage<Status>> {
     let (header, req) = request.get_header_request();
 
@@ -66,13 +66,13 @@ mod create_handler {
     use fluvio_controlplane_metadata::extended::SpecExt;
     use fluvio_auth::{AuthContext, TypeAction};
 
-    use crate::services::auth::AuthServiceContext;
+    use crate::services::auth::ScAuthServiceContext;
 
     #[instrument(skip(create, spec, auth_ctx, object_ctx, error_code))]
     pub async fn process<AC: AuthContext, S, F, C: MetadataItem>(
         create: CommonCreateRequest,
         spec: S,
-        auth_ctx: &AuthServiceContext<AC, C>,
+        auth_ctx: &ScAuthServiceContext<AC, C>,
         object_ctx: &StoreContext<S, C>,
         error_code: F,
     ) -> Result<Status, Error>

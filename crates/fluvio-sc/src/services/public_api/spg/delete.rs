@@ -8,13 +8,13 @@ use fluvio_auth::{AuthContext, InstanceAction};
 use fluvio_controlplane_metadata::spg::SpuGroupSpec;
 use fluvio_controlplane_metadata::extended::SpecExt;
 
-use crate::services::auth::AuthServiceContext;
+use crate::services::auth::ScAuthServiceContext;
 
 /// Handler for delete spu group request
 #[instrument(skip(name, auth_ctx))]
 pub async fn handle_delete_spu_group<AC: AuthContext, C: MetadataItem>(
     name: String,
-    auth_ctx: &AuthServiceContext<AC, C>,
+    auth_ctx: &ScAuthServiceContext<AC, C>,
 ) -> Result<Status, Error> {
     use fluvio_protocol::link::ErrorCode;
 

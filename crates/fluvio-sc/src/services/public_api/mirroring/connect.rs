@@ -2,8 +2,13 @@ use std::{
     sync::Arc,
     time::{Duration, SystemTime},
 };
-use fluvio_controlplane_metadata::mirroring::{
-    MirrorConnect, MirroringSpecWrapper, MirroringStatusResponse,
+use tracing::{debug, error, info, instrument, trace, warn};
+use anyhow::{Result, anyhow};
+
+use fluvio_auth::{AuthContext, InstanceAction};
+use fluvio_controlplane_metadata::{
+    extended::ObjectType,
+    mirroring::{MirrorConnect, MirroringSpecWrapper, MirroringStatusResponse},
 };
 use fluvio_future::{task::spawn, timer::sleep};
 use fluvio_protocol::api::{RequestHeader, ResponseMessage};
@@ -16,37 +21,35 @@ use fluvio_sc_schema::{
 };
 use fluvio_socket::ExclusiveFlvSink;
 use fluvio_types::event::StickyEvent;
-use tracing::{debug, error, info, instrument, trace, warn};
-use anyhow::{Result, anyhow};
 
-use crate::core::Context;
+use crate::services::auth::ScAuthServiceContext;
 
 // This is the entry point for handling mirroring requests
 // Home clusters will receive requests from remote clusters
-pub struct RemoteFetchingFromHomeController<C: MetadataItem> {
+pub struct RemoteFetchingFromHomeController<AC: AuthContext, C: MetadataItem> {
     req: MirrorConnect,
     response_sink: ExclusiveFlvSink,
     end_event: Arc<StickyEvent>,
-    ctx: Arc<Context<C>>,
     header: RequestHeader,
+    auth_ctx: Arc<ScAuthServiceContext<AC, C>>,
 }
 
 const MIRRORING_CONTROLLER_INTERVAL: u64 = 5;
 
-impl<C: MetadataItem> RemoteFetchingFromHomeController<C> {
+impl<AC: AuthContext, C: MetadataItem> RemoteFetchingFromHomeController<AC, C> {
     pub fn start(
         req: MirrorConnect,
         response_sink: ExclusiveFlvSink,
         end_event: Arc<StickyEvent>,
-        ctx: Arc<Context<C>>,
         header: RequestHeader,
+        auth_ctx: Arc<ScAuthServiceContext<AC, C>>,
     ) {
         let controller = Self {
             req: req.clone(),
             response_sink,
             end_event,
-            ctx,
             header,
+            auth_ctx,
         };
 
         spawn(controller.dispatch_loop());
@@ -56,8 +59,27 @@ impl<C: MetadataItem> RemoteFetchingFromHomeController<C> {
     async fn dispatch_loop(mut self) {
         use tokio::select;
 
+        // authorization check
+        if let Ok(authorized) = self
+            .auth_ctx
+            .auth
+            .allow_instance_action(
+                ObjectType::RemoteConnection,
+                InstanceAction::Update,
+                &self.req.remote_id,
+            )
+            .await
+        {
+            if !authorized {
+                warn!("identity mismatch for remote_id: {}", self.req.remote_id);
+                return;
+            }
+        }
+
+        let ctx = self.auth_ctx.global_ctx.clone();
+
         // check if remote cluster exists
-        let mirrors = self.ctx.mirrors().store().value(&self.req.remote_id).await;
+        let mirrors = ctx.mirrors().store().value(&self.req.remote_id).await;
         let remote = mirrors
             .iter()
             .find(|mirror| match &mirror.spec.mirror_type {
@@ -75,8 +97,8 @@ impl<C: MetadataItem> RemoteFetchingFromHomeController<C> {
             "received mirroring connect request"
         );
 
-        let mut topics_listener = self.ctx.topics().change_listener();
-        let mut spus_listerner = self.ctx.spus().change_listener();
+        let mut topics_listener = ctx.topics().change_listener();
+        let mut spus_listerner = ctx.spus().change_listener();
 
         loop {
             if self
@@ -121,9 +143,11 @@ impl<C: MetadataItem> RemoteFetchingFromHomeController<C> {
             return Ok(());
         }
 
-        let spus = self.ctx.spus().store().clone_values().await;
+        let ctx = self.auth_ctx.global_ctx.clone();
 
-        let topics = self.ctx.topics().store().clone_values().await;
+        let spus = ctx.spus().store().clone_values().await;
+
+        let topics = ctx.topics().store().clone_values().await;
         let mirror_topics = topics
             .into_iter()
             .filter_map(|topic| match topic.spec.replicas() {
@@ -165,7 +189,7 @@ impl<C: MetadataItem> RemoteFetchingFromHomeController<C> {
             })
             .collect::<Vec<_>>();
 
-        match self.ctx.mirrors().store().value(&self.req.remote_id).await {
+        match ctx.mirrors().store().value(&self.req.remote_id).await {
             Some(remote) => {
                 let now = SystemTime::now()
                     .duration_since(SystemTime::UNIX_EPOCH)
@@ -188,8 +212,7 @@ impl<C: MetadataItem> RemoteFetchingFromHomeController<C> {
                         now as u64,
                     );
 
-                    self.ctx
-                        .mirrors()
+                    ctx.mirrors()
                         .update_status(remote.key.clone(), status)
                         .await?;
                     error!(
@@ -207,8 +230,7 @@ impl<C: MetadataItem> RemoteFetchingFromHomeController<C> {
                     ConnectionStatus::Online,
                     now as u64,
                 );
-                self.ctx
-                    .mirrors()
+                ctx.mirrors()
                     .update_status(remote.key.clone(), status)
                     .await?;
 

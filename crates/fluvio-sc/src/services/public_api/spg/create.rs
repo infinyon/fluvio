@@ -19,7 +19,7 @@ use fluvio_controlplane_metadata::extended::SpecExt;
 use fluvio_auth::{AuthContext, TypeAction};
 
 use crate::core::Context;
-use crate::services::auth::AuthServiceContext;
+use crate::services::auth::ScAuthServiceContext;
 
 const DEFAULT_SPG_CREATE_TIMEOUT: u32 = 120 * 1000; // 2 minutes
 
@@ -27,7 +27,7 @@ const DEFAULT_SPG_CREATE_TIMEOUT: u32 = 120 * 1000; // 2 minutes
 #[instrument(skip(req, auth_ctx))]
 pub async fn handle_create_spu_group_request<AC: AuthContext, C: MetadataItem>(
     req: CreateRequest<SpuGroupSpec>,
-    auth_ctx: &AuthServiceContext<AC, C>,
+    auth_ctx: &ScAuthServiceContext<AC, C>,
 ) -> Result<Status> {
     let (create, spg) = req.parts();
     let name = create.name;

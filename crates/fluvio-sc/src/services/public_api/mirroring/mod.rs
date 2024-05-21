@@ -12,7 +12,7 @@ use fluvio_stream_model::core::MetadataItem;
 use fluvio_sc_schema::mirroring::ObjectMirroringRequest;
 use fluvio_sc_schema::TryEncodableFrom;
 use fluvio_types::event::StickyEvent;
-use crate::services::auth::AuthServiceContext;
+use crate::services::auth::ScAuthServiceContext;
 use crate::services::public_api::mirroring::connect::RemoteFetchingFromHomeController;
 
 pub enum MirrorRequests {
@@ -22,7 +22,7 @@ pub enum MirrorRequests {
 #[instrument(skip(request, auth_ctx, sink, end_event))]
 pub fn handle_mirroring_request<AC: AuthContext, C: MetadataItem>(
     request: RequestMessage<ObjectMirroringRequest>,
-    auth_ctx: &AuthServiceContext<AC, C>,
+    auth_ctx: Arc<ScAuthServiceContext<AC, C>>,
     sink: ExclusiveFlvSink,
     end_event: Arc<StickyEvent>,
 ) -> Result<()> {
@@ -36,15 +36,7 @@ pub fn handle_mirroring_request<AC: AuthContext, C: MetadataItem>(
 
     match req {
         MirrorRequests::Connect(req) => {
-            // authorization check
-            if !auth_ctx.auth.allow_remote_id(&req.remote_id) {
-                warn!("identity mismatch for remote_id: {}", req.remote_id);
-                return Err(anyhow!("identity mismatch"));
-            }
-
-            let ctx = auth_ctx.global_ctx.clone();
-
-            RemoteFetchingFromHomeController::start(req, sink, end_event, ctx, header);
+            RemoteFetchingFromHomeController::start(req, sink, end_event, header, auth_ctx);
         }
     };
 

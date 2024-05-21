@@ -9,11 +9,11 @@ use fluvio_sc_schema::{
 use anyhow::Result;
 use tracing::info;
 
-use crate::services::auth::AuthServiceContext;
+use crate::services::auth::ScAuthServiceContext;
 
 pub async fn handle_register_mirror<AC: AuthContext, C: MetadataItem>(
     req: CreateRequest<MirrorSpec>,
-    auth_ctx: &AuthServiceContext<AC, C>,
+    auth_ctx: &ScAuthServiceContext<AC, C>,
 ) -> Result<Status> {
     let (create, spec) = req.clone().parts();
     let name = create.name;

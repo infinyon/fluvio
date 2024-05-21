@@ -13,9 +13,9 @@ use std::process;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::path::PathBuf;
-use std::convert::TryFrom;
 
 use clap::Args;
+use fluvio_auth::basic::BasicRbacPolicy;
 use tracing::info;
 use tracing::debug;
 use clap::Parser;
@@ -25,7 +25,6 @@ use fluvio_types::defaults::TLS_SERVER_SECRET_NAME;
 use fluvio_future::openssl::TlsAcceptor;
 use fluvio_future::openssl::SslVerifyMode;
 
-use crate::services::auth::basic::BasicRbacPolicy;
 use crate::config::ScConfig;
 
 type Config = (ScConfig, Option<BasicRbacPolicy>);

@@ -28,13 +28,13 @@ use crate::controllers::topics::policy::{
     validate_computed_topic_parameters, validate_mirror_topic_parameter,
 };
 use crate::core::Context;
-use crate::services::auth::AuthServiceContext;
+use crate::services::auth::ScAuthServiceContext;
 
 /// Handler for create topic request
 #[instrument(skip(req, auth_ctx))]
 pub(crate) async fn handle_create_topics_request<AC: AuthContext, C: MetadataItem>(
     req: CreateRequest<TopicSpec>,
-    auth_ctx: &AuthServiceContext<AC, C>,
+    auth_ctx: &ScAuthServiceContext<AC, C>,
 ) -> Result<Status> {
     let (create, topic) = req.parts();
     let name = create.name;
@@ -192,7 +192,7 @@ async fn validate_topic_request<C: MetadataItem>(
 /// create new topic and wait until all partitions are fully provisioned
 /// if any partitions are not provisioned in time, this will generate error
 async fn process_topic_request<AC: AuthContext, C: MetadataItem>(
-    auth_ctx: &AuthServiceContext<AC, C>,
+    auth_ctx: &ScAuthServiceContext<AC, C>,
     name: String,
     topic_spec: TopicSpec,
 ) -> Status {

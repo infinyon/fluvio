@@ -16,13 +16,13 @@ use fluvio_controlplane_metadata::extended::SpecExt;
 use fluvio_auth::{AuthContext, TypeAction};
 
 use crate::core::Context;
-use crate::services::auth::AuthServiceContext;
+use crate::services::auth::ScAuthServiceContext;
 
 /// Handler for smartmodule request
 #[instrument(skip(req, auth_ctx))]
 pub async fn handle_create_smartmodule_request<AC: AuthContext, C: MetadataItem>(
     req: CreateRequest<SmartModuleSpec>,
-    auth_ctx: &AuthServiceContext<AC, C>,
+    auth_ctx: &ScAuthServiceContext<AC, C>,
 ) -> Result<Status> {
     let (create, spec) = req.parts();
     let name = create.name;

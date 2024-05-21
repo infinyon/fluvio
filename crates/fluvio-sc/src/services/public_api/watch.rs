@@ -21,7 +21,7 @@ use fluvio_controlplane_metadata::topic::TopicSpec;
 use fluvio_controlplane_metadata::smartmodule::SmartModuleSpec;
 use fluvio_controlplane_metadata::tableformat::TableFormatSpec;
 
-use crate::services::auth::AuthServiceContext;
+use crate::services::auth::ScAuthServiceContext;
 use crate::stores::StoreContext;
 use fluvio_controlplane_metadata::spg::SpuGroupSpec;
 
@@ -29,7 +29,7 @@ use fluvio_controlplane_metadata::spg::SpuGroupSpec;
 #[instrument(skip(request, auth_ctx, sink, end_event))]
 pub fn handle_watch_request<AC, C: MetadataItem + 'static>(
     request: RequestMessage<ObjectApiWatchRequest>,
-    auth_ctx: &AuthServiceContext<AC, C>,
+    auth_ctx: &ScAuthServiceContext<AC, C>,
     sink: ExclusiveFlvSink,
     end_event: Arc<StickyEvent>,
 ) -> Result<()> {

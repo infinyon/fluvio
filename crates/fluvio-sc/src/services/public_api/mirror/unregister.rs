@@ -4,11 +4,11 @@ use fluvio_sc_schema::{core::MetadataItem, Status};
 use anyhow::Result;
 use tracing::info;
 
-use crate::services::auth::AuthServiceContext;
+use crate::services::auth::ScAuthServiceContext;
 
 pub async fn handle_unregister_mirror<AC: AuthContext, C: MetadataItem>(
     key: String,
-    auth_ctx: &AuthServiceContext<AC, C>,
+    auth_ctx: &ScAuthServiceContext<AC, C>,
 ) -> Result<Status> {
     let name = key;
     info!(name = name, "unregister mirror cluster");

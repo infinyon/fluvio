@@ -8,13 +8,13 @@ use fluvio_sc_schema::topic::TopicSpec;
 use fluvio_auth::{AuthContext, TypeAction};
 use fluvio_controlplane_metadata::extended::SpecExt;
 
-use crate::services::auth::AuthServiceContext;
+use crate::services::auth::ScAuthServiceContext;
 
 #[instrument(skip(filters, auth_ctx))]
 pub async fn handle_fetch_topics_request<AC: AuthContext, C: MetadataItem>(
     filters: ListFilters,
     system: bool,
-    auth_ctx: &AuthServiceContext<AC, C>,
+    auth_ctx: &ScAuthServiceContext<AC, C>,
 ) -> Result<ListResponse<TopicSpec>> {
     debug!("retrieving topic list: {:#?}", filters);
 

@@ -16,7 +16,7 @@ use fluvio_auth::{AuthContext, TypeAction};
 use fluvio_controlplane_metadata::extended::SpecExt;
 
 use crate::core::SharedContext;
-use crate::services::auth::AuthServiceContext;
+use crate::services::auth::ScAuthServiceContext;
 use crate::stores::spu::SpuLocalStorePolicy;
 
 pub struct RegisterCustomSpu<C: MetadataItem> {
@@ -30,7 +30,7 @@ impl<C: MetadataItem> RegisterCustomSpu<C> {
     #[instrument(skip(req, auth_ctx))]
     pub async fn handle_register_custom_spu_request<AC: AuthContext>(
         req: CreateRequest<CustomSpuSpec>,
-        auth_ctx: &AuthServiceContext<AC, C>,
+        auth_ctx: &ScAuthServiceContext<AC, C>,
     ) -> Status {
         let (create, spec) = req.parts();
         let name = create.name;
