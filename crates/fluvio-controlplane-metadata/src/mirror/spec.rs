@@ -75,4 +75,25 @@ pub struct Home {
     pub id: String,
     pub remote_id: String,
     pub public_endpoint: String,
+    #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "Option::is_none"))]
+    pub client_tls: Option<ClientTls>,
+}
+
+#[derive(Clone, PartialEq, Eq, Default, Encoder, Decoder)]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase")
+)]
+pub struct ClientTls {
+    pub domain: String,
+    pub ca_cert: String,
+    pub client_cert: String,
+    pub client_key: String,
+}
+
+impl std::fmt::Debug for ClientTls {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "ClientTls: {{ domain: {} }}", self.domain)
+    }
 }

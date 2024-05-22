@@ -46,6 +46,17 @@ spec:
                           type: string
                         publicEndpoint:
                           type: string
+                        clientTls:
+                          type: object
+                          properties:
+                            domain:
+                              type: string
+                            caCert:
+                              type: string
+                            clientCert:
+                              type: string
+                            clientKey:
+                              type: string
                 keyPair:
                   type: object
                   required: ["privateKey", "publicKey"]
