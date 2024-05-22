@@ -74,6 +74,7 @@ pub struct Home {
     pub id: String,
     pub remote_id: String,
     pub public_endpoint: String,
+    //TODO: maybe we should move it to a secret or just store the paths of the files
     #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "Option::is_none"))]
     pub tls: Option<ClientTls>,
 }

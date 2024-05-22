@@ -123,7 +123,6 @@ where
 
         use std::sync::Arc;
         use fluvio_auth::basic::{BasicAuthorization, BasicRbacPolicy};
-        use fluvio_auth::remote::RemoteAuthorization;
         use fluvio_auth::root::{ReadOnlyAuthorization, RootAuthorization};
         use tracing::info;
 
@@ -143,14 +142,6 @@ where
                 start_public_server(ScAuthGlobalContext::new(
                     ctx,
                     Arc::new(BasicAuthorization::new(policy)),
-                ));
-            } else if ctx.config().tls {
-                // if we are using tls without scopes,
-                // we need at least check remote authorization
-                info!("using spu remote authorization");
-                start_public_server(ScAuthGlobalContext::new(
-                    ctx,
-                    Arc::new(RemoteAuthorization::new()),
                 ));
             } else if ctx.config().read_only_metadata {
                 info!("using read-only authorization");

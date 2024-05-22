@@ -5,7 +5,7 @@ use std::{
 use tracing::{debug, error, info, instrument, trace, warn};
 use anyhow::{Result, anyhow};
 
-use fluvio_auth::{AuthContext, InstanceAction};
+use fluvio_auth::{AuthContext, TypeAction};
 use fluvio_controlplane_metadata::{
     extended::ObjectType,
     mirroring::{MirrorConnect, MirroringSpecWrapper, MirroringStatusResponse},
@@ -63,11 +63,7 @@ impl<AC: AuthContext, C: MetadataItem> RemoteFetchingFromHomeController<AC, C> {
         if let Ok(authorized) = self
             .auth_ctx
             .auth
-            .allow_instance_action(
-                ObjectType::RemoteConnection,
-                InstanceAction::Update,
-                &self.req.remote_id,
-            )
+            .allow_type_action(ObjectType::RemoteToHomeConnection, TypeAction::Update)
             .await
         {
             if !authorized {

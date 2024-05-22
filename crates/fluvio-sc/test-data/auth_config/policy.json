@@ -23,6 +23,9 @@
         ],
         "Mirror": [
             "All"
+        ],
+        "RemoteToHomeConnection": [
+            "All"
         ]
     },
     "Root": {
@@ -51,6 +54,9 @@
             "All"
         ],
         "Mirror": [
+            "All"
+        ],
+        "RemoteToHomeConnection": [
             "All"
         ]
     }

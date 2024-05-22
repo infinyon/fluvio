@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use fluvio_auth::remote::RemoteAuthorization;
 use fluvio_auth::root::RootAuthorization;
 use fluvio_storage::FileReplica;
 
@@ -74,18 +73,19 @@ pub fn create_services(
     let private_ep_addr = ctx.config().private_socket_addr().to_owned();
 
     if public {
-        // if we are using tls, we need at least check remote authorization
-        if ctx.config().tls {
-            let authorization = Arc::new(RemoteAuthorization::new());
-            let auth_global_ctx = SpuAuthGlobalContext::new(ctx.clone(), authorization);
-            let pub_server = create_public_server(public_ep_addr, auth_global_ctx);
-            pub_server.run();
-        } else {
-            let authorization = Arc::new(RootAuthorization::new());
-            let auth_global_ctx = SpuAuthGlobalContext::new(ctx.clone(), authorization);
-            let pub_server = create_public_server(public_ep_addr, auth_global_ctx);
-            pub_server.run();
-        }
+        //TODO: spu authorization
+        //if ctx.config().tls {
+        //    let authorization = Arc::new(RemoteAuthorization::new());
+        //    let auth_global_ctx = SpuAuthGlobalContext::new(ctx.clone(), authorization);
+        //    let pub_server = create_public_server(public_ep_addr, auth_global_ctx);
+        //    pub_server.run();
+        //} else {
+        //
+        //}
+        let authorization = Arc::new(RootAuthorization::new());
+        let auth_global_ctx = SpuAuthGlobalContext::new(ctx.clone(), authorization);
+        let pub_server = create_public_server(public_ep_addr, auth_global_ctx);
+        pub_server.run();
     };
 
     if internal {

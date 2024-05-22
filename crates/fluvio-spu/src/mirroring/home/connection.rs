@@ -6,7 +6,7 @@ use tokio::select;
 use tracing::{debug, error, instrument, warn};
 use anyhow::Result;
 
-use fluvio_auth::{AuthContext, InstanceAction};
+use fluvio_auth::{AuthContext, TypeAction};
 use fluvio_controlplane_metadata::mirror::MirrorType;
 use fluvio_controlplane_metadata::extended::ObjectType;
 use fluvio_future::timer::sleep;
@@ -72,11 +72,7 @@ impl MirrorHomeHandler {
         // authorization check
         if let Ok(authorized) = auth_ctx
             .auth
-            .allow_instance_action(
-                ObjectType::RemoteConnection,
-                InstanceAction::Update,
-                &req_msg.request.remote_cluster_id,
-            )
+            .allow_type_action(ObjectType::RemoteToHomeConnection, TypeAction::Update)
             .await
         {
             if !authorized {

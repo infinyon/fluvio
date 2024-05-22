@@ -64,14 +64,10 @@ impl AuthContext for BasicAuthContext {
     /// check if specific instance of spec can be deleted
     async fn allow_instance_action(
         &self,
-        ty: ObjectType,
+        _ty: ObjectType,
         _action: InstanceAction,
-        key: &str,
+        _key: &str,
     ) -> Result<bool, AuthError> {
-        if ty == ObjectType::RemoteConnection {
-            return Ok(self.identity.principal == key);
-        }
-
         Ok(true)
     }
 }
@@ -109,6 +105,7 @@ mod policy {
             match action {
                 TypeAction::Create => Action::Create,
                 TypeAction::Read => Action::Read,
+                TypeAction::Update => Action::Update,
             }
         }
     }
@@ -117,7 +114,6 @@ mod policy {
         fn from(action: InstanceAction) -> Self {
             match action {
                 InstanceAction::Delete => Action::Delete,
-                InstanceAction::Update => Action::Update,
             }
         }
     }
@@ -152,6 +148,7 @@ mod policy {
             //   let (action,object,_instance) = request;
             // For each scope provided in the identity,
             // check if there is a match;
+            //
             let is_allowed = identity.scopes().iter().any(|scope| {
                 self.0
                     .get(scope)
@@ -184,6 +181,7 @@ mod policy {
             root_policy.insert(ObjectType::Partition, vec![Action::All]);
             root_policy.insert(ObjectType::TableFormat, vec![Action::All]);
             root_policy.insert(ObjectType::Mirror, vec![Action::All]);
+            root_policy.insert(ObjectType::RemoteToHomeConnection, vec![Action::All]);
 
             let mut policy = HashMap::new();
 

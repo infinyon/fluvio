@@ -12,11 +12,11 @@ use super::AuthError;
 pub enum TypeAction {
     Create,
     Read,
+    Update,
 }
 
 pub enum InstanceAction {
     Delete,
-    Update,
 }
 
 #[async_trait]

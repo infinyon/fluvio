@@ -2,7 +2,6 @@ mod policy;
 mod error;
 
 pub mod basic;
-pub mod remote;
 pub mod root;
 
 pub mod x509;
