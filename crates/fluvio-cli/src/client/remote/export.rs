@@ -3,12 +3,10 @@ use anyhow::{Context, Result};
 use clap::Parser;
 use fluvio_extension_common::{target::ClusterTarget, Terminal};
 use fluvio_sc_schema::{
-    mirror::{Home, MirrorSpec, MirrorType},
+    mirror::{ClientTls, Home, MirrorSpec, MirrorType},
     remote_file::RemoteMetadataExport,
 };
 use anyhow::anyhow;
-
-use super::get_admin;
 
 #[derive(Debug, Parser)]
 pub struct ExportOpt {
@@ -20,9 +18,15 @@ pub struct ExportOpt {
     /// override endpoint of the home cluster
     #[arg(long, short = 'e')]
     public_endpoint: Option<String>,
-    // id of the home cluster to share
-    #[arg(name = "c")]
+    /// id of the home cluster to share
+    #[arg(long)]
     home_id: Option<String>,
+    /// remote tls certificate
+    #[arg(long)]
+    cert: Option<String>,
+    /// remote tls key
+    #[arg(long)]
+    key: Option<String>,
 }
 
 impl ExportOpt {
@@ -31,14 +35,15 @@ impl ExportOpt {
         out: Arc<T>,
         cluster_target: ClusterTarget,
     ) -> Result<()> {
+        let fluvio_config = cluster_target.load()?;
         let public_endpoint = if let Some(public_endpoint) = self.public_endpoint {
-            public_endpoint
+            public_endpoint.clone()
         } else {
-            let fluvio_config = cluster_target.clone().load()?;
-            fluvio_config.endpoint
+            fluvio_config.endpoint.clone()
         };
+        let flv = fluvio::Fluvio::connect_with_config(&fluvio_config).await?;
+        let admin = flv.admin().await;
 
-        let admin = get_admin(cluster_target).await?;
         let all_remotes = admin.all::<MirrorSpec>().await?;
         let _remote = all_remotes
             .iter()
@@ -50,10 +55,17 @@ impl ExportOpt {
 
         let home_id = self.home_id.clone().unwrap_or_else(|| "home".to_owned());
 
+        let tls = get_tls_config(
+            fluvio_config.clone(),
+            self.cert.clone(),
+            self.key.clone(),
+            self.remote_id.clone(),
+        )?;
         let home_metadata = Home {
             id: home_id,
             remote_id: self.remote_id,
             public_endpoint,
+            tls,
         };
 
         let metadata = RemoteMetadataExport::new(home_metadata);
@@ -67,4 +79,80 @@ impl ExportOpt {
 
         Ok(())
     }
+}
+
+#[cfg(unix)]
+fn get_tls_config(
+    fluvio_config: fluvio::config::FluvioConfig,
+    cert_path: Option<String>,
+    key_path: Option<String>,
+    remote_id: String,
+) -> Result<Option<ClientTls>> {
+    use fluvio::config::{TlsConfig, TlsPolicy};
+    use fluvio_future::native_tls::{CertBuilder, X509PemBuilder};
+    match &fluvio_config.tls {
+        TlsPolicy::Verified(config) => {
+            let (remote_cert, remote_key, cert_path) = match (cert_path.clone(), key_path) {
+                (Some(cert), Some(key)) => (
+                    std::fs::read_to_string(cert.clone())?,
+                    std::fs::read_to_string(key)?,
+                    cert,
+                ),
+                _ => {
+                    return Err(anyhow!(
+                        "remote cert and key are required for a cluster using TLS"
+                    ));
+                }
+            };
+
+            let cert_build = X509PemBuilder::from_path(cert_path)
+                .map_err(|err| anyhow!("error building cert: {}", err))?;
+
+            let cert = cert_build
+                .build()
+                .map_err(|err| anyhow!("error building cert: {}", err))?;
+
+            let cert_der = cert
+                .to_der()
+                .map_err(|err| anyhow!("error converting cert to der: {}", err))?;
+
+            let principal = fluvio_auth::x509::X509Authenticator::principal_from_raw_certificate(&cert_der).expect(
+                "error getting principal from certificate. This should never happen as the certificate is valid",
+            );
+
+            if principal != remote_id {
+                return Err(anyhow!(
+                    "remote_id: \"{}\" does not match the CN in the certificate: \"{}\"",
+                    remote_id,
+                    principal
+                ));
+            }
+
+            match config {
+                TlsConfig::Inline(config) => Ok(Some(ClientTls {
+                    domain: config.domain.clone(),
+                    ca_cert: config.ca_cert.clone(),
+                    client_cert: remote_cert,
+                    client_key: remote_key,
+                })),
+                TlsConfig::Files(file_config) => Ok(Some(ClientTls {
+                    domain: file_config.domain.clone(),
+                    ca_cert: std::fs::read_to_string(&file_config.ca_cert)?,
+                    client_cert: remote_cert,
+                    client_key: remote_key,
+                })),
+            }
+        }
+        _ => Ok(None),
+    }
+}
+
+#[cfg(not(unix))]
+fn get_tls_config(
+    _fluvio_config: fluvio::config::FluvioConfig,
+    _cert_path: Option<String>,
+    _key_path: Option<String>,
+    _remote_id: String,
+) -> Result<Option<ClientTls>> {
+    Ok(None)
 }

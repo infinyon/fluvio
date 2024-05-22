@@ -96,7 +96,7 @@ impl X509Authenticator {
         Ok(principal)
     }
 
-    fn principal_from_raw_certificate(certificate_bytes: &[u8]) -> Result<String, IoError> {
+    pub fn principal_from_raw_certificate(certificate_bytes: &[u8]) -> Result<String, IoError> {
         parse_x509_certificate(certificate_bytes)
             .map_err(|err| IoError::new(IoErrorKind::InvalidData, err))
             .and_then(|(_, parsed_cert)| Self::common_name_from_parsed_certificate(parsed_cert))
