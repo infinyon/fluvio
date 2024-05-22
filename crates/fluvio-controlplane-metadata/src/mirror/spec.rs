@@ -76,7 +76,7 @@ pub struct Home {
     pub remote_id: String,
     pub public_endpoint: String,
     #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "Option::is_none"))]
-    pub tls: Option<ClientTls>,
+    pub client_tls: Option<ClientTls>,
 }
 
 #[derive(Clone, PartialEq, Eq, Default, Encoder, Decoder)]

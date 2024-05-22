@@ -55,7 +55,7 @@ impl ExportOpt {
 
         let home_id = self.home_id.clone().unwrap_or_else(|| "home".to_owned());
 
-        let tls = get_tls_config(
+        let client_tls = get_tls_config(
             fluvio_config.clone(),
             self.cert.clone(),
             self.key.clone(),
@@ -65,7 +65,7 @@ impl ExportOpt {
             id: home_id,
             remote_id: self.remote_id,
             public_endpoint,
-            tls,
+            client_tls,
         };
 
         let metadata = RemoteMetadataExport::new(home_metadata);
@@ -155,4 +155,148 @@ fn get_tls_config(
     _remote_id: String,
 ) -> Result<Option<ClientTls>> {
     Ok(None)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[cfg(unix)]
+    #[test]
+    fn test_get_tls_config_on_unix() {
+        let fluvio_config = fluvio::config::FluvioConfig::new("localhost:9003".to_owned());
+        let cert_dir = std::env::current_dir()
+            .unwrap()
+            .join("..")
+            .join("..")
+            .join("tls")
+            .join("certs");
+
+        let ca_cert = cert_dir.join("ca.crt");
+        let config_tls = fluvio::config::TlsConfig::Files(fluvio::config::TlsPaths {
+            domain: "localhost".to_owned(),
+            ca_cert: ca_cert.clone(),
+            cert: cert_dir.join("client-root.crt"),
+            key: cert_dir.join("client-root.key"),
+        });
+
+        let fluvio_config_with_tls = fluvio_config.with_tls(config_tls);
+
+        let cert_path = Some(
+            cert_dir
+                .join("client-user1.crt")
+                .to_str()
+                .unwrap()
+                .to_owned(),
+        );
+        let key_path = Some(
+            cert_dir
+                .join("client-user1.key")
+                .to_str()
+                .unwrap()
+                .to_owned(),
+        );
+        let remote_id = "user1".to_owned();
+
+        let tls_result =
+            get_tls_config(fluvio_config_with_tls, cert_path, key_path, remote_id).unwrap();
+        assert!(tls_result.is_some());
+        let client_tls = tls_result.unwrap();
+
+        assert_eq!(client_tls.domain, "localhost");
+        assert_eq!(
+            client_tls.ca_cert,
+            std::fs::read_to_string(&ca_cert).unwrap()
+        );
+        assert_eq!(
+            client_tls.client_cert,
+            std::fs::read_to_string(cert_dir.join("client-user1.crt")).unwrap()
+        );
+        assert_eq!(
+            client_tls.client_key,
+            std::fs::read_to_string(cert_dir.join("client-user1.key")).unwrap()
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn test_get_tls_config_no_cert_key_when_tls_on_unix() {
+        let fluvio_config = fluvio::config::FluvioConfig::new("localhost:9003".to_owned());
+        let cert_dir = std::env::current_dir()
+            .unwrap()
+            .join("..")
+            .join("..")
+            .join("tls")
+            .join("certs");
+
+        let ca_cert = cert_dir.join("ca.crt");
+        let config_tls = fluvio::config::TlsConfig::Files(fluvio::config::TlsPaths {
+            domain: "localhost".to_owned(),
+            ca_cert: ca_cert.clone(),
+            cert: cert_dir.join("client-root.crt"),
+            key: cert_dir.join("client-root.key"),
+        });
+
+        let fluvio_config_with_tls = fluvio_config.with_tls(config_tls);
+
+        let cert_path = None;
+        let key_path = None;
+        let remote_id = "user1".to_owned();
+
+        let tls_result = get_tls_config(fluvio_config_with_tls, cert_path, key_path, remote_id);
+        assert!(tls_result.is_err());
+
+        let err = tls_result.unwrap_err();
+        assert_eq!(
+            err.to_string(),
+            "remote cert and key are required for a cluster using TLS"
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn test_get_tls_config_wrong_cn_on_unix() {
+        let fluvio_config = fluvio::config::FluvioConfig::new("localhost:9003".to_owned());
+        let cert_dir = std::env::current_dir()
+            .unwrap()
+            .join("..")
+            .join("..")
+            .join("tls")
+            .join("certs");
+
+        let ca_cert = cert_dir.join("ca.crt");
+        let config_tls = fluvio::config::TlsConfig::Files(fluvio::config::TlsPaths {
+            domain: "localhost".to_owned(),
+            ca_cert: ca_cert.clone(),
+            cert: cert_dir.join("client-root.crt"),
+            key: cert_dir.join("client-root.key"),
+        });
+
+        let fluvio_config_with_tls = fluvio_config.with_tls(config_tls);
+
+        let cert_path = Some(
+            cert_dir
+                .join("client-user1.crt")
+                .to_str()
+                .unwrap()
+                .to_owned(),
+        );
+        let key_path = Some(
+            cert_dir
+                .join("client-user1.key")
+                .to_str()
+                .unwrap()
+                .to_owned(),
+        );
+        let remote_id = "user2".to_owned();
+
+        let tls_result = get_tls_config(fluvio_config_with_tls, cert_path, key_path, remote_id);
+        assert!(tls_result.is_err());
+
+        let err = tls_result.unwrap_err();
+        assert_eq!(
+            err.to_string(),
+            "remote_id: \"user2\" does not match the CN in the certificate: \"user1\""
+        );
+    }
 }

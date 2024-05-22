@@ -46,7 +46,7 @@ spec:
                           type: string
                         publicEndpoint:
                           type: string
-                        tls:
+                        clientTls:
                           type: object
                           properties:
                             domain:

@@ -200,7 +200,7 @@ impl ReplicaConfig {
                     id: self.home_cluster.clone(),
                     remote_id: self.home_cluster.clone(),
                     public_endpoint: self.home_port.clone(),
-                    tls: None,
+                    client_tls: None,
                 }),
             },
         }]);
