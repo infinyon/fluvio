@@ -113,6 +113,7 @@ mod policy {
         fn from(action: InstanceAction) -> Self {
             match action {
                 InstanceAction::Delete => Action::Delete,
+                InstanceAction::Update => Action::Update,
             }
         }
     }
