@@ -16,10 +16,11 @@ pub enum TypeAction {
 
 pub enum InstanceAction {
     Delete,
+    Update,
 }
 
 #[async_trait]
-pub trait AuthContext: Debug {
+pub trait AuthContext: Debug + Send + Sync + 'static {
     /// check if any allow type specific action can be allowed
     async fn allow_type_action(
         &self,

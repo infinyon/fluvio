@@ -2,12 +2,13 @@ use std::time::{Duration, SystemTime};
 use tracing::{debug, error, info, instrument};
 use anyhow::{anyhow, Result};
 
+use fluvio::config::TlsPolicy;
 use fluvio_socket::{ClientConfig, MultiplexerSocket, StreamSocket};
 use futures_util::StreamExt;
-use fluvio_future::{task::spawn, timer::sleep};
+use fluvio_future::{net::DomainConnector, task::spawn, timer::sleep};
 use fluvio_sc_schema::{
     core::MetadataItem,
-    mirror::{ConnectionStatus, MirrorPairStatus, MirrorSpec, MirrorStatus, MirrorType},
+    mirror::{ConnectionStatus, Home, MirrorPairStatus, MirrorSpec, MirrorStatus, MirrorType},
     mirroring::ObjectMirroringRequest,
     topic::{MirrorConfig, RemoteMirrorConfig, ReplicaSpec, SpuMirrorConfig, TopicSpec},
     TryEncodableFrom,
@@ -72,9 +73,36 @@ impl<C: MetadataItem> RemoteMirrorController<C> {
 
             if let Some(home) = home_mirrors.first() {
                 //send to home cluster the connect request
-                //TODO: handle TLS
+                let tlspolicy = option_tlspolicy(home);
 
-                let home_config = ClientConfig::with_addr(home.public_endpoint.clone());
+                // handling tls
+                let home_config = if let Some(tlspolicy) = &tlspolicy {
+                    match DomainConnector::try_from(tlspolicy.clone()) {
+                        Ok(connector) => {
+                            ClientConfig::new(home.public_endpoint.clone(), connector, false)
+                        }
+                        Err(err) => {
+                            error!(
+                                "error establishing tls with leader at: <{}> err: {}",
+                                home.public_endpoint.clone(),
+                                err
+                            );
+                            let now = SystemTime::now()
+                                .duration_since(SystemTime::UNIX_EPOCH)?
+                                .as_millis();
+                            let status = MirrorStatus::new(
+                                MirrorPairStatus::Failed,
+                                ConnectionStatus::Online,
+                                now as u64,
+                            );
+                            self.mirrors.update_status(home.id.clone(), status).await?;
+                            return Err(err.into());
+                        }
+                    }
+                } else {
+                    ClientConfig::with_addr(home.public_endpoint.clone())
+                };
+
                 let versioned_socket = home_config.connect().await?;
                 let (socket, config, versions) = versioned_socket.split();
                 info!("connecting to home: {}", home.public_endpoint);
@@ -194,4 +222,24 @@ impl<C: MetadataItem> RemoteMirrorController<C> {
             sleep(Duration::from_secs(MIRRORING_CONTROLLER_INTERVAL)).await;
         }
     }
+}
+
+fn option_tlspolicy(home: &Home) -> Option<TlsPolicy> {
+    use fluvio::config::{TlsCerts, TlsConfig};
+
+    let ct = match &home.client_tls {
+        Some(ct) => ct,
+        _ => {
+            return None;
+        }
+    };
+
+    let certs = TlsCerts {
+        domain: ct.domain.clone(),
+        key: ct.client_key.clone(),
+        cert: ct.client_cert.clone(),
+        ca_cert: ct.ca_cert.clone(),
+    };
+    let tlscfg = TlsConfig::Inline(certs);
+    Some(TlsPolicy::from(tlscfg))
 }
