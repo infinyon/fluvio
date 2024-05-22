@@ -1,5 +1,6 @@
 use colored::Colorize;
 
+#[derive(Copy, Clone, Debug)]
 pub struct Notify {
     /// Whether to suppress all output
     quiet: bool,
