@@ -1,0 +1,34 @@
+{
+    "Default": {
+        "CustomSpu": [
+            "All"
+        ],
+        "Spu": [
+            "All"
+        ],
+        "Topic": [
+            "Read"
+        ],
+        "Partition": [
+            "Read"
+        ],
+        "SpuGroup": [
+            "All"
+        ],
+        "SmartModule": [
+            "All"
+        ],
+        "TableFormat": [
+            "All"
+        ],
+        "Mirror": [
+            "All"
+        ]
+    },
+    "Edge": {
+        "Mirror": [
+            "All:user1",
+            "All:user2"
+        ]
+    }
+}
