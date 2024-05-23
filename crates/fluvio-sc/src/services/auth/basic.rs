@@ -94,12 +94,12 @@ mod policy {
     #[derive(Debug, Clone, Eq, PartialEq)]
     pub struct ActionUrn {
         pub action: Action,
-        pub instances: Option<Vec<String>>,
+        pub instance: Option<String>,
     }
 
     impl ActionUrn {
-        pub fn new(action: Action, instances: Option<Vec<String>>) -> Self {
-            Self { action, instances }
+        pub fn new(action: Action, instance: Option<String>) -> Self {
+            Self { action, instance }
         }
     }
 
@@ -110,9 +110,9 @@ mod policy {
         {
             let action_str =
                 serde_json::to_string(&self.action).map_err(serde::ser::Error::custom)?;
-            let urn = match &self.instances {
-                Some(instances) => {
-                    format!("{}:{}", action_str.trim_matches('"'), instances.join(":"))
+            let urn = match &self.instance {
+                Some(instance) => {
+                    format!("{}:{}", action_str.trim_matches('"'), instance)
                 }
                 None => action_str.trim_matches('"').to_string(),
             };
@@ -133,13 +133,13 @@ mod policy {
             let action = serde_json::from_str(format!("\"{}\"", action_str).as_str())
                 .map_err(Error::custom)?;
 
-            let instances = if parts.len() > 1 {
-                Some(parts[1..].iter().map(|s| s.to_string()).collect())
+            let instance = if parts.len() > 1 {
+                Some(parts[1].to_string())
             } else {
                 None
             };
 
-            Ok(Self { action, instances })
+            Ok(Self { action, instance })
         }
     }
 
@@ -208,7 +208,7 @@ mod policy {
                             .get(&object_type)
                             .map(|actions| {
                                 actions.iter().any(|permission| {
-                                    match (&permission.instances, instance) {
+                                    match (&permission.instance, instance) {
                                         (Some(_), None) => return false,
                                         (Some(pi), Some(i)) => {
                                             if !pi.contains(&i.to_string()) {
@@ -255,10 +255,10 @@ mod policy {
             );
             root_policy.insert(
                 ObjectType::Mirror,
-                vec![ActionUrn::new(
-                    Action::All,
-                    Some(vec!["user1".to_string(), "user2".to_string()]),
-                )],
+                vec![
+                    ActionUrn::new(Action::All, Some("user1".to_string())),
+                    ActionUrn::new(Action::All, Some("user2".to_string())),
+                ],
             );
 
             let mut policy = HashMap::new();
@@ -285,29 +285,19 @@ mod test {
 
     #[test]
     fn test_action_urn_serialization() {
-        let action_urn = ActionUrn::new(
-            Action::Read,
-            Some(vec!["user1".to_string(), "user2".to_string()]),
-        );
+        let action_urn = ActionUrn::new(Action::Read, Some("user1".to_string()));
         let serialized =
             serde_json::to_string(&action_urn).expect("failed to serialize action urn");
-        assert_eq!(serialized, r#""Read:user1:user2""#);
+        assert_eq!(serialized, r#""Read:user1""#);
     }
 
     #[test]
     fn test_action_urn_deserialization() {
-        let deserialized: ActionUrn = serde_json::from_str(r#""Read:user1:user2:user3""#)
-            .expect("failed to deserialize action urn");
+        let deserialized: ActionUrn =
+            serde_json::from_str(r#""Read:user1""#).expect("failed to deserialize action urn");
         assert_eq!(
             deserialized,
-            ActionUrn::new(
-                Action::Read,
-                Some(vec![
-                    "user1".to_string(),
-                    "user2".to_string(),
-                    "user3".to_string()
-                ])
-            )
+            ActionUrn::new(Action::Read, Some("user1".to_string()))
         );
     }
 
@@ -333,10 +323,10 @@ mod test {
         default_role.insert(ObjectType::Spu, vec![ActionUrn::new(Action::Read, None)]);
         default_role.insert(
             ObjectType::Mirror,
-            vec![ActionUrn::new(
-                Action::Read,
-                Some(vec!["edge1".to_string(), "edge2".to_string()]),
-            )],
+            vec![
+                ActionUrn::new(Action::Read, Some("edge1".to_string())),
+                ActionUrn::new(Action::Read, Some("edge2".to_string())),
+            ],
         );
 
         policy.0.insert(String::from("Default"), default_role);
@@ -369,10 +359,10 @@ mod test {
         );
         role1.insert(
             ObjectType::Mirror,
-            vec![ActionUrn::new(
-                Action::Update,
-                Some(vec!["user1".to_string(), "user2".to_string()]),
-            )],
+            vec![
+                ActionUrn::new(Action::Update, Some("user1".to_string())),
+                ActionUrn::new(Action::Update, Some("user2".to_string())),
+            ],
         );
 
         policy.0.insert(String::from("Default"), role1);
