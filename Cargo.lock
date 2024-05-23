@@ -2963,6 +2963,7 @@ dependencies = [
  "event-listener 3.1.0",
  "flate2",
  "fluvio",
+ "fluvio-auth",
  "fluvio-compression",
  "fluvio-controlplane",
  "fluvio-controlplane-metadata",

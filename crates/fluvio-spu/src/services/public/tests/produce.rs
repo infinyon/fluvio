@@ -27,13 +27,11 @@ use flv_util::fixture::ensure_clean_dir;
 use crate::{
     config::SpuConfig,
     core::GlobalContext,
-    services::public::{
-        create_public_server,
-        tests::{
-            create_filter_records, vec_to_raw_batch, load_wasm_module, create_filter_raw_records,
-        },
-    },
     replication::leader::LeaderReplicaState,
+    services::public::tests::{
+        create_filter_raw_records, create_filter_records, create_public_server_with_root_auth,
+        load_wasm_module, vec_to_raw_batch,
+    },
 };
 
 #[fluvio_future::test(ignore)]
@@ -47,7 +45,7 @@ async fn test_produce_basic() {
     spu_config.log.base_dir = test_path;
     let ctx = GlobalContext::new_shared_context(spu_config);
 
-    let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+    let server_end_event = create_public_server_with_root_auth(addr.to_owned(), ctx.clone()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
@@ -160,7 +158,7 @@ async fn test_produce_invalid_compression() {
     spu_config.log.base_dir = test_path;
     let ctx = GlobalContext::new_shared_context(spu_config);
 
-    let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+    let server_end_event = create_public_server_with_root_auth(addr.to_owned(), ctx.clone()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
@@ -234,7 +232,8 @@ async fn test_produce_request_timed_out() {
 
     let (leader_ctx, _) = config.leader_replica().await;
 
-    let server_end_event = create_public_server(public_addr.clone(), leader_ctx.clone()).run();
+    let server_end_event =
+        create_public_server_with_root_auth(public_addr.to_owned(), leader_ctx.clone()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
@@ -296,7 +295,8 @@ async fn test_produce_not_waiting_replication() {
     let (leader_ctx, _) = config.leader_replica().await;
     let public_addr = config.leader_public_addr();
 
-    let server_end_event = create_public_server(public_addr.clone(), leader_ctx.clone()).run();
+    let server_end_event =
+        create_public_server_with_root_auth(public_addr.to_owned(), leader_ctx.clone()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
@@ -356,7 +356,8 @@ async fn test_produce_waiting_replication() {
     let public_addr = config.leader_public_addr();
 
     let public_server_end_event =
-        create_public_server(public_addr.clone(), leader_ctx.clone()).run();
+        create_public_server_with_root_auth(public_addr.to_owned(), leader_ctx.clone()).run();
+
     let private_server_end_event =
         create_internal_server(config.leader_addr(), leader_ctx.clone()).run();
 
@@ -425,7 +426,7 @@ async fn test_produce_metrics() {
     spu_config.log.base_dir = test_path;
     let ctx = GlobalContext::new_shared_context(spu_config);
 
-    let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+    let server_end_event = create_public_server_with_root_auth(addr.to_owned(), ctx.clone()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
@@ -537,7 +538,7 @@ async fn test_produce_basic_with_smartmodule_with_lookback() {
     smartmodule.params.set_lookback(Some(Lookback::last(1)));
     let mut smartmodules = vec![smartmodule];
 
-    let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+    let server_end_event = create_public_server_with_root_auth(addr.to_owned(), ctx.clone()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
@@ -848,7 +849,7 @@ async fn test_produce_with_deduplication() {
     let ctx = GlobalContext::new_shared_context(spu_config);
     load_wasm_module(&ctx, FLUVIO_WASM_DEDUPLICATION_FILTER);
 
-    let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+    let server_end_event = create_public_server_with_root_auth(addr.to_owned(), ctx.clone()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
@@ -1038,7 +1039,7 @@ async fn test_produce_smart_engine_memory_overfow() {
     let ctx = GlobalContext::new_shared_context(spu_config);
     load_wasm_module(&ctx, FLUVIO_WASM_DEDUPLICATION_FILTER);
 
-    let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+    let server_end_event = create_public_server_with_root_auth(addr.to_owned(), ctx.clone()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
@@ -1124,7 +1125,7 @@ async fn test_dedup_init_smart_engine_memory_overfow() {
     let ctx = GlobalContext::new_shared_context(spu_config);
     load_wasm_module(&ctx, FLUVIO_WASM_DEDUPLICATION_FILTER);
 
-    let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+    let server_end_event = create_public_server_with_root_auth(addr.to_owned(), ctx.clone()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
