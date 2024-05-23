@@ -5,6 +5,7 @@ use std::{
 
 use chrono::Utc;
 use flate2::{bufread::GzEncoder, Compression};
+use fluvio_auth::root::RootAuthorization;
 use fluvio_controlplane::spu_api::update_smartmodule::SmartModule;
 use fluvio_controlplane_metadata::smartmodule::{
     SmartModuleSpec, SmartModuleWasm, SmartModuleWasmFormat,
@@ -14,9 +15,11 @@ use fluvio_protocol::{
     record::{RecordData, Record, RecordSet, Batch, RawRecords},
     ByteBuf,
 };
-use fluvio_storage::ReplicaStorage;
+use fluvio_storage::{FileReplica, ReplicaStorage};
 
-use crate::core::GlobalContext;
+use crate::{core::GlobalContext, services::auth::SpuAuthGlobalContext};
+
+use super::{create_public_server, SpuPublicServer};
 
 mod stream_fetch;
 mod produce;
@@ -108,4 +111,13 @@ fn load_wasm_module<S: ReplicaStorage>(ctx: &GlobalContext<S>, module_name: &str
             ..Default::default()
         },
     });
+}
+
+fn create_public_server_with_root_auth(
+    addr: String,
+    ctx: Arc<GlobalContext<FileReplica>>,
+) -> SpuPublicServer<RootAuthorization> {
+    let auth_global_ctx =
+        SpuAuthGlobalContext::new(ctx.clone(), Arc::new(RootAuthorization::new()));
+    create_public_server(addr.to_owned(), auth_global_ctx.clone())
 }

@@ -1,7 +1,6 @@
-use std::{env::temp_dir, sync::Arc, time::Duration};
+use std::{env::temp_dir, time::Duration};
 
 use fluvio::{SmartModuleInvocation, SmartModuleInvocationWasm, SmartModuleKind};
-use fluvio_auth::root::RootAuthorization;
 use fluvio_controlplane::replica::Replica;
 use fluvio_smartmodule::{Record, dataplane::smartmodule::Lookback};
 use fluvio_storage::{FileReplica, iterators::FileBatchIterator};
@@ -29,15 +28,9 @@ use crate::{
     config::SpuConfig,
     core::GlobalContext,
     replication::leader::LeaderReplicaState,
-    services::{
-        auth::SpuAuthGlobalContext,
-        public::{
-            create_public_server,
-            tests::{
-                create_filter_raw_records, create_filter_records, load_wasm_module,
-                vec_to_raw_batch,
-            },
-        },
+    services::public::tests::{
+        create_filter_raw_records, create_filter_records, create_public_server_with_root_auth,
+        load_wasm_module, vec_to_raw_batch,
     },
 };
 
@@ -51,9 +44,8 @@ async fn test_produce_basic() {
     let mut spu_config = SpuConfig::default();
     spu_config.log.base_dir = test_path;
     let ctx = GlobalContext::new_shared_context(spu_config);
-    let auth_global_ctx =
-        SpuAuthGlobalContext::new(ctx.clone(), Arc::new(RootAuthorization::new()));
-    let server_end_event = create_public_server(addr.to_owned(), auth_global_ctx.clone()).run();
+
+    let server_end_event = create_public_server_with_root_auth(addr.to_owned(), ctx.clone()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
@@ -166,9 +158,7 @@ async fn test_produce_invalid_compression() {
     spu_config.log.base_dir = test_path;
     let ctx = GlobalContext::new_shared_context(spu_config);
 
-    let auth_global_ctx =
-        SpuAuthGlobalContext::new(ctx.clone(), Arc::new(RootAuthorization::new()));
-    let server_end_event = create_public_server(addr.to_owned(), auth_global_ctx.clone()).run();
+    let server_end_event = create_public_server_with_root_auth(addr.to_owned(), ctx.clone()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
@@ -242,10 +232,8 @@ async fn test_produce_request_timed_out() {
 
     let (leader_ctx, _) = config.leader_replica().await;
 
-    let auth_global_ctx =
-        SpuAuthGlobalContext::new(leader_ctx.clone(), Arc::new(RootAuthorization::new()));
     let server_end_event =
-        create_public_server(public_addr.to_owned(), auth_global_ctx.clone()).run();
+        create_public_server_with_root_auth(public_addr.to_owned(), leader_ctx.clone()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
@@ -307,10 +295,8 @@ async fn test_produce_not_waiting_replication() {
     let (leader_ctx, _) = config.leader_replica().await;
     let public_addr = config.leader_public_addr();
 
-    let auth_global_ctx =
-        SpuAuthGlobalContext::new(leader_ctx.clone(), Arc::new(RootAuthorization::new()));
     let server_end_event =
-        create_public_server(public_addr.to_owned(), auth_global_ctx.clone()).run();
+        create_public_server_with_root_auth(public_addr.to_owned(), leader_ctx.clone()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
@@ -369,10 +355,8 @@ async fn test_produce_waiting_replication() {
     let (leader_ctx, leader_replica) = config.leader_replica().await;
     let public_addr = config.leader_public_addr();
 
-    let auth_global_ctx =
-        SpuAuthGlobalContext::new(leader_ctx.clone(), Arc::new(RootAuthorization::new()));
     let public_server_end_event =
-        create_public_server(public_addr.to_owned(), auth_global_ctx.clone()).run();
+        create_public_server_with_root_auth(public_addr.to_owned(), leader_ctx.clone()).run();
 
     let private_server_end_event =
         create_internal_server(config.leader_addr(), leader_ctx.clone()).run();
@@ -442,9 +426,7 @@ async fn test_produce_metrics() {
     spu_config.log.base_dir = test_path;
     let ctx = GlobalContext::new_shared_context(spu_config);
 
-    let auth_global_ctx =
-        SpuAuthGlobalContext::new(ctx.clone(), Arc::new(RootAuthorization::new()));
-    let server_end_event = create_public_server(addr.to_owned(), auth_global_ctx.clone()).run();
+    let server_end_event = create_public_server_with_root_auth(addr.to_owned(), ctx.clone()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
@@ -556,9 +538,7 @@ async fn test_produce_basic_with_smartmodule_with_lookback() {
     smartmodule.params.set_lookback(Some(Lookback::last(1)));
     let mut smartmodules = vec![smartmodule];
 
-    let auth_global_ctx =
-        SpuAuthGlobalContext::new(ctx.clone(), Arc::new(RootAuthorization::new()));
-    let server_end_event = create_public_server(addr.to_owned(), auth_global_ctx.clone()).run();
+    let server_end_event = create_public_server_with_root_auth(addr.to_owned(), ctx.clone()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
@@ -869,9 +849,7 @@ async fn test_produce_with_deduplication() {
     let ctx = GlobalContext::new_shared_context(spu_config);
     load_wasm_module(&ctx, FLUVIO_WASM_DEDUPLICATION_FILTER);
 
-    let auth_global_ctx =
-        SpuAuthGlobalContext::new(ctx.clone(), Arc::new(RootAuthorization::new()));
-    let server_end_event = create_public_server(addr.to_owned(), auth_global_ctx.clone()).run();
+    let server_end_event = create_public_server_with_root_auth(addr.to_owned(), ctx.clone()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
@@ -1061,9 +1039,7 @@ async fn test_produce_smart_engine_memory_overfow() {
     let ctx = GlobalContext::new_shared_context(spu_config);
     load_wasm_module(&ctx, FLUVIO_WASM_DEDUPLICATION_FILTER);
 
-    let auth_global_ctx =
-        SpuAuthGlobalContext::new(ctx.clone(), Arc::new(RootAuthorization::new()));
-    let server_end_event = create_public_server(addr.to_owned(), auth_global_ctx.clone()).run();
+    let server_end_event = create_public_server_with_root_auth(addr.to_owned(), ctx.clone()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
@@ -1149,9 +1125,7 @@ async fn test_dedup_init_smart_engine_memory_overfow() {
     let ctx = GlobalContext::new_shared_context(spu_config);
     load_wasm_module(&ctx, FLUVIO_WASM_DEDUPLICATION_FILTER);
 
-    let auth_global_ctx =
-        SpuAuthGlobalContext::new(ctx.clone(), Arc::new(RootAuthorization::new()));
-    let server_end_event = create_public_server(addr.to_owned(), auth_global_ctx.clone()).run();
+    let server_end_event = create_public_server_with_root_auth(addr.to_owned(), ctx.clone()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
