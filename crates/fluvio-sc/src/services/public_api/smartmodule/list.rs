@@ -90,14 +90,13 @@ mod test {
 
     use std::sync::Arc;
 
+    use fluvio_auth::root::RootAuthContext;
     use fluvio_stream_dispatcher::store::StoreContext;
     use fluvio_stream_model::fixture::TestMeta;
     use fluvio_stream_model::store::{MetadataStoreObject, LocalStore};
     use fluvio_controlplane_metadata::smartmodule::{
         SmartModuleSpec, SmartModuleMetadata, SmartModulePackage, FluvioSemVersion,
     };
-
-    use crate::services::auth::RootAuthContext;
 
     use super::fetch_smart_modules;
 

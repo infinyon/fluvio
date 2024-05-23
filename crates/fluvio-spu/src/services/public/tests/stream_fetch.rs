@@ -2,6 +2,7 @@ use std::{env::temp_dir, path::PathBuf, time::Duration};
 use std::sync::Arc;
 
 use chrono::{Utc, Days};
+use fluvio_auth::root::RootAuthorization;
 use fluvio_controlplane::replica::Replica;
 use fluvio_controlplane::spu_api::update_smartmodule::SmartModule;
 use fluvio_smartmodule::dataplane::smartmodule::Lookback;
@@ -34,6 +35,7 @@ use fluvio_spu_schema::{
     fetch::DefaultFetchRequest,
 };
 use fluvio_spu_schema::server::stream_fetch::DefaultStreamFetchRequest;
+use crate::services::auth::SpuAuthGlobalContext;
 use crate::services::public::tests::{vec_to_batch, create_filter_raw_records};
 use crate::{
     core::GlobalContext,
@@ -58,7 +60,9 @@ async fn test_stream_fetch_basic() {
     spu_config.log.base_dir = test_path;
     let ctx = GlobalContext::new_shared_context(spu_config);
 
-    let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+    let auth_global_ctx =
+        SpuAuthGlobalContext::new(ctx.clone(), Arc::new(RootAuthorization::new()));
+    let server_end_event = create_public_server(addr.to_owned(), auth_global_ctx.clone()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
@@ -394,7 +398,9 @@ async fn test_stream_fetch_filter(
 
     let addr = format!("127.0.0.1:{port}");
 
-    let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+    let auth_global_ctx =
+        SpuAuthGlobalContext::new(ctx.clone(), Arc::new(RootAuthorization::new()));
+    let server_end_event = create_public_server(addr.to_owned(), auth_global_ctx.clone()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
@@ -585,7 +591,9 @@ async fn test_stream_fetch_filter_individual(
 
     let addr = format!("127.0.0.1:{port}");
 
-    let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+    let auth_global_ctx =
+        SpuAuthGlobalContext::new(ctx.clone(), Arc::new(RootAuthorization::new()));
+    let server_end_event = create_public_server(addr.to_owned(), auth_global_ctx.clone()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
@@ -711,7 +719,9 @@ async fn test_stream_filter_error_fetch(
 
     let addr = format!("127.0.0.1:{port}");
 
-    let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+    let auth_global_ctx =
+        SpuAuthGlobalContext::new(ctx.clone(), Arc::new(RootAuthorization::new()));
+    let server_end_event = create_public_server(addr.to_owned(), auth_global_ctx.clone()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
@@ -846,7 +856,9 @@ async fn test_stream_filter_max(
 
     let addr = format!("127.0.0.1:{port}");
 
-    let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+    let auth_global_ctx =
+        SpuAuthGlobalContext::new(ctx.clone(), Arc::new(RootAuthorization::new()));
+    let server_end_event = create_public_server(addr.to_owned(), auth_global_ctx.clone()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
@@ -992,7 +1004,9 @@ async fn test_stream_fetch_map(
 
     let addr = format!("127.0.0.1:{port}");
 
-    let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+    let auth_global_ctx =
+        SpuAuthGlobalContext::new(ctx.clone(), Arc::new(RootAuthorization::new()));
+    let server_end_event = create_public_server(addr.to_owned(), auth_global_ctx.clone()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
@@ -1147,7 +1161,9 @@ async fn test_stream_fetch_map_chain(
 
     let addr = format!("127.0.0.1:{port}");
 
-    let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+    let auth_global_ctx =
+        SpuAuthGlobalContext::new(ctx.clone(), Arc::new(RootAuthorization::new()));
+    let server_end_event = create_public_server(addr.to_owned(), auth_global_ctx.clone()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
@@ -1307,7 +1323,9 @@ async fn test_stream_fetch_map_error(
 
     let addr = format!("127.0.0.1:{port}");
 
-    let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+    let auth_global_ctx =
+        SpuAuthGlobalContext::new(ctx.clone(), Arc::new(RootAuthorization::new()));
+    let server_end_event = create_public_server(addr.to_owned(), auth_global_ctx.clone()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
@@ -1445,7 +1463,9 @@ async fn test_stream_aggregate_fetch_single_batch(
     let port = portpicker::pick_unused_port().expect("No free ports left");
     let addr = format!("127.0.0.1:{port}");
 
-    let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+    let auth_global_ctx =
+        SpuAuthGlobalContext::new(ctx.clone(), Arc::new(RootAuthorization::new()));
+    let server_end_event = create_public_server(addr.to_owned(), auth_global_ctx.clone()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
@@ -1591,7 +1611,9 @@ async fn test_stream_aggregate_fetch_multiple_batch(
 
     let addr = format!("127.0.0.1:{port}");
 
-    let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+    let auth_global_ctx =
+        SpuAuthGlobalContext::new(ctx.clone(), Arc::new(RootAuthorization::new()));
+    let server_end_event = create_public_server(addr.to_owned(), auth_global_ctx.clone()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
@@ -1729,7 +1751,9 @@ async fn test_stream_fetch_and_new_request(
 
     let addr = format!("127.0.0.1:{port}");
 
-    let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+    let auth_global_ctx =
+        SpuAuthGlobalContext::new(ctx.clone(), Arc::new(RootAuthorization::new()));
+    let server_end_event = create_public_server(addr.to_owned(), auth_global_ctx.clone()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
@@ -1818,7 +1842,9 @@ async fn test_stream_fetch_array_map(
     let port = portpicker::pick_unused_port().expect("No free ports left");
     let addr = format!("127.0.0.1:{port}");
 
-    let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+    let auth_global_ctx =
+        SpuAuthGlobalContext::new(ctx.clone(), Arc::new(RootAuthorization::new()));
+    let server_end_event = create_public_server(addr.to_owned(), auth_global_ctx.clone()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
@@ -1940,7 +1966,9 @@ async fn test_stream_fetch_filter_map(
     let port = portpicker::pick_unused_port().expect("No free ports left");
     let addr = format!("127.0.0.1:{port}");
 
-    let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+    let auth_global_ctx =
+        SpuAuthGlobalContext::new(ctx.clone(), Arc::new(RootAuthorization::new()));
+    let server_end_event = create_public_server(addr.to_owned(), auth_global_ctx.clone()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
@@ -2065,7 +2093,9 @@ async fn test_stream_fetch_filter_with_params(
     let port = portpicker::pick_unused_port().expect("No free ports left");
     let addr = format!("127.0.0.1:{port}");
 
-    let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+    let auth_global_ctx =
+        SpuAuthGlobalContext::new(ctx.clone(), Arc::new(RootAuthorization::new()));
+    let server_end_event = create_public_server(addr.to_owned(), auth_global_ctx.clone()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
@@ -2257,7 +2287,9 @@ async fn test_stream_fetch_invalid_smartmodule(
     let port = portpicker::pick_unused_port().expect("No free ports left");
     let addr = format!("127.0.0.1:{port}");
 
-    let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+    let auth_global_ctx =
+        SpuAuthGlobalContext::new(ctx.clone(), Arc::new(RootAuthorization::new()));
+    let server_end_event = create_public_server(addr.to_owned(), auth_global_ctx.clone()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
@@ -2316,7 +2348,9 @@ async fn test_stream_metrics() {
     spu_config.log.base_dir = test_path;
     let ctx = GlobalContext::new_shared_context(spu_config);
 
-    let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+    let auth_global_ctx =
+        SpuAuthGlobalContext::new(ctx.clone(), Arc::new(RootAuthorization::new()));
+    let server_end_event = create_public_server(addr.to_owned(), auth_global_ctx.clone()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
@@ -2494,7 +2528,9 @@ async fn stream_fetch_filter_lookback(
 
     let addr = format!("127.0.0.1:{port}");
 
-    let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+    let auth_global_ctx =
+        SpuAuthGlobalContext::new(ctx.clone(), Arc::new(RootAuthorization::new()));
+    let server_end_event = create_public_server(addr.to_owned(), auth_global_ctx.clone()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
@@ -2655,7 +2691,9 @@ async fn stream_fetch_filter_lookback_age(
 
     let addr = format!("127.0.0.1:{port}");
 
-    let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+    let auth_global_ctx =
+        SpuAuthGlobalContext::new(ctx.clone(), Arc::new(RootAuthorization::new()));
+    let server_end_event = create_public_server(addr.to_owned(), auth_global_ctx.clone()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
@@ -3037,7 +3075,9 @@ async fn test_stream_fetch_sends_topic_delete_error_on_topic_delete() {
     spu_config.log.base_dir = test_path;
     let ctx = GlobalContext::new_shared_context(spu_config);
 
-    let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+    let auth_global_ctx =
+        SpuAuthGlobalContext::new(ctx.clone(), Arc::new(RootAuthorization::new()));
+    let server_end_event = create_public_server(addr.to_owned(), auth_global_ctx.clone()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
