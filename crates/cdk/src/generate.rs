@@ -1,11 +1,14 @@
-use std::{fmt::Debug, path::PathBuf};
+use std::fmt::Debug;
+use std::fmt::Display;
+use std::path::PathBuf;
 
 use anyhow::{Result, Error};
 
-use clap::Parser;
+use clap::{Parser, ValueEnum};
 use cargo_generate::{GenerateArgs, TemplatePath, generate};
 use include_dir::{Dir, include_dir};
 use tempfile::TempDir;
+use enum_display::EnumDisplay;
 
 // Note: Cargo.toml.liquid files are changed by cargo-generate to Cargo.toml
 // this avoids the problem of cargo trying to parse Cargo.toml template files
@@ -20,10 +23,12 @@ pub struct GenerateCmd {
     /// Connector Name
     name: Option<String>,
 
+    #[arg(long, value_name = "GROUP")]
     /// Connector developer group
     group: Option<String>,
 
     /// Connector description used as part of the project metadata
+    #[arg(long, value_name = "DESCRIPTION")]
     conn_description: Option<String>,
 
     /// Local path to generate the SmartConnector project.
@@ -65,7 +70,7 @@ impl GenerateCmd {
         let mut maybe_user_input = CdkTemplateUserValues::new();
 
         maybe_user_input
-            .with_name(self.name)
+            .with_name(self.name.clone())
             .with_group(self.group)
             .with_description(self.conn_description)
             .with_conn_type(self.conn_type)
@@ -95,6 +100,7 @@ enum ConnectorType {
     Source,
 }
 
+#[derive(Clone, Debug)]
 enum CdkTemplateValue {
     Name(String),
     Group(String),
@@ -109,7 +115,9 @@ impl Display for CdkTemplateValue {
         match self {
             CdkTemplateValue::Name(name) => write!(f, "project-name={}", name),
             CdkTemplateValue::Group(group) => write!(f, "project-group={}", group),
-            CdkTemplateValue::Description(description) => write!(f, "project-description={}", description),
+            CdkTemplateValue::Description(description) => {
+                write!(f, "project-description={}", description)
+            }
             CdkTemplateValue::ConnFluvioDependencyHash(hash) => {
                 write!(f, "fluvio-cargo-dependency-hash={}", hash)
             }
@@ -130,14 +138,14 @@ impl CdkTemplateUserValues {
     fn new() -> Self {
         // By default the fluvio dependency hash is the current git hash
         // and its always passed as option to cargo generate
-        let values = vec![CdkTemplateValue::FluvioDependencyHash(
-            env!("GIT_HASH")
+        let values = vec![CdkTemplateValue::ConnFluvioDependencyHash(
+            env!("GIT_HASH").to_string(),
         )];
 
-        Self::default()
+        Self { values }
     }
 
-    fn to_vec(&self) -> Vec<SmdkTemplateValue> {
+    fn to_vec(&self) -> Vec<CdkTemplateValue> {
         self.values.clone()
     }
 
@@ -145,28 +153,34 @@ impl CdkTemplateUserValues {
         self.to_vec().iter().map(|v| v.to_string()).collect()
     }
 
-    fn with_name(&mut self, value: Option<String>) {
+    fn with_name(&mut self, value: Option<String>) -> &mut Self {
         if let Some(v) = value {
             tracing::debug!("CDK Argument - project-name={}", v);
             self.values.push(CdkTemplateValue::Name(v));
         }
+
+        self
     }
 
-    fn with_group(&mut self, value: Option<String>) {
+    fn with_group(&mut self, value: Option<String>) -> &mut Self {
         if let Some(v) = value {
             tracing::debug!("CDK Argument - project-group={}", v);
             self.values.push(CdkTemplateValue::Group(v));
         }
+
+        self
     }
 
-    fn with_description(&mut self, value: Option<String>) {
+    fn with_description(&mut self, value: Option<String>) -> &mut Self {
         if let Some(v) = value {
             tracing::debug!("CDK Argument - project-description={}", v);
             self.values.push(CdkTemplateValue::Description(v));
         }
+
+        self
     }
 
-    fn with_conn_type(&mut self, value: Option<ConnectorType>) {
+    fn with_conn_type(&mut self, value: Option<ConnectorType>) -> &mut Self {
         if let Some(v) = value {
             tracing::debug!("CDK Argument - connector-type={}", v);
             self.values.push(CdkTemplateValue::ConnType(v));
@@ -175,7 +189,7 @@ impl CdkTemplateUserValues {
         self
     }
 
-    fn with_conn_public(&mut self, value: Option<bool>) {
+    fn with_conn_public(&mut self, value: Option<bool>) -> &mut Self {
         if let Some(v) = value {
             tracing::debug!("CDK Argument - connector-public={}", v);
             self.values.push(CdkTemplateValue::ConnPublic(v));
