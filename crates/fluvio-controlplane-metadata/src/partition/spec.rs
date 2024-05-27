@@ -87,6 +87,14 @@ impl PartitionSpec {
             "".to_owned()
         }
     }
+
+    /// check if this partition is home mirror
+    pub fn is_home_mirror(&self) -> bool {
+        if let Some(PartitionMirrorConfig::Home(_)) = self.mirror {
+            return true;
+        }
+        false
+    }
 }
 
 impl From<Vec<SpuId>> for PartitionSpec {

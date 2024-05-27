@@ -2,6 +2,7 @@ use std::sync::Arc;
 use std::collections::HashMap;
 use anyhow::Result;
 
+use fluvio_sc_schema::partition::PartitionSpec;
 use tracing::{debug, trace, instrument};
 use async_lock::Mutex;
 use async_trait::async_trait;
@@ -119,14 +120,17 @@ impl SpuPool {
         Ok(serial_socket)
     }
 
-    pub async fn topic_exists(&self, topic: impl Into<String>) -> Result<bool, FluvioError> {
+    pub async fn get_partition_by_topic(
+        &self,
+        topic: impl Into<String>,
+    ) -> Result<Option<PartitionSpec>, FluvioError> {
         let replica = ReplicaKey::new(topic, 0u32);
-        Ok(self
-            .metadata
-            .partitions()
-            .lookup_by_key(&replica)
-            .await?
-            .is_some())
+        let partition = self.metadata.partitions().lookup_by_key(&replica).await?;
+
+        match partition {
+            Some(partition) => Ok(Some(partition.spec)),
+            None => Ok(None),
+        }
     }
 
     pub(crate) fn shutdown(&mut self) {

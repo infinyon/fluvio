@@ -12,13 +12,17 @@ setup_file() {
     CURRENT_DATE=$(date +%Y-%m)
     export CURRENT_DATE
 
-    REMOTE_NAME=remote-test-1
+    REMOTE_NAME="$(random_string 7)"
     export REMOTE_NAME
     debug_msg "Remote name: $REMOTE_NAME"
 
     MESSAGE="$(random_string 7)"
     export MESSAGE
     debug_msg "$MESSAGE"
+
+    TOPIC_NAME="$(random_string 7)"
+    export TOPIC_NAME
+    debug_msg "Topic name: $TOPIC_NAME"
 }
 
 @test "Can register an remote cluster" {
@@ -28,23 +32,18 @@ setup_file() {
     assert_success
 }
 
-@test "Can't register an remote cluster with the same name" {
-    run timeout 15s "$FLUVIO_BIN" remote register "$REMOTE_NAME"
+@test "Can create a mirror topic" {
+    echo "[\"$REMOTE_NAME\"]" > remotes.json
+    run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME" --mirror-apply remotes.json
 
-    assert_output "remote cluster \"$REMOTE_NAME\" already exists"
-    assert_failure
-}
-
-@test "Can unregister an remote cluster" {
-    run timeout 15s "$FLUVIO_BIN" remote unregister "$REMOTE_NAME"
-
-    assert_output "remote cluster \"$REMOTE_NAME\" was unregistered"
+    assert_output "topic \"$TOPIC_NAME\" created"
     assert_success
 }
 
-@test "Can't unregister an remote cluster that doesn't exist" {
-    run timeout 15s "$FLUVIO_BIN" remote unregister "$REMOTE_NAME"
+@test "Can't produce to a mirror topic from home" {
+    MESSAGE="$(random_string 7)"
+    run bash -c 'echo "$MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME"'
 
-    assert_output "remote cluster \"$REMOTE_NAME\" not found"
+    assert_output "cannot produce to mirror topic from home"
     assert_failure
 }
