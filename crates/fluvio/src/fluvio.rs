@@ -180,16 +180,11 @@ impl Fluvio {
         debug!(topic = &*topic, "Creating producer");
 
         let spu_pool = self.spu_pool().await?;
-
-        if let Some(partition) = spu_pool.get_partition_by_topic(&topic).await? {
-            if partition.is_home_mirror() {
-                return Err(anyhow!("cannot produce to mirror topic from home"));
-            }
-
-            TopicProducer::new(topic, spu_pool, config, self.metric.clone()).await
-        } else {
-            Err(FluvioError::TopicNotFound(topic).into())
+        if !spu_pool.topic_exists(&topic).await? {
+            return Err(FluvioError::TopicNotFound(topic).into());
         }
+
+        TopicProducer::new(topic, spu_pool, config, self.metric.clone()).await
     }
 
     /// Creates a new `PartitionConsumer` for the given topic and partition

@@ -44,6 +44,6 @@ setup_file() {
     MESSAGE="$(random_string 7)"
     run bash -c 'echo "$MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME"'
 
-    assert_output "cannot produce to mirror topic from home"
+    assert_output "Producer error: Producer received an error code: produce from home is not allowed"
     assert_failure
 }

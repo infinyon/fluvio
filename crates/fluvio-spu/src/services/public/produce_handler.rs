@@ -114,6 +114,17 @@ async fn handle_produce_topic(
             }
         };
 
+        if let Some(mirror) = &leader_state.get_replica().mirror {
+            if mirror.is_home_mirror() {
+                debug!(%replica_id, "Mirror replica is not supported for produce");
+                topic_result.partitions.push(PartitionWriteResult::error(
+                    replica_id,
+                    ErrorCode::MirrorProduceFromHome,
+                ));
+                continue;
+            }
+        }
+
         if let Err(err) = apply_smartmodules(
             &mut partition_request,
             smartmodules,
