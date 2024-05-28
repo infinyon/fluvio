@@ -57,6 +57,10 @@ impl PublishCmd {
     pub(crate) fn process(&self) -> Result<()> {
         let access = HubAccess::default_load(&self.remote)?;
 
+        if !self.readme.exists() {
+            return Err(anyhow!("README file not found at {:?}", self.readme));
+        }
+
         match (self.pack, self.push) {
             (false, false) | (true, true) => {
                 let hubdir = self.run_in_cargo_project()?;

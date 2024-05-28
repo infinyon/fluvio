@@ -23,6 +23,7 @@ setup_file() {
     # Create a workspace to facilitate dependency sharing between test cases SMs
     cd $TEST_DIR
     echo '[workspace]'            > Cargo.toml
+    echo 'resolver = "2"'        >> Cargo.toml
     echo                         >> Cargo.toml
     echo 'members = ['           >> Cargo.toml
     echo ']'                     >> Cargo.toml
@@ -79,16 +80,49 @@ smdk_via_stdin() {
     # Package with package-meta created before
     run $SMDK_BIN publish --pack
     assert_success
+}
+
+@test "Package with README" {
+    LABEL=package
+    SMDK_SM_TYPE=filter
+    PARAMS_FLAG=--no-params
+    SM_CRATE_PATH_FLAG=
+    SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+    SMDK_SM_PUBLIC=false
+
+    # Add SM to workspace
+    cd $TEST_DIR
+    sed -i -e $'/members/a\\\n    "'$SM_PACKAGE_NAME'",' Cargo.toml
+
+    # Generate
+    run $SMDK_BIN generate \
+        $PARAMS_FLAG \
+        $SM_CRATE_PATH_FLAG \
+        $TESTING_GROUP_NAME_FLAG \
+        --sm-type $SMDK_SM_TYPE \
+        --sm-public $SMDK_SM_PUBLIC \
+        --silent \
+        $SM_PACKAGE_NAME
+    assert_success
+
+    # Build
+    cd $SM_PACKAGE_NAME
+    run $SMDK_BIN build
+    refute_output --partial "could not compile"
+
+    # Remove README from Template on Purpose
+    rm "$TEST_DIR/$SM_PACKAGE_NAME/README.md"
 
     # Validates SmartModule Exists
-    run $SMDK_BIN publish --pack --readme ./README.md
-    assert_line --index 0 "Error: No such file or directory (os error 2)"
+    run $SMDK_BIN publish --pack
+    assert_output --partial 'Error: README file not found at "./README.md"'
     assert_failure
 
     # Packages with specified README
-    echo "# My SmartModule" > README.md
-    run $SMDK_BIN publish --pack --readme ./README.md
+    echo "# My SmartModule" > "$TEST_DIR/$SM_PACKAGE_NAME/README.md"
+    run $SMDK_BIN publish --pack
     assert_success
+
 }
 
 @test "Generate and test filter - (stable fluvio-smartmodule / no params)" {
