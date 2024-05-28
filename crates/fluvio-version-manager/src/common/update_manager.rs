@@ -7,10 +7,10 @@ use semver::Version;
 use tempfile::TempDir;
 
 use fluvio_future::http_client::{Client, ResponseExt};
+use fluvio_hub_util::sha256_digest;
 
 use crate::common::executable::{remove_fvm_binary_if_exists, set_executable_mode};
 
-use super::executable::sha256_digest;
 use super::notify::Notify;
 use super::workdir::fvm_bin_path;
 use super::TARGET;

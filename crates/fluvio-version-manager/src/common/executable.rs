@@ -1,11 +1,8 @@
 //! Executable file utilities.
 
 use std::fs::remove_file;
-use std::{fs::File, io::copy};
-use std::path::PathBuf;
 
 use anyhow::Result;
-use sha2::{Digest, Sha256};
 
 use super::workdir::fvm_bin_path;
 
@@ -18,18 +15,6 @@ pub fn remove_fvm_binary_if_exists() -> Result<()> {
     }
 
     Ok(())
-}
-
-/// Generates Sha256 checksum for a given file
-pub fn sha256_digest(path: &PathBuf) -> Result<String> {
-    let mut hasher = Sha256::new();
-    let mut file = File::open(path)?;
-
-    copy(&mut file, &mut hasher)?;
-
-    let hash_bytes = hasher.finalize();
-
-    Ok(hex::encode(hash_bytes))
 }
 
 /// Sets the executable mode for the specified file in Unix systems.
