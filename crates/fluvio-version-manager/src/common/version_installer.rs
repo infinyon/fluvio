@@ -6,6 +6,7 @@ use tempfile::TempDir;
 
 use fluvio_hub_util::fvm::{Artifact, Channel, Download, PackageSet};
 
+use super::executable::set_executable_mode;
 use super::manifest::{VersionManifest, VersionedArtifact, PACKAGE_SET_MANIFEST_FILENAME};
 use super::notify::Notify;
 use super::version_directory::VersionDirectory;
@@ -128,7 +129,7 @@ impl VersionInstaller {
             ));
 
             let artf_path = artf.download(tmp_dir.path().to_path_buf()).await?;
-            Self::set_executable_mode(artf_path)?;
+            set_executable_mode(&artf_path)?;
         }
 
         Ok(tmp_dir)
@@ -172,61 +173,5 @@ impl VersionInstaller {
         }
 
         Ok(version_path)
-    }
-
-    /// Sets the executable mode for the specified file in Unix systems.
-    /// This is no-op in non-Unix systems.
-    #[cfg(unix)]
-    fn set_executable_mode(path: PathBuf) -> Result<()> {
-        use std::{os::unix::fs::PermissionsExt, fs::File};
-
-        const EXECUTABLE_MODE: u32 = 0o700;
-
-        // Add u+rwx mode to the existing file permissions, leaving others unchanged
-        let file = File::open(path)?;
-        let mut permissions = file.metadata()?.permissions();
-        let mut mode = permissions.mode();
-
-        mode |= EXECUTABLE_MODE;
-        permissions.set_mode(mode);
-        file.set_permissions(permissions)?;
-
-        Ok(())
-    }
-
-    /// Setting binary executable mode is a no-op in non-Unix systems.
-    #[cfg(not(unix))]
-    fn set_executable_mode(path: PathBuf) -> Result<()> {
-        Ok(())
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use std::fs::File;
-
-    use super::*;
-
-    #[test]
-    fn sets_unix_execution_permissions() {
-        use std::os::unix::fs::PermissionsExt;
-
-        let tmpdir = TempDir::new().unwrap();
-        let path = tmpdir.path().join("test");
-        let file = File::create(&path).unwrap();
-        let meta = file.metadata().unwrap();
-        let perm = meta.permissions();
-        let is_executable = perm.mode() & 0o111 != 0;
-
-        assert!(!is_executable, "should not be executable");
-
-        VersionInstaller::set_executable_mode(path.clone()).unwrap();
-
-        let file = File::open(&path).unwrap();
-        let meta = file.metadata().unwrap();
-        let perm = meta.permissions();
-        let is_executable = perm.mode() & 0o111 != 0;
-
-        assert!(is_executable, "should be executable");
     }
 }

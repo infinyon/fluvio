@@ -13,6 +13,11 @@ use super::StartOpt;
 /// Pass opt.setup = false, to only run the checks.
 pub async fn process_local(opt: StartOpt, platform_version: Version) -> Result<()> {
     let mut builder = LocalConfig::builder(platform_version);
+
+    if let Some(data_dir) = opt.data_dir {
+        builder.data_dir(data_dir);
+    }
+
     builder
         .log_dir(opt.log_dir.deref())
         .spu_replicas(opt.spu)
@@ -38,6 +43,16 @@ pub async fn process_local(opt: StartOpt, platform_version: Version) -> Result<(
     builder.installation_type(opt.installation_type.get_or_default());
 
     builder.read_only_config(opt.installation_type.read_only);
+
+    builder.save_profile(!opt.skip_profile_creation);
+
+    if let Some(pub_addr) = opt.sc_pub_addr {
+        builder.sc_pub_addr(pub_addr);
+    }
+
+    if let Some(priv_addr) = opt.sc_priv_addr {
+        builder.sc_priv_addr(priv_addr);
+    }
 
     let config = builder.build()?;
     let installer = LocalInstaller::from_config(config);
