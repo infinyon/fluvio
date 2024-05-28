@@ -29,14 +29,14 @@ pub struct DeleteOpt {
 
 impl DeleteOpt {
     pub async fn process(self) -> Result<()> {
+        let config_file = ConfigFile::load_default_or_new()?;
+
+        let (current_cluster, current_profile) = {
+            let config = config_file.config();
+            (config.current_cluster()?, config.current_profile()?)
+        };
+
         if !self.force {
-            let config_file = ConfigFile::load_default_or_new()?;
-
-            let (current_cluster, current_profile) = {
-                let config = config_file.config();
-                (config.current_cluster()?, config.current_profile()?)
-            };
-
             let mut user_input: String = Input::with_theme(&ColorfulTheme::default()).with_prompt(&format!(
                 "WARNING: You are about to delete {cluster}/{endpoint}. This operation is irreversible \
                 and the data stored in your cluster will be permanently lost. \
@@ -52,6 +52,12 @@ impl DeleteOpt {
                 return Ok(());
             }
         }
+
+        println!(
+            "Deleting {cluster}/{endpoint}",
+            cluster = current_profile.cluster,
+            endpoint = current_cluster.endpoint,
+        );
 
         let mut builder = ClusterUninstallConfig::builder();
         builder.hide_spinner(false);
