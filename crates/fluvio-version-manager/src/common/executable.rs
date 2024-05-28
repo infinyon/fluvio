@@ -39,7 +39,7 @@ pub fn set_executable_mode(path: &std::path::PathBuf) -> anyhow::Result<()> {
 
 /// Setting binary executable mode is a no-op in non-Unix systems.
 #[cfg(not(unix))]
-pub fn set_executable_mode(path: &PathBuf) -> anyhow::Result<()> {
+pub fn set_executable_mode(path: &std::path::PathBuf) -> anyhow::Result<()> {
     Ok(())
 }
 
