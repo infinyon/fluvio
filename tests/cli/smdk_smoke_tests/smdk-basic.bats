@@ -87,7 +87,7 @@ smdk_via_stdin() {
     SMDK_SM_TYPE=filter
     PARAMS_FLAG=--no-params
     SM_CRATE_PATH_FLAG=
-    SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+    SM_PACKAGE_NAME="$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX-readme-tests"
     SMDK_SM_PUBLIC=false
 
     # Add SM to workspace
