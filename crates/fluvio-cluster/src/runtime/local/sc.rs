@@ -18,6 +18,8 @@ pub struct ScProcess {
     pub tls_policy: TlsPolicy,
     pub rust_log: String,
     pub mode: ScMode,
+    pub public_address: String,
+    pub private_address: Option<String>,
 }
 
 #[derive(Debug)]
@@ -53,6 +55,12 @@ impl ScProcess {
                 binary.arg("--k8");
             }
         };
+
+        binary.arg("--bind-public").arg(&self.public_address);
+
+        if let Some(address) = &self.private_address {
+            binary.arg("--bind-private").arg(address);
+        }
 
         if let TlsPolicy::Verified(tls) = &self.tls_policy {
             self.set_server_tls(&mut binary, tls, 9005)?;
