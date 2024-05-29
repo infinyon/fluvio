@@ -189,3 +189,33 @@ setup_file() {
 }
 
 #TODO: after implement disconnect command, create a test to disconnect home from remote 2, then produce 2nd message on remote 2
+
+@test "Can delete mirror topic" {
+    run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME"
+
+    assert_output "topic \"$TOPIC_NAME\" deleted"
+    assert_success
+}
+
+@test "Can switch to remote cluster 1 and check if the mirror topic is deleted" {
+    run timeout 15s "$FLUVIO_BIN" profile switch "$REMOTE_PROFILE"
+    assert_output ""
+    assert_success
+
+    sleep 6
+    run timeout 15s "$FLUVIO_BIN" topic list
+    assert_output --partial "No topics found"
+    assert_success
+}
+
+@test "Can switch to remote cluster 2 and check if the mirror topic is deleted" {
+    run timeout 15s "$FLUVIO_BIN" profile switch "$REMOTE_PROFILE_2"
+    assert_output ""
+    assert_success
+
+    sleep 6
+    run timeout 15s "$FLUVIO_BIN" topic list
+    assert_output --partial "No topics found"
+    assert_success
+}
+
