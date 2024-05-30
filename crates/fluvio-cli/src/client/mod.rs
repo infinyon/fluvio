@@ -145,14 +145,12 @@ mod cmd {
         #[command(subcommand, name = "consumer")]
         Consumer(ConsumerCmd),
 
-        /// Manage and view remote mirroring
-        //TODO: Remove hide when we have this mirroring complete
-        #[command(subcommand, name = "remote", hide = true)]
+        /// Manage and view remote clusters mirrored
+        #[command(subcommand, name = "remote")]
         Remote(Box<RemoteCmd>),
 
         /// Commands to interact with the home cluster
-        //TODO: Remove hide when we have this mirroring complete
-        #[command(subcommand, name = "home", hide = true)]
+        #[command(subcommand, name = "home")]
         Home(Box<HomeCmd>),
     }
 
