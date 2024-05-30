@@ -9,7 +9,10 @@ use tracing::{info, trace, instrument};
 use std::io::{Error, ErrorKind};
 
 use fluvio_protocol::link::ErrorCode;
-use fluvio_sc_schema::Status;
+use fluvio_sc_schema::{
+    topic::{MirrorConfig, ReplicaSpec},
+    Status,
+};
 use fluvio_controlplane_metadata::topic::TopicSpec;
 use fluvio_auth::{AuthContext, InstanceAction};
 use fluvio_controlplane_metadata::extended::SpecExt;
@@ -42,14 +45,27 @@ pub async fn handle_delete_topic<AC: AuthContext, C: MetadataItem>(
         return Err(Error::new(ErrorKind::Interrupted, "authorization io error"));
     }
 
-    let status = if let Some(spec) = auth_ctx
+    let status = if let Some(topic) = auth_ctx
         .global_ctx
         .topics()
         .store()
         .value(&topic_name)
         .await
     {
-        if !force && spec.spec().is_system() {
+        let spec = topic.spec();
+
+        if matches!(
+            &spec.replicas(),
+            ReplicaSpec::Mirror(MirrorConfig::Remote(_))
+        ) {
+            return Ok(Status::new(
+                topic_name,
+                ErrorCode::MirrorDeleteFromRemote,
+                Some("cannot delete mirrored topic from remote".to_owned()),
+            ));
+        }
+
+        if !force && spec.is_system() {
             Status::new(
                 topic_name.clone(),
                 ErrorCode::SystemSpecDeletionAttempt {

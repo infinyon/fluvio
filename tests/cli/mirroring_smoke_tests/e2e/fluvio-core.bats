@@ -165,6 +165,13 @@ setup_file() {
     assert_success
 }
 
+@test "Can't delete mirror topic from remote 2" {
+    run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME"
+
+    assert_output "cannot delete mirrored topic from remote"
+    assert_failure
+}
+
 @test "Can switch back to home cluster" {
     run timeout 15s "$FLUVIO_BIN" profile switch "$HOME_PROFILE"
     assert_output ""
