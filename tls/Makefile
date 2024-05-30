@@ -27,7 +27,7 @@ install-local-tls:
 		--tls --server-cert tls/certs/server.crt --server-key tls/certs/server.key \
 		--ca-cert tls/certs/ca.crt --client-cert tls/certs/client-root.crt	\
 		--client-key tls/certs/client-root.key --domain fluvio.local
-	
+
 uninstall-local:
 	$(FLUVIO_BIN) cluster delete
 
@@ -38,14 +38,14 @@ install-k8-tls:
 		--client-key tls/certs/client-root.key --domain fluvio.local
 
 uninstall-k8:
-	$(FLUVIO_BIN) cluster delete
+	$(FLUVIO_BIN) cluster delete --force
 
 
 
 
 generate-certs:	clean-cert	generate-ca-crt generate-server-crt generate-client-crts
 
-generate-ca-key:	
+generate-ca-key:
 	openssl genrsa  -out certs/ca.key 4096
 
 
@@ -55,14 +55,14 @@ generate-ca-crt:	generate-ca-key
 		-subj /C=US/ST=CA/L=Sunnyvale/O=Fluvio/OU=Eng/CN=fluvio.io
 
 
-generate-server-key:	
+generate-server-key:
 	openssl genrsa -out certs/server.key 4096
 
 
 generate-server-csr:	generate-server-key
 	openssl req -new -key certs/server.key \
 		-out certs/server.csr \
-		-config  cert.conf 
+		-config  cert.conf
 
 
 verify-csr:
@@ -135,7 +135,7 @@ test-mac-curl:
 MAKE_DIR = $(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 
 start-nginx:
-	nginx -c $(MAKE_DIR)/nginx.conf 
+	nginx -c $(MAKE_DIR)/nginx.conf
 
 stop-nginx:
 	nginx -s quit
