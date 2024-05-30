@@ -215,6 +215,9 @@ pub enum ErrorCode {
     #[fluvio(tag = 11002)]
     #[error("the mirror already exists")]
     MirrorAlreadyExists,
+    #[fluvio(tag = 11003)]
+    #[error("produce from home is not allowed")]
+    MirrorProduceFromHome,
 
     // Specs
     #[fluvio(tag = 12001)]
