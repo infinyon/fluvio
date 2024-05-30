@@ -178,19 +178,24 @@ setup_file() {
     assert_success
 }
 
-#TODO: use --mirror argument when it is available
-@test "Can consume message from mirror topic produced from remote 1" {
+@test "Can consume message from mirror topic produced from remote 1 by partition or remote" {
     sleep 5
     run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -p 0 -B -d
+    assert_output 1$'\n'a$'\n'2$'\n'b
+    assert_success
 
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" --mirror "$REMOTE_NAME" -B -d
     assert_output 1$'\n'a$'\n'2$'\n'b
     assert_success
 }
 
-@test "Can consume message from mirror topic produced from remote 2" {
+@test "Can consume message from mirror topic produced from remote 2 by partition or remote" {
     sleep 5
     run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -p 1 -B -d
+    assert_output 9$'\n'z$'\n'8$'\n'y
+    assert_success
 
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" --mirror "$REMOTE_NAME_2" -B -d
     assert_output 9$'\n'z$'\n'8$'\n'y
     assert_success
 }
