@@ -822,9 +822,14 @@ impl ClusterChecker {
         self
     }
 
-    pub fn with_no_k8_checks(self) -> Self {
-        self.without_installed_local_cluster()
-            .with_clean_local_cluster()
+    pub fn with_no_k8_checks(self, upgrade: bool) -> Self {
+        let checks = self.without_installed_local_cluster();
+
+        if upgrade {
+            checks
+        } else {
+            checks.with_clean_local_cluster()
+        }
     }
 
     pub fn without_installed_local_cluster(self) -> Self {

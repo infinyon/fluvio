@@ -1376,7 +1376,7 @@ mod tests {
 
     #[test]
     fn test_build_config() {
-        let config: ClusterConfig =
+        let config =
             ClusterConfig::builder(semver::Version::parse("0.7.0-alpha.1").unwrap())
                 .build()
                 .expect("should succeed with required config options");

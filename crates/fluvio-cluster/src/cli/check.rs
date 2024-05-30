@@ -41,7 +41,7 @@ impl CheckOpt {
                     .with_check(SysChartCheck::new(sys_config, platform_version))
             }
             InstallationType::Local | InstallationType::ReadOnly => {
-                ClusterChecker::empty().with_no_k8_checks()
+                ClusterChecker::empty().with_no_k8_checks(false)
             }
             InstallationType::LocalK8 => ClusterChecker::empty().with_local_checks(),
             InstallationType::Cloud => {

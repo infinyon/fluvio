@@ -1,10 +1,10 @@
 use clap::Parser;
 use fluvio_extension_common::installation::InstallationType;
 use semver::Version;
-use anyhow::{Result, bail};
+use anyhow::{bail, Result};
 use tracing::debug;
 
-use crate::{cli::shutdown::ShutdownOpt, cli::get_installation_type};
+use crate::cli::{get_installation_type, shutdown::ShutdownOpt};
 
 use super::start::StartOpt;
 

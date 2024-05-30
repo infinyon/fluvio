@@ -223,6 +223,12 @@ impl LocalConfig {
             data_dir: self.data_dir.clone(),
         }
     }
+
+    pub fn overwrite_with(mut self, other: Self) -> Self {
+        // self.spu_replicas = other.spu_replicas; // How do we decide if we overwrite here?; as long as we don't, upgrade with smaller SPU will hang
+        self.rust_log = other.rust_log;
+        self
+    }
 }
 
 impl LocalConfigBuilder {
@@ -343,6 +349,7 @@ impl LocalConfigBuilder {
 pub struct LocalInstaller {
     /// Configuration options for this process
     config: LocalConfig,
+    upgrade: bool,
     pb_factory: ProgressBarFactory,
 }
 
@@ -361,10 +368,11 @@ impl LocalInstaller {
     /// # }
     /// ```
 
-    pub fn from_config(config: LocalConfig) -> Self {
+    pub fn from_config(config: LocalConfig, upgrade: bool) -> Self {
         Self {
             pb_factory: ProgressBarFactory::new(config.hide_spinner),
             config,
+            upgrade
         }
     }
 
@@ -377,7 +385,7 @@ impl LocalInstaller {
                     .println(InstallProgressMessage::PreFlightCheck.msg());
 
                 ClusterChecker::empty()
-                    .with_no_k8_checks()
+                    .with_no_k8_checks(self.upgrade)
                     .run(&self.pb_factory, fix)
                     .await?;
 

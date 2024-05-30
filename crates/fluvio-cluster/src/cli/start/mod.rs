@@ -223,7 +223,7 @@ impl StartOpt {
         if self.sys_only {
             process_sys(&self, upgrade)?;
         } else if self.installation_type.is_local_group() {
-            process_local(self, platform_version).await?;
+            process_local(self, platform_version, upgrade).await?;
         } else {
             process_k8(self, platform_version, upgrade).await?;
         }

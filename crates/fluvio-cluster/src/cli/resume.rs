@@ -76,7 +76,7 @@ impl LocalResume {
         }
         .with_context(|| "Unable to load configuration file for local cluster")?;
 
-        let installer = LocalInstaller::from_config(local_conf);
+        let installer = LocalInstaller::from_config(local_conf, false);
         _ = installer.install_only().await?;
         Ok(())
     }
