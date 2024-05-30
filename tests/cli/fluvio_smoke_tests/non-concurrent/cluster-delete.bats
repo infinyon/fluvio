@@ -26,7 +26,7 @@ setup_file() {
         skip "don't run on stable cluster version and dev cli version" # remove this when installation type is available on stable
     fi
 
-    run bash -c "$FLUVIO_BIN cluster delete --local || $FLUVIO_BIN cluster delete"
+    run bash -c "$FLUVIO_BIN cluster delete --force"
     assert_success
 
     run test -d $FLUVIO_METADATA_DIR
