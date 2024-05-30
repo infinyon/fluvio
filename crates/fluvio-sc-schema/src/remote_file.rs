@@ -32,7 +32,6 @@ pub struct RemoteMetadata {
     serde(rename_all = "camelCase")
 )]
 pub struct RemoteMetadataExport {
-    // TODO: remove it, we should get the topics from the upstreams/core
     #[cfg_attr(feature = "use_serde", serde(default))]
     pub topics: Vec<K8ObjExport<TopicSpec>>,
     #[cfg_attr(feature = "use_serde", serde(default))]
@@ -40,11 +39,8 @@ pub struct RemoteMetadataExport {
 }
 
 impl RemoteMetadataExport {
-    pub fn new(home: Home) -> Self {
-        Self {
-            topics: vec![],
-            home,
-        }
+    pub fn new(home: Home, topics: Vec<K8ObjExport<TopicSpec>>) -> Self {
+        Self { topics, home }
     }
 }
 

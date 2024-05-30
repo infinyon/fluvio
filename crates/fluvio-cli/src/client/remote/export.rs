@@ -1,12 +1,20 @@
 use std::sync::Arc;
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use clap::Parser;
+use k8_types::K8Obj;
+
+use fluvio::FluvioAdmin;
 use fluvio_extension_common::{target::ClusterTarget, Terminal};
 use fluvio_sc_schema::{
     mirror::{ClientTls, Home, MirrorSpec, MirrorType},
+    objects::Metadata,
+    partition::PartitionMirrorConfig,
     remote_file::RemoteMetadataExport,
+    spu::SpuSpec,
+    topic::{
+        MirrorConfig, PartitionMap, RemoteMirrorConfig, ReplicaSpec, SpuMirrorConfig, TopicSpec,
+    },
 };
-use anyhow::anyhow;
 
 #[derive(Debug, Parser)]
 pub struct ExportOpt {
@@ -62,13 +70,31 @@ impl ExportOpt {
             self.remote_id.clone(),
         )?;
         let home_metadata = Home {
-            id: home_id,
-            remote_id: self.remote_id,
-            public_endpoint,
+            id: home_id.clone(),
+            remote_id: self.remote_id.clone(),
+            public_endpoint: public_endpoint.clone(),
             client_tls,
         };
 
-        let metadata = RemoteMetadataExport::new(home_metadata);
+        let topics = admin
+            .all::<TopicSpec>()
+            .await?
+            .into_iter()
+            .filter(|topic| match topic.spec.replicas() {
+                ReplicaSpec::Mirror(MirrorConfig::Home(home)) => home
+                    .partitions()
+                    .iter()
+                    .any(|p| p.remote_cluster == self.remote_id),
+                _ => false,
+            })
+            .collect::<Vec<_>>();
+
+        let mut remote_topics = vec![];
+        for topic in topics {
+            let remote_topic = map_remote_topic(&admin, &home_metadata, &topic).await?;
+            remote_topics.push(K8Obj::new(topic.name, remote_topic).into());
+        }
+        let metadata = RemoteMetadataExport::new(home_metadata, remote_topics);
 
         if let Some(filename) = self.file {
             std::fs::write(filename, serde_json::to_string_pretty(&metadata)?)
@@ -155,6 +181,78 @@ fn get_tls_config(
     _remote_id: String,
 ) -> Result<Option<ClientTls>> {
     Ok(None)
+}
+
+// Sync the mirror topic
+async fn map_remote_topic(
+    admin: &FluvioAdmin,
+    home: &Home,
+    topic: &Metadata<TopicSpec>,
+) -> Result<TopicSpec> {
+    let replica = match &topic.spec.replicas() {
+        ReplicaSpec::Mirror(MirrorConfig::Home(home_mirror_config)) => {
+            let partitions_maps = Vec::<PartitionMap>::from(home_mirror_config.as_partition_maps());
+            partitions_maps.iter().find_map(|p| {
+                if let Some(PartitionMirrorConfig::Home(remote)) = &p.mirror {
+                    if remote.remote_cluster == home.remote_id {
+                        return Some(p.id);
+                    }
+                }
+                None
+            })
+        }
+        _ => None,
+    };
+
+    if replica.is_none() {
+        return Err(anyhow!("no replica found for remote cluster"));
+    }
+
+    let partition = replica.unwrap();
+    let target_spu_id = topic
+        .status
+        .replica_map
+        .get(&partition)
+        .context("Topic does not have a replica for {partition}")?
+        .first()
+        .context("Topic does not have any replicas")?;
+
+    let endpoint = admin
+        .all::<SpuSpec>()
+        .await?
+        .into_iter()
+        .find(|s| s.spec.id == *target_spu_id)
+        .context("not found spu endpoint")?
+        .spec
+        .public_endpoint
+        .addr();
+
+    // Create a new replica spec for the topic
+    let new_replica: ReplicaSpec = ReplicaSpec::Mirror(MirrorConfig::Remote(RemoteMirrorConfig {
+        home_spus: vec![
+            SpuMirrorConfig {
+                id: target_spu_id.clone(),
+                endpoint,
+            };
+            1
+        ],
+        home_cluster: home.id.clone(),
+    }));
+
+    let mut remote_topic: TopicSpec = new_replica.into();
+    if let Some(cleanup_policy) = topic.spec.get_clean_policy() {
+        remote_topic.set_cleanup_policy(cleanup_policy.clone())
+    }
+
+    remote_topic.set_compression_type(topic.spec.get_compression_type().clone());
+
+    remote_topic.set_deduplication(topic.spec.get_deduplication().cloned());
+
+    if let Some(storage) = topic.spec.get_storage() {
+        remote_topic.set_storage(storage.clone());
+    }
+
+    Ok(remote_topic)
 }
 
 #[cfg(test)]
