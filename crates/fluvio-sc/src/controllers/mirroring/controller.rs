@@ -14,7 +14,9 @@ use fluvio_sc_schema::{
     TryEncodableFrom,
 };
 use fluvio_stream_dispatcher::store::StoreContext;
-use fluvio_controlplane_metadata::mirroring::{MirrorConnect, MirroringRemoteClusterRequest};
+use fluvio_controlplane_metadata::mirroring::{
+    MirrorConnect, MirroringRemoteClusterRequest, MirroringSpecWrapper,
+};
 
 use crate::core::SharedContext;
 
@@ -135,62 +137,17 @@ impl<C: MetadataItem> RemoteMirrorController<C> {
                     match response {
                         Ok(response) => {
                             debug!("received response: {:#?}", response);
+                            let request_topics_keys = response
+                                .topics
+                                .iter()
+                                .map(|t| t.key.clone())
+                                .collect::<Vec<_>>();
+
+                            self.delete_not_received_topics(request_topics_keys, home.id.clone())
+                                .await?;
+
                             for topic in response.topics.iter() {
-                                // Create a new replica spec for the topic
-                                let new_replica: ReplicaSpec =
-                                    ReplicaSpec::Mirror(MirrorConfig::Remote(RemoteMirrorConfig {
-                                        home_spus: vec![
-                                            SpuMirrorConfig {
-                                                id: topic.spu_id,
-                                                endpoint: topic.spu_endpoint.clone(),
-                                            };
-                                            1
-                                        ],
-                                        home_cluster: home.id.clone(),
-                                    }));
-
-                                // Check if the topic already exists
-                                // If it does, update the replica spec
-                                // If it doesn't, create a new topic with the replica spec
-                                let mut remote_topic = if let Some(t) =
-                                    self.topics.store().read().await.get(&topic.key)
-                                {
-                                    let mut topic_spec = t.spec.clone();
-                                    topic_spec.set_replicas(new_replica.clone());
-
-                                    if topic_spec == t.spec().clone() {
-                                        debug!("topic {} is already up to date", topic.key);
-                                        continue;
-                                    }
-
-                                    info!("updating topic {} with new replica", topic.key);
-                                    topic_spec
-                                } else {
-                                    info!("creating new topic {} with new replica", topic.key);
-
-                                    let mut topic_spec = topic.spec.clone();
-                                    topic_spec.set_replicas(new_replica);
-                                    topic_spec
-                                };
-
-                                if let Some(cleanup_policy) = topic.spec.get_clean_policy() {
-                                    remote_topic.set_cleanup_policy(cleanup_policy.clone())
-                                }
-
-                                remote_topic.set_compression_type(
-                                    topic.spec.get_compression_type().clone(),
-                                );
-
-                                remote_topic
-                                    .set_deduplication(topic.spec.get_deduplication().cloned());
-
-                                if let Some(storage) = topic.spec.get_storage() {
-                                    remote_topic.set_storage(storage.clone());
-                                }
-
-                                self.topics
-                                    .create_spec(topic.key.clone(), remote_topic)
-                                    .await?;
+                                self.sync_topic(home, topic).await?;
                             }
 
                             let status = MirrorStatus::new(
@@ -221,6 +178,92 @@ impl<C: MetadataItem> RemoteMirrorController<C> {
             );
             sleep(Duration::from_secs(MIRRORING_CONTROLLER_INTERVAL)).await;
         }
+    }
+
+    // Delete topics that are not in the response
+    async fn delete_not_received_topics(&self, topics: Vec<String>, home_id: String) -> Result<()> {
+        let all_topics_keys = self
+            .topics
+            .store()
+            .read()
+            .await
+            .values()
+            .filter_map(|t| match t.spec().replicas() {
+                ReplicaSpec::Mirror(MirrorConfig::Remote(r)) => {
+                    if r.home_cluster == home_id {
+                        Some(t.key.clone())
+                    } else {
+                        None
+                    }
+                }
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+
+        for topic_key in all_topics_keys.iter() {
+            if !topics.contains(topic_key) {
+                info!("deleting topic {}", topic_key);
+                self.topics.delete(topic_key.to_string()).await?;
+            }
+        }
+
+        Ok(())
+    }
+
+    // Sync the mirror topic
+    async fn sync_topic(&self, home: &Home, topic: &MirroringSpecWrapper<TopicSpec>) -> Result<()> {
+        // Create a new replica spec for the topic
+        let new_replica: ReplicaSpec =
+            ReplicaSpec::Mirror(MirrorConfig::Remote(RemoteMirrorConfig {
+                home_spus: vec![
+                    SpuMirrorConfig {
+                        id: topic.spu_id,
+                        endpoint: topic.spu_endpoint.clone(),
+                    };
+                    1
+                ],
+                home_cluster: home.id.clone(),
+            }));
+
+        // Check if the topic already exists
+        // If it does, update the replica spec
+        // If it doesn't, create a new topic with the replica spec
+        let mut remote_topic = if let Some(t) = self.topics.store().read().await.get(&topic.key) {
+            let mut topic_spec = t.spec.clone();
+            topic_spec.set_replicas(new_replica.clone());
+
+            if topic_spec == t.spec().clone() {
+                debug!("topic {} is already up to date", topic.key);
+                return Ok(());
+            }
+
+            info!("updating topic {} with new replica", topic.key);
+            topic_spec
+        } else {
+            info!("creating new topic {} with new replica", topic.key);
+
+            let mut topic_spec = topic.spec.clone();
+            topic_spec.set_replicas(new_replica);
+            topic_spec
+        };
+
+        if let Some(cleanup_policy) = topic.spec.get_clean_policy() {
+            remote_topic.set_cleanup_policy(cleanup_policy.clone())
+        }
+
+        remote_topic.set_compression_type(topic.spec.get_compression_type().clone());
+
+        remote_topic.set_deduplication(topic.spec.get_deduplication().cloned());
+
+        if let Some(storage) = topic.spec.get_storage() {
+            remote_topic.set_storage(storage.clone());
+        }
+
+        self.topics
+            .create_spec(topic.key.clone(), remote_topic)
+            .await?;
+
+        Ok(())
     }
 }
 

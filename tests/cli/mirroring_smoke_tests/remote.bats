@@ -14,7 +14,7 @@ setup_file() {
 
     REMOTE_NAME=remote-test-1
     export REMOTE_NAME
-    debug_msg "Topic name: $REMOTE_NAME"
+    debug_msg "Remote name: $REMOTE_NAME"
 
     MESSAGE="$(random_string 7)"
     export MESSAGE

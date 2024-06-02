@@ -148,6 +148,10 @@ impl PartitionMirrorConfig {
             Self::Home(h) => h.remote_cluster.clone(),
         }
     }
+
+    pub fn is_home_mirror(&self) -> bool {
+        matches!(self, Self::Home(_))
+    }
 }
 
 impl std::fmt::Display for PartitionMirrorConfig {

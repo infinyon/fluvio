@@ -12,13 +12,17 @@ setup_file() {
     CURRENT_DATE=$(date +%Y-%m)
     export CURRENT_DATE
 
-    REMOTE_NAME=remote-test-1
+    REMOTE_NAME="$(random_string 7)"
     export REMOTE_NAME
     debug_msg "Remote name: $REMOTE_NAME"
 
     MESSAGE="$(random_string 7)"
     export MESSAGE
     debug_msg "$MESSAGE"
+
+    TOPIC_NAME="$(random_string 7)"
+    export TOPIC_NAME
+    debug_msg "Topic name: $TOPIC_NAME"
 }
 
 @test "Can register an remote cluster" {
@@ -28,30 +32,18 @@ setup_file() {
     assert_success
 }
 
-@test "Export remote" {
-    run timeout 15s "$FLUVIO_BIN" remote export "$REMOTE_NAME" --file remote.json
-    assert_output ""
-    assert_success
+@test "Can create a mirror topic" {
+    echo "[\"$REMOTE_NAME\"]" > remotes.json
+    run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME" --mirror-apply remotes.json
 
-    run jq -r .home.id remote.json 
-    assert_output "home"
-    assert_success
-
-    run jq -r .home.remoteId remote.json 
-    assert_output "$REMOTE_NAME"
-    assert_success
-
-    run jq -r .home.publicEndpoint remote.json 
-    assert_output "127.0.0.1:9003"
+    assert_output "topic \"$TOPIC_NAME\" created"
     assert_success
 }
 
-@test "Can unregister an remote cluster" {
-    run rm -f remote.json
+@test "Can't produce to a mirror topic from home" {
+    MESSAGE="$(random_string 7)"
+    run bash -c 'echo "$MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME"'
 
-
-    run timeout 15s "$FLUVIO_BIN" remote unregister "$REMOTE_NAME"
-    assert_output "remote cluster \"$REMOTE_NAME\" was unregistered"
-    assert_success
+    assert_output "Producer error: Producer received an error code: produce from home is not allowed"
+    assert_failure
 }
-
