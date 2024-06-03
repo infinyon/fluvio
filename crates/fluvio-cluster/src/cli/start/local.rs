@@ -1,87 +1,76 @@
-use std::{convert::TryInto, path::PathBuf};
 use std::ops::Deref;
-use anyhow::{Context, Result};
+use anyhow::Result;
 use semver::Version;
 
 use fluvio::config::TlsPolicy;
 
-use crate::{LocalInstaller, LocalConfig};
-use fluvio_types::config_file::SaveLoadConfig;
-use crate::{cli::{get_installation_type, shutdown::ShutdownOpt, ClusterCliError}, start::local::LOCAL_CONFIG_PATH};
+use crate::{cli::options::{ClusterConnectionOpts, K8Install}, LocalConfig, LocalConfigBuilder, LocalInstaller};
 
 use super::StartOpt;
 
 /// Attempts to either start a local Fluvio cluster or check (and fix) the preliminery preflight checks.
 /// Pass opt.setup = false, to only run the checks.
-pub async fn process_local(opt: StartOpt, platform_version: Version, upgrade: bool) -> Result<()> {
+pub async fn process_local(opt: StartOpt, platform_version: Version/* , upgrade: bool*/) -> Result<()> {
     let mut builder = LocalConfig::builder(platform_version);
 
     if let Some(data_dir) = opt.data_dir {
         builder.data_dir(data_dir);
     }
 
-    builder
-        .log_dir(opt.log_dir.deref())
-        .spu_replicas(opt.spu)
-        .hide_spinner(false);
-
-    if let Some(chart_location) = opt.k8_config.chart_location {
-        builder.local_chart(chart_location);
-    }
-
     if let Some(rust_log) = opt.rust_log {
         builder.rust_log(rust_log);
-    }
-
-    if opt.tls.tls {
-        let (client, server): (TlsPolicy, TlsPolicy) = opt.tls.try_into()?;
-        builder.tls(client, server);
     }
 
     if opt.skip_checks {
         builder.skip_checks(true);
     }
 
-    builder.installation_type(opt.installation_type.get_or_default());
+    builder
+        .log_dir(opt.log_dir.deref())
+        .spu_replicas(opt.spu)
+        .hide_spinner(false)
+        .installation_type(opt.installation_type.get_or_default())
+        .read_only_config(opt.installation_type.read_only)
+        .save_profile(!opt.skip_profile_creation)
+        .build_and_start(opt.setup, false).await
+}
 
-    builder.read_only_config(opt.installation_type.read_only);
-
-    builder.save_profile(!opt.skip_profile_creation);
-
-    if let Some(pub_addr) = opt.sc_pub_addr {
-        builder.sc_pub_addr(pub_addr);
-    }
-
-    if let Some(priv_addr) = opt.sc_priv_addr {
-        builder.sc_priv_addr(priv_addr);
-    }
-
-    // SPIKING ONLY: THIS IS DUPLICATED CODE NOT MEANT TO BE CHECKED IN
-    let config = 
-    if upgrade {
-        let local_conf = match LOCAL_CONFIG_PATH.as_ref() {
-            None => {
-                return Err(ClusterCliError::Other(
-                    "Configuration file for local cluster not found from previous run".to_string(),
-                )
-                .into())
-            }
-            Some(local_config_path) => LocalConfig::load_from(local_config_path),
+impl LocalConfigBuilder {
+    pub fn append_connection_options(&mut self, connection_config: ClusterConnectionOpts) -> Result<&mut Self>{
+        if connection_config.tls.tls {
+            let (client, server): (TlsPolicy, TlsPolicy) = connection_config.tls.try_into()?;
+            self.tls(client, server);
         }
-        .with_context(|| "Unable to load configuration file for local cluster")?;
-        builder.build()?.overwrite_with(local_conf)
-    } else {
-        builder.build()?
-    };
 
-    let installer = LocalInstaller::from_config(config, upgrade);
-    if opt.setup {
-        preflight_check(&installer).await?;
-    } else {
-        install_local(&installer).await?;
+        if let Some(pub_addr) = connection_config.sc_pub_addr {
+            self.sc_pub_addr(pub_addr);
+        }
+    
+        if let Some(priv_addr) = connection_config.sc_priv_addr {
+            self.sc_priv_addr(priv_addr);
+        }
+        
+        Ok(self)
     }
 
-    Ok(())
+    pub fn append_k8s_config(&mut self, k8_config: K8Install) -> &mut Self {
+        if let Some(chart_location) = k8_config.chart_location {
+            self.local_chart(chart_location);
+        }
+    
+        self
+    }
+
+    pub async fn build_and_start(&self, setup: bool, upgrade: bool) -> Result<()> {
+        let config = self.build()?;
+
+        let installer = LocalInstaller::from_config(config, upgrade);
+        if setup {
+            preflight_check(&installer).await
+        } else {
+            install_local(&installer).await
+        }
+    }
 }
 
 async fn install_local(installer: &LocalInstaller) -> Result<()> {

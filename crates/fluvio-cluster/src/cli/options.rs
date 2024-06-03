@@ -1,12 +1,110 @@
+
 use std::path::PathBuf;
 use std::convert::TryFrom;
 
 use tracing::debug;
 use clap::Parser;
 
-use fluvio::config::{TlsPolicy, TlsPaths};
-
 use crate::cli::ClusterCliError;
+
+use fluvio::config::{TlsPolicy, TlsPaths};
+use fluvio_controlplane_metadata::spg::{SpuConfig, StorageConfig};
+use fluvio_types::defaults::{TLS_SERVER_SECRET_NAME, TLS_CLIENT_SECRET_NAME};
+
+
+#[derive(Debug, Parser)]
+pub struct SpuCliConfig {
+    /// set spu storage size
+    #[arg(long, default_value = "10")]
+    pub spu_storage_size: u16,
+}
+
+impl SpuCliConfig {
+    pub fn as_spu_config(&self) -> SpuConfig {
+        SpuConfig {
+            storage: Some(StorageConfig {
+                size: Some(format!("{}Gi", self.spu_storage_size)),
+                ..Default::default()
+            }),
+            ..Default::default()
+        }
+    }
+}
+
+#[derive(Debug, Parser)]
+pub struct K8Install {
+    /// k8: use specific chart version
+    #[arg(long)]
+    pub chart_version: Option<semver::Version>,
+
+    /// k8: use specific image version
+    #[arg(long)]
+    pub image_version: Option<String>,
+
+    /// k8: use custom docker registry
+    #[arg(long)]
+    pub registry: Option<String>,
+
+    /// k8 namespace
+    #[arg(long, default_value = "default")]
+    pub namespace: String,
+
+    /// k8
+    #[arg(long, default_value = "main")]
+    pub group_name: String,
+
+    /// helm chart installation name
+    #[arg(long, default_value = "fluvio")]
+    pub install_name: String,
+
+    /// Local path to a helm chart to install
+    #[arg(long)]
+    pub chart_location: Option<String>,
+
+    /// chart values
+    #[arg(long)]
+    pub chart_values: Vec<PathBuf>,
+
+    /// Uses port forwarding for connecting to SC (only during install)
+    ///
+    /// For connecting to a cluster during and after install, --proxy-addr <IP or DNS> is recommended
+    #[arg(long)]
+    pub use_k8_port_forwarding: bool,
+
+    /// Config option used in kubernetes deployments
+    #[arg(long, hide = true)]
+    pub use_cluster_ip: bool,
+
+    /// TLS: Client secret name while adding to Kubernetes
+    #[arg(long, default_value = TLS_CLIENT_SECRET_NAME)]
+    pub tls_client_secret_name: String,
+
+    /// TLS: Server secret name while adding to Kubernetes
+    #[arg(long, default_value = TLS_SERVER_SECRET_NAME)]
+    pub tls_server_secret_name: String,
+}
+
+/// Manage and view Fluvio clusters
+#[derive(Debug, Parser)]
+pub struct ClusterConnectionOpts {
+    /// SC public address
+    #[arg(long)]
+    pub sc_pub_addr: Option<String>,
+
+    /// SC private address
+    #[arg(long)]
+    pub sc_priv_addr: Option<String>,
+
+    #[clap(flatten)]
+    pub tls: TlsOpt,
+
+    #[arg(long)]
+    pub authorization_config_map: Option<String>,
+
+    /// Proxy address
+    #[arg(long)]
+    pub proxy_addr: Option<String>,
+}
 
 #[derive(Debug, Parser)]
 pub struct TlsOpt {

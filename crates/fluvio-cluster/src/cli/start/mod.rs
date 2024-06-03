@@ -6,17 +6,13 @@ use clap::{Parser, Args};
 use semver::Version;
 use anyhow::Result;
 
-use fluvio_controlplane_metadata::spg::{SpuConfig, StorageConfig};
-use fluvio_types::defaults::{TLS_SERVER_SECRET_NAME, TLS_CLIENT_SECRET_NAME};
-
 mod local;
 mod k8;
 mod sys;
-mod tls;
-
-use tls::TlsOpt;
 
 use crate::InstallationType;
+
+use crate::cli::options::{SpuCliConfig, ClusterConnectionOpts, K8Install};
 
 pub fn default_log_directory() -> PathBuf {
     let base = fluvio_cli_common::install::fluvio_base_dir().unwrap_or(std::env::temp_dir());
@@ -55,78 +51,6 @@ impl Deref for DefaultLogDirectory {
 }
 
 #[derive(Debug, Parser)]
-pub struct SpuCliConfig {
-    /// set spu storage size
-    #[arg(long, default_value = "10")]
-    pub spu_storage_size: u16,
-}
-
-impl SpuCliConfig {
-    pub fn as_spu_config(&self) -> SpuConfig {
-        SpuConfig {
-            storage: Some(StorageConfig {
-                size: Some(format!("{}Gi", self.spu_storage_size)),
-                ..Default::default()
-            }),
-            ..Default::default()
-        }
-    }
-}
-
-#[derive(Debug, Parser)]
-pub struct K8Install {
-    /// k8: use specific chart version
-    #[arg(long)]
-    pub chart_version: Option<semver::Version>,
-
-    /// k8: use specific image version
-    #[arg(long)]
-    pub image_version: Option<String>,
-
-    /// k8: use custom docker registry
-    #[arg(long)]
-    pub registry: Option<String>,
-
-    /// k8 namespace
-    #[arg(long, default_value = "default")]
-    pub namespace: String,
-
-    /// k8
-    #[arg(long, default_value = "main")]
-    pub group_name: String,
-
-    /// helm chart installation name
-    #[arg(long, default_value = "fluvio")]
-    pub install_name: String,
-
-    /// Local path to a helm chart to install
-    #[arg(long)]
-    pub chart_location: Option<String>,
-
-    /// chart values
-    #[arg(long)]
-    pub chart_values: Vec<PathBuf>,
-
-    /// Uses port forwarding for connecting to SC (only during install)
-    ///
-    /// For connecting to a cluster during and after install, --proxy-addr <IP or DNS> is recommended
-    #[arg(long)]
-    use_k8_port_forwarding: bool,
-
-    /// Config option used in kubernetes deployments
-    #[arg(long, hide = true)]
-    use_cluster_ip: bool,
-
-    /// TLS: Client secret name while adding to Kubernetes
-    #[arg(long, default_value = TLS_CLIENT_SECRET_NAME)]
-    tls_client_secret_name: String,
-
-    /// TLS: Server secret name while adding to Kubernetes
-    #[arg(long, default_value = TLS_SERVER_SECRET_NAME)]
-    tls_server_secret_name: String,
-}
-
-#[derive(Debug, Parser)]
 pub struct StartOpt {
     /// use local image
     #[arg(long)]
@@ -141,13 +65,8 @@ pub struct StartOpt {
     #[arg(long)]
     pub skip_profile_creation: bool,
 
-    /// SC public address
-    #[arg(long)]
-    pub sc_pub_addr: Option<String>,
-
-    /// SC private address
-    #[arg(long)]
-    pub sc_priv_addr: Option<String>,
+    #[clap(flatten)]
+    pub connection_config: ClusterConnectionOpts,
 
     /// data dir
     #[arg(long)]
@@ -169,23 +88,14 @@ pub struct StartOpt {
     /// installing/upgrade sys only
     sys_only: bool,
 
-    #[clap(flatten)]
-    pub tls: TlsOpt,
-
-    #[arg(long)]
-    pub authorization_config_map: Option<String>,
-
     /// Whether to skip pre-install checks, defaults to false
     #[arg(long)]
     pub skip_checks: bool,
+    
     /// Tries to setup necessary environment for cluster startup
     #[arg(long)]
     pub setup: bool,
-
-    /// Proxy address
-    #[arg(long)]
-    pub proxy_addr: Option<String>,
-
+    
     /// Service Type
     #[arg(long)]
     pub service_type: Option<String>,
@@ -215,17 +125,17 @@ pub struct IntallationTypeOpt {
 }
 
 impl StartOpt {
-    pub async fn process(self, platform_version: Version, upgrade: bool) -> Result<()> {
+    pub async fn process(self, platform_version: Version) -> Result<()> {
         use crate::cli::start::local::process_local;
         use crate::cli::start::sys::process_sys;
         use crate::cli::start::k8::process_k8;
 
         if self.sys_only {
-            process_sys(&self, upgrade)?;
+            process_sys(&self, false /* TODO: I can't find a code-path where process_sys is called with upgrade=True */)?;
         } else if self.installation_type.is_local_group() {
-            process_local(self, platform_version, upgrade).await?;
+            process_local(self, platform_version).await?;
         } else {
-            process_k8(self, platform_version, upgrade).await?;
+            process_k8(self, platform_version).await?;
         }
 
         Ok(())
