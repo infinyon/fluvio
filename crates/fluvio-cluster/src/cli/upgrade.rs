@@ -28,6 +28,9 @@ pub struct UpgradeOpt {
 
     #[clap(flatten)]
     pub k8_config: K8Install,
+
+    #[arg(long)]
+    pub develop: bool,
 }
 
 impl UpgradeOpt {
@@ -35,10 +38,10 @@ impl UpgradeOpt {
         let (installation_type, config) = get_installation_type()?;
         debug!(?installation_type);
 
-        // TODO: Overrider k8s image config
+        // Override the CLI options.
         match get_image_override() {
             ImageTag::Develop => {
-                // upgrade.start.develop = true
+                self.develop = true
             },
             ImageTag::GitVersion(image_version) => {
                 self.k8_config.image_version = Some(image_version);
@@ -48,12 +51,12 @@ impl UpgradeOpt {
 
         match installation_type {
             InstallationType::K8 => {
-                process_k8(self, platform_version, /* TODO: Why develop here is true? */ true).await?;
+                process_k8(self, platform_version).await?;
             }
 
             InstallationType::Local | InstallationType::LocalK8 | InstallationType::ReadOnly => {
                 ShutdownOpt.process().await?;
-                process_local(self, platform_version).await?;
+                process_local(self, platform_version, installation_type).await?;
             }
 
             InstallationType::Cloud => {
@@ -90,9 +93,9 @@ fn get_image_override() -> ImageTag {
     }
 }
 
-async fn process_k8(opt: UpgradeOpt, platform_version: Version, develop: bool) -> Result<()> {
+async fn process_k8(opt: UpgradeOpt, platform_version: Version) -> Result<()> {
     let mut builder = ClusterConfig::builder(platform_version);
-    if develop {
+    if opt.develop {
         builder.development()?;
     }
     
@@ -102,8 +105,10 @@ async fn process_k8(opt: UpgradeOpt, platform_version: Version, develop: bool) -
         .await
 }
 
-async fn process_local(opt: UpgradeOpt, platform_version: Version) -> Result<()> {
+async fn process_local(opt: UpgradeOpt, platform_version: Version, installation_type: InstallationType) -> Result<()> {
     LocalConfig::builder(platform_version)
+        .installation_type(installation_type)
+        .append_k8s_config(opt.k8_config)
         .append_connection_options(opt.connection_config)?
         .build_and_start(false, true)
         .await

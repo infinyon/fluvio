@@ -223,12 +223,6 @@ impl LocalConfig {
             data_dir: self.data_dir.clone(),
         }
     }
-
-    pub fn overwrite_with(mut self, other: Self) -> Self {
-        // self.spu_replicas = other.spu_replicas; // How do we decide if we overwrite here?; as long as we don't, upgrade with smaller SPU will hang
-        self.rust_log = other.rust_log;
-        self
-    }
 }
 
 impl LocalConfigBuilder {

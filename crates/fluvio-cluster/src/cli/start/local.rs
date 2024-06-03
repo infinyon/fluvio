@@ -6,7 +6,7 @@ use fluvio::config::TlsPolicy;
 
 use crate::{cli::options::{ClusterConnectionOpts, K8Install}, LocalConfig, LocalConfigBuilder, LocalInstaller};
 
-use super::StartOpt;
+use super::{IntallationTypeOpt, StartOpt};
 
 /// Attempts to either start a local Fluvio cluster or check (and fix) the preliminery preflight checks.
 /// Pass opt.setup = false, to only run the checks.
@@ -29,9 +29,10 @@ pub async fn process_local(opt: StartOpt, platform_version: Version/* , upgrade:
         .log_dir(opt.log_dir.deref())
         .spu_replicas(opt.spu)
         .hide_spinner(false)
-        .installation_type(opt.installation_type.get_or_default())
-        .read_only_config(opt.installation_type.read_only)
         .save_profile(!opt.skip_profile_creation)
+        .append_installation_type(opt.installation_type)
+        .append_k8s_config(opt.k8_config)
+        .append_connection_options(opt.connection_config)?
         .build_and_start(opt.setup, false).await
 }
 
@@ -51,6 +52,12 @@ impl LocalConfigBuilder {
         }
         
         Ok(self)
+    }
+
+    pub fn append_installation_type(&mut self, installation_type: IntallationTypeOpt) -> &mut Self {
+        self
+            .installation_type(installation_type.get_or_default())
+            .read_only_config(installation_type.read_only)
     }
 
     pub fn append_k8s_config(&mut self, k8_config: K8Install) -> &mut Self {
