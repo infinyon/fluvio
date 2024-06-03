@@ -2,7 +2,59 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
-## Platform Version 0.11.9 - UNRELEASED
+## Platform Version 0.11.9-dev-1 - 2024-06-03
+
+### Added
+
+* Version checker for Resume ([#3999](https://github.com/infinyon/fluvio/issues/3999))
+* Support to update artifacts in current fluvio release ([#4013](https://github.com/infinyon/fluvio/issues/4013))
+* Add fluvio-compression as required dep ([#4012](https://github.com/infinyon/fluvio/issues/4012))
+* Export mirror file with tls ([#4016](https://github.com/infinyon/fluvio/issues/4016))
+* Tls and authorization on SPU mirroring ([#4022](https://github.com/infinyon/fluvio/issues/4022))
+* Add sc opts to cluster start ([#4033](https://github.com/infinyon/fluvio/issues/4033))
+* `fvm self update` support ([#4020](https://github.com/infinyon/fluvio/issues/4020))
+* Add consumer --mirror argument to consume only from the selected ([#4048](https://github.com/infinyon/fluvio/issues/4048))
+* Prompt when deleting cluster ([#4034](https://github.com/infinyon/fluvio/issues/4034))
+
+### CI
+
+* Publish support for readme ([#4032](https://github.com/infinyon/fluvio/issues/4032))
+
+### Changed
+
+* Expose types needed to construct connector config ([#4011](https://github.com/infinyon/fluvio/issues/4011))
+* Update time to 0.3.36 ([#4023](https://github.com/infinyon/fluvio/issues/4023))
+* Update dep cargo-generate ([#4018](https://github.com/infinyon/fluvio/issues/4018))
+
+### Fixed
+
+* Action urn implemented as individual objects ([#4024](https://github.com/infinyon/fluvio/issues/4024))
+* Add mirroring e2e test ([#4028](https://github.com/infinyon/fluvio/issues/4028))
+* Disallow produce mirror topic from home ([#4029](https://github.com/infinyon/fluvio/issues/4029))
+* Disallow delete topic from remote ([#4046](https://github.com/infinyon/fluvio/issues/4046))
+
+### Other
+
+* Tls and authorization on SC mirroring ([#4017](https://github.com/infinyon/fluvio/issues/4017))
+* Instance level authorization for basic authorization ([#4021](https://github.com/infinyon/fluvio/issues/4021))
+* Show remote and home cmds ([#4047](https://github.com/infinyon/fluvio/issues/4047))
+
+### Removed
+
+* Delete topic mirrors ([#4030](https://github.com/infinyon/fluvio/issues/4030))
+
+## Platform Version 0.11.9-dev - 2024-05-12
+
+### CI
+
+* Post-release ([#3996](https://github.com/infinyon/fluvio/issues/3996))
+* Update infinyon/regex-filter@0.2.0 for wasi ([#3997](https://github.com/infinyon/fluvio/issues/3997))
+* Use smdk artifact for ci tests ([#4000](https://github.com/infinyon/fluvio/issues/4000))
+
+### Fixed
+
+* Config parsing ignores invalid `transforms` value ([#4004](https://github.com/infinyon/fluvio/issues/4004))
+* `sink` generation for conns fails to build ([#4005](https://github.com/infinyon/fluvio/issues/4005))
 
 ## Platform Version 0.11.8 - 2024-05-07
 
