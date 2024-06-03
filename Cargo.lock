@@ -2423,6 +2423,7 @@ dependencies = [
  "colored",
  "comfy-table",
  "derive_builder",
+ "dialoguer",
  "directories",
  "duct",
  "flate2",
