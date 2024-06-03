@@ -20,8 +20,7 @@ pub async fn process_k8(opt: StartOpt, platform_version: Version) -> Result<()> 
         .append_k8s_options(opt.k8_config)
         .append_spu_config(opt.spu, opt.spu_config)
         .append_start_opt( !opt.skip_profile_creation, opt.skip_checks, opt.rust_log, opt.service_type)
-        .upgrade(false)
-        .build_and_start(opt.setup)
+        .build_and_start(opt.setup, false)
         .await
 }
 
@@ -94,11 +93,11 @@ impl ClusterConfigBuilder {
         Ok(self)
     }
 
-    pub(crate) async fn build_and_start(&self, setup: bool) -> Result<()> {
+    pub(crate) async fn build_and_start(&self, setup: bool, upgrade: bool) -> Result<()> {
         let config = self.build()?;
 
         debug!("cluster config: {:#?}", config);
-        let installer = ClusterInstaller::from_config(config)?;
+        let installer = ClusterInstaller::from_config(config, upgrade)?;
         if setup {
             setup_k8(&installer).await
         } else {

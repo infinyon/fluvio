@@ -98,8 +98,7 @@ async fn process_k8(opt: UpgradeOpt, platform_version: Version, develop: bool) -
     
     builder
         .append_connection_options(opt.connection_config)?
-        .upgrade(true)
-        .build_and_start(false)
+        .build_and_start(false, true)
         .await
 }
 

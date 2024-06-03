@@ -271,8 +271,6 @@ pub struct ClusterConfig {
     #[builder(default = "true")]
     install_sys: bool,
 
-    #[builder(default = "false")]
-    upgrade: bool,
     /// Whether to skip pre-install checks before installation. Defaults to `false`.
     ///
     /// # Example
@@ -563,6 +561,8 @@ impl ClusterConfigBuilder {
 pub struct ClusterInstaller {
     /// Configuration options for this installation
     config: ClusterConfig,
+    /// Install or upgrade
+    upgrade: bool,
     /// Shared Kubernetes client for install
     kube_client: SharedK8Client,
     pb_factory: ProgressBarFactory,
@@ -580,7 +580,7 @@ impl ClusterInstaller {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn from_config(config: ClusterConfig) -> Result<Self> {
+    pub fn from_config(config: ClusterConfig, upgrade: bool) -> Result<Self> {
         let kube_client = load_and_share().map_err(|k8_err| {
             let msg =
                 format!("unable to load kubectl context to access k8 cluster\nError: {k8_err:?}\n");
@@ -592,6 +592,7 @@ impl ClusterInstaller {
             kube_client,
             pb_factory: ProgressBarFactory::new(config.hide_spinner),
             config,
+            upgrade
         })
     }
 
@@ -631,7 +632,7 @@ impl ClusterInstaller {
             ));
         }
 
-        if !self.config.upgrade {
+        if !self.upgrade {
             checker = checker.with_check(AlreadyInstalled);
         }
 
@@ -723,7 +724,7 @@ impl ClusterInstaller {
 
         let pb = self.pb_factory.create()?;
 
-        if self.config.upgrade {
+        if self.upgrade {
             pb.set_message(format!(
                 "📊 Upgrading Fluvio app chart to {}",
                 self.config.platform_version
@@ -863,9 +864,9 @@ impl ClusterInstaller {
         }
 
         let installer = ChartInstaller::from_config(config)?;
-        installer.process(self.config.upgrade)?;
+        installer.process(self.upgrade)?;
 
-        if self.config.upgrade {
+        if self.upgrade {
             pb.println(format!(
                 "✅ Upgrading Fluvio app chart: {}",
                 self.config.platform_version
