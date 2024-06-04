@@ -168,6 +168,34 @@ pub async fn push_package_conn(pkgpath: &str, access: &HubAccess, target: &str) 
     push_package_api(&url, pkgpath, access).await
 }
 
+/// push package to connector api
+pub async fn push_package_sdf(pkgpath: &str, access: &HubAccess) -> Result<()> {
+    use crate::{
+        SDF_PKG_KIND, SDF_PKG_KIND_DATAFLOW, SDF_PKG_KIND_PACKAGE, HUB_API_SDF_DATAFLOW_PUB,
+        HUB_API_SDF_PKG_PUB,
+    };
+
+    info!("sdf package push form: {pkgpath}");
+    let pm = package_get_meta(pkgpath)?;
+    let Some(sdf_kind) = pm.tag_get(SDF_PKG_KIND) else {
+        let msg = format!("Invalid sdf hub package_meta: missing tag for {SDF_PKG_KIND}");
+        return Err(HubError::PackagePublish(msg));
+    };
+    let sdf_kind = sdf_kind.first().cloned().unwrap_or_default().value;
+    let endpoint = match sdf_kind.as_str() {
+        SDF_PKG_KIND_DATAFLOW => HUB_API_SDF_DATAFLOW_PUB,
+        SDF_PKG_KIND_PACKAGE => HUB_API_SDF_PKG_PUB,
+        _ => {
+            let msg = format!("Invalid sdf hub package_meta {SDF_PKG_KIND}: {sdf_kind}");
+            return Err(HubError::PackagePublish(msg));
+        }
+    };
+    let host = &access.remote;
+    let url = format!("{host}/{endpoint}/{}/{}/{}", pm.group, pm.name, pm.version);
+    debug!(url, "package url");
+    push_package_api(&url, pkgpath, access).await
+}
+
 pub async fn push_package_api(put_url: &str, pkgpath: &str, access: &HubAccess) -> Result<()> {
     let pm = package_get_meta(pkgpath)?;
     packagename_validate(&pm.name)?;
