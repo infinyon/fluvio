@@ -86,11 +86,13 @@ spec:
                               type: array
                               items:
                                 type: object
-                                required: ["id","endpoint"]
+                                required: ["id","key","endpoint"]
                                 properties:
                                   id:
                                     type: integer
                                     minimum: 0
+                                  key:
+                                    type: string
                                   endpoint:
                                     type: string
                 cleanupPolicy:

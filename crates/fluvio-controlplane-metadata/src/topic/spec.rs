@@ -742,6 +742,7 @@ pub struct RemoteMirrorConfig {
 )]
 pub struct SpuMirrorConfig {
     pub id: SpuId,
+    pub key: String,
     pub endpoint: String,
 }
 
@@ -764,6 +765,7 @@ impl RemoteMirrorConfig {
             maps.push(PartitionMap {
                 id: partition_id as u32,
                 mirror: Some(PartitionMirrorConfig::Remote(RemotePartitionConfig {
+                    home_spu_key: home_spu.key.clone(),
                     home_spu_id: home_spu.id,
                     home_cluster: self.home_cluster.clone(),
                     home_spu_endpoint: home_spu.endpoint.clone(),

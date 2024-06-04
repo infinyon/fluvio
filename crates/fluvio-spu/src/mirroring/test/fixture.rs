@@ -28,6 +28,10 @@ pub(crate) fn default_host() -> String {
     "127.0.0.1".to_owned()
 }
 
+pub(crate) fn default_base_spu_key() -> String {
+    "temp-0".to_owned()
+}
+
 // find unused port in local host
 pub(crate) fn local_port() -> String {
     let port = portpicker::pick_unused_port().expect("No free ports left");
@@ -58,6 +62,8 @@ pub(crate) struct ReplicaConfig {
     topic: String,
     #[builder(default = "5001")]
     base_spu_id: SpuId,
+    #[builder(default = "default_base_spu_key()")]
+    base_spu_key: String,
     #[builder(default = "default_host()")]
     host: String,
     #[builder(default = "default_home_port()")]
@@ -126,6 +132,7 @@ impl ReplicaConfig {
 
         replica.mirror = Some(PartitionMirrorConfig::Remote(RemotePartitionConfig {
             home_cluster: self.home_cluster.clone(),
+            home_spu_key: self.base_spu_key.clone(),
             home_spu_id: self.base_spu_id,
             home_spu_endpoint: self.home_port.clone(),
         }));

@@ -218,6 +218,7 @@ impl<C: MetadataItem> RemoteMirrorController<C> {
                 home_spus: vec![
                     SpuMirrorConfig {
                         id: topic.spu_id,
+                        key: topic.spu_key.clone(),
                         endpoint: topic.spu_endpoint.clone(),
                     };
                     1
