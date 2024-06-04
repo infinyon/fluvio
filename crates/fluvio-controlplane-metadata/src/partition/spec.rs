@@ -188,6 +188,7 @@ impl std::fmt::Display for HomePartitionConfig {
 )]
 pub struct RemotePartitionConfig {
     pub home_cluster: String,
+    pub home_spu_key: String,
     #[cfg_attr(feature = "use_serde", serde(default))]
     pub home_spu_id: SpuId,
     pub home_spu_endpoint: String,
