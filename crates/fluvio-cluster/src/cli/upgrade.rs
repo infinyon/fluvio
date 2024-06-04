@@ -2,24 +2,21 @@ use clap::{Parser, ValueEnum};
 use fluvio_channel::ImageTagStrategy;
 use fluvio_cli_common::FLUVIO_IMAGE_TAG_STRATEGY;
 use fluvio_extension_common::installation::InstallationType;
+use fluvio_types::config_file::SaveLoadConfig;
 use semver::Version;
 use anyhow::{bail, Result};
 use tracing::debug;
 
 use crate::{
     cli::{
-        get_installation_type, 
-        shutdown::ShutdownOpt,
-        options::{
+        get_installation_type, options::{
             ClusterConnectionOpts,
             K8Install
-        },
-    }, 
-    ClusterConfig, 
-    LocalConfig
+        }, shutdown::ShutdownOpt
+    }, start::local::LOCAL_CONFIG_PATH, ClusterConfig, LocalConfig
 };
 
-use super::VERSION;
+use super::{ClusterCliError, VERSION};
 
 #[derive(Debug, Parser)]
 pub struct UpgradeOpt {
@@ -106,7 +103,14 @@ async fn process_k8(opt: UpgradeOpt, platform_version: Version) -> Result<()> {
 }
 
 async fn process_local(opt: UpgradeOpt, platform_version: Version, installation_type: InstallationType) -> Result<()> {
-    LocalConfig::builder(platform_version)
+    let config_path = LOCAL_CONFIG_PATH.as_ref().ok_or(ClusterCliError::Other(
+        "Configuration file for local cluster not found from previous run".to_string(),
+    ))?;
+    
+    let config = LocalConfig::load_from(config_path)?;
+    
+    config.evolve()
+        .platform_version(platform_version)
         .installation_type(installation_type)
         .append_k8s_config(opt.k8_config)
         .append_connection_options(opt.connection_config)?

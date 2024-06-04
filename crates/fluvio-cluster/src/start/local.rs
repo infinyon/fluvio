@@ -223,6 +223,30 @@ impl LocalConfig {
             data_dir: self.data_dir.clone(),
         }
     }
+
+    // Create a builder from the instance, so it could be used to create an evovled instance.
+    pub fn evolve(self) -> LocalConfigBuilder {
+        // This direct assignment style is used so the compiler can guarentee pairity between LocalConfig and the builder object
+        LocalConfigBuilder {
+            platform_version: Some(self.platform_version),
+            log_dir: Some(self.log_dir),
+            data_dir: Some(self.data_dir),
+            launcher: Some(self.launcher),
+            rust_log: Some(self.rust_log),
+            spu_replicas: Some(self.spu_replicas),
+            server_tls_policy: Some(self.server_tls_policy),
+            client_tls_policy: Some(self.client_tls_policy),
+            sc_pub_addr: Some(self.sc_pub_addr),
+            sc_priv_addr: Some(self.sc_priv_addr),
+            chart_version: Some(self.chart_version),
+            chart_location: Some(self.chart_location),
+            skip_checks: Some(self.skip_checks),
+            hide_spinner: Some(self.hide_spinner),
+            installation_type: Some(self.installation_type),
+            read_only_config: Some(self.read_only_config),
+            save_profile: Some(self.save_profile),
+        }
+    }
 }
 
 impl LocalConfigBuilder {
