@@ -1,4 +1,3 @@
-
 use std::path::PathBuf;
 use std::convert::TryFrom;
 
@@ -10,7 +9,6 @@ use crate::cli::ClusterCliError;
 use fluvio::config::{TlsPolicy, TlsPaths};
 use fluvio_controlplane_metadata::spg::{SpuConfig, StorageConfig};
 use fluvio_types::defaults::{TLS_SERVER_SECRET_NAME, TLS_CLIENT_SECRET_NAME};
-
 
 #[derive(Debug, Parser)]
 pub struct SpuCliConfig {

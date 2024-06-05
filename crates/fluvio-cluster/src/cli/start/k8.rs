@@ -14,25 +14,30 @@ pub async fn process_k8(opt: StartOpt, platform_version: Version) -> Result<()> 
     if opt.develop {
         builder.development()?;
     }
-    
+
     builder
         .append_connection_options(opt.connection_config)?
         .append_k8s_options(opt.k8_config)
         .append_spu_config(opt.spu, opt.spu_config)
-        .append_start_opt( !opt.skip_profile_creation, opt.skip_checks, opt.rust_log, opt.service_type)
+        .append_start_opt(
+            !opt.skip_profile_creation,
+            opt.skip_checks,
+            opt.rust_log,
+            opt.service_type,
+        )
         .build_and_start(opt.setup, false)
         .await
 }
 
 impl ClusterConfigBuilder {
-    fn append_start_opt(&mut self, 
-        save_profile: bool, 
+    fn append_start_opt(
+        &mut self,
+        save_profile: bool,
         skip_checks: bool,
         rust_log: Option<String>,
-        service_type: Option<String>
+        service_type: Option<String>,
     ) -> &mut Self {
-        self
-            .save_profile(save_profile)
+        self.save_profile(save_profile)
             .hide_spinner(false)
             .with_if(skip_checks, |b| b.skip_checks(true));
 
@@ -47,9 +52,12 @@ impl ClusterConfigBuilder {
         self
     }
 
-    pub(crate) fn append_spu_config(&mut self, spu_replicas: u16, spu_config: super::SpuCliConfig) -> &mut Self {
-        self
-            .spu_replicas(spu_replicas)
+    pub(crate) fn append_spu_config(
+        &mut self,
+        spu_replicas: u16,
+        spu_config: super::SpuCliConfig,
+    ) -> &mut Self {
+        self.spu_replicas(spu_replicas)
             .spu_config(spu_config.as_spu_config())
     }
 
@@ -57,7 +65,7 @@ impl ClusterConfigBuilder {
         if let Some(chart_location) = k8_config.chart_location {
             self.local_chart(chart_location);
         }
-    
+
         if let Some(registry) = k8_config.registry {
             self.image_registry(registry);
         }
@@ -66,8 +74,7 @@ impl ClusterConfigBuilder {
             self.image_tag(image_tag.trim());
         }
 
-        self
-            .namespace(k8_config.namespace)
+        self.namespace(k8_config.namespace)
             .chart_version(k8_config.chart_version)
             .group_name(k8_config.group_name)
             .tls_client_secret_name(k8_config.tls_client_secret_name)
@@ -77,11 +84,18 @@ impl ClusterConfigBuilder {
             .use_cluster_ip(k8_config.use_cluster_ip)
     }
 
-    pub(crate) fn append_connection_options(&mut self, connection_config: ClusterConnectionOpts) -> Result<&mut Self> {
+    pub(crate) fn append_connection_options(
+        &mut self,
+        connection_config: ClusterConnectionOpts,
+    ) -> Result<&mut Self> {
         let (client, server): (TlsPolicy, TlsPolicy) = connection_config.tls.try_into()?;
         self.tls(client, server);
         if cfg!(target_os = "macos") {
-            self.proxy_addr(connection_config.proxy_addr.unwrap_or_else(|| String::from("localhost")));
+            self.proxy_addr(
+                connection_config
+                    .proxy_addr
+                    .unwrap_or_else(|| String::from("localhost")),
+            );
         } else {
             self.proxy_addr(connection_config.proxy_addr);
         }
@@ -89,7 +103,7 @@ impl ClusterConfigBuilder {
         if let Some(map) = connection_config.authorization_config_map {
             self.authorization_config_map(map);
         }
-    
+
         Ok(self)
     }
 

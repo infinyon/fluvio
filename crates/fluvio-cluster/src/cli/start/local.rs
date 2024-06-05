@@ -4,13 +4,19 @@ use semver::Version;
 
 use fluvio::config::TlsPolicy;
 
-use crate::{cli::options::{ClusterConnectionOpts, K8Install}, LocalConfig, LocalConfigBuilder, LocalInstaller};
+use crate::{
+    cli::options::{ClusterConnectionOpts, K8Install},
+    LocalConfig, LocalConfigBuilder, LocalInstaller,
+};
 
 use super::{IntallationTypeOpt, StartOpt};
 
 /// Attempts to either start a local Fluvio cluster or check (and fix) the preliminery preflight checks.
 /// Pass opt.setup = false, to only run the checks.
-pub async fn process_local(opt: StartOpt, platform_version: Version/* , upgrade: bool*/) -> Result<()> {
+pub async fn process_local(
+    opt: StartOpt,
+    platform_version: Version, /* , upgrade: bool*/
+) -> Result<()> {
     let mut builder = LocalConfig::builder(platform_version);
 
     if let Some(data_dir) = opt.data_dir {
@@ -33,11 +39,15 @@ pub async fn process_local(opt: StartOpt, platform_version: Version/* , upgrade:
         .append_installation_type(opt.installation_type)
         .append_k8s_config(opt.k8_config)
         .append_connection_options(opt.connection_config)?
-        .build_and_start(opt.setup, false).await
+        .build_and_start(opt.setup, false)
+        .await
 }
 
 impl LocalConfigBuilder {
-    pub fn append_connection_options(&mut self, connection_config: ClusterConnectionOpts) -> Result<&mut Self>{
+    pub fn append_connection_options(
+        &mut self,
+        connection_config: ClusterConnectionOpts,
+    ) -> Result<&mut Self> {
         if connection_config.tls.tls {
             let (client, server): (TlsPolicy, TlsPolicy) = connection_config.tls.try_into()?;
             self.tls(client, server);
@@ -46,17 +56,16 @@ impl LocalConfigBuilder {
         if let Some(pub_addr) = connection_config.sc_pub_addr {
             self.sc_pub_addr(pub_addr);
         }
-    
+
         if let Some(priv_addr) = connection_config.sc_priv_addr {
             self.sc_priv_addr(priv_addr);
         }
-        
+
         Ok(self)
     }
 
     pub fn append_installation_type(&mut self, installation_type: IntallationTypeOpt) -> &mut Self {
-        self
-            .installation_type(installation_type.get_or_default())
+        self.installation_type(installation_type.get_or_default())
             .read_only_config(installation_type.read_only)
     }
 
@@ -64,7 +73,7 @@ impl LocalConfigBuilder {
         if let Some(chart_location) = k8_config.chart_location {
             self.local_chart(chart_location);
         }
-    
+
         self
     }
 

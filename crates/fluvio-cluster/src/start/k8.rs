@@ -592,7 +592,7 @@ impl ClusterInstaller {
             kube_client,
             pb_factory: ProgressBarFactory::new(config.hide_spinner),
             config,
-            upgrade
+            upgrade,
         })
     }
 
@@ -1377,10 +1377,9 @@ mod tests {
 
     #[test]
     fn test_build_config() {
-        let config =
-            ClusterConfig::builder(semver::Version::parse("0.7.0-alpha.1").unwrap())
-                .build()
-                .expect("should succeed with required config options");
+        let config = ClusterConfig::builder(semver::Version::parse("0.7.0-alpha.1").unwrap())
+            .build()
+            .expect("should succeed with required config options");
         assert_eq!(
             config.platform_version,
             semver::Version::parse("0.7.0-alpha.1").unwrap()

@@ -9,11 +9,12 @@ use tracing::debug;
 
 use crate::{
     cli::{
-        get_installation_type, options::{
-            ClusterConnectionOpts,
-            K8Install
-        }, shutdown::ShutdownOpt
-    }, start::local::LOCAL_CONFIG_PATH, ClusterConfig, LocalConfig
+        get_installation_type,
+        options::{ClusterConnectionOpts, K8Install},
+        shutdown::ShutdownOpt,
+    },
+    start::local::LOCAL_CONFIG_PATH,
+    ClusterConfig, LocalConfig,
 };
 
 use super::{ClusterCliError, VERSION};
@@ -37,13 +38,11 @@ impl UpgradeOpt {
 
         // Override the CLI options.
         match get_image_override() {
-            ImageTag::Develop => {
-                self.develop = true
-            },
+            ImageTag::Develop => self.develop = true,
             ImageTag::GitVersion(image_version) => {
                 self.k8_config.image_version = Some(image_version);
-            },
-            _ => {},
+            }
+            _ => {}
         };
 
         match installation_type {
@@ -70,7 +69,7 @@ impl UpgradeOpt {
 enum ImageTag {
     Develop,
     GitVersion(String),
-    Default
+    Default,
 }
 
 fn get_image_override() -> ImageTag {
@@ -82,10 +81,10 @@ fn get_image_override() -> ImageTag {
             ImageTagStrategy::VersionGit => {
                 let image_version = format!("{}-{}", VERSION, env!("GIT_HASH"));
                 ImageTag::GitVersion(image_version)
-            },
+            }
             ImageTagStrategy::Git => ImageTag::Develop,
         }
-    } else  {
+    } else {
         ImageTag::Default
     }
 }
@@ -95,21 +94,26 @@ async fn process_k8(opt: UpgradeOpt, platform_version: Version) -> Result<()> {
     if opt.develop {
         builder.development()?;
     }
-    
+
     builder
         .append_connection_options(opt.connection_config)?
         .build_and_start(false, true)
         .await
 }
 
-async fn process_local(opt: UpgradeOpt, platform_version: Version, installation_type: InstallationType) -> Result<()> {
+async fn process_local(
+    opt: UpgradeOpt,
+    platform_version: Version,
+    installation_type: InstallationType,
+) -> Result<()> {
     let config_path = LOCAL_CONFIG_PATH.as_ref().ok_or(ClusterCliError::Other(
         "Configuration file for local cluster not found from previous run".to_string(),
     ))?;
-    
+
     let config = LocalConfig::load_from(config_path)?;
-    
-    config.evolve()
+
+    config
+        .evolve()
         .platform_version(platform_version)
         .installation_type(installation_type)
         .append_k8s_config(opt.k8_config)

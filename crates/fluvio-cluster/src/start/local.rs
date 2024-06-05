@@ -390,7 +390,7 @@ impl LocalInstaller {
         Self {
             pb_factory: ProgressBarFactory::new(config.hide_spinner),
             config,
-            upgrade
+            upgrade,
         }
     }
 

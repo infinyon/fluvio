@@ -91,11 +91,11 @@ pub struct StartOpt {
     /// Whether to skip pre-install checks, defaults to false
     #[arg(long)]
     pub skip_checks: bool,
-    
+
     /// Tries to setup necessary environment for cluster startup
     #[arg(long)]
     pub setup: bool,
-    
+
     /// Service Type
     #[arg(long)]
     pub service_type: Option<String>,
@@ -131,7 +131,10 @@ impl StartOpt {
         use crate::cli::start::k8::process_k8;
 
         if self.sys_only {
-            process_sys(&self, false /* TODO: I can't find a code-path where process_sys is called with upgrade=True */)?;
+            process_sys(
+                &self,
+                false, /* TODO: I can't find a code-path where process_sys is called with upgrade=True */
+            )?;
         } else if self.installation_type.is_local_group() {
             process_local(self, platform_version).await?;
         } else {
