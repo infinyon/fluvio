@@ -2,6 +2,13 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## Platform Version 0.11.9-dev-2 - 2024-06-05
+
+### Added
+
+* SNI Prefix on SPU to SPU ([#4056](https://github.com/infinyon/fluvio/pull/4056))
+* SDF Publish Support ([#4053](https://github.com/infinyon/fluvio/issues/4053))
+
 ## Platform Version 0.11.9-dev-1 - 2024-06-03
 
 ### Added
