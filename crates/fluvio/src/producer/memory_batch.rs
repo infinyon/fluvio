@@ -76,7 +76,7 @@ impl MemoryBatch {
         (self.current_size_uncompressed as f32
             * match self.compression {
                 Compression::None => 1.0,
-                Compression::Gzip | Compression::Snappy | Compression::Lz4 | Compression::Zstd => {
+                Compression::Gzip | Compression::Snappy | Compression::Lz4 => {
                     0.5
                 }
             }) as usize
