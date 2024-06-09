@@ -38,6 +38,7 @@ pub struct PartitionStatus {
     #[fluvio(min_version = 5)]
     pub size: i64,
     pub is_being_deleted: bool,
+    pub base_offset: i64,
 }
 
 impl Default for PartitionStatus {
@@ -49,6 +50,7 @@ impl Default for PartitionStatus {
             lsr: Default::default(),
             replicas: Default::default(),
             is_being_deleted: Default::default(),
+            base_offset: Default::default(),
         }
     }
 }
@@ -94,12 +96,14 @@ impl PartitionStatus {
         replicas: Vec<ReplicaStatus>,
         size: i64,
         resolution: PartitionResolution,
+        base_offset: i64,
     ) -> Self {
         Self {
             resolution,
             leader: leader.into(),
             replicas,
             size,
+            base_offset,
             ..Default::default()
         }
     }
