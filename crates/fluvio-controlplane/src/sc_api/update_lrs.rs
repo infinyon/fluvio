@@ -62,6 +62,7 @@ pub struct LrsRequest {
     pub leader: ReplicaStatus,
     pub replicas: Vec<ReplicaStatus>,
     pub size: i64,
+    pub base_offset: i64,
 }
 
 impl PartialEq for LrsRequest {
@@ -91,12 +92,14 @@ impl LrsRequest {
         leader: ReplicaStatus,
         replicas: Vec<ReplicaStatus>,
         size: i64,
+        base_offset: i64,
     ) -> Self {
         Self {
             id,
             leader,
             replicas,
             size,
+            base_offset,
         }
     }
 }
