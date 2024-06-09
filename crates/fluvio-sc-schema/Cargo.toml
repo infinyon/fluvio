@@ -27,8 +27,11 @@ paste = "1.0"
 thiserror = { workspace = true }
 
 # Fluvio dependencies
-fluvio-controlplane-metadata = {  workspace = true, features = ["smartmodule", "k8"] }
-fluvio-protocol = { workspace = true,  features = ["link"]}
+fluvio-controlplane-metadata = { workspace = true, features = [
+    "smartmodule",
+    "k8",
+] }
+fluvio-protocol = { workspace = true, features = ["link"] }
 fluvio-socket = { workspace = true }
 fluvio-stream-model = { workspace = true, features = ["k8"] }
 fluvio-types = { workspace = true }
