@@ -114,11 +114,10 @@ setup_file() {
 }
 
 #TODO: actually we should have the topics created by the export file too.
-@test "Can't produce message to mirror topic from remote 1 before connect to home" {
+@test "Can consume message from mirror topic before connect" {
     sleep 5
     run bash -c 'echo 1 | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME"'
-    assert_output "Topic not found: $TOPIC_NAME"
-    assert_failure
+    assert_success
 }
 
 @test "Can connect to the home cluster from remote 1" {
@@ -130,8 +129,6 @@ setup_file() {
 
 @test "Can produce message to mirror topic from remote 1" {
     sleep 5
-    run bash -c 'echo 1 | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME"'
-    assert_success
     run bash -c 'echo a | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME"'
     assert_success
     run bash -c 'echo 2 | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME"'
