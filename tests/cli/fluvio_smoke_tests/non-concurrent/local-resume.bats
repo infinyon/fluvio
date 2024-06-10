@@ -59,6 +59,10 @@ setup_file() {
 }
 
 @test "Resume cluster maintains SPU replica number" {
+    if [ "$CLUSTER_VERSION" = "stable" ] || [ "$CLI_VERSION" = "stable" ]; then
+        skip "test resume on latest fluvio only"
+    fi
+
     run timeout 15s "$FLUVIO_BIN" cluster shutdown
     assert_success
 
