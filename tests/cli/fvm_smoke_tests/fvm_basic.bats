@@ -949,20 +949,27 @@ setup_file() {
     [[ "$CURR_FVM_BIN_CHECKSUM" == "$FVM_BIN_CHECKSUM" ]]
     assert_success
 
-    # Updates FVM
-    run bash -c 'fvm self update'
-    assert_line --index 0 "info: Updating FVM from $VERSION_FILE to $FVM_VERSION_STABLE"
-    assert_line --index 1 "info: Downloading fvm@$FVM_VERSION_STABLE"
-    assert_line --index 2 "info: Installing fvm@$FVM_VERSION_STABLE"
-    assert_line --index 3 "done: Installed fvm@$FVM_VERSION_STABLE with success"
-    assert_success
+    if [[ "$FVM_VERSION_STABLE" = "$VERSION_FILE" ]]; then
+        # Updates FVM
+        run bash -c 'fvm self update'
+        assert_line --index 0 "info: Already up-to-date"
+        assert_success
+    else
+        # Updates FVM
+        run bash -c 'fvm self update'
+        assert_line --index 0 "info: Updating FVM from $VERSION_FILE to $FVM_VERSION_STABLE"
+        assert_line --index 1 "info: Downloading fvm@$FVM_VERSION_STABLE"
+        assert_line --index 2 "info: Installing fvm@$FVM_VERSION_STABLE"
+        assert_line --index 3 "done: Installed fvm@$FVM_VERSION_STABLE with success"
+        assert_success
 
-    # Store FVM Binary Sha256 Checksum
-    export NEXT_FVM_BIN_CHECKSUM=$(sha256sum "$FVM_HOME_DIR/bin/fvm" | awk '{ print $1 }')
+        # Store FVM Binary Sha256 Checksum
+        export NEXT_FVM_BIN_CHECKSUM=$(sha256sum "$FVM_HOME_DIR/bin/fvm" | awk '{ print $1 }')
 
-    # Ensure the checksums matches upstream FVM checksum for this architecture
-    run bash -c "[[ "$FVM_VERSION_STABLE_SHA256" == "$NEXT_FVM_BIN_CHECKSUM" ]]"
-    assert_success
+        # Ensure the checksums matches upstream FVM checksum for this architecture
+        run bash -c "[[ "$FVM_VERSION_STABLE_SHA256" == "$NEXT_FVM_BIN_CHECKSUM" ]]"
+        assert_success
+    fi
 
     # Removes FVM
     run bash -c 'fvm self uninstall --yes'
