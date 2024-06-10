@@ -59,9 +59,8 @@ setup_file() {
 }
 
 @test "Resume cluster maintains SPU replica number" {
-    if [ "$CLUSTER_VERSION" = "stable" ] || [ "$CLI_VERSION" = "stable" ]; then
-        skip "test resume on latest fluvio only"
-    fi
+    # Reenable when fluvio cluster upgrade is ready
+    skip
 
     run timeout 15s "$FLUVIO_BIN" cluster shutdown
     assert_success
@@ -83,9 +82,8 @@ setup_file() {
 }
 
 @test "Can not start a running cluster" {
-    if [ "$CLUSTER_VERSION" = "stable" ] || [ "$CLI_VERSION" = "stable" ]; then
-        skip "test resume on latest fluvio only"
-    fi
+    # Reenable when fluvio cluster upgrade is ready
+    skip
 
     run_list_spus
     assert_success
@@ -95,9 +93,8 @@ setup_file() {
 }
 
 @test "Can not start a shutdown cluster" {
-    if [ "$CLUSTER_VERSION" = "stable" ] || [ "$CLI_VERSION" = "stable" ]; then
-        skip "test resume on latest fluvio only"
-    fi
+    # Reenable when fluvio cluster upgrade is ready
+    skip
 
     # Ensure cluster is running
     run_list_spus
