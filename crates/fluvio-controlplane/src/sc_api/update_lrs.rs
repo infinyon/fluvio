@@ -44,7 +44,7 @@ impl fmt::Display for UpdateLrsRequest {
 impl Request for UpdateLrsRequest {
     const API_KEY: u16 = InternalScKey::UpdateLrs as u16;
     type Response = UpdateLrsResponse;
-    const DEFAULT_API_VERSION: i16 = 1;
+    const DEFAULT_API_VERSION: i16 = 15;
 }
 
 #[derive(Decoder, Encoder, Debug, Default, Clone)]
@@ -63,7 +63,7 @@ pub struct LrsRequest {
     pub leader: ReplicaStatus,
     pub replicas: Vec<ReplicaStatus>,
     pub size: i64,
-    #[fluvio(min_version = 1)]
+    #[fluvio(min_version = 15)]
     pub base_offset: i64,
 }
 
