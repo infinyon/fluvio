@@ -177,11 +177,11 @@ mod tests {
         assert!(package_info
             .package_path()
             .ends_with("crates/cargo-builder"));
-        assert_eq!(package_info.target_name().unwrap(), "cargo-builder");
+        assert_eq!(package_info.target_name().unwrap(), "cargo_builder");
         assert!(package_info
             .target_bin_path()
             .unwrap()
-            .ends_with("x86_64-unknown-linux-gnu/release-lto/cargo-builder"));
+            .ends_with("x86_64-unknown-linux-gnu/release-lto/cargo_builder"));
         assert!(package_info
             .target_wasm32_path()
             .unwrap()
