@@ -59,9 +59,6 @@ setup_file() {
 }
 
 @test "Resume cluster maintains SPU replica number" {
-    # Reenable when fluvio cluster upgrade is ready
-    skip
-
     run timeout 15s "$FLUVIO_BIN" cluster shutdown
     assert_success
 
@@ -82,9 +79,6 @@ setup_file() {
 }
 
 @test "Can not start a running cluster" {
-    # Reenable when fluvio cluster upgrade is ready
-    skip
-
     run_list_spus
     assert_success
 
@@ -93,9 +87,6 @@ setup_file() {
 }
 
 @test "Can not start a shutdown cluster" {
-    # Reenable when fluvio cluster upgrade is ready
-    skip
-
     # Ensure cluster is running
     run_list_spus
     assert_success
