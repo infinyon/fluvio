@@ -253,7 +253,7 @@ async fn apply_smartmodules(
     let sm_result = match process_batch(
         sm_ctx.chain_mut(),
         &mut batches,
-        std::usize::MAX,
+        usize::MAX,
         ctx.metrics().chain_metrics(),
     ) {
         Ok((result, sm_runtime_error)) => {

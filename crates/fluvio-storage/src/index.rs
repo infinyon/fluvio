@@ -119,7 +119,7 @@ impl LogIndex {
 
         debug!(len, "memory mapped len");
 
-        if len > std::u32::MAX as u64 {
+        if len > u32::MAX as u64 {
             return Err(IoError::new(
                 ErrorKind::InvalidData,
                 "index file should not exceed u32",
