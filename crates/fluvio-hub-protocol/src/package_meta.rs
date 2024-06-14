@@ -236,10 +236,10 @@ pub fn validate_lowercase(val: &str, name: &str) -> String {
 pub fn validate_allowedchars(val: &str, name: &str) -> String {
     let good_chars = val
         .chars()
-        .all(|ch| matches!(ch, 'a'..='z' | '0'..='9' | '-' | '_'));
+        .all(|ch| matches!(ch, 'a'..='z' | '0'..='9' | ':' | '-' | '_'));
 
     if !good_chars {
-        format!("{name} {val} should be alphanumeric, '-' or '_'\n")
+        format!("{name} {val} should be alphanumeric, ':', '-' or '_'\n")
     } else {
         String::new()
     }

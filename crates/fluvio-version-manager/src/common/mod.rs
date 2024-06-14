@@ -1,6 +1,8 @@
+pub mod executable;
 pub mod manifest;
 pub mod notify;
 pub mod settings;
+pub mod update_manager;
 pub mod version_directory;
 pub mod version_installer;
 pub mod workdir;

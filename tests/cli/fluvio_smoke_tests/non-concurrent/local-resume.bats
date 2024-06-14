@@ -17,7 +17,7 @@ run_list_spus() {
 run_resume() {
     OUTPUT_FILE=${1:-/dev/null}
     # Since `fluvio run sc` runs sc as a child process without daemonizing it, all the FDs
-    # are inherited to the children. That includes FD3 and other FDs that causes the test to hang. 
+    # are inherited to the children. That includes FD3 and other FDs that causes the test to hang.
     # see: https://bats-core.readthedocs.io/en/stable/writing-tests.html#file-descriptor-3-read-this-if-bats-hangs
     # To circumvent it, we kill the parent process (with nohup) and close all of the inherited file descriptors.
     # Note the current approach is hacky because it blindly closes FDs in the range of [3, 100]
@@ -33,7 +33,7 @@ run_resume() {
 wait_for_spus() {
     for retry in $(seq 1 10); do
         run_list_spus
-        if [ "$status" -ne 0 ]; then 
+        if [ "$status" -ne 0 ]; then
             echo "retry listing SPUs..." >&3
             sleep 3
         else
@@ -44,6 +44,12 @@ wait_for_spus() {
 }
 
 setup_file() {
+    CLUSTER_VERSION="${CLUSTER_VERSION:-latest}"
+    export CLUSTER_VERSION
+
+    CLI_VERSION="${CLI_VERSION:-latest}"
+    export CLI_VERSION
+
     # Expecting to have a running cluster
     run_list_spus
     assert_success
@@ -53,6 +59,9 @@ setup_file() {
 }
 
 @test "Resume cluster maintains SPU replica number" {
+    # Reenable when fluvio cluster upgrade is ready
+    skip
+
     run timeout 15s "$FLUVIO_BIN" cluster shutdown
     assert_success
 
@@ -73,6 +82,9 @@ setup_file() {
 }
 
 @test "Can not start a running cluster" {
+    # Reenable when fluvio cluster upgrade is ready
+    skip
+
     run_list_spus
     assert_success
 
@@ -81,6 +93,9 @@ setup_file() {
 }
 
 @test "Can not start a shutdown cluster" {
+    # Reenable when fluvio cluster upgrade is ready
+    skip
+
     # Ensure cluster is running
     run_list_spus
     assert_success

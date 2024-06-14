@@ -84,6 +84,10 @@ mod cmd {
         #[arg(short = 'p', long, value_name = "integer")]
         pub partition: Vec<PartitionId>,
 
+        /// Remote cluster to consume from
+        #[arg(short = 'm', long)]
+        pub mirror: Option<String>,
+
         /// Consume records from all partitions
         #[arg(short = 'A', long = "all-partitions", conflicts_with_all = &["partition"])]
         pub all_partitions: bool,
@@ -314,6 +318,10 @@ mod cmd {
                 builder.offset_consumer(consumer.clone());
                 builder.offset_strategy(OffsetManagementStrategy::Auto);
                 builder.offset_flush(DEFAULT_OFFSET_FLUSH_INTERVAL);
+            }
+
+            if let Some(ref mirror) = self.mirror {
+                builder.mirror(mirror.clone());
             }
 
             if let Some(max_bytes) = self.max_bytes {
@@ -780,6 +788,7 @@ mod cmd {
             ConsumeOpt {
                 topic: "TOPIC_NAME".to_string(),
                 partition: Default::default(),
+                mirror: Default::default(),
                 all_partitions: Default::default(),
                 disable_continuous: Default::default(),
                 disable_progressbar: Default::default(),

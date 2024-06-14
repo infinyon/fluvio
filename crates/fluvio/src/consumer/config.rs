@@ -60,6 +60,8 @@ pub struct ConsumerConfigExt {
     #[builder(default, setter(custom))]
     pub partition: Vec<PartitionId>,
     #[builder(default, setter(strip_option, into))]
+    pub mirror: Option<String>,
+    #[builder(default, setter(strip_option, into))]
     pub offset_consumer: Option<String>,
     pub offset_start: Offset,
     #[builder(default)]
@@ -93,6 +95,7 @@ impl ConsumerConfigExt {
         let Self {
             topic: _,
             partition: _,
+            mirror: _,
             offset_consumer,
             offset_start,
             disable_continuous,
@@ -132,6 +135,7 @@ impl From<ConsumerConfigExt> for ConsumerConfig {
         let ConsumerConfigExt {
             topic: _,
             partition: _,
+            mirror: _,
             offset_consumer: _,
             offset_start: _,
             offset_strategy: _,

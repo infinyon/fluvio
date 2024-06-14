@@ -2196,7 +2196,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.22.2"
+version = "0.22.3"
 dependencies = [
  "anyhow",
  "async-channel 1.9.0",
@@ -2424,6 +2424,7 @@ dependencies = [
  "colored",
  "comfy-table",
  "derive_builder",
+ "dialoguer",
  "directories",
  "duct",
  "flate2",
@@ -2747,7 +2748,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.10.13"
+version = "0.10.15"
 dependencies = [
  "bytes",
  "content_inspector",

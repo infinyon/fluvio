@@ -22,7 +22,7 @@ use fluvio_controlplane_metadata::{
 };
 use fluvio_storage::{ReplicaStorage, FileReplica};
 
-use fluvio_socket::{FluvioSocket, FluvioSink};
+use fluvio_socket::{ClientConfig, FluvioSink, FluvioSocket};
 use fluvio_spu_schema::{Isolation, server::mirror::StartMirrorRequest};
 use fluvio_future::{net::DomainConnector, task::spawn, timer::sleep};
 use fluvio_protocol::{record::Offset, api::RequestMessage};
@@ -198,6 +198,7 @@ where
                     home = self.remote_config.home_cluster,
                     "home cluster not found, waiting 1 second"
                 );
+
                 sleep(Duration::from_secs(CLUSTER_LOOKUP_SEC)).await;
             }
         }
@@ -442,11 +443,9 @@ where
                 "trying connect to home",
             );
 
-            let res = if let Some(tlspolicy) = &tlspolicy {
+            let home_config = if let Some(tlspolicy) = &tlspolicy {
                 match DomainConnector::try_from(tlspolicy.clone()) {
-                    Ok(connector) => {
-                        FluvioSocket::connect_with_connector(endpoint, &(*connector)).await
-                    }
+                    Ok(connector) => ClientConfig::new(endpoint, connector, false),
                     Err(err) => {
                         error!(
                             "error establishing tls with leader at: <{}> err: {}",
@@ -457,11 +456,16 @@ where
                     }
                 }
             } else {
-                FluvioSocket::connect(endpoint).await
+                ClientConfig::with_addr(endpoint.to_string())
             };
 
+            let home_config = home_config.with_prefix_sni_domain(&self.remote_config.home_spu_key);
+
+            let res = home_config.connect().await;
+
             match res {
-                Ok(socket) => {
+                Ok(versioned_socket) => {
+                    let (socket, _config, _versions) = versioned_socket.split();
                     debug!("connected");
                     return (socket, tlspolicy.is_some());
                 }

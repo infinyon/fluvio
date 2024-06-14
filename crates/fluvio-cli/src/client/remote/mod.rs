@@ -22,7 +22,7 @@ pub enum RemoteCmd {
     /// List all remote clusters
     #[command(name = "list")]
     List(ListOpt),
-    /// List all remote clusters
+    /// Unregister a remote cluster
     #[command(name = "unregister")]
     Unregister(UnregisterOpt),
     /// Generate metadata file for remote cluster

@@ -90,6 +90,7 @@ async fn test_mirroring_new_records() {
     assert_eq!(
         remote_mirror1.remote().expect("remote"),
         &RemotePartitionConfig {
+            home_spu_key: "temp-0".to_owned(),
             home_cluster: "edge1".to_owned(),
             home_spu_id: 5001,
             home_spu_endpoint: home_port.clone(),
@@ -134,6 +135,7 @@ async fn test_mirroring_new_records() {
     assert_eq!(
         remote_mirror2.remote().expect("remote"),
         &RemotePartitionConfig {
+            home_spu_key: "temp-0".to_owned(),
             home_cluster: "edge2".to_owned(),
             home_spu_id: 5001,
             home_spu_endpoint: home_port.clone(),

@@ -34,7 +34,7 @@ setup_file() {
     if [[ -z "$CI" ]];
     then
         echo "# Deleting cluster" >&3
-        "$FLUVIO_BIN" cluster delete --local || "$FLUVIO_BIN" cluster delete
+        "$FLUVIO_BIN" cluster delete --force"
     else
         echo "# [CI MODE] Skipping initial cleanup" >&3
     fi;
@@ -57,7 +57,7 @@ teardown_file() {
     if [[ -z "$SKIP_CLEANUP" ]];
     then
         echo "# Deleting cluster" >&3
-        "$FLUVIO_BIN" cluster delete --local || "$FLUVIO_BIN" cluster delete
+        "$FLUVIO_BIN" cluster delete --force"
     else
         echo "# Skipping cleanup" >&3
     fi
@@ -72,7 +72,7 @@ teardown_file() {
     assert_success
 }
 
-# Produce message 
+# Produce message
 @test "Produce message" {
     run bash -c 'echo "$MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME"'
 

@@ -165,17 +165,17 @@ impl<AC: AuthContext, C: MetadataItem> RemoteFetchingFromHomeController<AC, C> {
 
                             match spu_id {
                                 Some(spu_id) => {
-                                    let spu_endpoint = spus
-                                        .iter()
-                                        .find(|s| s.spec.id == spu_id)
-                                        .map(|s| s.spec.public_endpoint.addr())
-                                        .unwrap_or_default();
-                                    Some(MirroringSpecWrapper::new(
-                                        topic.key.clone(),
-                                        topic.spec,
-                                        spu_id,
-                                        spu_endpoint,
-                                    ))
+                                    if let Some(spu) = spus.iter().find(|s| s.spec.id == spu_id) {
+                                        Some(MirroringSpecWrapper::new(
+                                            topic.key.clone(),
+                                            topic.spec,
+                                            spu_id,
+                                            spu.spec().public_endpoint.addr(),
+                                            spu.key().to_string(),
+                                        ))
+                                    } else {
+                                        None
+                                    }
                                 }
                                 None => None,
                             }
