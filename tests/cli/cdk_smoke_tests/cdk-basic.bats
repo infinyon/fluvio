@@ -173,6 +173,9 @@ setup_file() {
 @test "Generate and Builds a Sink Connector Package" {
     export SINK_CONN_NAME="$PROJECT_NAME_PREFIX-my-sink-conn"
 
+    # move into test dir
+    cd $TEST_DIR
+
     # generate a sink connector
     run $CDK_BIN generate $SINK_CONN_NAME \
         --group "$PROJECT_NAME_PREFIX" \

@@ -4,6 +4,8 @@ version = "0.1.0"
 authors = ["{{authors}}"]
 edition = "2021"
 
+[workspace]
+
 [dependencies]
 {% if connector-type == "sink" %}futures = { version = "0.3", default-features = false }{% endif %}
 serde = { version = "1.0", default-features = false, features = ["derive"]}
