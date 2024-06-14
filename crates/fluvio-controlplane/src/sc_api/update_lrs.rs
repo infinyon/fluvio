@@ -44,7 +44,6 @@ impl fmt::Display for UpdateLrsRequest {
 impl Request for UpdateLrsRequest {
     const API_KEY: u16 = InternalScKey::UpdateLrs as u16;
     type Response = UpdateLrsResponse;
-    const DEFAULT_API_VERSION: i16 = 1;
 }
 
 #[derive(Decoder, Encoder, Debug, Default, Clone)]
