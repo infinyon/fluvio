@@ -110,7 +110,7 @@ where
                 "list handler"
             ),
             AdminPublicDecodedRequest::MirroringRequest(request) =>
-                super::mirroring::handle_mirroring_request(request, &service_context, shared_sink.clone(), end_event.clone())?,
+                super::mirroring::handle_mirroring_request(request, service_context.clone(), shared_sink.clone(), end_event.clone())?,
             AdminPublicDecodedRequest::WatchRequest(request) =>
                 super::watch::handle_watch_request(
                     request,

@@ -114,6 +114,17 @@ async fn handle_produce_topic(
             }
         };
 
+        if let Some(mirror) = &leader_state.get_replica().mirror {
+            if mirror.is_home_mirror() {
+                debug!(%replica_id, "Mirror replica is not supported for produce");
+                topic_result.partitions.push(PartitionWriteResult::error(
+                    replica_id,
+                    ErrorCode::MirrorProduceFromHome,
+                ));
+                continue;
+            }
+        }
+
         if let Err(err) = apply_smartmodules(
             &mut partition_request,
             smartmodules,
@@ -242,7 +253,7 @@ async fn apply_smartmodules(
     let sm_result = match process_batch(
         sm_ctx.chain_mut(),
         &mut batches,
-        std::usize::MAX,
+        usize::MAX,
         ctx.metrics().chain_metrics(),
     ) {
         Ok((result, sm_runtime_error)) => {

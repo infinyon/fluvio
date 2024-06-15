@@ -7,7 +7,7 @@ fluvio:
 
 # make -f src/spu/Makefile test_replica
 test_replica:	fluvio
-	$(FLUVIO_BIN) cluster delete
+	$(FLUVIO_BIN) cluster delete --force
 	$(FLUVIO_BIN) cluster start --spu $(SPU) --local --develop --rust-log=fluvio_spu=debug
 	$(FLUVIO_BIN) topic create test --replication $(REPLICATION)
 	echo "hello world" | $(FLUVIO_BIN) produce test

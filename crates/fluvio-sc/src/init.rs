@@ -122,13 +122,14 @@ where
     mod pub_server {
 
         use std::sync::Arc;
+        use fluvio_auth::root::RootAuthorization;
         use tracing::info;
 
         use crate::services::start_public_server;
         use crate::core::SharedContext;
 
         use fluvio_controlplane_metadata::core::MetadataItem;
-        use crate::services::auth::{AuthGlobalContext, RootAuthorization, ReadOnlyAuthorization};
+        use crate::services::auth::{AuthGlobalContext, ReadOnlyAuthorization};
         use crate::services::auth::basic::{BasicAuthorization, BasicRbacPolicy};
 
         pub fn start<C>(ctx: SharedContext<C>, auth_policy_option: Option<BasicRbacPolicy>)

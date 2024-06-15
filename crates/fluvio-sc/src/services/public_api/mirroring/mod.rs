@@ -22,14 +22,13 @@ pub enum MirrorRequests {
 #[instrument(skip(request, auth_ctx, sink, end_event))]
 pub fn handle_mirroring_request<AC: AuthContext, C: MetadataItem>(
     request: RequestMessage<ObjectMirroringRequest>,
-    auth_ctx: &AuthServiceContext<AC, C>,
+    auth_ctx: Arc<AuthServiceContext<AC, C>>,
     sink: ExclusiveFlvSink,
     end_event: Arc<StickyEvent>,
 ) -> Result<()> {
     info!("remote cluster register request {:?}", request);
 
     let (header, req) = request.get_header_request();
-    let ctx = auth_ctx.global_ctx.clone();
 
     let Ok(req) = try_convert_to_reqs(req) else {
         return Err(anyhow!("unable to decode request"));
@@ -37,7 +36,7 @@ pub fn handle_mirroring_request<AC: AuthContext, C: MetadataItem>(
 
     match req {
         MirrorRequests::Connect(req) => {
-            RemoteFetchingFromHomeController::start(req, sink, end_event, ctx, header);
+            RemoteFetchingFromHomeController::start(req, sink, end_event, header, auth_ctx);
         }
     };
 

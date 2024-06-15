@@ -39,7 +39,7 @@ clean_cluster:
 else
 clean_cluster:
 	echo "clean up previous installation"
-	$(FLUVIO_BIN) cluster delete
+	$(FLUVIO_BIN) cluster delete --force
 endif
 
 test-setup:	build-test-ci clean_cluster
@@ -217,6 +217,9 @@ cli-fluvio-read-only-smoke:
 
 cli-fluvio-mirroring-smoke:
 	bats $(shell ls -1 ./tests/cli/mirroring_smoke_tests/*.bats | sort -R)
+
+cli-fluvio-mirroring-smoke-e2e:
+	bats $(shell ls -1 ./tests/cli/mirroring_smoke_tests/e2e/*.bats | sort -R)
 
 cli-smdk-smoke:
 	bats $(shell ls -1 ./tests/cli/smdk_smoke_tests/*.bats | sort -R)

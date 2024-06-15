@@ -16,6 +16,12 @@ pub const HUB_API_LIST_META: &str = concatcp!(HUB_API_V, "/list_with_meta");
 pub const HUB_API_CONN_PKG: &str = concatcp!(HUB_API_V, "/connector/pkg");
 pub const HUB_API_CONN_LIST: &str = concatcp!(HUB_API_V, "/connector/list");
 
+// sdf specific api
+pub const HUB_API_SDF_PKG: &str = concatcp!(HUB_API_V, "/sdf/pkg");
+pub const HUB_API_SDF_LIST: &str = concatcp!(HUB_API_V, "/sdf/list");
+pub const HUB_API_SDF_PKG_PUB: &str = concatcp!(HUB_API_V, "/sdf/pkg/pub/pkg");
+pub const HUB_API_SDF_DATAFLOW_PUB: &str = concatcp!(HUB_API_V, "/sdf/pkg/pub/dataflow");
+
 pub const HUB_MANIFEST_BLOB: &str = "manifest.tar.gz";
 pub const HUB_PACKAGE_EXT: &str = "ipkg";
 pub const HUB_PACKAGE_META: &str = "package-meta.yaml";
@@ -27,3 +33,8 @@ pub const HUB_SIGNFILE_BASE: &str = "signature";
 pub const DEF_CARGO_TOML_PATH: &str = "Cargo.toml";
 pub const DEF_HUB_INIT_DIR: &str = ".hub";
 pub const DEF_HUB_PKG_META: &str = concatcp!(DEF_HUB_INIT_DIR, "/", HUB_PACKAGE_META); // .hub/package-meta.yaml
+
+// This is required in sdf hub package_meta manifests
+pub const SDF_PKG_KIND: &str = "sdf-kind";
+pub const SDF_PKG_KIND_DATAFLOW: &str = "dataflow";
+pub const SDF_PKG_KIND_PACKAGE: &str = "pkg";

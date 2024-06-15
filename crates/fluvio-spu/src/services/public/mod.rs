@@ -12,6 +12,7 @@ mod conn_context;
 
 use std::sync::Arc;
 use async_trait::async_trait;
+use fluvio_auth::Authorization;
 use fluvio_protocol::api::Request;
 use fluvio_protocol::api::RequestMessage;
 use fluvio_protocol::link::ErrorCode;
@@ -29,6 +30,8 @@ use fluvio_types::event::StickyEvent;
 
 use crate::core::DefaultSharedGlobalContext;
 use crate::mirroring::home::connection::MirrorHomeHandler;
+use crate::services::auth::SpuAuthGlobalContext;
+use crate::services::auth::SpuAuthServiceContext;
 use crate::services::public::consumer_handler::handle_delete_consumer_offset_request;
 use crate::services::public::consumer_handler::handle_fetch_consumer_offsets_request;
 use crate::services::public::consumer_handler::handle_update_consumer_offset_request;
@@ -39,53 +42,78 @@ use self::offset_request::handle_offset_request;
 use self::offset_update::handle_offset_update;
 use self::stream_fetch::{StreamFetchHandler, publishers::StreamPublishers};
 use self::conn_context::ConnectionContext;
+use std::fmt::Debug;
 
-pub(crate) type SpuPublicServer =
-    FluvioApiServer<SpuServerRequest, SpuServerApiKey, DefaultSharedGlobalContext, PublicService>;
+pub(crate) type SpuPublicServer<A> =
+    FluvioApiServer<SpuServerRequest, SpuServerApiKey, SpuAuthGlobalContext<A>, PublicService<A>>;
 
-pub fn create_public_server(addr: String, ctx: DefaultSharedGlobalContext) -> SpuPublicServer {
+pub fn create_public_server<A>(
+    addr: String,
+    auth_ctx: SpuAuthGlobalContext<A>,
+) -> SpuPublicServer<A>
+where
+    A: Authorization + Sync + Send + Debug + 'static,
+    SpuAuthGlobalContext<A>: Clone + Debug,
+    <A as Authorization>::Context: Send + Sync,
+{
     info!(
-        spu_id = ctx.local_spu_id(),
+        spu_id = auth_ctx.global_ctx.local_spu_id(),
         %addr,
         "Starting SPU public service:",
     );
 
-    FluvioApiServer::new(addr, ctx, PublicService::new())
+    FluvioApiServer::new(addr, auth_ctx, PublicService::<A>::new())
 }
 
 #[derive(Debug)]
-pub struct PublicService {
-    _0: (), // Prevent construction
+pub struct PublicService<A> {
+    data: std::marker::PhantomData<A>,
 }
 
-impl PublicService {
+impl<A> PublicService<A> {
     pub fn new() -> Self {
-        PublicService { _0: () }
+        PublicService {
+            data: std::marker::PhantomData,
+        }
     }
 }
 
 #[async_trait]
-impl FluvioService for PublicService {
+impl<A> FluvioService for PublicService<A>
+where
+    A: Authorization + Send + Sync,
+    <A as Authorization>::Context: Send + Sync,
+{
     type Request = SpuServerRequest;
-    type Context = DefaultSharedGlobalContext;
+    type Context = SpuAuthGlobalContext<A>;
 
     #[instrument(skip(self, context))]
     async fn respond(
         self: Arc<Self>,
-        context: DefaultSharedGlobalContext,
-        socket: FluvioSocket,
+        context: Self::Context,
+        mut socket: FluvioSocket,
         _connection: ConnectInfo,
     ) -> Result<()> {
-        let (sink, mut stream) = socket.split();
-
+        let auth_context = context
+            .auth
+            .create_auth_context(&mut socket)
+            .await
+            .map_err(|err| {
+                let io_error: std::io::Error = err.into();
+                io_error
+            })?;
+        let service_context = SpuAuthServiceContext::new(context.global_ctx.clone(), auth_context);
         let mut mirror_request: Option<RequestMessage<StartMirrorRequest>> = None;
         let shutdown = StickyEvent::shared();
-
+        let (sink, mut stream) = socket.split();
         let mut shared_sink = sink.as_shared();
+
         {
             let api_stream = stream.api_stream::<SpuServerRequest, SpuServerApiKey>();
             let mut event_stream = api_stream.take_until(shutdown.listen_pinned());
             let mut conn_ctx = ConnectionContext::new();
+
+            let context = &context.global_ctx;
 
             loop {
                 let event = event_stream.next().await;
@@ -188,7 +216,7 @@ impl FluvioService for PublicService {
         }
 
         if let Some(request) = mirror_request {
-            MirrorHomeHandler::respond(context, request, shared_sink, &mut stream).await;
+            MirrorHomeHandler::respond(request, &service_context, shared_sink, stream).await;
         }
 
         shutdown.notify();

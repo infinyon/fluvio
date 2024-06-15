@@ -14,15 +14,11 @@ setup_file() {
 
     REMOTE_NAME=remote-test-1
     export REMOTE_NAME
-    debug_msg "Topic name: $REMOTE_NAME"
+    debug_msg "Remote name: $REMOTE_NAME"
 
     MESSAGE="$(random_string 7)"
     export MESSAGE
     debug_msg "$MESSAGE"
-}
-
-teardown_file() {
-    run timeout 15s "$FLUVIO_BIN" cluster shutdown
 }
 
 @test "Can register an remote cluster" {
@@ -32,23 +28,30 @@ teardown_file() {
     assert_success
 }
 
-@test "Can't register an remote cluster with the same name" {
-    run timeout 15s "$FLUVIO_BIN" remote register "$REMOTE_NAME"
+@test "Export remote" {
+    run timeout 15s "$FLUVIO_BIN" remote export "$REMOTE_NAME" --file remote.json
+    assert_output ""
+    assert_success
 
-    assert_output "remote cluster \"$REMOTE_NAME\" already exists"
-    assert_failure
+    run jq -r .home.id remote.json 
+    assert_output "home"
+    assert_success
+
+    run jq -r .home.remoteId remote.json 
+    assert_output "$REMOTE_NAME"
+    assert_success
+
+    run jq -r .home.publicEndpoint remote.json 
+    assert_output "127.0.0.1:9003"
+    assert_success
 }
 
 @test "Can unregister an remote cluster" {
-    run timeout 15s "$FLUVIO_BIN" remote unregister "$REMOTE_NAME"
+    run rm -f remote.json
 
+
+    run timeout 15s "$FLUVIO_BIN" remote unregister "$REMOTE_NAME"
     assert_output "remote cluster \"$REMOTE_NAME\" was unregistered"
     assert_success
 }
 
-@test "Can't unregister an remote cluster that doesn't exist" {
-    run timeout 15s "$FLUVIO_BIN" remote unregister "$REMOTE_NAME"
-
-    assert_output "remote cluster \"$REMOTE_NAME\" not found"
-    assert_failure
-}

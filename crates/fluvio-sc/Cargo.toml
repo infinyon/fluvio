@@ -47,6 +47,7 @@ tracing = { workspace = true }
 
 
 # Fluvio dependencies
+fluvio = { workspace = true }
 fluvio-auth = { workspace = true }
 fluvio-future = { workspace = true, features = [
     "subscriber",

@@ -141,6 +141,18 @@ pub struct StartOpt {
     #[arg(long)]
     pub skip_profile_creation: bool,
 
+    /// SC public address
+    #[arg(long)]
+    pub sc_pub_addr: Option<String>,
+
+    /// SC private address
+    #[arg(long)]
+    pub sc_priv_addr: Option<String>,
+
+    /// data dir
+    #[arg(long)]
+    pub data_dir: Option<PathBuf>,
+
     /// number of SPU
     #[arg(long, default_value = "1")]
     pub spu: u16,

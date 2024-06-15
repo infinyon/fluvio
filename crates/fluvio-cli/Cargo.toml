@@ -84,6 +84,7 @@ k8-types = { workspace = true , features = ["core"] }
 fluvio-cluster = { path = "../fluvio-cluster", default-features = false, features = ["cli"], optional = true }
 
 fluvio = { workspace = true }
+fluvio-auth = { workspace = true }
 fluvio-socket = { workspace = true }
 fluvio-command = { workspace = true  }
 fluvio-package-index = { workspace = true }

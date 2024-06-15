@@ -1,12 +1,13 @@
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
+use fluvio_auth::root::RootAuthorization;
 use tracing::debug;
 
 use fluvio_controlplane_metadata::partition::{RemotePartitionConfig, HomePartitionConfig};
 use fluvio_future::timer::sleep;
 use fluvio_protocol::{fixture::create_raw_recordset, record::ReplicaKey};
 
-use crate::services::public::create_public_server;
+use crate::services::{auth::SpuAuthGlobalContext, public::create_public_server};
 
 use super::fixture::{ReplicaConfig, local_port};
 
@@ -64,7 +65,10 @@ async fn test_mirroring_new_records() {
 
     // start home server
     debug!("starting home server");
-    let _remote_end = create_public_server(home_port.clone(), home_gctx.clone()).run();
+
+    let auth_global_ctx =
+        SpuAuthGlobalContext::new(home_gctx.clone(), Arc::new(RootAuthorization::new()));
+    let _remote_end = create_public_server(home_port.to_owned(), auth_global_ctx.clone()).run();
 
     // sleep 1 seconds
     debug!("waiting for home public server to up");
@@ -86,6 +90,7 @@ async fn test_mirroring_new_records() {
     assert_eq!(
         remote_mirror1.remote().expect("remote"),
         &RemotePartitionConfig {
+            home_spu_key: "temp-0".to_owned(),
             home_cluster: "edge1".to_owned(),
             home_spu_id: 5001,
             home_spu_endpoint: home_port.clone(),
@@ -130,6 +135,7 @@ async fn test_mirroring_new_records() {
     assert_eq!(
         remote_mirror2.remote().expect("remote"),
         &RemotePartitionConfig {
+            home_spu_key: "temp-0".to_owned(),
             home_cluster: "edge2".to_owned(),
             home_spu_id: 5001,
             home_spu_endpoint: home_port.clone(),

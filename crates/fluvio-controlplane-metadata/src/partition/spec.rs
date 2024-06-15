@@ -148,6 +148,10 @@ impl PartitionMirrorConfig {
             Self::Home(h) => h.remote_cluster.clone(),
         }
     }
+
+    pub fn is_home_mirror(&self) -> bool {
+        matches!(self, Self::Home(_))
+    }
 }
 
 impl std::fmt::Display for PartitionMirrorConfig {
@@ -184,6 +188,7 @@ impl std::fmt::Display for HomePartitionConfig {
 )]
 pub struct RemotePartitionConfig {
     pub home_cluster: String,
+    pub home_spu_key: String,
     #[cfg_attr(feature = "use_serde", serde(default))]
     pub home_spu_id: SpuId,
     pub home_spu_endpoint: String,

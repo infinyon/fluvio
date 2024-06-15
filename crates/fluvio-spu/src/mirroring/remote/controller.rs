@@ -7,6 +7,7 @@ use std::{
     time::Duration,
 };
 
+use fluvio::config::TlsPolicy;
 use futures_util::StreamExt;
 use tokio::select;
 use tracing::{debug, error, warn, instrument};
@@ -21,9 +22,9 @@ use fluvio_controlplane_metadata::{
 };
 use fluvio_storage::{ReplicaStorage, FileReplica};
 
-use fluvio_socket::{FluvioSocket, FluvioSink};
+use fluvio_socket::{ClientConfig, FluvioSink, FluvioSocket};
 use fluvio_spu_schema::{Isolation, server::mirror::StartMirrorRequest};
-use fluvio_future::{task::spawn, timer::sleep};
+use fluvio_future::{net::DomainConnector, task::spawn, timer::sleep};
 use fluvio_protocol::{record::Offset, api::RequestMessage};
 use fluvio_types::event::offsets::OffsetChangeListener;
 
@@ -197,6 +198,7 @@ where
                     home = self.remote_config.home_cluster,
                     "home cluster not found, waiting 1 second"
                 );
+
                 sleep(Duration::from_secs(CLUSTER_LOOKUP_SEC)).await;
             }
         }
@@ -211,7 +213,7 @@ where
         (home_socket, tls): (FluvioSocket, bool),
         backoff: &mut ExponentialBackoff,
     ) -> Result<()> {
-        //  debug!(home = self.home, "start syncing mirror");
+        debug!(home_id = home.id, "start syncing mirror");
 
         let (mut home_sink, mut home_stream) = home_socket.split();
 
@@ -220,7 +222,6 @@ where
             home_sink.disable_zerocopy();
         }
 
-        //
         let mut home_api_stream = home_stream.api_stream::<HomeMirrorRequest, MirrorHomeApiEnum>();
 
         self.send_initial_request(home, &mut home_sink).await?;
@@ -352,7 +353,7 @@ where
     }
 
     /// look up home cluster from local store
-    /// this may retur None if remote cluster is send by SC by time controller is started
+    /// this may return None if remote cluster is send by SC by time controller is started
     fn find_home_cluster(&self) -> Option<Home> {
         let read = self.mirror_store.read();
         let mirror = read.get(&self.remote_config.home_cluster).cloned();
@@ -424,13 +425,14 @@ where
     }
 
     /// create socket to home, this will always succeed
-    #[instrument]
+    #[instrument(skip(self, home))]
     async fn create_socket_to_home(
         &self,
         backoff: &mut ExponentialBackoff,
-        _home: &Home,
+        home: &Home,
     ) -> (FluvioSocket, bool) {
-        //TODO: implement tls
+        let tlspolicy = option_tlspolicy(home);
+
         loop {
             self.state.metrics.increase_conn_count();
 
@@ -441,12 +443,31 @@ where
                 "trying connect to home",
             );
 
-            let res = FluvioSocket::connect(endpoint).await;
+            let home_config = if let Some(tlspolicy) = &tlspolicy {
+                match DomainConnector::try_from(tlspolicy.clone()) {
+                    Ok(connector) => ClientConfig::new(endpoint, connector, false),
+                    Err(err) => {
+                        error!(
+                            "error establishing tls with leader at: <{}> err: {}",
+                            endpoint, err
+                        );
+                        self.backoff_and_wait(backoff).await;
+                        continue;
+                    }
+                }
+            } else {
+                ClientConfig::with_addr(endpoint.to_string())
+            };
+
+            let home_config = home_config.with_prefix_sni_domain(&self.remote_config.home_spu_key);
+
+            let res = home_config.connect().await;
 
             match res {
-                Ok(socket) => {
+                Ok(versioned_socket) => {
+                    let (socket, _config, _versions) = versioned_socket.split();
                     debug!("connected");
-                    return (socket, false);
+                    return (socket, tlspolicy.is_some());
                 }
 
                 Err(err) => {
@@ -472,4 +493,24 @@ fn create_backoff() -> ExponentialBackoff {
         .max(Duration::from_secs(300))
         .build()
         .unwrap()
+}
+
+fn option_tlspolicy(home: &Home) -> Option<TlsPolicy> {
+    use fluvio::config::{TlsCerts, TlsConfig};
+
+    let ct = match &home.client_tls {
+        Some(ct) => ct,
+        _ => {
+            return None;
+        }
+    };
+
+    let certs = TlsCerts {
+        domain: ct.domain.clone(),
+        key: ct.client_key.clone(),
+        cert: ct.client_cert.clone(),
+        ca_cert: ct.ca_cert.clone(),
+    };
+    let tlscfg = TlsConfig::Inline(certs);
+    Some(TlsPolicy::from(tlscfg))
 }

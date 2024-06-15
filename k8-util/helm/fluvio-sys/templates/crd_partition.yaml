@@ -44,9 +44,11 @@ spec:
                           type: string
                     remote:
                       type: object
-                      required: ["homeCluster","homeSpuEndpoint","homeSpu"]
+                      required: ["homeCluster","homeSpuKey","homeSpuEndpoint","homeSpu"]
                       properties:
                         homeCluster:
+                          type: string
+                        homeSpuKey:
                           type: string
                         homeSpuEndpoint:
                           type: string

@@ -105,16 +105,18 @@ pub struct MirroringSpecWrapper<S> {
     pub key: String,
     pub spec: S,
     pub spu_id: SpuId,
+    pub spu_key: String,
     pub spu_endpoint: String,
 }
 
 impl<S> MirroringSpecWrapper<S> {
-    pub fn new(key: String, spec: S, spu_id: i32, spu_endpoint: String) -> Self {
+    pub fn new(key: String, spec: S, spu_id: i32, spu_endpoint: String, spu_key: String) -> Self {
         Self {
             key,
             spec,
             spu_id,
             spu_endpoint,
+            spu_key,
         }
     }
 }

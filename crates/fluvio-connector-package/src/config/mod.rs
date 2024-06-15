@@ -11,12 +11,12 @@ use serde::ser::{SerializeMap, SerializeSeq};
 use tracing::debug;
 use anyhow::Result;
 use serde::{Deserialize, Serialize, Deserializer, Serializer};
-use bytesize::ByteSize;
+pub use bytesize::ByteSize;
 
-use fluvio_controlplane_metadata::topic::config::TopicConfig;
-use fluvio_smartengine::transformation::TransformationStep;
-use fluvio_compression::Compression;
-use fluvio_types::PartitionId;
+pub use fluvio_controlplane_metadata::topic::config as topic_config;
+pub use fluvio_smartengine::transformation::TransformationStep;
+pub use fluvio_compression::Compression;
+pub use fluvio_types::PartitionId;
 
 use crate::metadata::Direction;
 
@@ -265,7 +265,7 @@ impl MetaConfig<'_> {
         }
     }
 
-    pub fn topic_config(&self) -> Option<&TopicConfig> {
+    pub fn topic_config(&self) -> Option<&topic_config::TopicConfig> {
         match self {
             MetaConfig::V0_1_0(_) => None,
             MetaConfig::V0_2_0(inner) => Some(&inner.topic),
@@ -738,7 +738,7 @@ mod tests {
             meta: MetaConfigV2 {
                 name: "my-test-mqtt".to_string(),
                 type_: "mqtt".to_string(),
-                topic: TopicConfig {
+                topic: topic_config::TopicConfig {
                     version: "0.1.0".to_string(),
                     meta: MetaConfig {
                         name: "test-topic".to_string(),

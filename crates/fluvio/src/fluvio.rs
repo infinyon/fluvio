@@ -1,6 +1,10 @@
 use std::convert::TryFrom;
 use std::sync::Arc;
 
+use fluvio_sc_schema::partition::PartitionMirrorConfig;
+use fluvio_sc_schema::topic::MirrorConfig;
+use fluvio_sc_schema::topic::PartitionMap;
+use fluvio_sc_schema::topic::ReplicaSpec;
 use tracing::{debug, info};
 use tokio::sync::OnceCell;
 use anyhow::{anyhow, Result};
@@ -323,7 +327,30 @@ impl Fluvio {
             .await?
             .ok_or_else(|| FluvioError::TopicNotFound(topic.to_string()))?
             .spec;
-        let partitions = if config.partition.is_empty() {
+
+        let mirror_partition = if let Some(ref mirror) = &config.mirror {
+            match topic_spec.replicas() {
+                ReplicaSpec::Mirror(MirrorConfig::Home(home_mirror_config)) => {
+                    let partitions_maps =
+                        Vec::<PartitionMap>::from(home_mirror_config.as_partition_maps());
+                    partitions_maps.iter().find_map(|p| {
+                        if let Some(PartitionMirrorConfig::Home(remote)) = &p.mirror {
+                            if remote.remote_cluster == *mirror {
+                                return Some(p.id);
+                            }
+                        }
+                        None
+                    })
+                }
+                _ => None,
+            }
+        } else {
+            None
+        };
+
+        let partitions = if let Some(partition) = mirror_partition {
+            vec![partition]
+        } else if config.partition.is_empty() {
             (0..topic_spec.partitions()).collect()
         } else {
             config.partition.clone()

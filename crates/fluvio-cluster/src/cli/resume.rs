@@ -16,7 +16,7 @@ use crate::{InstallationType, cli::get_installation_type};
 pub struct ResumeOpt;
 
 impl ResumeOpt {
-    pub async fn process(self, _platform_version: Version) -> Result<()> {
+    pub async fn process(self, platform_version: Version) -> Result<()> {
         let pb_factory = ProgressBarFactory::new(false);
 
         let pb = match pb_factory.create() {
@@ -32,7 +32,10 @@ impl ResumeOpt {
 
         let resume_result = match installation_type {
             InstallationType::Local | InstallationType::ReadOnly => {
-                let resume = LocalResume { pb_factory };
+                let resume = LocalResume {
+                    pb_factory,
+                    platform_version,
+                };
                 resume.resume().await
             }
             _ => {
@@ -52,6 +55,7 @@ impl ResumeOpt {
 #[derive(Debug)]
 struct LocalResume {
     pb_factory: ProgressBarFactory,
+    platform_version: Version,
 }
 
 impl LocalResume {
@@ -80,6 +84,7 @@ impl LocalResume {
     async fn preflight_check(&self) -> Result<()> {
         ClusterChecker::empty()
             .without_installed_local_cluster()
+            .with_local_cluster_version(self.platform_version.clone())
             .run(&self.pb_factory, false)
             .await?;
         Ok(())

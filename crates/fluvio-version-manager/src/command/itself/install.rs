@@ -1,10 +1,11 @@
 use std::env::current_exe;
-use std::fs::{copy, write, create_dir_all};
+use std::fs::{copy, create_dir_all, write};
 use std::path::PathBuf;
 
 use anyhow::{anyhow, Result};
 use clap::Parser;
 
+use crate::common::executable::remove_fvm_binary_if_exists;
 use crate::common::notify::Notify;
 use crate::common::settings::Settings;
 use crate::common::workdir::{fvm_bin_path, fvm_workdir_path, fvm_versions_path};
@@ -78,6 +79,8 @@ impl SelfInstallOpt {
             // from the binary itself and not from the installer script.
             return Err(anyhow::anyhow!("FVM is already installed"));
         }
+
+        remove_fvm_binary_if_exists()?;
 
         // Copies "this" binary to the FVM binary directory
         copy(current_binary_path.clone(), fvm_binary_path.clone()).map_err(|e| {

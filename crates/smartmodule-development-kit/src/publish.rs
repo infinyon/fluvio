@@ -47,11 +47,19 @@ pub struct PublishCmd {
 
     #[arg(long, env=ENV_SMDK_NOWASI, hide_short_help = true)]
     nowasi: bool,
+
+    /// Relative path to this connector package README
+    #[clap(long, default_value = "./README.md")]
+    readme: PathBuf,
 }
 
 impl PublishCmd {
     pub(crate) fn process(&self) -> Result<()> {
         let access = HubAccess::default_load(&self.remote)?;
+
+        if !self.readme.exists() {
+            return Err(anyhow!("README file not found at {:?}", self.readme));
+        }
 
         match (self.pack, self.push) {
             (false, false) | (true, true) => {
@@ -101,7 +109,13 @@ impl PublishCmd {
 
         Self::cleanup(&hubdir)?;
 
-        init_package_template(&package_info, self.nowasi)?;
+        init_package_template(
+            &package_info,
+            &InitPackageTemplateOptions {
+                readme: &self.readme,
+                nowasi: self.nowasi,
+            },
+        )?;
         check_package_meta_visiblity(&package_info)?;
 
         Ok(hubdir)
@@ -170,7 +184,15 @@ pub fn package_push(opts: &PublishCmd, pkgpath: &str, access: &HubAccess) -> Res
     Ok(())
 }
 
-pub fn init_package_template(package_info: &PackageInfo, nowasi: bool) -> Result<()> {
+pub struct InitPackageTemplateOptions<'a> {
+    pub nowasi: bool,
+    pub readme: &'a PathBuf,
+}
+
+pub fn init_package_template(
+    package_info: &PackageInfo,
+    options: &InitPackageTemplateOptions,
+) -> Result<()> {
     let sm_toml_path = find_smartmodule_toml(package_info)?;
     let sm_metadata = SmartModuleMetadata::from_toml(&sm_toml_path)?;
 
@@ -202,7 +224,7 @@ pub fn init_package_template(package_info: &PackageInfo, nowasi: bool) -> Result
         })?,
     );
 
-    let wasmpath = if nowasi {
+    let wasmpath = if options.nowasi {
         package_info.target_wasm32_path()?
     } else {
         package_info.target_wasm32_wasi_path()?
@@ -215,6 +237,11 @@ pub fn init_package_template(package_info: &PackageInfo, nowasi: bool) -> Result
             )
         })?,
     );
+
+    let readme_path = options.readme.canonicalize()?;
+    let readme_md_relative_path = package_meta_relative_path(&package_meta_path, &readme_path);
+    pm.manifest
+        .push(readme_md_relative_path.unwrap_or_else(|| readme_path.to_string_lossy().to_string()));
 
     println!("Creating package {}", pm.pkg_name());
     pm.write(&package_meta_path)?;
