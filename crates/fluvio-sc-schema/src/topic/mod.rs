@@ -1,3 +1,7 @@
+mod update;
+
+pub use update::*;
+
 pub use fluvio_controlplane_metadata::topic::*;
 
 pub mod validate {

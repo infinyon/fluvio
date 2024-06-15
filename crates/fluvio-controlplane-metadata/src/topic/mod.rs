@@ -1,8 +1,10 @@
 mod spec;
 mod status;
 mod deduplication;
+mod update;
 pub mod config;
 
+pub use self::update::*;
 pub use self::spec::*;
 pub use self::status::*;
 pub use self::deduplication::*;

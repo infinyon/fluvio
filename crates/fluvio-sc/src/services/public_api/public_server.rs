@@ -111,6 +111,12 @@ where
             ),
             AdminPublicDecodedRequest::MirroringRequest(request) =>
                 super::mirroring::handle_mirroring_request(request, service_context.clone(), shared_sink.clone(), end_event.clone())?,
+            AdminPublicDecodedRequest::TopicUpdateRequest(request) => call_service!(
+                request,
+                super::topic::update::handle_topic_update_request(request, service_context.clone()),
+                shared_sink,
+                "topic update handler"
+            ),
             AdminPublicDecodedRequest::WatchRequest(request) =>
                 super::watch::handle_watch_request(
                     request,

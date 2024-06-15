@@ -100,6 +100,12 @@ pub enum ErrorCode {
     #[fluvio(tag = 2007)]
     #[error("the topic was deleted")]
     TopicDeleted,
+    #[fluvio(tag = 2008)]
+    #[error("the topic assignment replica cannot be updated")]
+    TopicAssignmentReplicaCannotBeUpdated,
+    #[fluvio(tag = 2009)]
+    #[error("the topic is not a valid topic")]
+    TopicMirrorReplicaCannotBeUpdated,
 
     // Partition errors
     #[fluvio(tag = 3000)]
@@ -221,11 +227,17 @@ pub enum ErrorCode {
     #[fluvio(tag = 11004)]
     #[error("delete from remote is not allowed")]
     MirrorDeleteFromRemote,
+    #[fluvio(tag = 11005)]
+    #[error("update from remote is not allowed")]
+    MirrorUpdateFromRemote,
 
     // Specs
     #[fluvio(tag = 12001)]
     #[error("system {kind} '{name}' can only be deleted forcibly")]
     SystemSpecDeletionAttempt { kind: String, name: String },
+    #[fluvio(tag = 12002)]
+    #[error("system {kind} '{name}' can only be updated forcibly")]
+    SystemSpecUpdatingAttempt { kind: String, name: String },
 }
 
 impl ErrorCode {
