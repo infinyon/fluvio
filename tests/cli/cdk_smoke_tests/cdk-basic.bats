@@ -192,6 +192,43 @@ setup_file() {
     assert_success
 }
 
+@test "Generate and Builds a Source Connector Package" {
+    export SOURCE_CONN_NAME="$PROJECT_NAME_PREFIX-my-source-conn"
+
+    # move into test dir
+    cd $TEST_DIR
+
+    # generate a source connector
+    run $CDK_BIN generate $SOURCE_CONN_NAME \
+        --group "$PROJECT_NAME_PREFIX" \
+        --conn-description "My Source Connector" \
+        --conn-type source \
+        --conn-public true
+    assert_success
+
+    # cd into the source connector directory
+    cd $SOURCE_CONN_NAME
+
+    # build connector
+    run $CDK_BIN build --target x86_64-unknown-linux-gnu
+    assert_success
+}
+
+@test "Fails on unsupported/invalid connector type" {
+    export BAD_TYPE_CONN_NAME="$PROJECT_NAME_PREFIX-my-bad-type-conn"
+
+    # move into test dir
+    cd $TEST_DIR
+
+    # generate a sink connector
+    run $CDK_BIN generate $BAD_TYPE_CONN_NAME \
+        --group "$PROJECT_NAME_PREFIX" \
+        --conn-description "My Source Connector" \
+        --conn-type bad-type \
+        --conn-public true
+    assert_failure
+}
+
 # fix CI authentication to hub service first:
 # https://github.com/infinyon/fluvio/issues/3634
 # @test "List connectors from hub" {
