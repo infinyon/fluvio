@@ -11,14 +11,23 @@ description = "Fluvio Compression library"
 
 [features]
 default = ["compress"]
-compress = ["bytes", "flate2", "lz4_flex", "snap", "zstd"]
+compress = [
+    "gzip",
+    "lz4",
+    "snap",
+    "zstd"
+]
+gzip = ["dep:flate2"]
+lz4 = ["dep:lz4_flex"]
+snap = ["dep:snap"]
+zstd = ["dep:zstd"]
 
 [dependencies]
 serde = { workspace = true,  features = ['derive'] }
 thiserror = { workspace = true }
+bytes = { workspace = true }
 
 # Optional Dependencies
-bytes = { workspace = true, optional = true }
 flate2 = { workspace = true, optional = true }
 lz4_flex = { version = "0.11.1", default-features = false, features = ["safe-decode", "safe-encode", "frame"], optional = true }
 snap = { version = "1", optional = true }

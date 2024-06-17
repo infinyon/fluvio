@@ -46,6 +46,7 @@ compress = ["fluvio-compression/compress"]
 
 [dependencies]
 bytes = { workspace = true  }
+cfg-if = { workspace = true }
 crc32c = { workspace = true,  optional = true }
 content_inspector = { optional = true, workspace = true }
 once_cell = { workspace = true, optional = true }

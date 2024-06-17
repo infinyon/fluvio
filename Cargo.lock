@@ -2751,6 +2751,7 @@ name = "fluvio-protocol"
 version = "0.10.15"
 dependencies = [
  "bytes",
+ "cfg-if",
  "content_inspector",
  "crc32c",
  "criterion",

@@ -194,7 +194,6 @@ impl<R> Batch<R> {
     }
 }
 
-#[cfg(feature = "compress")]
 impl TryFrom<Batch<RawRecords>> for Batch {
     type Error = CompressionError;
     fn try_from(batch: Batch<RawRecords>) -> Result<Self, Self::Error> {
@@ -209,7 +208,6 @@ impl TryFrom<Batch<RawRecords>> for Batch {
     }
 }
 
-#[cfg(feature = "compress")]
 impl TryFrom<Batch> for Batch<RawRecords> {
     type Error = CompressionError;
     fn try_from(f: Batch) -> Result<Self, Self::Error> {
@@ -310,20 +308,29 @@ impl Batch {
     }
 }
 
-#[cfg(feature = "compress")]
 impl Batch<RawRecords> {
     pub fn memory_records(&self) -> Result<MemoryRecords, CompressionError> {
-        let compression = self.get_compression()?;
-
         let mut records: MemoryRecords = Default::default();
-        if let Compression::None = compression {
-            records.decode(&mut &self.records.0[..], 0)?;
-        } else {
-            let decompressed = compression
-                .uncompress(&self.records.0[..])?
-                .ok_or(CompressionError::UnreachableError)?;
-            records.decode(&mut &decompressed[..], 0)?;
+
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "compression")] {
+                let compression = self.get_compression()?;
+
+
+                if let Compression::None = compression {
+                    records.decode(&mut &self.records.0[..], 0)?;
+                } else {
+
+                    let decompressed = compression
+                        .uncompress(&self.records.0[..])?
+                        .ok_or(CompressionError::UnreachableError)?;
+                    records.decode(&mut &decompressed[..], 0)?;
+                }
+            } else {
+                records.decode(&mut &self.records.0[..], 0)?;
+            }
         }
+
         Ok(records)
     }
 }

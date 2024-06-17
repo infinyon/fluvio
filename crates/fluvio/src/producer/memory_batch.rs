@@ -73,13 +73,13 @@ impl MemoryBatch {
     }
 
     fn estimated_size(&self) -> usize {
+        #[cfg(not(feature = "compression"))]
+        let compression_coefficient = 1.0;
+        #[cfg(feature = "compression")]
+        let compression_coefficient = 0.5;
+
         (self.current_size_uncompressed as f32
-            * match self.compression {
-                Compression::None => 1.0,
-                Compression::Gzip | Compression::Snappy | Compression::Lz4 | Compression::Zstd => {
-                    0.5
-                }
-            }) as usize
+            * compression_coefficient) as usize
             + Batch::<RawRecords>::default().write_size(0)
     }
 
