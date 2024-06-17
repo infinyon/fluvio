@@ -7,7 +7,7 @@ use anyhow::Result;
 use fluvio_protocol::record::ReplicaKey;
 use fluvio_protocol::record::Record;
 use fluvio_compression::Compression;
-#[cfg(feature = "compression")]
+#[cfg(feature = "compress")]
 use fluvio_sc_schema::topic::CompressionAlgorithm;
 use fluvio_types::PartitionId;
 use fluvio_types::event::StickyEvent;
@@ -326,7 +326,7 @@ impl TopicProducer {
         let partition_count = topic_spec.partitions();
 
         cfg_if::cfg_if! {
-            if #[cfg(feature = "compression")] {
+            if #[cfg(feature = "compress")] {
                 let compression = determine_producer_compression_algo(config.clone(), topic_spec)?;
             } else {
                 let compression = Compression::None;
@@ -484,12 +484,12 @@ impl TopicProducer {
     }
 }
 
-#[cfg(feature = "compression")]
+#[cfg(feature = "compress")]
 fn determine_producer_compression_algo(
-    producer_config: Arc<TopicProducerConfig>,
+    config: Arc<TopicProducerConfig>,
     topic_spec: fluvio_sc_schema::topic::TopicSpec,
 ) -> Result<Compression> {
-    match topic_spec.get_compression_type() {
+    let result = match topic_spec.get_compression_type() {
         CompressionAlgorithm::Any => config.compression.unwrap_or_default(),
         CompressionAlgorithm::Gzip => match config.compression {
             Some(Compression::Gzip) | None => Compression::Gzip,
@@ -522,5 +522,7 @@ fn determine_producer_compression_algo(
 
             )).into()),
         },
-    }
+    };
+
+    Ok(result)
 }

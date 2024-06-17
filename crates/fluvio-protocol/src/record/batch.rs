@@ -313,9 +313,8 @@ impl Batch<RawRecords> {
         let mut records: MemoryRecords = Default::default();
 
         cfg_if::cfg_if! {
-            if #[cfg(feature = "compression")] {
+            if #[cfg(feature = "compress")] {
                 let compression = self.get_compression()?;
-
 
                 if let Compression::None = compression {
                     records.decode(&mut &self.records.0[..], 0)?;
