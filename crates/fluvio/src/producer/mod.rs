@@ -361,7 +361,6 @@ impl TopicProducer {
         })
     }
 
-
     /// Send all the queued records in the producer batches.
     ///
     /// # Example
@@ -486,7 +485,10 @@ impl TopicProducer {
 }
 
 #[cfg(feature = "compression")]
-fn determine_producer_compression_algo(producer_config: Arc<TopicProducerConfig>, topic_spec: fluvio_sc_schema::topic::TopicSpec) -> Result<Compression> {
+fn determine_producer_compression_algo(
+    producer_config: Arc<TopicProducerConfig>,
+    topic_spec: fluvio_sc_schema::topic::TopicSpec,
+) -> Result<Compression> {
     match topic_spec.get_compression_type() {
         CompressionAlgorithm::Any => config.compression.unwrap_or_default(),
         CompressionAlgorithm::Gzip => match config.compression {

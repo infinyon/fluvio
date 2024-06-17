@@ -8,7 +8,6 @@ use fluvio_future::retry::{ExponentialBackoff, FibonacciBackoff, FixedDelay};
 use fluvio_spu_schema::Isolation;
 use fluvio_spu_schema::server::smartmodule::SmartModuleInvocation;
 
-#[cfg(feature = "compression")]
 use fluvio_compression::Compression;
 use serde::{Serialize, Deserialize};
 
@@ -83,7 +82,7 @@ pub struct TopicProducerConfig {
     /// If there is a topic level compression and it is not compatible with this setting, the producer
     /// initialization will fail.
     #[builder(setter(into, strip_option), default)]
-    #[cfg(feature = "compression")]
+    #[allow(dead_code)]
     pub(crate) compression: Option<Compression>,
 
     /// Max time duration that the server is allowed to process the batch.
@@ -122,7 +121,6 @@ impl Default for TopicProducerConfig {
             batch_size: default_batch_size(),
             batch_queue_size: default_batch_queue_size(),
             partitioner: default_partitioner(),
-            #[cfg(feature = "compression")]
             compression: None,
             timeout: default_timeout(),
             isolation: default_isolation(),

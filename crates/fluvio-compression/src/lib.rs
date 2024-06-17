@@ -27,13 +27,13 @@ use serde::{Serialize, Deserialize};
 pub enum Compression {
     #[default]
     None = 0,
-     #[cfg(feature = "gzip")]
+    #[cfg(feature = "gzip")]
     Gzip = 1,
-     #[cfg(feature = "snap")]
+    #[cfg(feature = "snap")]
     Snappy = 2,
-     #[cfg(feature = "lz4")]
+    #[cfg(feature = "lz4")]
     Lz4 = 3,
-     #[cfg(feature = "zstd")]
+    #[cfg(feature = "zstd")]
     Zstd = 4,
 }
 
@@ -109,7 +109,7 @@ impl Compression {
     }
 
     /// Uncompresss the given data, returning the uncompressed data if any compression was applied, otherwise returns None
-    #[allow(unused_variables)] 
+    #[allow(unused_variables)]
     pub fn uncompress(&self, src: &[u8]) -> Result<Option<Vec<u8>>, CompressionError> {
         match *self {
             Compression::None => Ok(None),

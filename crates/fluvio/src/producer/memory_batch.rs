@@ -78,8 +78,7 @@ impl MemoryBatch {
         #[cfg(feature = "compression")]
         let compression_coefficient = 0.5;
 
-        (self.current_size_uncompressed as f32
-            * compression_coefficient) as usize
+        (self.current_size_uncompressed as f32 * compression_coefficient) as usize
             + Batch::<RawRecords>::default().write_size(0)
     }
 
