@@ -1,8 +1,11 @@
 use std::path::{Path, PathBuf};
-use std::fs::remove_dir_all;
-use anyhow::{Result, anyhow, Context};
+use std::fs::{remove_dir_all, read_to_string};
+
+use anyhow::{anyhow, bail, Context, Result};
 use cargo_builder::package::PackageInfo;
 use clap::Parser;
+use toml::Value;
+use tracing::debug;
 
 use fluvio_controlplane_metadata::smartmodule::SmartModuleMetadata;
 use fluvio_future::task::run_block_on;
@@ -11,10 +14,10 @@ use hubutil::{
     DEF_HUB_INIT_DIR, DEF_HUB_PKG_META, HubAccess, PackageMeta, PkgVisibility, PackageMetaExt,
     package_meta_relative_path, packagename_validate,
 };
-use tracing::debug;
 
-use crate::cmd::PackageCmd;
 use crate::ENV_SMDK_NOWASI;
+use crate::cmd::PackageCmd;
+use crate::hub::set_hubid;
 
 pub const SMARTMODULE_TOML: &str = "SmartModule.toml";
 
@@ -55,7 +58,7 @@ pub struct PublishCmd {
 
 impl PublishCmd {
     pub(crate) fn process(&self) -> Result<()> {
-        let access = HubAccess::default_load(&self.remote)?;
+        let mut access = HubAccess::default_load(&self.remote)?;
 
         if !self.readme.exists() {
             return Err(anyhow!("README file not found at {:?}", self.readme));
@@ -63,6 +66,10 @@ impl PublishCmd {
 
         match (self.pack, self.push) {
             (false, false) | (true, true) => {
+                if self.push {
+                    self.validate_group(&mut access)?;
+                }
+
                 let hubdir = self.run_in_cargo_project()?;
                 let package_meta_path = self.package_meta_path(&hubdir);
                 let pkgdata = package_assemble(package_meta_path, &access)?;
@@ -79,6 +86,8 @@ impl PublishCmd {
 
             // --push only, needs ipkg file or expects to be run in project folder
             (false, true) => {
+                self.validate_group(&mut access)?;
+
                 let ipkg_path = match self.ipkg.as_ref() {
                     Some(ipkg_path) => ipkg_path.into(),
                     None => self.default_ipkg_file_path()?,
@@ -153,6 +162,22 @@ impl PublishCmd {
             .to_owned();
 
         Ok(ipkg_path)
+    }
+
+    fn validate_group(&self, access: &mut HubAccess) -> Result<()> {
+        let opt = self.package.as_opt();
+        let pkg_info = PackageInfo::from_options(&opt).context("Failed to read package info. Should either specify --ipkg or run in the smartmodule project folder")?;
+        let sm_toml_path = find_smartmodule_toml(&pkg_info)?;
+        let sm_toml_file = read_to_string(sm_toml_path)?;
+        let sm_toml: Value = toml::from_str(&sm_toml_file)?;
+
+        if let Value::Table(package) = &sm_toml["package"] {
+            if let Some(Value::String(groupname)) = package.get("group") {
+                return set_hubid(groupname, access);
+            }
+        }
+
+        bail!("Failed to read group from smartmodule.toml")
     }
 }
 
