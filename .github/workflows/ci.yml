@@ -472,13 +472,19 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        wasm-crate:
-          - fluvio
-          - fluvio-socket
-          - fluvio-protocol
-          - fluvio-spu-schema
-          - fluvio-sc-schema
-          - fluvio-types
+        context:
+          - crate: fluvio
+            features: "openssl"
+          - crate: fluvio-socket
+            features: ""
+          - crate: fluvio-protocol
+            features: "fluvio-protocol-derive"
+          - crate: fluvio-spu-schema
+            features: ""
+          - crate: fluvio-sc-schema
+            features: ""
+          - crate: fluvio-types
+            features: ""
     env:
       RUST_BACKTRACE: full
     steps:
@@ -488,7 +494,11 @@ jobs:
       - name: install wasm target
         run: rustup target add wasm32-unknown-unknown
       - name: Build WASM for ${{ matrix.wasm-crate }}
-        run: cargo check --manifest-path ./crates/${{matrix.wasm-crate}}/Cargo.toml --target wasm32-unknown-unknown
+        run: |
+            cargo check --manifest-path ./crates/${{matrix.context.crate}}/Cargo.toml \
+                --no-default-features \
+                --features ${{matrix.context.features}} \
+                --target wasm32-unknown-unknown
 
   check_crate_feature_flags:
     name: Check ${{matrix.features}} for (${{ matrix.wasm-crate }})
