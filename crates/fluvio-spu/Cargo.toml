@@ -53,7 +53,7 @@ fluvio = { workspace = true }
 fluvio-auth = { workspace = true }
 fluvio-types = { workspace = true, features = ["events"] }
 fluvio-storage = { workspace = true, features = ["iterators"] }
-fluvio-compression = { workspace = true }
+fluvio-compression = { workspace = true, default-features = true }
 fluvio-controlplane = { workspace = true }
 fluvio-controlplane-metadata = { workspace = true }
 fluvio-spu-schema = { workspace = true,  features = ["file"] }

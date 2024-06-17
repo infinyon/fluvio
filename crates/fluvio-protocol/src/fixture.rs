@@ -67,7 +67,7 @@ pub fn create_recordset(num_records: u16) -> RecordSet {
     records.add(create_batch_with_producer(12, num_records))
 }
 
-#[cfg(feature = "compress")]
+#[cfg(any(feature = "compress", feature = "no-zstd"))]
 pub fn create_raw_recordset(num_records: u16) -> RecordSet<crate::record::RawRecords> {
     let records = RecordSet::default();
     records.add(

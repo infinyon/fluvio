@@ -1,10 +1,10 @@
-#[cfg(feature = "compress")]
+#[cfg(feature = "bytes")]
 use bytes::buf::Writer;
 
-#[cfg(feature = "compress")]
+#[cfg(feature = "bytes")]
 use bytes::BytesMut;
 
-#[cfg(feature = "compress")]
+#[cfg(feature = "bytes")]
 use snap::write::{IntoInnerError, FrameEncoder};
 
 #[derive(thiserror::Error, Debug)]
@@ -16,9 +16,9 @@ pub enum CompressionError {
     #[error("unknown compression format: {0}")]
     UnknownCompressionFormat(String),
     #[error("error flushing Snap encoder: {0}")]
-    #[cfg(feature = "compress")]
+    #[cfg(feature = "bytes")]
     SnapError(#[from] Box<IntoInnerError<FrameEncoder<Writer<BytesMut>>>>),
     #[error("error flushing Snap encoder: {0}")]
-    #[cfg(feature = "compress")]
+    #[cfg(feature = "bytes")]
     Lz4Error(#[from] lz4_flex::frame::Error),
 }

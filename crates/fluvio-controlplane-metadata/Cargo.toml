@@ -15,6 +15,7 @@ path = "src/lib.rs"
 smartmodule = ["flate2","toml","use_serde"]
 use_serde = ["serde","semver/serde", "bytesize/serde", "humantime-serde", "serde_yaml"]
 k8 = ["use_serde", "fluvio-stream-model/k8"]
+no-zstd = []
 
 [dependencies]
 async-trait = { workspace = true }

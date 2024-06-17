@@ -846,6 +846,7 @@ pub enum CompressionAlgorithm {
     #[fluvio(tag = 4)]
     Any,
     #[fluvio(tag = 5)]
+    #[cfg(not(feature = "no-zstd"))]
     Zstd,
 }
 
@@ -863,6 +864,7 @@ impl std::str::FromStr for CompressionAlgorithm {
             "snappy" => Ok(CompressionAlgorithm::Snappy),
             "lz4" => Ok(CompressionAlgorithm::Lz4),
             "any" => Ok(CompressionAlgorithm::Any),
+            #[cfg(not(feature = "no-zstd"))]
             "zstd" => Ok(CompressionAlgorithm::Zstd),
             _ => Err(InvalidCompressionAlgorithm),
         }
@@ -876,6 +878,7 @@ impl std::fmt::Display for CompressionAlgorithm {
             Self::Snappy => write!(f, "snappy"),
             Self::Lz4 => write!(f, "lz4"),
             Self::Any => write!(f, "any"),
+            #[cfg(not(feature = "no-zstd"))]
             Self::Zstd => write!(f, "zstd"),
         }
     }

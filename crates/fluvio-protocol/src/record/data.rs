@@ -18,7 +18,7 @@ use bytes::BufMut;
 
 use fluvio_types::{PartitionId, Timestamp};
 
-#[cfg(feature = "compress")]
+#[cfg(any(feature = "compress", feature = "no-zstd"))]
 use fluvio_compression::CompressionError;
 
 use crate::{Encoder, Decoder};
@@ -32,7 +32,7 @@ use super::batch::NO_TIMESTAMP;
 use super::batch::Batch;
 use super::Offset;
 
-#[cfg(feature = "compress")]
+#[cfg(any(feature = "compress", feature = "no-zstd"))]
 use super::batch::RawRecords;
 
 /// maximum text to display
@@ -237,7 +237,7 @@ pub struct RecordSet<R = MemoryRecords> {
     pub batches: Vec<Batch<R>>,
 }
 
-#[cfg(feature = "compress")]
+#[cfg(any(feature = "compress", feature = "no-zstd"))]
 impl TryFrom<RecordSet> for RecordSet<RawRecords> {
     type Error = CompressionError;
     fn try_from(set: RecordSet) -> Result<Self, Self::Error> {

@@ -43,6 +43,7 @@ types = ["fluvio-types"]
 link = ["api","record","thiserror","flv-util","semver","eyre"]
 fixture = ["record","derive_builder"]
 compress = ["fluvio-compression/compress"]
+no-zstd = ["fluvio-compression/no-zstd"]
 
 [dependencies]
 bytes = { workspace = true  }

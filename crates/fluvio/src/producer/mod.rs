@@ -346,6 +346,7 @@ impl TopicProducer {
                         format!("Compression in the producer ({compression_config}) does not match with topic level compression (lz4)"),
                     )).into()),
                 },
+                #[cfg(not(feature = "no-zstd"))]
                 CompressionAlgorithm::Zstd => match config.compression {
                     Some(Compression::Zstd) | None => Compression::Zstd,
                     Some(compression_config) => return Err(FluvioError::Producer(ProducerError::InvalidConfiguration(

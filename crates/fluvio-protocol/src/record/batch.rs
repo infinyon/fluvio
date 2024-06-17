@@ -194,7 +194,7 @@ impl<R> Batch<R> {
     }
 }
 
-#[cfg(feature = "compress")]
+#[cfg(any(feature = "compress", feature = "no-zstd"))]
 impl TryFrom<Batch<RawRecords>> for Batch {
     type Error = CompressionError;
     fn try_from(batch: Batch<RawRecords>) -> Result<Self, Self::Error> {
@@ -209,7 +209,7 @@ impl TryFrom<Batch<RawRecords>> for Batch {
     }
 }
 
-#[cfg(feature = "compress")]
+#[cfg(any(feature = "compress", feature = "no-zstd"))]
 impl TryFrom<Batch> for Batch<RawRecords> {
     type Error = CompressionError;
     fn try_from(f: Batch) -> Result<Self, Self::Error> {
@@ -310,7 +310,7 @@ impl Batch {
     }
 }
 
-#[cfg(feature = "compress")]
+#[cfg(any(feature = "compress", feature = "no-zstd"))]
 impl Batch<RawRecords> {
     pub fn memory_records(&self) -> Result<MemoryRecords, CompressionError> {
         let compression = self.get_compression()?;
