@@ -19,12 +19,12 @@ anyhow = { workspace = true }
 clap = { workspace = true, features = ["std", "derive", "help", "usage", "error-context", "env", "wrap_help", "suggestions"], default-features = false }
 current_platform = { workspace = true }
 dirs = { workspace = true }
+enum-display = { workspace = true }
 toml = { workspace = true }
 tokio = { workspace = true }
 cargo-generate = { workspace = true }
 include_dir = { workspace = true }
 tempfile = { workspace = true }
-enum-display = "0.1.3"
 lib-cargo-crate = "0.2.1"
 
 
