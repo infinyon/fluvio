@@ -474,11 +474,11 @@ jobs:
         os: [ubuntu-latest]
         context:
           - crate: fluvio
-            features: "openssl"
+            features: "--features=openssl"
           - crate: fluvio-socket
             features: ""
           - crate: fluvio-protocol
-            features: "fluvio-protocol-derive"
+            features: "--features=fluvio-protocol-derive"
           - crate: fluvio-spu-schema
             features: ""
           - crate: fluvio-sc-schema
@@ -497,7 +497,7 @@ jobs:
         run: |
             cargo check --manifest-path ./crates/${{matrix.context.crate}}/Cargo.toml \
                 --no-default-features \
-                --features ${{matrix.context.features}} \
+                ${{matrix.context.features}} \
                 --target wasm32-unknown-unknown
 
   check_crate_feature_flags:
