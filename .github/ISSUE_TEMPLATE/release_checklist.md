@@ -24,7 +24,7 @@ For more detail, refer to [`RELEASE.md`](https://github.com/infinyon/fluvio/blob
 
 ## Pre-Release
 
-- [ ] Run the [`Release` workflow in Github Actions](https://github.com/infinyon/fluvio/actions/workflows/release.yml), make sure the `pre-release` check is set. (Retry at least once if failure)
+- [ ] Run the [`Release` workflow in Github Actions](https://github.com/infinyon/fluvio/actions/workflows/release.yml), **make sure the `pre-release` check is set**. (Retry at least once if failure)
 - [ ] Perform a pre-release test in a development environment
 
 ## Stable Release
@@ -34,7 +34,8 @@ If all systems are operational and no bugs are found in the pre-release, the fin
 - [ ] Create a PR for release
   - [ ] Update `VERSION` and `CHANGELOG.md` files (do not place a \n in the VERSION file, it breaks the CI)
   - [ ] Merge the PR
-- [ ] Run the [`Release` workflow in Github Actions](https://github.com/infinyon/fluvio/actions/workflows/release.yml), make sure the `pre-release` check is set. (Retry at least once if failure)
+- [ ] Run the [`Release` workflow in Github Actions](https://github.com/infinyon/fluvio/actions/workflows/release.yml)
+**without the `pre-release` check**.
 - [ ] Verify that the [crates publish to crates.io](https://github.com/infinyon/fluvio/actions/workflows/publish_crates.yml) succeeds (Retry at least once if failure)
 - [ ] Announce new release in Discord
 - [ ] To close this issue, create a PR for post release updates and use `release_template.md`
