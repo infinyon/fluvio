@@ -17,101 +17,32 @@ Please read [doc](https://www.fluvio.io) for a technical arch and operation guid
 
 ---
 
-## Setting up Development Environment
-
-The development environment requires the Rust toolchain and a few other build dependencies to build changes to the source code.
-
-Fluvio allows you to run the cluster locally or in a Kubernetes cluster, when
-running on a Kubernetes Cluster metadata is stored in Kubernetes, as well as
-system components such as the SC and SPU(s).
-
-As an alternative, you can run Fluvio locally without Kubernetes, metadata will
-be stored in disk and processes will spawn as system processes.
-
-By default, Fluvio will create a cluster in the local environment unless you
-specify it to run on a Kubernetes cluster.
-
 ## Requirements
 
-Either for local or Kubernetes development, you need the following software to
-be installed in your system:
+You will need the Rust Toolchain to build Fluvio, follow [Rust Installation](https://www.rust-lang.org/tools/install) guide to get Rust
+Toolchain running on your system.
 
-- [Rust & Cargo](https://www.rust-lang.org/tools/install)
+Other required Software that might be installed in your system includes:
+
 - [make](https://www.gnu.org/software/make/)
 - [git](https://git-scm.com/)
-
-### Kubernetes Cluster Development
-
-> [!IMPORTANT]
-> If you plan to develop Fluvio without Kubernetes, you can skip this section.
-
-To run Fluvio on Kubernetes, you will need to install a Kubernetes
-distribution, we recommend using one of:
-
-* [OrbStack](https://orbstack.dev)
-* [Rancher desktop](https://rancherdesktop.io)
-* [k3d](https://k3d.io)
-* [kind](https://kind.sigs.k8s.io)
-
-You will also need **Helm** in order to install Fluvio charts.
-
-Please follow [helm setup](https://helm.sh/docs/intro/quickstart/) to
-install Helm.
-
-### Linker Pre-requisites
-
-- [LLVM v16](https://llvm.org)
-- [Zig](https://ziglang.org)
-
-**macOS**
-
-> [!NOTE]
-> You can skip LLVM if you are not building docker image.
-
-```bash
-$ brew install llvm@16
-$ ./actions/zig-install.sh
-$ export PATH="/opt/homebrew/opt/llvm@16/bin:$PATH"
-```
-
-**Ubuntu**:
-
-See https://apt.llvm.org for installing LLVM. LLVM up to 16 is confirmed to work.
-
-```bash
-$ ./actions/zig-install.sh
-```
 
 ## Building
 
 It is recommended to use native binaries for development and testing but not for production.
-
-> [!IMPORTANT]
-> For production, please build docker image and run in the Kuberentes as pod.
 
 The following section will guide you through building different Fluvio
 components.
 
 ### Fluvio CLI
 
-Fluvio CLI is the main entry point to interact with Fluvio cluster.  It is required to install, manage and access the Fluvio cluster.
-
-Theres two ways to build the CLI, one includes all the features supported
-to run on a regular environment, including Kubernetes support, and the other
-one is a minimal version suitable for constrained environments like
-_Raspberry Pi_ where you would run without Kubernetes features.
+Fluvio CLI is the main entry point to interact with Fluvio cluster.
+It is required to install, manage and access the Fluvio cluster.
 
 Use the following command to build the CLI binary with all features:
 
 ```bash
 $ make build-cli
-```
-
-To build minimum CLI without Kubernetes dependencies for target such as
-_Raspberry Pi_, run:
-
-```bash
-$ make build-cli-minimal
 ```
 
 ### Fluvio Cluster
@@ -123,38 +54,19 @@ use the following command to build the cluster binary:
 $ make build-cluster
 ```
 
-
-### Pre-Build Versions
-
-Instead of building Fluvio, you may want to prefer just to download it and get to work.  You can use our one-line installation script.  You can use it to install the latest release or prerelease, or install a specific version:
-
-**Install Stable Release**
-
-```bash
-$ curl -fsS https://hub.infinyon.cloud/install/install.sh | bash
-```
-
-**Install Latest Release (as of `master` branch)**
-
-```bash
-$ curl -fsS https://hub.infinyon.cloud/install/install.sh | VERSION=latest bash
-```
-
-**Install Specific Version**
-
-```bash
-$ curl -fsS https://hub.infinyon.cloud/install/install.sh | VERSION=x.y.z bash
-```
-
 ## Development
 
 ### Running Fluvio Cluster Locally
 
-Use following commands to start Fluvio cluster using native binaries, this will
-start Fluvio cluster locally without Kubernetes.
+Use following commands to start Fluvio cluster using native binaries.
+
+> [!NOTE]
+> Following sections will use `flvd` alias to refer to the locally
+> builded Fluvio CLI.
+> Learn more on how to set it up [here](#aliasing-fluvio-development-binaries).
 
 ```bash
-$ flvd cluster start --local --develop
+$ flvd cluster start --develop
 
 📝 Running pre-flight checks
     ✅ Supported helm version 3.10.0+gce66412 is installed
@@ -213,6 +125,50 @@ $ ps -ef | grep fluvio
 ```
 
 ### Running Fluvio Cluster in Kubernetes
+
+#### Additional Requirements
+
+To run Fluvio on Kubernetes, you will need to install a Kubernetes
+distribution, we recommend using one of:
+
+* [OrbStack](https://orbstack.dev)
+* [Rancher desktop](https://rancherdesktop.io)
+* [k3d](https://k3d.io)
+* [kind](https://kind.sigs.k8s.io)
+
+You will also need **Helm** in order to install Fluvio charts.
+
+Please follow [helm setup](https://helm.sh/docs/intro/quickstart/) to
+install Helm.
+
+#### Linker Pre-requisites
+
+- [LLVM v16](https://llvm.org)
+- [Zig](https://ziglang.org)
+
+**macOS**
+
+> [!NOTE]
+> You can skip LLVM if you are not building docker image.
+
+```bash
+$ brew install llvm@16
+$ ./actions/zig-install.sh
+$ export PATH="/opt/homebrew/opt/llvm@16/bin:$PATH"
+```
+
+**Ubuntu**:
+
+See https://apt.llvm.org for installing LLVM. LLVM up to 16 is confirmed to work.
+
+```bash
+$ ./actions/zig-install.sh
+```
+
+#### Running Fluvio Cluster in Kubernetes
+
+> [!IMPORTANT]
+> For production, please build docker image and run in the Kuberentes as pod.
 
 > [!IMPORTANT]
 > Make sure your Kubernetes cluster is running and `kubectl` is configured to access the cluster.
