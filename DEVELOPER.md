@@ -248,84 +248,6 @@ $ ps -ef | grep fluvio
   501 62035   989   0  4:52PM ttys000    0:00.00 grep fluvio
 ```
 
-
-#### Re-Starting SC and SPU separately
-
-During development, it is necessary to restart SC and SPU separately.
-
-In order do so, you can kill SC or SPU and starting them individually.
-
-You can use following commands for SC
-
-```bash
-$ kill -9 <process id of fluvio-run sc>
-```
-
-```bash
-$ flvd run sc --local
-```
-
-```bash
-CLI Option: ScOpt {
-    local: true,
-    bind_public: None,
-    bind_private: None,
-    namespace: None,
-    tls: TlsConfig {
-        tls: false,
-        server_cert: None,
-        server_key: None,
-        enable_client_cert: false,
-        ca_cert: None,
-        bind_non_tls_public: None,
-    },
-    x509_auth_scopes: None,
-    auth_policy: None,
-    white_list: [],
-}
-Starting SC, platform: 0.11.9
-Streaming Controller started successfully
-```
-
-You can then kill by <kbd>Ctrl</kbd> + <kbd>C</kbd>
-
-> [!NOTE]
-> This will not kill SPU. Once new SC is up, SPU will reconnect to it.
-
-For SPU, you can use following template.
-
-> [!IMPORTANT]
-> `--log-base` should be same as the previously.
-
-```bash
-$ kill -9 <process id of fluvio-run spu>
-```
-
-```bash
-flvd run spu -i 5001 -p 0.0.0.0:9010 -v 0.0.0.0:9011 --log-base-dir ~/.fluvio/data
-```
-
-```bash
-starting spu server (id:5001)
-SPU Version: 0.0.0 started successfully
-```
-
-You can launch additional SPU as needed; just ensure that ports don't conflict with each other.
-
-For example, to add 2nd:
-
-First register the new SPU:
-
-```bash
-$ flvd cluster spu register --id 5002 --public-server 0.0.0.0:9020 --private-server  0.0.0.0:9021
-```
-
-And then start the SPU:
-
-```bash
-$ flvd run spu -i 5002 -p 0.0.0.0:9020 -v 0.0.0.0:9021
-```
-
 ### Running Fluvio Cluster in Kubernetes
 
 > [!IMPORTANT]
@@ -370,6 +292,8 @@ Fluvio leverages Kubernetes CRDs to manage Fluvio components, sys chart is insta
 $ helm list
 ```
 
+You should see two helm chart installed. There is additional chart `fluvio` that is used for installing fluvio components.
+
 ```bash
 NAME      	NAMESPACE	REVISION	UPDATED                             	STATUS  	CHART            	APP VERSION
 fluvio    	default  	1       	2024-06-18 12:45:36.917241 -0400 -04	deployed	fluvio-app-0.9.3 	0.11.9
@@ -382,11 +306,43 @@ Inspect running pods spawned by Fluvio:
 $ kubectl get pods
 ```
 
+You should have two pods running:
+
 ```bash
 NAME                         READY   STATUS    RESTARTS   AGE
 fluvio-sc-7f64bffbc6-b28zw   1/1     Running   0          7m9s
 fluvio-spg-main-0            1/1     Running   0          7m3s
 ```
+
+And services for SC and SPG (SPU group) are running:
+
+```bash
+$ kubectl get service
+```
+
+```bash
+NAME                 TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)             AGE
+kubernetes           ClusterIP   10.43.0.1      <none>        443/TCP             112d
+fluvio-sc-internal   ClusterIP   10.43.110.7    <none>        9004/TCP            5m8s
+fluvio-sc-public     NodePort    10.43.31.194   <none>        9003:30003/TCP      5m8s
+fluvio-spg-main      ClusterIP   None           <none>        9005/TCP,9006/TCP   5m6s
+fluvio-spu-main-0    NodePort    10.43.88.71    <none>        9005:30004/TCP      5m6s
+```
+
+Fluvio uses `NodePort` to expose SC and SPU to the outside world.
+
+And use PVC to store data:
+
+```bash
+$ kubectl get pvc
+```
+
+```bash
+NAME                     STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+data-fluvio-spg-main-0   Bound    pvc-dff4c156-5718-4b41-a825-cee7d07fd997   10Gi       RWO            local-path     6m31s
+```
+
+Fluvio uses the default storage class used in the current Kubernetes but can be overridden using helm config.
 
 Inspect logs from each pod using the following command:
 
@@ -464,89 +420,6 @@ Note that when you uninstall the cluster, CLI will remove all related objects su
 - Tls Secrets
 - Storage
 - etc
-
-#### Starting Fluvio cluster using dev docker image
-
-This will run fluvio components as Kubernetes pods.
-
-
-```bash
-$ flvd cluster start --k8 --develop
-```
-
-```bash
-using development git hash: c540c3a6ca488261edd20cdfdb95fdf50a050483
-
-📝 Running pre-flight checks
-    ✅ Kubectl active cluster rancher-desktop at: https://127.0.0.1:6443 found
-    ✅ Supported helm version 3.10.0+gce66412 is installed
-    ✅ Supported Kubernetes server 1.22.7+k3s1 found
-    ✅ Fixed: Fluvio Sys chart 0.11.9 is installed
-    ✅ Previous fluvio installation not found
-🎉 All checks passed!
-✅ Installed Fluvio app chart: 0.11.9
-✅ Connected to SC: 192.168.50.106:30003
-👤 Profile set
-✅ SPU group main launched with 1 replicas
-🎯 Successfully installed Fluvio
-
-```
-
-Then you can create topic, produce and consume messages as described above.
-
-You should see two helm chart installed. There is additional chart `fluvio` that is used for installing fluvio components.
-
-```bash
-$ helm list
-```
-
-```bash
-NAME            NAMESPACE       REVISION        UPDATED                                 STATUS          CHART                   APP VERSION
-fluvio          default         1               2022-10-06 19:42:07.051782 -0700 PDT    deployed        fluvio-app-0.9.2        0.11.9
-fluvio-sys      default         1               2022-10-06 19:42:06.668329 -0700 PDT    deployed        fluvio-sys-0.9.10       0.11.9
-```
-
-You should have two pods running:
-
-```bash
-$ kubectl get pods
-```
-
-```bash
-NAME                        READY   STATUS    RESTARTS   AGE
-fluvio-sc-fc976685d-qbxg2   1/1     Running   0          4m17s
-fluvio-spg-main-0           1/1     Running   0          4m15s
-```
-
-And services for SC and SPG (SPU group) are running:
-
-```bash
-$ kubectl get service
-```
-
-```bash
-NAME                 TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)             AGE
-kubernetes           ClusterIP   10.43.0.1      <none>        443/TCP             112d
-fluvio-sc-internal   ClusterIP   10.43.110.7    <none>        9004/TCP            5m8s
-fluvio-sc-public     NodePort    10.43.31.194   <none>        9003:30003/TCP      5m8s
-fluvio-spg-main      ClusterIP   None           <none>        9005/TCP,9006/TCP   5m6s
-fluvio-spu-main-0    NodePort    10.43.88.71    <none>        9005:30004/TCP      5m6s
-```
-
-Fluvio uses `NodePort` to expose SC and SPU to the outside world.
-
-And use PVC to store data:
-
-```bash
-$ kubectl get pvc
-```
-
-```bash
-NAME                     STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE
-data-fluvio-spg-main-0   Bound    pvc-dff4c156-5718-4b41-a825-cee7d07fd997   10Gi       RWO            local-path     6m31s
-```
-
-Fluvio uses the default storage class used in the current Kubernetes but can be overridden using helm config.
 
 ## Running tests
 
@@ -644,7 +517,7 @@ These are inlined into the Fluvio CLI binary. If there is any issue with Helm Ch
 $ make -C k8-util/helm clean
 ```
 
-### Alising Fluvio Development Binaries
+### Aliasing Fluvio Development Binaries
 
 Binaries are located in `target` directory. You can run them directly or you can use following handy aliases:
 
@@ -656,7 +529,6 @@ alias flvt='target/debug/flv-test'
 
 > [!NOTE]
 > We will use the alias going forward.
-
 
 ### Re-Starting SC and SPU separately
 
@@ -718,6 +590,8 @@ flvd run spu -i 5001 -p 0.0.0.0:9010 -v 0.0.0.0:9011 --log-base-dir ~/.fluvio/da
 starting spu server (id:5001)
 SPU Version: 0.0.0 started successfully
 ```
+
+### Adding Additional SPU
 
 You can launch additional SPU as needed; just ensure that ports don't conflict with each other.
 
@@ -815,7 +689,6 @@ $ make build-cli build_k8_image
 > [!IMPORTANT]
 > If you are not running recommended version of k8s, image may not be imported
 > into Kubernetes cluster.
-
 
 ## Troubleshooting
 
