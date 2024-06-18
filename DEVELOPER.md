@@ -1,41 +1,5 @@
 # Fluvio Developer Guide
 
-Table of contents:
-- [Fluvio Developer Guide](#fluvio-developer-guide)
-  - [Setting up Development Environment](#setting-up-development-environment)
-    - [Rust toolchain](#rust-toolchain)
-    - [Build time dependencies](#build-time-dependencies)
-    - [Kubernetes dependencies](#kubernetes-dependencies)
-      - [Helm](#helm)
-    - [Linker Pre-requisites](#linker-pre-requisites)
-  - [Building and running Fluvio cluster from source code for local binaries](#building-and-running-fluvio-cluster-from-source-code-for-local-binaries)
-    - [Building the CLI binary](#building-the-cli-binary)
-    - [Building the Cluster binary](#building-the-cluster-binary)
-    - [Release profile](#release-profile)
-    - [Inlining Helm chart](#inlining-helm-chart)
-    - [Fluvio binaries Alias](#fluvio-binaries-alias)
-    - [Running Fluvio cluster using native binaries](#running-fluvio-cluster-using-native-binaries)
-      - [Re-Starting SC and SPU separately](#re-starting-sc-and-spu-separately)
-      - [Deleting Fluvio cluster](#deleting-fluvio-cluster)
-      - [System Chart](#system-chart)
-      - [Setting Log level](#setting-log-level)
-    - [Deleting Fluvio cluster](#deleting-fluvio-cluster-1)
-  - [Building and running Fluvio cluster from source code for running in Kubernete cluster](#building-and-running-fluvio-cluster-from-source-code-for-running-in-kubernete-cluster)
-      - [Starting Fluvio cluster using dev docker image](#starting-fluvio-cluster-using-dev-docker-image)
-  - [Running tests](#running-tests)
-    - [Testing dependencies](#testing-dependencies)
-      - [Installing Bats-core](#installing-bats-core)
-      - [Building smart modules](#building-smart-modules)
-    - [Running local smoke test](#running-local-smoke-test)
-    - [Running Kubernetes smoke test](#running-kubernetes-smoke-test)
-    - [Running CLI smoke test](#running-cli-smoke-test)
-  - [Troubleshooting](#troubleshooting)
-    - [Connection issues](#connection-issues)
-    - [Deleting partition](#deleting-partition)
-  - [Optional: Download a published version of Fluvio](#optional-download-a-published-version-of-fluvio)
-
----
-
 Thank you for joining the Fluvio community.  The goal of this document is to provide everything you need to start developing Fluvio.
 
 Examples should work with the following platforms:
