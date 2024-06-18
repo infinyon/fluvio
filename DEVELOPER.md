@@ -66,7 +66,7 @@ Use following commands to start Fluvio cluster using native binaries.
 > Learn more on how to set it up [here](#aliasing-fluvio-development-binaries).
 
 ```bash
-$ flvd cluster start --develop
+$ flvd cluster start
 
 📝 Running pre-flight checks
     ✅ Supported helm version 3.10.0+gce66412 is installed
@@ -176,7 +176,7 @@ $ ./actions/zig-install.sh
 To create a Fluvio cluster in Kubernetes, run the following command:
 
 ```bash
-flvd cluster start --k8 --develop
+flvd cluster start --k8
 ```
 
 > [!TIP]
@@ -575,7 +575,7 @@ You can set various log levels [filering tracing log](https://tracing.rs/tracing
 For example, to start cluster using log level `info` using cluster start
 
 ```bash
-$ flvd cluster start --local --develop --rust-log fluvio=info
+$ flvd cluster start --rust-log fluvio=info
 ```
 
 For individual binaries, you can use `RUST_LOG` env variable:
