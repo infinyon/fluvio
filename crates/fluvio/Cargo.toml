@@ -1,6 +1,6 @@
 [package]
 name = "fluvio"
-version = "0.22.3"
+version = "0.22.4"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -15,12 +15,13 @@ name = "fluvio"
 path = "src/lib.rs"
 
 [features]
-default = ["openssl"]
+default = ["openssl", "compress"]
 admin = ["fluvio-sc-schema/use_serde"]
 smartengine = ["fluvio-smartengine"]
 openssl = ["fluvio-future/openssl_tls"]
 rustls = ["fluvio-future/rust_tls"]
 unstable = []
+compress = ["fluvio-compression/compress", "fluvio-protocol/compress"]
 
 [dependencies]
 async-channel = { workspace = true }
@@ -52,28 +53,30 @@ fluvio-future = { workspace = true, features = [
     "task",
     "task_unstable",
     "retry",
-    "sync"
+    "sync",
 ] }
 fluvio-types = { workspace = true, features = ["events"] }
-fluvio-sc-schema = { workspace = true  }
-fluvio-socket = { workspace = true  }
-fluvio-protocol = { workspace = true,  features = ["compress", "record","api"] }
-fluvio-compression = { workspace = true, features = ["compress"] }
-fluvio-smartmodule = { workspace = true  }
+fluvio-sc-schema = { workspace = true }
+fluvio-socket = { workspace = true }
+fluvio-protocol = { workspace = true, features = ["record", "api"] }
+fluvio-compression = { workspace = true, default-features = false }
+fluvio-smartmodule = { workspace = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 dirs = { workspace = true }
-chrono = { workspace = true, features = ["clock"]}
-fluvio-smartengine = { workspace = true,  features = ["engine"], optional = true }
+chrono = { workspace = true, features = ["clock"] }
+fluvio-smartengine = { workspace = true, features = [
+    "engine",
+], optional = true }
 
 [target.'cfg(unix)'.dependencies]
-fluvio-spu-schema = { workspace = true, features = ["file",] }
+fluvio-spu-schema = { workspace = true, features = ["file"] }
 [target.'cfg(windows)'.dependencies]
-fluvio-spu-schema = { workspace = true  }
+fluvio-spu-schema = { workspace = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-fluvio-spu-schema = { workspace = true  }
-chrono = { workspace = true,  features = ["wasmbind", "clock"]}
+fluvio-spu-schema = { workspace = true }
+chrono = { workspace = true, features = ["wasmbind", "clock"] }
 
 [dev-dependencies]
 async-std = { workspace = true }
