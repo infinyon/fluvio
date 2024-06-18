@@ -67,39 +67,37 @@ be stored in disk and processes will spawn as system processes.
 By default, Fluvio will create a cluster in the local environment unless you
 specify it to run on a Kubernetes cluster.
 
-### Rust toolchain
+## Requirements
 
-Please follow [setup](https://www.rust-lang.org/tools/install) instructions to install Rust and Cargo.
+Either for local or Kubernetes development, you need the following software to
+be installed in your system:
 
-### Build time dependencies
+- [Rust & Cargo](https://www.rust-lang.org/tools/install)
+- [make](https://www.gnu.org/software/make/)
+- [git](https://git-scm.com/)
 
-Most of these are required for building a docker image: it is also possible to not install these and just `cargo build` the binaries you need and test them with a local setup.
+### Kubernetes Cluster Development
 
-* make
-* zig
-* lld (v16)
-* git
+> [!IMPORTANT]
+> If you plan to develop Fluvio without Kubernetes, you can skip this section.
 
-### Kubernetes dependencies
-
-Kubernetes is required for Fluvio to store its metadata.
-
-Please set up one of the following recommended kubernetes distros:
+To run Fluvio on Kubernetes, you will need to install a Kubernetes
+distribution, we recommend using one of:
 
 * [OrbStack](https://orbstack.dev)
 * [Rancher desktop](https://rancherdesktop.io)
 * [k3d](https://k3d.io)
 * [kind](https://kind.sigs.k8s.io)
 
-#### Helm
+You will also need **Helm** in order to install Fluvio charts.
 
-Helm is used for installing Fluvio on Kubernetes.
-
-Please follow [helm setup](https://helm.sh/docs/intro/quickstart/) to install the helm.
+Please follow [helm setup](https://helm.sh/docs/intro/quickstart/) to
+install Helm.
 
 ### Linker Pre-requisites
 
-Zig and LLVM is required.
+- [LLVM v16](https://llvm.org)
+- [Zig](https://ziglang.org)
 
 **macOS**
 
@@ -120,57 +118,82 @@ See https://apt.llvm.org for installing LLVM. LLVM up to 16 is confirmed to work
 $ ./actions/zig-install.sh
 ```
 
-## Building and running Fluvio cluster from source code for local binaries
+## Development
 
 It is recommended to use native binaries for development and testing but not for production.
 
 > [!IMPORTANT]
 > For production, please build docker image and run in the Kuberentes as pod.
 
-You still need to have Kubernets cluster running.
+The following section will guide you through building different Fluvio
+components.
 
-### Building the CLI binary
+### Fluvio CLI
 
-CLI is required to install, manage and access the Fluvio cluster.
+Fluvio CLI is the main entry point to interact with Fluvio cluster.  It is required to install, manage and access the Fluvio cluster.
 
-To build CLI, run:
+Theres two ways to build the CLI, one includes all the features supported
+to run on a regular environment, including Kubernetes support, and the other
+one is a minimal version suitable for constrained environments like
+_Raspberry Pi_ where you would run without Kubernetes features.
 
-```
+Use the following command to build the CLI binary with all features:
+
+```bash
 $ make build-cli
 ```
 
-To build minimum CLI without Kubernetes dependencies for target such as Raspberry Pi, run:
+To build minimum CLI without Kubernetes dependencies for target such as
+_Raspberry Pi_, run:
 
-```
+```bash
 $ make build-cli-minimal
 ```
 
-### Building the Cluster binary
+### Fluvio Cluster
 
-Entire Fluvio cluster (including SC and SPU) is contained a single binary.
+Entire Fluvio cluster (including SC and SPU) is contained a single binary,
+use the following command to build the cluster binary:
 
-To build the binary, run:
-
-```
+```bash
 $ make build-cluster
 ```
 
-### Release profile
+## Build Profiles and DevEx
 
-By default, the build will use Rust `develop` profile.  To use `release` profile, set `RELEASE` to Makefile.
+### Release Profile
 
-For example, to generate optimized binaries, run, `make build-cluster RELEASE=true`.
+By default, the build will use Rust `debug` profile, this is suitable for
+debugging and development. The final binary will be bigger and slower than
+the `release` profile, but build times will be quicker.
 
-`make clean` to completely remove all build binaries and artifacts.
+To use `release` profile, set `RELEASE` to Makefile, this profile optimizes
+the output binary for production environments but it takes more time to build.
 
-### Inlining Helm chart
+For example, to generate optimized binaries, run:
 
-Fluvio uses helm chart to install and manage Kubernetes components.  They are inline into Fluvio CLI binary.  If there is any issue with helm chart, run `make -C k8-util/helm clean` to clean up helm artifacts.
+```bash
+$ make build-cluster RELEASE=true`
+```
 
+To clean up the build artifacts and build generated files, run:
 
-### Fluvio binaries Alias
+```bash
+$ make clean
+```
 
-Binaries are located in `target` directory.  You can run them directly or you can use following handy aliases:
+### Inlining Helm Chart
+
+Fluvio uses Helm Chart to install and manage Kubernetes components.
+These are inlined into the Fluvio CLI binary. If there is any issue with Helm Chart, run the following command to clean up:
+
+```bash
+$ make -C k8-util/helm clean
+```
+
+### Alising Fluvio Development Binaries
+
+Binaries are located in `target` directory. You can run them directly or you can use following handy aliases:
 
 ```bash
 alias flvd='target/debug/fluvio'
@@ -178,11 +201,148 @@ alias flvdr='target/release/fluvio'
 alias flvt='target/debug/flv-test'
 ```
 
-We will use the alias going forward.
+> [!NOTE]
+> We will use the alias going forward.
 
-### Running Fluvio cluster using native binaries
 
-Use following commands to start Fluvio cluster using native binaries.
+#### Re-Starting SC and SPU separately
+
+During development, it is necessary to restart SC and SPU separately.
+
+In order do so, you can kill SC or SPU and starting them individually.
+
+You can use following commands for SC
+
+```bash
+$ kill -9 <process id of fluvio-run sc>
+```
+
+```bash
+$ flvd run sc --local
+```
+
+```bash
+CLI Option: ScOpt {
+    local: true,
+    bind_public: None,
+    bind_private: None,
+    namespace: None,
+    tls: TlsConfig {
+        tls: false,
+        server_cert: None,
+        server_key: None,
+        enable_client_cert: false,
+        ca_cert: None,
+        bind_non_tls_public: None,
+    },
+    x509_auth_scopes: None,
+    auth_policy: None,
+    white_list: [],
+}
+Starting SC, platform: 0.11.9
+Streaming Controller started successfully
+```
+
+You can then kill by <kbd>Ctrl</kbd> + <kbd>C</kbd>
+
+> [!NOTE]
+> This will not kill SPU. Once new SC is up, SPU will reconnect to it.
+
+For SPU, you can use following template.
+
+> [!IMPORTANT]
+> `--log-base` should be same as the previously.
+
+```bash
+$ kill -9 <process id of fluvio-run spu>
+```
+
+```bash
+flvd run spu -i 5001 -p 0.0.0.0:9010 -v 0.0.0.0:9011 --log-base-dir ~/.fluvio/data
+```
+
+```bash
+starting spu server (id:5001)
+SPU Version: 0.0.0 started successfully
+```
+
+You can launch additional SPU as needed; just ensure that ports don't conflict with each other.
+
+For example, to add 2nd:
+
+First register the new SPU:
+
+```bash
+$ flvd cluster spu register --id 5002 --public-server 0.0.0.0:9020 --private-server  0.0.0.0:9021
+```
+
+And then start the SPU:
+
+```bash
+$ flvd run spu -i 5002 -p 0.0.0.0:9020 -v 0.0.0.0:9021
+```
+
+### Running on macOS with Minikube (Kubernetes Setup)
+
+If you are running on macOS with Minikube we recommend exposing the following
+ports when spawning the Minikube cluster:
+
+```bash
+minikube start --ports 9003,9005,30003:30003,30004:30004
+```
+
+This exposes internal/external ports from Fluvio SC running on Minikube to the
+host machine, as well as maps the ports used to reach the SPU from the
+container to the host machine.
+
+### System Chart (Kubernetes Setup)
+
+There are two helm charts that are installed by Fluvio CLI.
+
+- `fluvio-sys` chart is installed when using native binaries.
+- `fluvio-app` chart is installed when running Fluvio with docker image.
+
+```bash
+$ helm list
+```
+
+```bash
+NAME            NAMESPACE       REVISION        UPDATED                                 STATUS          CHART                   APP VERSION
+fluvio-sys      default         1               2022-10-06 19:18:37.416564 -0700 PDT    deployed        fluvio-sys-0.9.10       0.11.9
+```
+
+You can install system chart only using following command.  This assume system chart is not installed.
+
+```bash
+$ flvd cluster start --sys-only
+```
+
+```
+installing sys chart, upgrade: false
+```
+
+### Setting Log level
+
+You can set various log levels [filering tracing log](https://tracing.rs/tracing_subscriber/filter/struct.envfilter).
+
+For example, to start cluster using log level `info` using cluster start
+
+```bash
+$ flvd cluster start --local --develop --rust-log fluvio=info
+```
+
+For individual binaries, you can use `RUST_LOG` env variable:
+
+```bash
+$ RUST_LOG=fluvio=info flvd run sc --local
+```
+
+## Development
+
+### Running Fluvio Cluster Locally
+
+Use following commands to start Fluvio cluster using native binaries, this will
+start Fluvio cluster locally without Kubernetes.
 
 ```bash
 $ flvd cluster start --local --develop
@@ -221,7 +381,7 @@ $ flvd consume hello -B
 ```
 
 ```bash
-Consuming records from the beginning of topic 'hello'
+Consuming records from 'hello' starting from the beginning of log
 hello world
 ⠒
 ```
@@ -241,18 +401,6 @@ $ ps -ef | grep fluvio
   501 61955     1   0  4:51PM ttys000    0:00.03 /tmp/fluvio/target/debug/fluvio run spu -i 5001 -p 0.0.0.0:9010 -v 0.0.0.0:9011 --log-base-dir /Users/myuser/.fluvio/data
   501 61956 61955   0  4:51PM ttys000    0:00.27 /tmpfluvio/target/debug/fluvio-run spu -i 5001 -p 0.0.0.0:9010 -v 0.0.0.0:9011 --log-base-dir /Users/myuser/.fluvio/data
   501 62035   989   0  4:52PM ttys000    0:00.00 grep fluvio
-```
-
-
-Since we still leverages Kubernetes CRDs, sys chart is still installed.
-
-```bash
-$ helm list
-```
-
-```bash
-NAME            NAMESPACE       REVISION        UPDATED                                 STATUS          CHART                   APP VERSION
-fluvio-sys      default         1               2022-10-06 18:46:23.359066 -0700 PDT    deployed        fluvio-sys-0.9.10       0.11.9
 ```
 
 
@@ -333,7 +481,112 @@ And then start the SPU:
 $ flvd run spu -i 5002 -p 0.0.0.0:9020 -v 0.0.0.0:9021
 ```
 
-#### Deleting Fluvio cluster
+### Running Fluvio Cluster in Kubernetes
+
+> [!IMPORTANT]
+> Make sure your Kubernetes cluster is running and `kubectl` is configured to access the cluster.
+
+To create a Fluvio cluster in Kubernetes, run the following command:
+
+```bash
+flvd cluster start --k8 --develop
+```
+
+> [!TIP]
+> Note that the `--k8` flag is used to start Fluvio cluster in Kubernetes
+
+Expect the following output:
+
+```bash
+📝 Running pre-flight checks
+    ✅ Kubectl active cluster minikube at: https://127.0.0.1:32771 found
+    ✅ Supported helm version 3.15.0+gc4e37b3 is installed
+    ✅ Supported Kubernetes server 1.30.0 found
+    ✅ Fixed: Fluvio Sys chart 0.11.9 is installed
+    ✅ Previous fluvio installation not found
+🎉 All checks passed!
+✅ Installed Fluvio app chart: 0.11.9
+ -
+👤 Profile set
+🖥️  Trying to connect to SC: localhost:30003 0 seconds elapsed \
+✅ Connected to SC: localhost:30003
+🖥️  Trying to connect to SC: localhost:30003 0 seconds elapsed \
+🖥️ Waiting for SPUs to be ready and have ingress... (timeout: 300s) -
+...
+🖥️ 1/1 SPU confirmed, 3 seconds elapsed /
+✅ SPU group main launched with 1 replicas
+🖥️ 1/1 SPU confirmed, 3 seconds elapsed /
+🎯 Successfully installed Fluvio!
+```
+
+Fluvio leverages Kubernetes CRDs to manage Fluvio components, sys chart is installed using Helm. You can list these installed charts using the following command:
+
+```bash
+$ helm list
+```
+
+```bash
+NAME      	NAMESPACE	REVISION	UPDATED                             	STATUS  	CHART            	APP VERSION
+fluvio    	default  	1       	2024-06-18 12:45:36.917241 -0400 -04	deployed	fluvio-app-0.9.3 	0.11.9
+fluvio-sys	default  	1       	2024-06-18 12:45:36.499479 -0400 -04	deployed	fluvio-sys-0.9.18	0.11.9
+```
+
+Inspect running pods spawned by Fluvio:
+
+```bash
+$ kubectl get pods
+```
+
+```bash
+NAME                         READY   STATUS    RESTARTS   AGE
+fluvio-sc-7f64bffbc6-b28zw   1/1     Running   0          7m9s
+fluvio-spg-main-0            1/1     Running   0          7m3s
+```
+
+Inspect logs from each pod using the following command:
+
+```bash
+kubectl logs <POD NAME>
+```
+
+Consider the output above, you can inspect logs from SC pod using the following command:
+
+```bash
+kubectl logs fluvio-sc-7f64bffbc6-b28zw
+```
+
+Similar to how its performed for local cluster, you can create topics, produce and consume messages.
+
+```bash
+$ flvd topic create hello
+```
+
+```bash
+topic "hello" created
+```
+
+Produce:
+
+```bash
+$ flvd produce hello
+```
+
+```bash
+> hello world
+```
+
+Consume:
+
+```bash
+$ flvd consume -B hello
+```
+
+```bash
+Consuming records from 'hello' starting from the beginning of log
+hello world
+```
+
+## Deleting Fluvio cluster
 
 If Fluvio cluster is no longer needed, you can delete it using following command:
 
@@ -354,48 +607,6 @@ Write the cluster name `local` and press <kbd>Enter</kbd> to confirm deletion.
 Deleting local/127.0.0.1:9003
 Removed SPU monitoring socket
 Uninstalled fluvio local components
-```
-
-#### System Chart
-
-There are two helm charts that are installed by Fluvio CLI.
-
-- `fluvio-sys` chart is installed when using native binaries.
-- `fluvio-app` chart is installed when running Fluvio with docker image.
-
-```bash
-$ helm list
-```
-
-```bash
-NAME            NAMESPACE       REVISION        UPDATED                                 STATUS          CHART                   APP VERSION
-fluvio-sys      default         1               2022-10-06 19:18:37.416564 -0700 PDT    deployed        fluvio-sys-0.9.10       0.11.9
-```
-
-You can install system chart only using following command.  This assume system chart is not installed.
-
-```bash
-$ flvd cluster start --sys-only
-```
-
-```
-installing sys chart, upgrade: false
-```
-
-#### Setting Log level
-
-You can set various log levels [filering tracing log](https://tracing.rs/tracing_subscriber/filter/struct.envfilter).
-
-For example, to start cluster using log level `info` using cluster start
-
-```bash
-$ flvd cluster start --local --develop --rust-log fluvio=info
-```
-
-For individual binaries, you can use `RUST_LOG` env variable:
-
-```bash
-$ RUST_LOG=fluvio=info flvd run sc --local
 ```
 
 ### Deleting Fluvio cluster
