@@ -465,7 +465,7 @@ jobs:
         run: make -C smartmodule/regex-filter
 
   check_wasm:
-    name: Build WASM crates (${{ matrix.wasm-crate }})
+    name: Build WASM crates (${{ matrix.context.crate }})
     needs: config
     if: needs.config.outputs.check == 'true'
     runs-on: ${{ matrix.os }}
@@ -493,7 +493,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
       - name: install wasm target
         run: rustup target add wasm32-unknown-unknown
-      - name: Build WASM for ${{ matrix.wasm-crate }}
+      - name: Build WASM for ${{ matrix.context.crate }}
         run: |
             cargo check --manifest-path ./crates/${{matrix.context.crate}}/Cargo.toml \
                 --no-default-features \
@@ -501,14 +501,14 @@ jobs:
                 --target wasm32-unknown-unknown
 
   check_crate_feature_flags:
-    name: Check ${{matrix.features}} for (${{ matrix.wasm-crate }})
+    name: Check ${{matrix.features}} for (${{ matrix.crate }})
     needs: config
     if: needs.config.outputs.check == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest]
-        wasm-crate:
+        crate:
           - fluvio
           - fluvio-socket
           - fluvio-smartengine
@@ -526,8 +526,8 @@ jobs:
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
 
-      - name: check for ${{ matrix.wasm-crate }} with ${{matrix.features}}
-        run: cargo check --manifest-path ./crates/${{matrix.wasm-crate}}/Cargo.toml --${{matrix.features}}
+      - name: check for ${{ matrix.crate }} with ${{matrix.features}}
+        run: cargo check --manifest-path ./crates/${{matrix.crate}}/Cargo.toml --${{matrix.features}}
 
   check_windows:
     name: Check Windows for crates (${{ matrix.crate }})
