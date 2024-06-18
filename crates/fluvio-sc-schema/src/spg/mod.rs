@@ -2,7 +2,7 @@ pub use fluvio_controlplane_metadata::spg::*;
 
 mod convert {
 
-    use crate::{AdminSpec, DeletableAdminSpec, CreatableAdminSpec};
+    use crate::{AdminSpec, CreatableAdminSpec, DeletableAdminSpec, UpdatableAdminSpec};
     use super::SpuGroupSpec;
 
     impl AdminSpec for SpuGroupSpec {}
@@ -11,5 +11,10 @@ mod convert {
 
     impl DeletableAdminSpec for SpuGroupSpec {
         type DeleteKey = String;
+    }
+
+    impl UpdatableAdminSpec for SpuGroupSpec {
+        type UpdateKey = String;
+        type UpdateAction = String;
     }
 }

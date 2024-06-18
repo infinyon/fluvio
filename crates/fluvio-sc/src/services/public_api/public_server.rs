@@ -111,9 +111,9 @@ where
             ),
             AdminPublicDecodedRequest::MirroringRequest(request) =>
                 super::mirroring::handle_mirroring_request(request, service_context.clone(), shared_sink.clone(), end_event.clone())?,
-            AdminPublicDecodedRequest::TopicUpdateRequest(request) => call_service!(
+            AdminPublicDecodedRequest::UpdateRequest(request) => call_service!(
                 request,
-                super::topic::update::handle_topic_update_request(request, service_context.clone()),
+                super::update::handle_update_request(request, &service_context),
                 shared_sink,
                 "topic update handler"
             ),

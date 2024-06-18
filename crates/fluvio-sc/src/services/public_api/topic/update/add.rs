@@ -5,10 +5,7 @@
 //! and send K8 a update message.
 //!
 use tracing::{trace, instrument};
-use std::{
-    io::{Error, ErrorKind},
-    sync::Arc,
-};
+use std::io::{Error, ErrorKind};
 
 use fluvio_protocol::link::ErrorCode;
 use fluvio_sc_schema::{
@@ -25,10 +22,10 @@ use crate::services::auth::AuthServiceContext;
 /// Handler for udapte topic request
 #[instrument(skip(request, auth_ctx))]
 pub async fn handle_add_partition<AC: AuthContext, C: MetadataItem>(
+    topic_name: String,
     request: AddPartition,
-    auth_ctx: Arc<AuthServiceContext<AC, C>>,
+    auth_ctx: &AuthServiceContext<AC, C>,
 ) -> Result<Status, Error> {
-    let topic_name = request.topic.clone();
     if let Ok(authorized) = auth_ctx
         .auth
         .allow_instance_action(TopicSpec::OBJECT_TYPE, InstanceAction::Update, &topic_name)
@@ -95,8 +92,8 @@ pub async fn handle_add_partition<AC: AuthContext, C: MetadataItem>(
             ReplicaSpec::Mirror(_) => {
                 return Ok(Status::new(
                     topic_name,
-                    ErrorCode::TopicMirrorReplicaCannotBeUpdated,
-                    Some("mirror replica cannot be updated".to_owned()),
+                    ErrorCode::NotImplememented,
+                    Some("add partition to a mirror topic is not implemented".to_owned()),
                 ));
             }
         }

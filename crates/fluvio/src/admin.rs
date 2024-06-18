@@ -3,6 +3,9 @@ use std::fmt::Debug;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 
+use fluvio_sc_schema::objects::ObjectApiUpdateRequest;
+use fluvio_sc_schema::objects::UpdateRequest;
+use fluvio_sc_schema::UpdatableAdminSpec;
 use futures_util::{Stream, StreamExt};
 use tracing::{debug, trace, instrument};
 use anyhow::{Result, anyhow};
@@ -137,7 +140,7 @@ impl FluvioAdmin {
     }
 
     #[instrument(skip(self, request))]
-    pub async fn send_receive_admin<R, I>(&self, request: I) -> Result<R::Response>
+    async fn send_receive_admin<R, I>(&self, request: I) -> Result<R::Response>
     where
         R: Request + Send + Sync,
         R: TryEncodableFrom<I>,
@@ -241,6 +244,26 @@ impl FluvioAdmin {
         debug!("sending force delete request: {:#?}", delete_request);
 
         self.send_receive_admin::<ObjectApiDeleteRequest, _>(delete_request)
+            .await?
+            .as_result()?;
+        Ok(())
+    }
+
+    /// Update object by key
+    /// key is dependent on spec, most are string but some allow multiple types
+    #[instrument(skip(self, key))]
+    pub async fn update<S>(
+        &self,
+        key: impl Into<S::UpdateKey>,
+        action: S::UpdateAction,
+    ) -> Result<()>
+    where
+        S: UpdatableAdminSpec + Sync + Send,
+    {
+        let update_request: UpdateRequest<S> = UpdateRequest::new(key.into(), action);
+        debug!("sending update request: {:#?}", update_request);
+
+        self.send_receive_admin::<ObjectApiUpdateRequest, _>(update_request)
             .await?
             .as_result()?;
         Ok(())

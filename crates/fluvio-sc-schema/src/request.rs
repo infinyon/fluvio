@@ -17,10 +17,10 @@ use fluvio_protocol::core::Decoder;
 use fluvio_protocol::link::versions::ApiVersionsRequest;
 
 use crate::mirroring::ObjectMirroringRequest;
-use crate::topic::ObjectTopicUpdateRequest;
 use crate::AdminPublicApiKey;
 use crate::objects::{
-    ObjectApiCreateRequest, ObjectApiDeleteRequest, ObjectApiListRequest, ObjectApiWatchRequest,
+    ObjectApiCreateRequest, ObjectApiDeleteRequest, ObjectApiListRequest, ObjectApiUpdateRequest,
+    ObjectApiWatchRequest,
 };
 
 /// Non generic AdminRequest, This is typically used Decoding
@@ -32,8 +32,7 @@ pub enum AdminPublicDecodedRequest {
     ListRequest(RequestMessage<ObjectApiListRequest>),
     WatchRequest(RequestMessage<ObjectApiWatchRequest>),
     MirroringRequest(RequestMessage<ObjectMirroringRequest>),
-    TopicUpdateRequest(RequestMessage<ObjectTopicUpdateRequest>),
-    //GENERIC UPDATE or not?
+    UpdateRequest(RequestMessage<ObjectApiUpdateRequest>),
 }
 
 impl Default for AdminPublicDecodedRequest {
@@ -90,9 +89,9 @@ impl ApiMessage for AdminPublicDecodedRequest {
                 header,
                 ObjectMirroringRequest::decode_from(src, version)?,
             ))),
-            AdminPublicApiKey::TopicUpdate => Ok(Self::TopicUpdateRequest(RequestMessage::new(
+            AdminPublicApiKey::Update => Ok(Self::UpdateRequest(RequestMessage::new(
                 header,
-                ObjectTopicUpdateRequest::decode_from(src, version)?,
+                ObjectApiUpdateRequest::decode_from(src, version)?,
             ))),
         }
     }

@@ -1,5 +1,4 @@
 mod list;
-mod add;
 
 pub use cmd::PartitionCmd;
 
@@ -18,7 +17,6 @@ mod cmd {
     use crate::common::output::Terminal;
     use crate::common::FluvioExtensionMetadata;
 
-    use super::add::AddPartitionOpt;
     use super::list::ListPartitionOpt;
 
     #[derive(Debug, Parser)]
@@ -30,13 +28,6 @@ mod cmd {
             help_template = crate::common::COMMAND_TEMPLATE,
         )]
         List(ListPartitionOpt),
-
-        /// Add a new Partition to a Topic
-        #[command(
-            name = "add",
-            help_template = crate::common::COMMAND_TEMPLATE,
-        )]
-        Add(AddPartitionOpt),
     }
 
     #[async_trait]
@@ -49,9 +40,6 @@ mod cmd {
             match self {
                 Self::List(list) => {
                     list.process(out, fluvio).await?;
-                }
-                Self::Add(add) => {
-                    add.process(fluvio).await?;
                 }
             }
 

@@ -3,11 +3,10 @@
 //!
 //! CLI tree to generate Delete Topics
 //!
-use tracing::debug;
 use clap::Parser;
 use anyhow::Result;
 
-use fluvio_sc_schema::topic::{AddPartition, ObjectTopicUpdateRequest, TopicUpdateRequest};
+use fluvio_sc_schema::topic::{AddPartition, TopicSpec, UpdateTopicAction};
 use fluvio::Fluvio;
 
 /// Option for Listing Partition
@@ -25,21 +24,17 @@ impl AddPartitionOpt {
         let admin = fluvio.admin().await;
 
         let request = AddPartition {
-            topic: self.topic.clone(),
             number_of_partition: self.number_of_partition as u32,
         };
 
-        let req = TopicUpdateRequest { request };
+        let action = UpdateTopicAction::AddPartition(request);
 
-        debug!("sending connect request: {:#?}", req);
-
-        let response = admin
-            .send_receive_admin::<ObjectTopicUpdateRequest, _>(req)
+        admin
+            .update::<TopicSpec>(self.topic.clone(), action)
             .await?;
 
-        println!("response: {:#?}", response);
+        println!("added partition to topic: {}", self.topic);
 
-        //println!("connecting with \"{}\" cluster", home_id);
         Ok(())
     }
 }

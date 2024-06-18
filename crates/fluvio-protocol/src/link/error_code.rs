@@ -57,6 +57,9 @@ pub enum ErrorCode {
     #[fluvio(tag = 71)]
     #[error("Offset {offset} is evicted. The next available is {next_available}")]
     OffsetEvicted { offset: i64, next_available: i64 },
+    #[fluvio(tag = 72)]
+    #[error("Feature not implemented")]
+    NotImplememented,
 
     // Spu errors
     #[fluvio(tag = 1000)]
@@ -103,9 +106,6 @@ pub enum ErrorCode {
     #[fluvio(tag = 2008)]
     #[error("the topic assignment replica cannot be updated")]
     TopicAssignmentReplicaCannotBeUpdated,
-    #[fluvio(tag = 2009)]
-    #[error("the topic is not a valid topic")]
-    TopicMirrorReplicaCannotBeUpdated,
 
     // Partition errors
     #[fluvio(tag = 3000)]
