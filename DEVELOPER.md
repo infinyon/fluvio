@@ -118,7 +118,7 @@ See https://apt.llvm.org for installing LLVM. LLVM up to 16 is confirmed to work
 $ ./actions/zig-install.sh
 ```
 
-## Development
+## Building
 
 It is recommended to use native binaries for development and testing but not for production.
 
@@ -159,182 +159,27 @@ use the following command to build the cluster binary:
 $ make build-cluster
 ```
 
-## Build Profiles and DevEx
 
-### Release Profile
+### Pre-Build Versions
 
-By default, the build will use Rust `debug` profile, this is suitable for
-debugging and development. The final binary will be bigger and slower than
-the `release` profile, but build times will be quicker.
+Instead of building Fluvio, you may want to prefer just to download it and get to work.  You can use our one-line installation script.  You can use it to install the latest release or prerelease, or install a specific version:
 
-To use `release` profile, set `RELEASE` to Makefile, this profile optimizes
-the output binary for production environments but it takes more time to build.
-
-For example, to generate optimized binaries, run:
+**Install Stable Release**
 
 ```bash
-$ make build-cluster RELEASE=true`
+$ curl -fsS https://hub.infinyon.cloud/install/install.sh | bash
 ```
 
-To clean up the build artifacts and build generated files, run:
+**Install Latest Release (as of `master` branch)**
 
 ```bash
-$ make clean
+$ curl -fsS https://hub.infinyon.cloud/install/install.sh | VERSION=latest bash
 ```
 
-### Inlining Helm Chart
-
-Fluvio uses Helm Chart to install and manage Kubernetes components.
-These are inlined into the Fluvio CLI binary. If there is any issue with Helm Chart, run the following command to clean up:
+**Install Specific Version**
 
 ```bash
-$ make -C k8-util/helm clean
-```
-
-### Alising Fluvio Development Binaries
-
-Binaries are located in `target` directory. You can run them directly or you can use following handy aliases:
-
-```bash
-alias flvd='target/debug/fluvio'
-alias flvdr='target/release/fluvio'
-alias flvt='target/debug/flv-test'
-```
-
-> [!NOTE]
-> We will use the alias going forward.
-
-
-#### Re-Starting SC and SPU separately
-
-During development, it is necessary to restart SC and SPU separately.
-
-In order do so, you can kill SC or SPU and starting them individually.
-
-You can use following commands for SC
-
-```bash
-$ kill -9 <process id of fluvio-run sc>
-```
-
-```bash
-$ flvd run sc --local
-```
-
-```bash
-CLI Option: ScOpt {
-    local: true,
-    bind_public: None,
-    bind_private: None,
-    namespace: None,
-    tls: TlsConfig {
-        tls: false,
-        server_cert: None,
-        server_key: None,
-        enable_client_cert: false,
-        ca_cert: None,
-        bind_non_tls_public: None,
-    },
-    x509_auth_scopes: None,
-    auth_policy: None,
-    white_list: [],
-}
-Starting SC, platform: 0.11.9
-Streaming Controller started successfully
-```
-
-You can then kill by <kbd>Ctrl</kbd> + <kbd>C</kbd>
-
-> [!NOTE]
-> This will not kill SPU. Once new SC is up, SPU will reconnect to it.
-
-For SPU, you can use following template.
-
-> [!IMPORTANT]
-> `--log-base` should be same as the previously.
-
-```bash
-$ kill -9 <process id of fluvio-run spu>
-```
-
-```bash
-flvd run spu -i 5001 -p 0.0.0.0:9010 -v 0.0.0.0:9011 --log-base-dir ~/.fluvio/data
-```
-
-```bash
-starting spu server (id:5001)
-SPU Version: 0.0.0 started successfully
-```
-
-You can launch additional SPU as needed; just ensure that ports don't conflict with each other.
-
-For example, to add 2nd:
-
-First register the new SPU:
-
-```bash
-$ flvd cluster spu register --id 5002 --public-server 0.0.0.0:9020 --private-server  0.0.0.0:9021
-```
-
-And then start the SPU:
-
-```bash
-$ flvd run spu -i 5002 -p 0.0.0.0:9020 -v 0.0.0.0:9021
-```
-
-### Running on macOS with Minikube (Kubernetes Setup)
-
-If you are running on macOS with Minikube we recommend exposing the following
-ports when spawning the Minikube cluster:
-
-```bash
-minikube start --ports 9003,9005,30003:30003,30004:30004
-```
-
-This exposes internal/external ports from Fluvio SC running on Minikube to the
-host machine, as well as maps the ports used to reach the SPU from the
-container to the host machine.
-
-### System Chart (Kubernetes Setup)
-
-There are two helm charts that are installed by Fluvio CLI.
-
-- `fluvio-sys` chart is installed when using native binaries.
-- `fluvio-app` chart is installed when running Fluvio with docker image.
-
-```bash
-$ helm list
-```
-
-```bash
-NAME            NAMESPACE       REVISION        UPDATED                                 STATUS          CHART                   APP VERSION
-fluvio-sys      default         1               2022-10-06 19:18:37.416564 -0700 PDT    deployed        fluvio-sys-0.9.10       0.11.9
-```
-
-You can install system chart only using following command.  This assume system chart is not installed.
-
-```bash
-$ flvd cluster start --sys-only
-```
-
-```
-installing sys chart, upgrade: false
-```
-
-### Setting Log level
-
-You can set various log levels [filering tracing log](https://tracing.rs/tracing_subscriber/filter/struct.envfilter).
-
-For example, to start cluster using log level `info` using cluster start
-
-```bash
-$ flvd cluster start --local --develop --rust-log fluvio=info
-```
-
-For individual binaries, you can use `RUST_LOG` env variable:
-
-```bash
-$ RUST_LOG=fluvio=info flvd run sc --local
+$ curl -fsS https://hub.infinyon.cloud/install/install.sh | VERSION=x.y.z bash
 ```
 
 ## Development
@@ -586,7 +431,10 @@ Consuming records from 'hello' starting from the beginning of log
 hello world
 ```
 
-## Deleting Fluvio cluster
+## Post-Development
+
+### Deleting Fluvio cluster
+
 
 If Fluvio cluster is no longer needed, you can delete it using following command:
 
@@ -609,14 +457,6 @@ Removed SPU monitoring socket
 Uninstalled fluvio local components
 ```
 
-### Deleting Fluvio cluster
-
-To remove all fluvio related objects in the Kubernetes cluster, you can use the following command:
-
-```bash
-$ flvd cluster delete
-```
-
 Note that when you uninstall the cluster, CLI will remove all related objects such as
 
 - Topics
@@ -624,27 +464,6 @@ Note that when you uninstall the cluster, CLI will remove all related objects su
 - Tls Secrets
 - Storage
 - etc
-
-
-## Building and running Fluvio cluster from source code for running in Kubernete cluster
-
-The docker image requires first installing a cross compilation toolchain, along with other build dependencies mentioned such as lld.
-
-```bash
-# x86_64 (most computers):
-$ rustup target add x86_64-unknown-linux-musl
-# M1 Macs:
-$ rustup target add aarch64-unknown-linux-musl
-```
-
-This will build the Fluvio cli and then create a docker image and import it into your local k8s cluster:
-
-```bash
-$ make build-cli build_k8_image
-```
-
-If you are not running recommended version of k8s, image may not be imported into Kubernetes cluster.
-
 
 #### Starting Fluvio cluster using dev docker image
 
@@ -793,6 +612,211 @@ Perform CLI smoke test against your running cluster (Kubernetes or local)
 $ make cli-fluvio-smoke
 ```
 
+## DevEx & Troubleshooting
+
+### Release Profile
+
+By default, the build will use Rust `debug` profile, this is suitable for
+debugging and development. The final binary will be bigger and slower than
+the `release` profile, but build times will be quicker.
+
+To use `release` profile, set `RELEASE` to Makefile, this profile optimizes
+the output binary for production environments but it takes more time to build.
+
+For example, to generate optimized binaries, run:
+
+```bash
+$ make build-cluster RELEASE=true`
+```
+
+To clean up the build artifacts and build generated files, run:
+
+```bash
+$ make clean
+```
+
+### Inlining Helm Chart
+
+Fluvio uses Helm Chart to install and manage Kubernetes components.
+These are inlined into the Fluvio CLI binary. If there is any issue with Helm Chart, run the following command to clean up:
+
+```bash
+$ make -C k8-util/helm clean
+```
+
+### Alising Fluvio Development Binaries
+
+Binaries are located in `target` directory. You can run them directly or you can use following handy aliases:
+
+```bash
+alias flvd='target/debug/fluvio'
+alias flvdr='target/release/fluvio'
+alias flvt='target/debug/flv-test'
+```
+
+> [!NOTE]
+> We will use the alias going forward.
+
+
+### Re-Starting SC and SPU separately
+
+During development, it is necessary to restart SC and SPU separately.
+
+In order do so, you can kill SC or SPU and starting them individually.
+
+You can use following commands for SC
+
+```bash
+$ kill -9 <process id of fluvio-run sc>
+```
+
+```bash
+$ flvd run sc --local
+```
+
+```bash
+CLI Option: ScOpt {
+    local: true,
+    bind_public: None,
+    bind_private: None,
+    namespace: None,
+    tls: TlsConfig {
+        tls: false,
+        server_cert: None,
+        server_key: None,
+        enable_client_cert: false,
+        ca_cert: None,
+        bind_non_tls_public: None,
+    },
+    x509_auth_scopes: None,
+    auth_policy: None,
+    white_list: [],
+}
+Starting SC, platform: 0.11.9
+Streaming Controller started successfully
+```
+
+You can then kill by <kbd>Ctrl</kbd> + <kbd>C</kbd>
+
+> [!NOTE]
+> This will not kill SPU. Once new SC is up, SPU will reconnect to it.
+
+For SPU, you can use following template.
+
+> [!IMPORTANT]
+> `--log-base` should be same as the previously.
+
+```bash
+$ kill -9 <process id of fluvio-run spu>
+```
+
+```bash
+flvd run spu -i 5001 -p 0.0.0.0:9010 -v 0.0.0.0:9011 --log-base-dir ~/.fluvio/data
+```
+
+```bash
+starting spu server (id:5001)
+SPU Version: 0.0.0 started successfully
+```
+
+You can launch additional SPU as needed; just ensure that ports don't conflict with each other.
+
+For example, to add 2nd:
+
+First register the new SPU:
+
+```bash
+$ flvd cluster spu register --id 5002 --public-server 0.0.0.0:9020 --private-server  0.0.0.0:9021
+```
+
+And then start the SPU:
+
+```bash
+$ flvd run spu -i 5002 -p 0.0.0.0:9020 -v 0.0.0.0:9021
+```
+
+### Running on macOS with Minikube (Kubernetes Setup)
+
+If you are running on macOS with Minikube we recommend exposing the following
+ports when spawning the Minikube cluster:
+
+```bash
+minikube start --ports 9003,9005,30003:30003,30004:30004
+```
+
+This exposes internal/external ports from Fluvio SC running on Minikube to the
+host machine, as well as maps the ports used to reach the SPU from the
+container to the host machine.
+
+### System Chart (Kubernetes Setup)
+
+There are two helm charts that are installed by Fluvio CLI.
+
+- `fluvio-sys` chart is installed when using native binaries.
+- `fluvio-app` chart is installed when running Fluvio with docker image.
+
+```bash
+$ helm list
+```
+
+```bash
+NAME            NAMESPACE       REVISION        UPDATED                                 STATUS          CHART                   APP VERSION
+fluvio-sys      default         1               2022-10-06 19:18:37.416564 -0700 PDT    deployed        fluvio-sys-0.9.10       0.11.9
+```
+
+You can install system chart only using following command.  This assume system chart is not installed.
+
+```bash
+$ flvd cluster start --sys-only
+```
+
+```bash
+installing sys chart, upgrade: false
+```
+
+### Setting Log level
+
+You can set various log levels [filering tracing log](https://tracing.rs/tracing_subscriber/filter/struct.envfilter).
+
+For example, to start cluster using log level `info` using cluster start
+
+```bash
+$ flvd cluster start --local --develop --rust-log fluvio=info
+```
+
+For individual binaries, you can use `RUST_LOG` env variable:
+
+```bash
+$ RUST_LOG=fluvio=info flvd run sc --local
+```
+
+### Building and Running Fluvio Cluster from source code for running in Kubernete cluster
+
+The docker image requires first installing a cross compilation toolchain, along with other build dependencies mentioned such as `lld`.
+
+**x86/64 (most computers)**
+
+```bash
+$ rustup target add x86_64-unknown-linux-musl
+```
+
+**Apple Silicon**
+
+```bash
+$ rustup target add aarch64-unknown-linux-musl
+```
+
+This will build the Fluvio cli and then create a docker image and import it into your local k8s cluster:
+
+```bash
+$ make build-cli build_k8_image
+```
+
+> [!IMPORTANT]
+> If you are not running recommended version of k8s, image may not be imported
+> into Kubernetes cluster.
+
+
 ## Troubleshooting
 
 This guide helps users to solve issues they might face during the setup process.
@@ -807,33 +831,10 @@ Re-build i.e. delete and restart minikube cluster
 $ sh k8-util/minikube/reset-minikube.sh
 ```
 
-
 ### Deleting partition
 
 In certain cases, partition may not be deleted correctly.  In this case, you can manually force delete by:
 
 ```bash
 $ kubectl patch partition  <partition_name> -p '{"metadata":{"finalizers":null}}' --type merge
-```
-
-## Optional: Download a published version of Fluvio
-
-Instead of building Fluvio, you may want to prefer just to download it and get to work.  You can use our one-line installation script.  You can use it to install the latest release or prerelease, or install a specific version:
-
-**Install Stable Release**
-
-```bash
-$ curl -fsS https://hub.infinyon.cloud/install/install.sh | bash
-```
-
-**Install Latest Release (as of `master` branch)**
-
-```bash
-$ curl -fsS https://hub.infinyon.cloud/install/install.sh | VERSION=latest bash
-```
-
-**Install Specific Version**
-
-```bash
-$ curl -fsS https://hub.infinyon.cloud/install/install.sh | VERSION=x.y.z bash
 ```
