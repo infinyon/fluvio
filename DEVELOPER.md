@@ -192,7 +192,7 @@ $ flvd cluster start --local --develop
     ✅ Kubectl active cluster rancher-desktop at: https://127.0.0.1:6443 found
     ✅ Supported Kubernetes server 1.22.7+k3s1 found
     ✅ Local Fluvio is not installed
-    ✅ Fixed: Fluvio Sys chart 0.9.34 is installed
+    ✅ Fixed: Fluvio Sys chart 0.11.9 is installed
 🎉 All checks passed!
 ✅ Local Cluster initialized
 ✅ SC Launched
@@ -252,7 +252,7 @@ $ helm list
 
 ```bash
 NAME            NAMESPACE       REVISION        UPDATED                                 STATUS          CHART                   APP VERSION
-fluvio-sys      default         1               2022-10-06 18:46:23.359066 -0700 PDT    deployed        fluvio-sys-0.9.10       0.9.34
+fluvio-sys      default         1               2022-10-06 18:46:23.359066 -0700 PDT    deployed        fluvio-sys-0.9.10       0.11.9
 ```
 
 
@@ -290,7 +290,7 @@ CLI Option: ScOpt {
     auth_policy: None,
     white_list: [],
 }
-Starting SC, platform: 0.9.34
+Starting SC, platform: 0.11.9
 Streaming Controller started successfully
 ```
 
@@ -369,7 +369,7 @@ $ helm list
 
 ```bash
 NAME            NAMESPACE       REVISION        UPDATED                                 STATUS          CHART                   APP VERSION
-fluvio-sys      default         1               2022-10-06 19:18:37.416564 -0700 PDT    deployed        fluvio-sys-0.9.10       0.9.34
+fluvio-sys      default         1               2022-10-06 19:18:37.416564 -0700 PDT    deployed        fluvio-sys-0.9.10       0.11.9
 ```
 
 You can install system chart only using following command.  This assume system chart is not installed.
@@ -451,10 +451,10 @@ using development git hash: c540c3a6ca488261edd20cdfdb95fdf50a050483
     ✅ Kubectl active cluster rancher-desktop at: https://127.0.0.1:6443 found
     ✅ Supported helm version 3.10.0+gce66412 is installed
     ✅ Supported Kubernetes server 1.22.7+k3s1 found
-    ✅ Fixed: Fluvio Sys chart 0.9.34 is installed
+    ✅ Fixed: Fluvio Sys chart 0.11.9 is installed
     ✅ Previous fluvio installation not found
 🎉 All checks passed!
-✅ Installed Fluvio app chart: 0.9.34
+✅ Installed Fluvio app chart: 0.11.9
 ✅ Connected to SC: 192.168.50.106:30003
 👤 Profile set
 ✅ SPU group main launched with 1 replicas
@@ -472,8 +472,8 @@ $ helm list
 
 ```bash
 NAME            NAMESPACE       REVISION        UPDATED                                 STATUS          CHART                   APP VERSION
-fluvio          default         1               2022-10-06 19:42:07.051782 -0700 PDT    deployed        fluvio-app-0.9.2        0.9.34
-fluvio-sys      default         1               2022-10-06 19:42:06.668329 -0700 PDT    deployed        fluvio-sys-0.9.10       0.9.34
+fluvio          default         1               2022-10-06 19:42:07.051782 -0700 PDT    deployed        fluvio-app-0.9.2        0.11.9
+fluvio-sys      default         1               2022-10-06 19:42:06.668329 -0700 PDT    deployed        fluvio-sys-0.9.10       0.11.9
 ```
 
 You should have two pods running:
