@@ -141,7 +141,12 @@ pub async fn producer(topic: impl Into<String>) -> anyhow::Result<TopicProducer>
 /// ```
 ///
 /// [`Fluvio`]: ./struct.Fluvio.html
+#[deprecated(
+    since = "0.21.8",
+    note = "use `Fluvio::consumer_with_config()` instead"
+)]
 #[instrument(skip(topic, partition))]
+#[allow(deprecated)]
 pub async fn consumer(
     topic: impl Into<String>,
     partition: PartitionId,

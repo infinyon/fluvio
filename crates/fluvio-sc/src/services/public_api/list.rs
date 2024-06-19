@@ -12,12 +12,13 @@ use anyhow::Result;
 
 use fluvio_protocol::api::{RequestMessage, ResponseMessage};
 use fluvio_sc_schema::{
-    objects::{ObjectApiListRequest, ObjectApiListResponse, ListRequest},
+    objects::{ListRequest, ObjectApiListRequest, ObjectApiListResponse},
+    mirror::MirrorSpec,
     TryEncodableFrom,
 };
 use fluvio_auth::AuthContext;
 
-use crate::services::auth::AuthServiceContext;
+use crate::services::{auth::AuthServiceContext, public_api::mirror::handle_list_mirror};
 use super::smartmodule::fetch_smart_modules;
 
 #[instrument(skip(request, auth_ctx))]
@@ -30,7 +31,8 @@ pub async fn handle_list_request<AC: AuthContext, C: MetadataItem>(
 
     let response = if let Some(req) = req.downcast()? as Option<ListRequest<TopicSpec>> {
         ObjectApiListResponse::try_encode_from(
-            super::topic::handle_fetch_topics_request(req.name_filters, auth_ctx).await?,
+            super::topic::handle_fetch_topics_request(req.name_filters, req.system, auth_ctx)
+                .await?,
             header.api_version(),
         )?
     } else if let Some(req) = req.downcast()? as Option<ListRequest<SpuSpec>> {
@@ -50,7 +52,7 @@ pub async fn handle_list_request<AC: AuthContext, C: MetadataItem>(
         )?
     } else if let Some(req) = req.downcast()? as Option<ListRequest<PartitionSpec>> {
         ObjectApiListResponse::try_encode_from(
-            super::partition::handle_fetch_request(req.name_filters, auth_ctx).await?,
+            super::partition::handle_fetch_request(req.name_filters, req.system, auth_ctx).await?,
             header.api_version(),
         )?
     } else if let Some(req) = req.downcast()? as Option<ListRequest<SmartModuleSpec>> {
@@ -72,6 +74,11 @@ pub async fn handle_list_request<AC: AuthContext, C: MetadataItem>(
                 auth_ctx.global_ctx.tableformats(),
             )
             .await?,
+            header.api_version(),
+        )?
+    } else if let Some(req) = req.downcast()? as Option<ListRequest<MirrorSpec>> {
+        ObjectApiListResponse::try_encode_from(
+            handle_list_mirror(req.name_filters, auth_ctx).await?,
             header.api_version(),
         )?
     } else {
@@ -103,7 +110,7 @@ mod fetch {
     use crate::services::auth::AuthServiceContext;
 
     #[instrument(skip(filters, auth_ctx))]
-    pub async fn handle_fetch_request<AC: AuthContext, C: MetadataItem, S>(
+    pub async fn handle_fetch_request<AC, C: MetadataItem, S>(
         filters: ListFilters,
         auth_ctx: &AuthServiceContext<AC, C>,
         object_ctx: &StoreContext<S, C>,

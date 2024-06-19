@@ -10,7 +10,7 @@ pub(crate) fn read_wasm_module(module_name: &str) -> Vec<u8> {
         .parent()
         .expect("fluvio")
         .join(format!(
-            "smartmodule/examples/target/wasm32-unknown-unknown/release/{module_name}.wasm"
+            "smartmodule/examples/target/wasm32-wasi/release-lto/{module_name}.wasm"
         ));
     read_module_from_path(wasm_path)
 }

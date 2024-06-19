@@ -201,11 +201,13 @@ pub(crate) trait SmartModuleTransform: Send + Sync {
     ) -> Result<SmartModuleOutput>;
 
     /// return name of transform, this is used for identifying transform and debugging
+    #[allow(dead_code)]
     fn name(&self) -> &str;
 }
 
 // In order turn to any, need following magic trick
 pub(crate) trait DowncastableTransform: SmartModuleTransform + Any {
+    #[allow(dead_code)]
     fn as_any(&self) -> &dyn Any;
 }
 

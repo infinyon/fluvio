@@ -6,6 +6,7 @@ use tracing::debug;
 
 use fluvio_hub_protocol::{PackageMeta, HubError};
 use fluvio_hub_protocol::constants::HUB_PACKAGE_META;
+use fluvio_hub_protocol::validate_allowedchars;
 
 use crate::package_get_topfile;
 
@@ -43,7 +44,7 @@ impl PackageMetaExt for PackageMeta {
         Ok(())
     }
 
-    /// Pull pacakge-meta info from Cargo.toml,
+    /// Pull package-meta info from Cargo.toml,
     /// particularly package name and version
     fn update_from_cargo_toml<P: AsRef<Path>>(&mut self, fpath: P) -> Result<()> {
         let ctoml = cargo_toml::Manifest::from_path(fpath)?;
@@ -80,18 +81,6 @@ pub fn validate_notempty(val: &str, name: &str) -> String {
 pub fn validate_lowercase(val: &str, name: &str) -> String {
     if val.to_lowercase() != val {
         format!("{name} {val} should be lowercase\n")
-    } else {
-        String::new()
-    }
-}
-
-pub fn validate_allowedchars(val: &str, name: &str) -> String {
-    let good_chars = val
-        .chars()
-        .all(|ch| matches!(ch, 'a'..='z' | '0'..='9' | '-' | '_'));
-
-    if !good_chars {
-        format!("{name} {val} should be alphanumeric, '-' or '_'\n")
     } else {
         String::new()
     }

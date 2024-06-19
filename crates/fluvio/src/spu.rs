@@ -1,5 +1,6 @@
 use std::sync::Arc;
 use std::collections::HashMap;
+use anyhow::Result;
 
 use tracing::{debug, trace, instrument};
 use async_lock::Mutex;
@@ -7,16 +8,13 @@ use async_trait::async_trait;
 
 use fluvio_protocol::record::ReplicaKey;
 use fluvio_protocol::api::Request;
-use fluvio_protocol::api::RequestMessage;
 use fluvio_types::SpuId;
 use fluvio_socket::{
-    Versions, VersionedSerialSocket, ClientConfig, MultiplexerSocket, SharedMultiplexerSocket,
-    SocketError, AsyncResponse,
+    AsyncResponse, ClientConfig, MultiplexerSocket, SocketError, StreamSocket,
+    VersionedSerialSocket,
 };
 use crate::FluvioError;
 use crate::sync::MetadataStores;
-
-const DEFAULT_STREAM_QUEUE_SIZE: usize = 10;
 
 /// used for connecting to spu
 #[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
@@ -43,61 +41,11 @@ pub trait SpuDirectory {
         R: Sync + Send;
 }
 
-/// Stream Socket to SPU
-#[derive(Debug)]
-pub struct SpuSocket {
-    config: Arc<ClientConfig>,
-    socket: SharedMultiplexerSocket,
-    versions: Versions,
-}
-
-impl SpuSocket {
-    pub fn new(
-        config: Arc<ClientConfig>,
-        socket: SharedMultiplexerSocket,
-        versions: Versions,
-    ) -> Self {
-        Self {
-            config,
-            socket,
-            versions,
-        }
-    }
-
-    pub async fn create_serial_socket(&mut self) -> VersionedSerialSocket {
-        VersionedSerialSocket::new(
-            self.socket.clone(),
-            self.config.clone(),
-            self.versions.clone(),
-        )
-    }
-
-    pub fn is_stale(&self) -> bool {
-        self.socket.is_stale()
-    }
-
-    pub async fn create_stream_with_version<R: Request>(
-        &mut self,
-        request: R,
-        version: i16,
-    ) -> Result<AsyncResponse<R>, FluvioError> {
-        let mut req_msg = RequestMessage::new_request(request);
-        req_msg.header.set_api_version(version);
-        req_msg
-            .header
-            .set_client_id(self.config.client_id().to_owned());
-        self.socket
-            .create_stream(req_msg, DEFAULT_STREAM_QUEUE_SIZE)
-            .await
-            .map_err(|err| err.into())
-    }
-}
-
 /// connection pool to spu
 pub struct SpuPool {
     config: Arc<ClientConfig>,
     pub(crate) metadata: MetadataStores,
-    spu_clients: Arc<Mutex<HashMap<SpuId, SpuSocket>>>,
+    spu_clients: Arc<Mutex<HashMap<SpuId, StreamSocket>>>,
 }
 
 impl Drop for SpuPool {
@@ -123,7 +71,7 @@ impl SpuPool {
 
     /// create new spu socket
     #[instrument(skip(self))]
-    async fn connect_to_leader(&self, leader: SpuId) -> Result<SpuSocket, FluvioError> {
+    async fn connect_to_leader(&self, leader: SpuId) -> Result<StreamSocket, FluvioError> {
         let spu = self.metadata.spus().look_up_by_id(leader).await?;
 
         let mut client_config = self.config.with_prefix_sni_domain(spu.key());
@@ -141,11 +89,11 @@ impl SpuPool {
         client_config.set_addr(spu_addr);
         let versioned_socket = client_config.connect().await?;
         let (socket, config, versions) = versioned_socket.split();
-        Ok(SpuSocket {
-            socket: MultiplexerSocket::shared(socket),
+        Ok(StreamSocket::new(
             config,
+            MultiplexerSocket::shared(socket),
             versions,
-        })
+        ))
     }
 
     #[instrument(skip(self))]
@@ -243,7 +191,8 @@ impl SpuDirectory for SpuPool {
         if let Some(spu_socket) = client_lock.get_mut(&leader_id) {
             return spu_socket
                 .create_stream_with_version(request, version)
-                .await;
+                .await
+                .map_err(|err| err.into());
         }
 
         let mut spu_socket = self.connect_to_leader(leader_id).await?;

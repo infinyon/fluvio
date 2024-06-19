@@ -89,7 +89,8 @@
 //! ```
 
 use std::time::Duration;
-use fluvio::{Offset, RecordKey};
+use fluvio::consumer::ConsumerConfigExtBuilder;
+use fluvio::{Fluvio, Offset, RecordKey};
 use futures::future::join;
 use async_std::task::spawn;
 use async_std::future::timeout;
@@ -154,8 +155,16 @@ async fn produce() -> anyhow::Result<()> {
 async fn consume() -> anyhow::Result<()> {
     use futures::StreamExt;
 
-    let consumer = fluvio::consumer(TOPIC, 0).await?;
-    let mut stream = consumer.stream(Offset::beginning()).await?;
+    let fluvio = Fluvio::connect().await?;
+    let mut stream = fluvio
+        .consumer_with_config(
+            ConsumerConfigExtBuilder::default()
+                .topic(TOPIC)
+                .partition(0)
+                .offset_start(Offset::beginning())
+                .build()?,
+        )
+        .await?;
 
     while let Some(Ok(record)) = stream.next().await {
         let key = record.get_key().map(|key| key.as_utf8_lossy_string());

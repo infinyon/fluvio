@@ -8,8 +8,8 @@ $ cargo install cargo-generate
 $ cargo generate --git https://github.com/infinyon/fluvio-smartmodule-template
 ```
 
-> **Note**: To compile a SmartModule, you will need to install the `wasm32-unknown-unknown`
-> target by running `rustup target add wasm32-unknown-unknown`.
+> **Note**: To compile a SmartModule, you will need to install the `wasm32-wasi`
+> target by running `rustup target add wasm32-wasi`, or `rustup target add wasm32-unknown-unknown` if using the --nowasi flags
 
 ## About SmartModules
 
@@ -50,5 +50,5 @@ topic to send data to.
 ```bash
 $ fluvio topic create smartmodule-test
 $ cargo build --release
-$ fluvio consume smartmodule-test -B --{{smartmodule-type}}="target/wasm32-unknown-unknown/release/{{project-name}}"
+$ fluvio consume smartmodule-test -B --{{smartmodule-type}}="target/wasm32-wasi/release-lto/{{project-name}}"
 ```

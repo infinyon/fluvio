@@ -1,0 +1,42 @@
+version: "3"
+services:
+  sc:
+    image: infinyon/fluvio:stable
+    container_name: sc
+    hostname: sc
+    ports:
+      - "9103:9003"
+    environment:
+      - RUST_LOG=info
+    command: "./fluvio-run sc --local /fluvio/metadata"
+    volumes:
+      - ./fluvio-metadata:/fluvio/metadata
+  sc-setup:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sc-setup
+    environment:
+      - RUST_LOG=info
+    entrypoint: >
+      /bin/sh -c "
+      fluvio profile add docker sc:9003 docker;
+      fluvio cluster spu register --id 5001 -p 0.0.0.0:9110 --private-server spu:9011;
+      exit 0;
+      "
+    depends_on:
+      - sc
+  spu:
+    image: infinyon/fluvio:stable
+    container_name: spu
+    hostname: spu
+    volumes:
+      - ./fluvio-data:/fluvio/data
+    environment:
+      - RUST_LOG=info
+    ports:
+      - "9110:9010"
+      - "9111:9011"
+    command: "./fluvio-run spu -i 5001 -p spu:9010 -v spu:9011 --sc-addr sc:9004 --log-base-dir /fluvio/data"
+    depends_on:
+      - sc

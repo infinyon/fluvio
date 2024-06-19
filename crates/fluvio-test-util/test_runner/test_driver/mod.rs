@@ -1,12 +1,13 @@
 //use fluvio::consumer::{PartitionSelectionStrategy, ConsumerConfig};
 
+use fluvio::dataplane::link::ErrorCode;
 use tracing::debug;
 use anyhow::Result;
 
-use fluvio::consumer::PartitionSelectionStrategy;
-use fluvio::Fluvio;
+use fluvio::consumer::{ConsumerConfigExt, ConsumerConfigExtBuilder, ConsumerStream, Record};
+use fluvio::{Fluvio, Offset};
 use fluvio::metadata::topic::TopicSpec;
-use fluvio::{TopicProducer, RecordKey, PartitionConsumer, MultiplePartitionConsumer};
+use fluvio::{TopicProducer, RecordKey};
 use fluvio::TopicProducerConfig;
 use fluvio::metadata::topic::CleanupPolicy;
 use fluvio::metadata::topic::SegmentBasedPolicy;
@@ -130,12 +131,12 @@ impl TestDriver {
         Ok(())
     }
 
-    pub async fn get_consumer(&self, topic: &str, partition: PartitionId) -> PartitionConsumer {
+    pub async fn get_consumer_with_config(
+        &self,
+        config: ConsumerConfigExt,
+    ) -> impl ConsumerStream<Item = Result<Record, ErrorCode>> {
         let fluvio_client = self.create_client().await.expect("cant' create client");
-        match fluvio_client
-            .partition_consumer(topic.to_string(), partition)
-            .await
-        {
+        match fluvio_client.consumer_with_config(config).await {
             Ok(client) => {
                 //self.consumer_num += 1;
                 client
@@ -146,21 +147,19 @@ impl TestDriver {
         }
     }
 
-    // TODO: Create a multi-partition api w/ a list of partitions based off this
-    pub async fn get_all_partitions_consumer(&self, topic: &str) -> MultiplePartitionConsumer {
-        let fluvio_client = self.create_client().await.expect("cant' create client");
-        match fluvio_client
-            .consumer(PartitionSelectionStrategy::All(topic.to_string()))
-            .await
-        {
-            Ok(client) => {
-                //self.consumer_num += 1;
-                client
-            }
-            Err(err) => {
-                panic!("can't create consumer: {err:#?}");
-            }
-        }
+    pub async fn get_consumer_with_start(
+        &self,
+        topic: &str,
+        partition: PartitionId,
+        offset_start: Offset,
+    ) -> impl ConsumerStream<Item = Result<Record, ErrorCode>> {
+        let config = ConsumerConfigExtBuilder::default()
+            .topic(topic)
+            .partition(partition)
+            .offset_start(offset_start)
+            .build()
+            .expect("config");
+        self.get_consumer_with_config(config).await
     }
 
     // Re-enable when we re-enable metrics

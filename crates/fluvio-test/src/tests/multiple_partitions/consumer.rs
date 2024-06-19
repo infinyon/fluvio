@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use fluvio::consumer::ConsumerConfigExtBuilder;
 use fluvio_test_util::test_meta::environment::EnvDetail;
 use fluvio_test_util::test_runner::test_driver::TestDriver;
 use futures_lite::StreamExt;
@@ -7,11 +8,12 @@ use fluvio::Offset;
 use super::MyTestCase;
 
 pub async fn consumer_stream(test_driver: &TestDriver, option: MyTestCase) {
-    let consumer = test_driver
-        .get_all_partitions_consumer(&option.environment.base_topic_name())
-        .await;
-    let mut stream = consumer.stream(Offset::beginning()).await.unwrap();
-
+    let config = ConsumerConfigExtBuilder::default()
+        .topic(option.environment.base_topic_name())
+        .offset_start(Offset::beginning())
+        .build()
+        .expect("config");
+    let mut stream = test_driver.get_consumer_with_config(config).await;
     let mut index = 0;
 
     let mut set = HashSet::new();

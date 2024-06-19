@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use fluvio_controlplane::spu_api::update_mirror::UpdateMirrorRequest;
 use tracing::{info, trace, error, debug, warn, instrument};
 use tokio::select;
 use futures_util::stream::StreamExt;
@@ -150,6 +151,12 @@ impl ScDispatcher<FileReplica> {
                             self.counter.smartmodule += 1;
                             if let Err(err) = self.handle_update_smartmodule_request(request).await {
                                 error!(%err, "error handling update SmartModule request", );
+                                break;
+                            }
+                        },
+                        Some(Ok(InternalSpuRequest::UpdateMirrorRequest(request))) => {
+                            if let Err(err) = self.handle_update_mirror_request(request).await {
+                                error!(%err, "error handling update mirror request", );
                                 break;
                             }
                         },
@@ -355,6 +362,44 @@ impl ScDispatcher<FileReplica> {
         };
 
         debug!(actions = actions.count(), "finished SmartModule update");
+
+        Ok(())
+    }
+
+    ///
+    /// Handle Mirror Cluster update sent by SC
+    ///
+    #[instrument(skip(self, req_msg), name = "update_mirror_request")]
+    async fn handle_update_mirror_request(
+        &mut self,
+        req_msg: RequestMessage<UpdateMirrorRequest>,
+    ) -> anyhow::Result<()> {
+        let (_, request) = req_msg.get_header_request();
+
+        debug!( message = ?request,"starting remote cluster update");
+
+        let actions = if !request.all.is_empty() {
+            debug!(
+                epoch = request.epoch,
+                item_count = request.all.len(),
+                "received remote cluster sync all"
+            );
+            trace!("received spu all items: {:#?}", request.all);
+            self.ctx.mirrors_localstore().sync_all(request.all)
+        } else {
+            debug!(
+                epoch = request.epoch,
+                item_count = request.changes.len(),
+                "received remote cluster changes"
+            );
+            trace!(
+                "received remote cluster change items: {:#?}",
+                request.changes
+            );
+            self.ctx.mirrors_localstore().apply_changes(request.changes)
+        };
+
+        debug!(actions = actions.count(), "finished remote cluster update");
 
         Ok(())
     }

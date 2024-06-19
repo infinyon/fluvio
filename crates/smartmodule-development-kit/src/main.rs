@@ -15,6 +15,8 @@ use tracing::debug;
 
 use cmd::SmdkCommand;
 
+pub const ENV_SMDK_NOWASI: &str = "SMDK_NOWASI";
+
 fn main() -> Result<()> {
     fluvio_future::subscriber::init_tracer(None);
 

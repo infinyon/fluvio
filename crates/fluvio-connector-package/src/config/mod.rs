@@ -6,17 +6,18 @@ use std::path::{PathBuf, Path};
 use std::str::FromStr;
 use std::time::Duration;
 
-use fluvio_controlplane_metadata::topic::config::TopicConfig;
-use fluvio_types::PartitionId;
 use serde::de::{Visitor, SeqAccess};
-use serde::ser::SerializeSeq;
+use serde::ser::{SerializeMap, SerializeSeq};
 use tracing::debug;
 use anyhow::Result;
 use serde::{Deserialize, Serialize, Deserializer, Serializer};
-use bytesize::ByteSize;
+pub use bytesize::ByteSize;
 
-use fluvio_smartengine::transformation::TransformationConfig;
-use fluvio_compression::Compression;
+pub use fluvio_controlplane_metadata::topic::config as topic_config;
+pub use fluvio_smartengine::transformation::TransformationStep;
+pub use fluvio_compression::Compression;
+pub use fluvio_types::PartitionId;
+
 use crate::metadata::Direction;
 
 pub use self::v1::ConnectorConfigV1;
@@ -104,8 +105,8 @@ mod v1 {
     pub struct ConnectorConfigV1 {
         pub meta: MetaConfigV1,
 
-        #[serde(default, flatten, skip_serializing_if = "Option::is_none")]
-        pub transforms: Option<TransformationConfig>,
+        #[serde(default)]
+        pub transforms: Vec<TransformationStep>,
     }
 
     #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
@@ -157,8 +158,8 @@ mod v2 {
     pub struct ConnectorConfigV2 {
         pub meta: MetaConfigV2,
 
-        #[serde(default, flatten, skip_serializing_if = "Option::is_none")]
-        pub transforms: Option<TransformationConfig>,
+        #[serde(default)]
+        pub transforms: Vec<TransformationStep>,
     }
 
     #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
@@ -264,7 +265,7 @@ impl MetaConfig<'_> {
         }
     }
 
-    pub fn topic_config(&self) -> Option<&TopicConfig> {
+    pub fn topic_config(&self) -> Option<&topic_config::TopicConfig> {
         match self {
             MetaConfig::V0_1_0(_) => None,
             MetaConfig::V0_2_0(inner) => Some(&inner.topic),
@@ -273,15 +274,21 @@ impl MetaConfig<'_> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
 pub struct ConsumerParameters {
     #[serde(default)]
     pub partition: ConsumerPartitionConfig,
     #[serde(
         with = "bytesize_serde",
         skip_serializing_if = "Option::is_none",
-        default
+        default,
+        alias = "max_bytes"
     )]
     pub max_bytes: Option<ByteSize>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub offset: Option<ConsumerOffsetConfig>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
@@ -478,6 +485,109 @@ impl Serialize for ConsumerPartitionConfig {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct ConsumerOffsetConfig {
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub start: Option<OffsetConfig>,
+    pub strategy: OffsetStrategyConfig,
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub flush_period: Option<Duration>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum OffsetConfig {
+    Absolute(i64),
+    Beginning,
+    FromBeginning(u32),
+    End,
+    FromEnd(u32),
+}
+
+impl Serialize for OffsetConfig {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match self {
+            OffsetConfig::Absolute(abs) => {
+                let mut map = serializer.serialize_map(Some(1))?;
+                map.serialize_entry("absolute", abs)?;
+                map.end()
+            }
+            OffsetConfig::Beginning => serializer.serialize_str("beginning"),
+            OffsetConfig::FromBeginning(offset) => {
+                let mut map = serializer.serialize_map(Some(1))?;
+                map.serialize_entry("from-beginning", offset)?;
+                map.end()
+            }
+            OffsetConfig::End => serializer.serialize_str("end"),
+            OffsetConfig::FromEnd(offset) => {
+                let mut map = serializer.serialize_map(Some(1))?;
+                map.serialize_entry("from-end", offset)?;
+                map.end()
+            }
+        }
+    }
+}
+
+struct OffsetConfigVisitor;
+impl<'de> Visitor<'de> for OffsetConfigVisitor {
+    type Value = OffsetConfig;
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_str("strings \"beginning\", \"end\" or map keys \"absolute\", \"from-beginning\", \"from-end\"")
+    }
+
+    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        match v {
+            "beginning" => Ok(OffsetConfig::Beginning),
+            "end" => Ok(OffsetConfig::End),
+            other => Err(serde::de::Error::invalid_value(
+                serde::de::Unexpected::Str(other),
+                &self,
+            )),
+        }
+    }
+
+    fn visit_map<A>(self, mut map: A) -> std::prelude::v1::Result<Self::Value, A::Error>
+    where
+        A: serde::de::MapAccess<'de>,
+    {
+        let key = map.next_key::<String>()?;
+        match key.as_deref() {
+            Some("absolute") => Ok(OffsetConfig::Absolute(map.next_value()?)),
+            Some("from-beginning") => Ok(OffsetConfig::FromBeginning(map.next_value()?)),
+            Some("from-end") => Ok(OffsetConfig::FromEnd(map.next_value()?)),
+            Some(other) => Err(serde::de::Error::invalid_value(
+                serde::de::Unexpected::Str(other),
+                &self,
+            )),
+            None => Err(serde::de::Error::custom("expected a map entry")),
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for OffsetConfig {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_any(OffsetConfigVisitor)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum OffsetStrategyConfig {
+    None,
+    Manual,
+    Auto,
+}
+
 impl ConnectorConfig {
     pub fn from_file(path: impl Into<PathBuf>) -> Result<Self> {
         let mut file = File::open(path.into())?;
@@ -531,11 +641,11 @@ impl ConnectorConfig {
         }
     }
 
-    pub fn transforms(&self) -> Option<&TransformationConfig> {
+    pub fn transforms(&self) -> Vec<TransformationStep> {
         match self {
-            Self::V0_0_0(config) => config.transforms.as_ref(),
-            Self::V0_1_0(config) => config.transforms.as_ref(),
-            Self::V0_2_0(config) => config.transforms.as_ref(),
+            Self::V0_0_0(config) => config.transforms.clone(),
+            Self::V0_1_0(config) => config.transforms.clone(),
+            Self::V0_2_0(config) => config.transforms.clone(),
         }
     }
 
@@ -592,25 +702,24 @@ mod tests {
                 consumer: Some(ConsumerParameters {
                     partition: ConsumerPartitionConfig::One(10),
                     max_bytes: Some(ByteSize::mb(1)),
+                    id: None,
+                    offset: None,
                 }),
                 secrets: Some(vec![SecretConfig {
                     name: "secret1".parse().unwrap(),
                 }]),
             },
-            transforms: Some(
-                TransformationStep {
-                    uses: "infinyon/json-sql".to_string(),
-                    lookback: None,
-                    with: BTreeMap::from([
-                        (
-                            "mapping".to_string(),
-                            "{\"table\":\"topic_message\"}".into(),
-                        ),
-                        ("param".to_string(), "param_value".into()),
-                    ]),
-                }
-                .into(),
-            ),
+            transforms: vec![TransformationStep {
+                uses: "infinyon/json-sql".to_string(),
+                lookback: None,
+                with: BTreeMap::from([
+                    (
+                        "mapping".to_string(),
+                        "{\"table\":\"topic_message\"}".into(),
+                    ),
+                    ("param".to_string(), "param_value".into()),
+                ]),
+            }],
         });
 
         //when
@@ -629,7 +738,7 @@ mod tests {
             meta: MetaConfigV2 {
                 name: "my-test-mqtt".to_string(),
                 type_: "mqtt".to_string(),
-                topic: TopicConfig {
+                topic: topic_config::TopicConfig {
                     version: "0.1.0".to_string(),
                     meta: MetaConfig {
                         name: "test-topic".to_string(),
@@ -671,25 +780,28 @@ mod tests {
                 consumer: Some(ConsumerParameters {
                     partition: ConsumerPartitionConfig::One(10),
                     max_bytes: Some(ByteSize::mb(1)),
+                    id: Some("consumer_id_1".to_string()),
+                    offset: Some(ConsumerOffsetConfig {
+                        start: Some(OffsetConfig::Absolute(100)),
+                        strategy: OffsetStrategyConfig::Auto,
+                        flush_period: Some(Duration::from_secs(160)),
+                    }),
                 }),
                 secrets: Some(vec![SecretConfig {
                     name: "secret1".parse().unwrap(),
                 }]),
             },
-            transforms: Some(
-                TransformationStep {
-                    uses: "infinyon/json-sql".to_string(),
-                    lookback: None,
-                    with: BTreeMap::from([
-                        (
-                            "mapping".to_string(),
-                            "{\"table\":\"topic_message\"}".into(),
-                        ),
-                        ("param".to_string(), "param_value".into()),
-                    ]),
-                }
-                .into(),
-            ),
+            transforms: vec![TransformationStep {
+                uses: "infinyon/json-sql".to_string(),
+                lookback: None,
+                with: BTreeMap::from([
+                    (
+                        "mapping".to_string(),
+                        "{\"table\":\"topic_message\"}".into(),
+                    ),
+                    ("param".to_string(), "param_value".into()),
+                ]),
+            }],
         });
 
         //when
@@ -713,7 +825,7 @@ mod tests {
                 consumer: None,
                 secrets: None,
             },
-            transforms: None,
+            transforms: Vec::default(),
         });
 
         //when
@@ -804,7 +916,7 @@ mod tests {
                 consumer: None,
                 secrets: None,
             },
-            transforms: None,
+            transforms: Vec::default(),
         });
 
         //when
@@ -836,7 +948,7 @@ mod tests {
                 consumer: None,
                 secrets: None,
             },
-            transforms: None,
+            transforms: Vec::default(),
         });
 
         //when
@@ -877,10 +989,12 @@ mod tests {
                 consumer: Some(ConsumerParameters {
                     max_bytes: Some(ByteSize::b(1400)),
                     partition: Default::default(),
+                    id: None,
+                    offset: None,
                 }),
                 secrets: None,
             },
-            transforms: None,
+            transforms: Vec::default(),
         });
 
         //when
@@ -923,7 +1037,7 @@ mod tests {
                 consumer: None,
                 secrets: None,
             },
-            transforms: None,
+            transforms: Vec::default(),
         });
 
         //when
@@ -952,22 +1066,17 @@ mod tests {
                 .expect("Failed to deserialize");
 
         //then
-        assert!(connector_spec.transforms().is_some());
+        assert_eq!(connector_spec.transforms().len(), 1);
+        assert_eq!(connector_spec.transforms()[0].uses.as_str(), "infinyon/sql");
         assert_eq!(
-            connector_spec.transforms().unwrap().transforms[0]
-                .uses
-                .as_str(),
-            "infinyon/sql"
-        );
-        assert_eq!(
-            connector_spec.transforms().unwrap().transforms[0].lookback,
+            connector_spec.transforms()[0].lookback,
             Some(Lookback {
                 last: 100,
                 age: Some(Duration::from_secs(3600))
             })
         );
 
-        assert_eq!(connector_spec.transforms().unwrap().transforms[0].with,
+        assert_eq!(connector_spec.transforms()[0].with,
                        BTreeMap::from([("mapping".to_string(), "{\"map-columns\":{\"device_id\":{\"json-key\":\"device.device_id\",\"value\":{\"default\":0,\"required\":true,\"type\":\"int\"}},\"record\":{\"json-key\":\"$\",\"value\":{\"required\":true,\"type\":\"jsonb\"}}},\"table\":\"topic_message\"}".into())]));
     }
 
@@ -1038,8 +1147,8 @@ mod tests {
                 .expect("Failed to deserialize");
 
         //then
-        assert!(connector_spec.transforms().is_some());
-        let transform = &connector_spec.transforms().unwrap().transforms;
+        let transform = &connector_spec.transforms();
+
         assert_eq!(transform.len(), 3);
         assert_eq!(transform[0].uses.as_str(), "infinyon/json-sql");
         assert_eq!(
@@ -1056,6 +1165,23 @@ mod tests {
             transform[2].with,
             BTreeMap::from([("regex".to_string(), "\\w".into())])
         );
+    }
+
+    #[test]
+    fn test_deserialize_transform_invalid() {
+        let connector_spec =
+            ConnectorConfig::from_file("test-data/connectors/with_transform_invalid.yaml");
+
+        assert!(
+            connector_spec.is_err(),
+            "should fail to deserialize into `ConnectorConfig`"
+        );
+
+        let err = connector_spec.unwrap_err();
+
+        assert!(err
+            .to_string()
+            .contains("mapping values are not allowed in this context at line 16 column 17"));
     }
 
     #[test]
@@ -1086,10 +1212,12 @@ mod tests {
                 consumer: Some(ConsumerParameters {
                     max_bytes: Some(ByteSize::b(1400)),
                     partition: Default::default(),
+                    id: None,
+                    offset: None,
                 }),
                 secrets: None,
             },
-            transforms: None,
+            transforms: Vec::default(),
         });
 
         assert_eq!(have.name(), "my-test-mqtt");
@@ -1170,15 +1298,21 @@ mod tests {
         let one = ConsumerParameters {
             partition: ConsumerPartitionConfig::One(1),
             max_bytes: Default::default(),
+            id: None,
+            offset: None,
         };
         let many = ConsumerParameters {
             partition: ConsumerPartitionConfig::Many(vec![2, 3]),
             max_bytes: Default::default(),
+            id: None,
+            offset: None,
         };
 
         let all = ConsumerParameters {
             partition: ConsumerPartitionConfig::All,
             max_bytes: Default::default(),
+            id: None,
+            offset: None,
         };
 
         //when
@@ -1190,5 +1324,118 @@ mod tests {
         assert_eq!(one_ser, "partition: 1\n");
         assert_eq!(many_ser, "partition:\n- 2\n- 3\n");
         assert_eq!(all_ser, "partition: all\n");
+    }
+
+    #[test]
+    fn test_ser_offset_config() {
+        //given
+        let absolute = OffsetConfig::Absolute(10);
+        let beginning = OffsetConfig::Beginning;
+        let from_beginning = OffsetConfig::FromBeginning(5);
+        let end = OffsetConfig::End;
+        let from_end = OffsetConfig::FromEnd(12);
+
+        //when
+        let absolute_ser = serde_yaml::to_string(&absolute).expect("absolute");
+        let beginning_ser = serde_yaml::to_string(&beginning).expect("beginning");
+        let from_beginning_ser = serde_yaml::to_string(&from_beginning).expect("from_beginning");
+        let end_ser = serde_yaml::to_string(&end).expect("end");
+        let from_end_ser = serde_yaml::to_string(&from_end).expect("from_end");
+
+        //then
+        assert_eq!(absolute_ser, "absolute: 10\n");
+        assert_eq!(beginning_ser, "beginning\n");
+        assert_eq!(from_beginning_ser, "from-beginning: 5\n");
+        assert_eq!(end_ser, "end\n");
+        assert_eq!(from_end_ser, "from-end: 12\n");
+    }
+
+    #[test]
+    fn test_deser_offset_config() {
+        //given
+        //when
+        let absolute: OffsetConfig = serde_yaml::from_str(
+            r#"
+            absolute: 11
+        "#,
+        )
+        .expect("absolute");
+        let beginning: OffsetConfig = serde_yaml::from_str(
+            r#"
+            beginning
+        "#,
+        )
+        .expect("beginning");
+        let end: OffsetConfig = serde_yaml::from_str(
+            r#"
+            end
+        "#,
+        )
+        .expect("end");
+        let from_end: OffsetConfig = serde_yaml::from_str(
+            r#"
+            from-end: 12
+        "#,
+        )
+        .expect("from end");
+        let from_beginning: OffsetConfig = serde_yaml::from_str(
+            r#"
+            from-beginning: 14
+        "#,
+        )
+        .expect("from beginning");
+
+        //then
+        assert_eq!(absolute, OffsetConfig::Absolute(11));
+        assert_eq!(beginning, OffsetConfig::Beginning);
+        assert_eq!(end, OffsetConfig::End);
+        assert_eq!(from_end, OffsetConfig::FromEnd(12));
+        assert_eq!(from_beginning, OffsetConfig::FromBeginning(14));
+    }
+
+    #[test]
+    fn test_ser_consumer_offset_config() {
+        //given
+        let config = ConsumerOffsetConfig {
+            start: Some(OffsetConfig::Absolute(10)),
+            strategy: OffsetStrategyConfig::Manual,
+            flush_period: Some(Duration::from_secs(60)),
+        };
+
+        //when
+        let config_ser = serde_yaml::to_string(&config).expect("config");
+
+        //then
+        assert_eq!(
+            config_ser,
+            "start:\n  absolute: 10\nstrategy: manual\nflush-period:\n  secs: 60\n  nanos: 0\n"
+        );
+    }
+
+    #[test]
+    fn test_deser_consumer_offset_config() {
+        //given
+        //when
+        let config: ConsumerOffsetConfig = serde_yaml::from_str(
+            r#"
+            start:
+              absolute: 11
+            strategy: auto
+            flush-period:
+              secs: 160
+              nanos: 0
+        "#,
+        )
+        .expect("config");
+
+        //then
+        assert_eq!(
+            config,
+            ConsumerOffsetConfig {
+                start: Some(OffsetConfig::Absolute(11)),
+                strategy: OffsetStrategyConfig::Auto,
+                flush_period: Some(Duration::from_secs(160))
+            }
+        );
     }
 }

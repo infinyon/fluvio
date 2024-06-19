@@ -1,0 +1,15 @@
+name: 'Download smdk'
+description: 'download smdk artfact from build_primary_binaries'
+runs:
+  using: "composite"
+  steps:
+    - name: Download artifact - smdk
+      uses: actions/download-artifact@v4
+      with:
+        name: smdk-x86_64-unknown-linux-musl
+        path: ~/bin
+    - name: mark smdk
+      shell: bash
+      run: |
+        chmod +x ~/bin/smdk
+        echo "~/bin" >> $GITHUB_PATH

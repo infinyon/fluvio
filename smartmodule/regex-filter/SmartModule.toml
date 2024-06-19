@@ -1,7 +1,7 @@
 [package]
 name = "regex-filter"
 group = "infinyon"
-version = "0.1.0"
+version = "0.2.0"
 apiVersion = "0.1.0"
 description = "Regex SmartModule"
 license = "Apache-2.0"

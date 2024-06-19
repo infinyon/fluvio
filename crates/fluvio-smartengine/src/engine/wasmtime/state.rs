@@ -18,7 +18,6 @@ pub struct WasmState(Store<Context>);
 
 pub struct Context {
     limiter: StoreResourceLimiter,
-    #[cfg(feature = "wasi")]
     wasi_ctx: wasmtime_wasi::WasiCtx,
 }
 
@@ -54,28 +53,6 @@ impl WasmState {
     }
 }
 
-#[cfg(not(feature = "wasi"))]
-impl WasmState {
-    pub(crate) fn new(engine: &Engine, limiter: StoreResourceLimiter) -> Self {
-        let mut s = Self(Store::new(engine, Context { limiter }));
-        s.0.limiter(|inner| &mut inner.limiter);
-        s.top_up_fuel();
-        s
-    }
-
-    pub(crate) fn instantiate<Params, Args>(
-        &mut self,
-        module: &Module,
-        host_fn: impl IntoFunc<<Self as AsContext>::Data, Params, Args>,
-    ) -> Result<Instance, Error> {
-        use wasmtime::Func;
-
-        let func = Func::wrap(&mut *self, host_fn);
-        Instance::new(self, module, &[func.into()])
-    }
-}
-
-#[cfg(feature = "wasi")]
 impl WasmState {
     pub(crate) fn new(engine: &Engine, limiter: StoreResourceLimiter) -> Self {
         let wasi_ctx = wasmtime_wasi::WasiCtxBuilder::new()

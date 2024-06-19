@@ -8,11 +8,10 @@ use tempfile::TempDir;
 use enum_display::EnumDisplay;
 use tracing::debug;
 use lib_cargo_crate::{Info, InfoOpts};
-use toml::Value;
 
-use fluvio_hub_util::HubAccess;
-use crate::hub::set_hubid;
-use crate::load::DEFAULT_META_LOCATION as SMARTMODULE_META_FILENAME;
+// Note: Cargo.toml.liquid files are changed by cargo-generate to Cargo.toml
+// this avoids the problem of cargo trying to parse Cargo.toml template files
+// and generating a lot of parsing errors
 
 static SMART_MODULE_TEMPLATE: Dir<'static> =
     include_dir!("$CARGO_MANIFEST_DIR/../../smartmodule/cargo_template");
@@ -193,24 +192,15 @@ impl GenerateCmd {
             println!("Generating new SmartModule project: {name}");
         }
 
-        // Figure out if there's a Hub ID set
-        let mut hub_config = HubAccess::default_load(&self.hub_remote)?;
+        let group = self.project_group.and_then(|g| {
+            debug!("Using user provided project group: \"{}\"", &g);
 
-        let group = if let Some(user_group) = self.project_group {
-            if user_group.is_empty() {
-                debug!("User requesting to be prompted for project group");
+            if g.is_empty() {
                 None
             } else {
-                debug!("Using user provided project group: {}", &user_group);
-                Some(user_group)
+                Some(g)
             }
-        } else if hub_config.hubid.is_empty() {
-            debug!("No project group value set");
-            None
-        } else {
-            debug!("Found project group: {}", hub_config.hubid.clone());
-            Some(hub_config.hubid.clone())
-        };
+        });
 
         let sm_params = match (self.with_params, self.no_params) {
             (true, false) => Some(true),
@@ -296,27 +286,7 @@ impl GenerateCmd {
             ..Default::default()
         };
 
-        let gen_dir = generate(args).map_err(Error::from)?;
-
-        // If group was empty, read it from the generated file
-        // and write it to disk
-        if group.is_none() {
-            let sm_toml_path = gen_dir.join(SMARTMODULE_META_FILENAME);
-
-            debug!("Extracting group from {}", sm_toml_path.display());
-
-            let sm_str = std::fs::read_to_string(sm_toml_path)?;
-
-            debug!("{:?}", &sm_str);
-
-            let sm_toml: Value = toml::from_str(&sm_str)?;
-
-            if let Value::Table(package) = &sm_toml["package"] {
-                if let Some(Value::String(groupname)) = package.get("group") {
-                    set_hubid(groupname, &mut hub_config)?;
-                }
-            }
-        }
+        generate(args).map_err(Error::from)?;
 
         Ok(())
     }

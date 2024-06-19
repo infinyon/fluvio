@@ -1,5 +1,4 @@
 use std::any::Any;
-use std::pin::Pin;
 use std::time::{Duration, SystemTime};
 
 use clap::Parser;
@@ -9,8 +8,8 @@ use tokio::select;
 use hdrhistogram::Histogram;
 
 use fluvio_protocol::link::ErrorCode;
-use fluvio::consumer::Record;
-use fluvio::{ConsumerConfig, MultiplePartitionConsumer, PartitionConsumer, RecordKey};
+use fluvio::consumer::{ConsumerConfigExtBuilder, Record};
+use fluvio::RecordKey;
 use fluvio::Offset;
 
 use fluvio_test_derive::fluvio_test;
@@ -113,13 +112,10 @@ impl TestOption for ConsumerTestOption {
     }
 }
 
-async fn consume_work<S: ?Sized>(
-    mut stream: Pin<Box<S>>,
-    consumer_id: u32,
-    test_case: ConsumerTestCase,
-) where
+async fn consume_work<S>(stream: &mut S, consumer_id: u32, test_case: ConsumerTestCase)
+where
     //S: Stream<Item = Result<Record, FluvioError>> + std::marker::Unpin,
-    S: Stream<Item = Result<Record, ErrorCode>>,
+    S: ?Sized + Stream<Item = Result<Record, ErrorCode>> + Unpin,
 {
     let mut records_recvd = 0;
 
@@ -207,52 +203,6 @@ async fn consume_work<S: ?Sized>(
     println!(
         "[consumer-{consumer_id}] Consume P99: {consume_p99:?} Peak Throughput: {throughput_p99:?} kB/s. # Records: {records_recvd}"
     );
-}
-
-fn build_consumer_config(test_case: ConsumerTestCase) -> ConsumerConfig {
-    let mut config = ConsumerConfig::builder();
-
-    // continuous
-    if test_case.option.num_records == 0 {
-        config.disable_continuous(true);
-    }
-
-    // max bytes
-    if let Some(max_bytes) = test_case.option.max_bytes {
-        config.max_bytes(max_bytes as i32);
-    }
-
-    config.build().expect("Couldn't build consumer config")
-}
-
-async fn get_single_stream(
-    consumer: PartitionConsumer,
-    offset: Offset,
-    test_case: ConsumerTestCase,
-) -> Pin<Box<dyn Stream<Item = Result<Record, ErrorCode>>>> {
-    let config = build_consumer_config(test_case);
-
-    Box::pin(
-        consumer
-            .stream_with_config(offset, config)
-            .await
-            .expect("Unable to open stream"),
-    )
-}
-
-async fn get_multi_stream(
-    consumer: MultiplePartitionConsumer,
-    offset: Offset,
-    test_case: ConsumerTestCase,
-) -> Pin<Box<dyn Stream<Item = Result<Record, ErrorCode>>>> {
-    let config = build_consumer_config(test_case);
-
-    Box::pin(
-        consumer
-            .stream_with_config(offset, config)
-            .await
-            .expect("Unable to open stream"),
-    )
 }
 
 #[fluvio_test(name = "consumer", topic = "consumer-test")]
@@ -345,24 +295,27 @@ pub fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
                     .expect("Connecting to cluster failed");
 
                 // TODO: Support multiple topics
-
-                if is_multi {
-                    let consumer = test_driver
-                        .get_all_partitions_consumer(&test_case.environment.base_topic_name())
-                        .await;
-                    let stream: Pin<Box<dyn Stream<Item = Result<Record, ErrorCode>>>> =
-                        get_multi_stream(consumer, offset, test_case.clone()).await;
-
-                    consume_work(Box::pin(stream), n.into(), test_case).await
-                } else {
-                    let consumer = test_driver
-                        .get_consumer(&test_case.environment.base_topic_name(), partition)
-                        .await;
-                    let stream: Pin<Box<dyn Stream<Item = Result<Record, ErrorCode>>>> =
-                        get_single_stream(consumer, offset, test_case.clone()).await;
-
-                    consume_work(stream, n.into(), test_case).await
+                let mut config_builder = ConsumerConfigExtBuilder::default();
+                config_builder
+                    .topic(test_case.environment.base_topic_name())
+                    .offset_start(offset);
+                if !is_multi {
+                    config_builder.partition(partition);
                 }
+                // continuous
+                if test_case.option.num_records == 0 {
+                    config_builder.disable_continuous(true);
+                }
+
+                // max bytes
+                if let Some(max_bytes) = test_case.option.max_bytes {
+                    config_builder.max_bytes(max_bytes as i32);
+                }
+
+                let mut stream = test_driver
+                    .get_consumer_with_config(config_builder.build().expect("config"))
+                    .await;
+                consume_work(&mut stream, n.into(), test_case).await
             },
             format!("consumer-{n}")
         );

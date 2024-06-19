@@ -46,10 +46,11 @@ adaptive_backoff = { workspace = true }
 once_cell = { workspace = true }
 sysinfo = { workspace = true }
 chrono = { workspace = true }
-
+mimalloc = { workspace = true }
 
 # Fluvio dependencies
 fluvio = { workspace = true }
+fluvio-auth = { workspace = true }
 fluvio-types = { workspace = true, features = ["events"] }
 fluvio-storage = { workspace = true, features = ["iterators"] }
 fluvio-compression = { workspace = true }
@@ -66,8 +67,9 @@ fluvio-future = { workspace = true,features = [
     "openssl_tls",
     "zero_copy",
 ] }
-fluvio-smartengine = { workspace = true, optional = true }
+fluvio-smartengine = { workspace = true, optional = true, features = ["engine"] }
 fluvio-smartmodule = { workspace = true}
+fluvio-kv-storage = { workspace = true}
 
 [dev-dependencies]
 once_cell = { workspace = true }

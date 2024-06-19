@@ -6,6 +6,9 @@ mod partition;
 mod tableformat;
 mod smartmodule;
 mod smartmodule_invocation;
+mod consumer;
+mod remote;
+mod home;
 
 pub use metadata::client_metadata;
 pub use cmd::FluvioCmd;
@@ -45,6 +48,9 @@ mod cmd {
     use crate::common::target::ClusterTarget;
     use crate::common::Terminal;
 
+    use super::consumer::ConsumerCmd;
+    use super::remote::RemoteCmd;
+    use super::home::HomeCmd;
     use super::smartmodule::SmartModuleCmd;
     use super::consume::ConsumeOpt;
     use super::produce::ProduceOpt;
@@ -134,6 +140,18 @@ mod cmd {
         /// Work with the SmartModule Hub
         #[command(subcommand, name = "hub")]
         Hub(HubCmd),
+
+        /// Manage and view Consumers
+        #[command(subcommand, name = "consumer")]
+        Consumer(ConsumerCmd),
+
+        /// Manage and view remote clusters mirrored
+        #[command(subcommand, name = "remote")]
+        Remote(Box<RemoteCmd>),
+
+        /// Commands to interact with the home cluster
+        #[command(subcommand, name = "home")]
+        Home(Box<HomeCmd>),
     }
 
     impl FluvioCmd {
@@ -164,6 +182,15 @@ mod cmd {
                 }
                 Self::Hub(hub) => {
                     hub.process(out, target).await?;
+                }
+                Self::Consumer(consumer) => {
+                    consumer.process(out, target).await?;
+                }
+                Self::Remote(remote) => {
+                    remote.process(out, target).await?;
+                }
+                Self::Home(home) => {
+                    home.process(out, target).await?;
                 }
             }
 

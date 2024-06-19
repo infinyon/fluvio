@@ -2,6 +2,7 @@ use std::default::Default;
 
 use serde::{Deserialize, Serialize};
 use tracing::{info, error};
+use url::Url;
 
 use fluvio_controlplane_metadata::smartmodule::FluvioSemVersion;
 use fluvio_controlplane_metadata::smartmodule::SmartModulePackageKey;
@@ -18,16 +19,14 @@ pub struct PackageMeta {
     pub name: String,
     pub version: String, // SemVer?, package version
     pub group: String,
-    // author: Option<String>,
     pub description: String,
     pub license: String,
+    pub manifest: Vec<String>, // Files in package, package-meta is implied, signature is omitted
+    pub repository_url: Option<Url>,
+    pub tags: Option<Vec<PkgTag>>,
 
     #[serde(default = "PackageMeta::visibility_if_missing")]
     pub visibility: PkgVisibility, // private is default if missing
-    pub manifest: Vec<String>, // Files in package, package-meta is implied, signature is omitted
-    // repository: optional url
-    // repository-commit: optional hash
-    pub tags: Option<Vec<PkgTag>>,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Default, Clone)]
@@ -56,6 +55,7 @@ impl Default for PackageMeta {
             visibility: PkgVisibility::Private,
             manifest: Vec::new(),
             tags: None,
+            repository_url: None,
         }
     }
 }
@@ -139,8 +139,8 @@ impl PackageMeta {
 
         packagename_validate(&spk.name)?;
 
-        self.name = spk.name.clone();
-        self.group = spk.group.clone();
+        self.name.clone_from(&spk.name);
+        self.group.clone_from(&spk.group);
         self.version = spk.version.to_string();
         self.description = spk.description.clone().unwrap_or_default();
         self.visibility = PkgVisibility::from(&spk.visibility);
@@ -236,10 +236,10 @@ pub fn validate_lowercase(val: &str, name: &str) -> String {
 pub fn validate_allowedchars(val: &str, name: &str) -> String {
     let good_chars = val
         .chars()
-        .all(|ch| matches!(ch, 'a'..='z' | '0'..='9' | '-' | '_'));
+        .all(|ch| matches!(ch, 'a'..='z' | '0'..='9' | ':' | '-' | '_'));
 
     if !good_chars {
-        format!("{name} {val} should be alphanumeric, '-' or '_'\n")
+        format!("{name} {val} should be alphanumeric, ':', '-' or '_'\n")
     } else {
         String::new()
     }

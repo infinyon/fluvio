@@ -1,0 +1,32 @@
+{
+    "apiVersion": "fluvio.infinyon.com/v2",
+    "kind": "Topic",
+    "metadata": {
+        "annotations": {
+            "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"fluvio.infinyon.com/v2\",\"kind\":\"Topic\",\"metadata\":{\"annotations\":{},\"name\":\"test3\",\"namespace\":\"default\"},\"spec\":{\"compressionType\":\"Any\",\"replicas\":{\"mirror\":{\"home\":{\"remoteClusters\":[\"boat1\",\"boat2\"]}}}}}\n"
+        },
+        "creationTimestamp": "2023-08-17T17:43:09Z",
+        "generation": 1,
+        "name": "downstream-topic",
+        "namespace": "default",
+        "resourceVersion": "253907",
+        "uid": "1694c901-e94d-4f0b-a01f-1a09889b14fd"
+    },
+    "spec": {
+        "compressionType": "Any",
+        "replicas": {
+            "mirror": {
+                "home": [
+                    {
+                        "remoteCluster": "boat1",
+                        "remoteReplica": "boats-0"
+                    },
+                    {
+                        "remoteCluster": "boat2",
+                        "remoteReplica": "boats-0"
+                    }
+                ]
+            }
+        }
+    }
+}

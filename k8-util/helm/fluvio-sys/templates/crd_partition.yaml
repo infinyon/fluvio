@@ -20,7 +20,7 @@ spec:
           properties:
             spec:
               type: object
-              required: ["leader", "replicas"]
+              required: ["leader"]
               properties:
                 leader:
                   type: integer
@@ -28,6 +28,33 @@ spec:
                   type: array
                   items:
                     type: integer
+                mirror:
+                  type: object
+                  oneOf:
+                    - required: ["home"]
+                    - required: ["remote"]
+                  properties:
+                    home:
+                      type: object
+                      required: ["remoteCluster","remoteReplica"]
+                      properties:
+                        remoteReplica:
+                          type: string
+                        remoteCluster:
+                          type: string
+                    remote:
+                      type: object
+                      required: ["homeCluster","homeSpuKey","homeSpuEndpoint","homeSpu"]
+                      properties:
+                        homeCluster:
+                          type: string
+                        homeSpuKey:
+                          type: string
+                        homeSpuEndpoint:
+                          type: string
+                        homeSpuId:
+                          type: integer
+                          minimum: 0
                 cleanupPolicy:
                   type: object
                   properties:
@@ -81,6 +108,8 @@ spec:
                         age:
                           type: string
                           nullable: true
+                system:
+                  type: boolean
             status:
               type: object
               x-kubernetes-preserve-unknown-fields: true

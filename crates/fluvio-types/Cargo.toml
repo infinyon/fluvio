@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-types"
-version = "0.4.5"
+version = "0.4.6"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 edition = "2021"
 description = "Fluvio common types and objects"
@@ -14,7 +14,8 @@ events = ["event-listener"]
 event-listener = { workspace = true,  optional = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
-
+serde = { workspace = true }
+toml = { workspace = true, features = ["display", "preserve_order", "parse"] }
 
 [dev-dependencies]
 fluvio-future = { workspace = true, features = ["fixture", "subscriber"] }

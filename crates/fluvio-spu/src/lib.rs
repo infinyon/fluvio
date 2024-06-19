@@ -1,5 +1,6 @@
 mod error;
 mod config;
+mod kv;
 
 cfg_if::cfg_if! {
     if #[cfg(unix)] {
@@ -11,6 +12,7 @@ cfg_if::cfg_if! {
         mod storage;
         mod smartengine;
         mod monitoring;
+        pub(crate) mod mirroring;
         pub use start::main_loop;
     }
 }

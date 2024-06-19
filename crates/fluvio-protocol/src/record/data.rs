@@ -135,6 +135,10 @@ impl RecordData {
     pub fn as_utf8_lossy_string(&self) -> Cow<'_, str> {
         String::from_utf8_lossy(self.as_ref())
     }
+
+    pub fn into_vec(self) -> Vec<u8> {
+        self.0.into()
+    }
 }
 
 impl<V: Into<Vec<u8>>> From<V> for RecordData {

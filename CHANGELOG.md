@@ -1,7 +1,148 @@
 # Release Notes
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
-## Platform Version 0.11.6 - UNRELEASED
+
+## Platform Version 0.11.10 - UNRELEASED
+
+## Platform Version 0.11.9 - 2024-06-07
+
+### Added
+
+* SNI Prefix on SPU to SPU ([#4056](https://github.com/infinyon/fluvio/pull/4056))
+* SDF Publish Support ([#4053](https://github.com/infinyon/fluvio/issues/4053))
+* Version checker for Resume ([#3999](https://github.com/infinyon/fluvio/issues/3999))
+* Support to update artifacts in current fluvio release ([#4013](https://github.com/infinyon/fluvio/issues/4013))
+* Add fluvio-compression as required dep ([#4012](https://github.com/infinyon/fluvio/issues/4012))
+* Export mirror file with tls ([#4016](https://github.com/infinyon/fluvio/issues/4016))
+* Tls and authorization on SPU mirroring ([#4022](https://github.com/infinyon/fluvio/issues/4022))
+* Add sc opts to cluster start ([#4033](https://github.com/infinyon/fluvio/issues/4033))
+* `fvm self update` support ([#4020](https://github.com/infinyon/fluvio/issues/4020))
+* Add consumer --mirror argument to consume only from the selected ([#4048](https://github.com/infinyon/fluvio/issues/4048))
+* Prompt when deleting cluster ([#4034](https://github.com/infinyon/fluvio/issues/4034))
+
+### CI
+
+* Publish support for readme ([#4032](https://github.com/infinyon/fluvio/issues/4032))
+
+### Changed
+
+* Expose types needed to construct connector config ([#4011](https://github.com/infinyon/fluvio/issues/4011))
+* Update time to 0.3.36 ([#4023](https://github.com/infinyon/fluvio/issues/4023))
+* Update dep cargo-generate ([#4018](https://github.com/infinyon/fluvio/issues/4018))
+
+### Fixed
+
+* Action urn implemented as individual objects ([#4024](https://github.com/infinyon/fluvio/issues/4024))
+* Add mirroring e2e test ([#4028](https://github.com/infinyon/fluvio/issues/4028))
+* Disallow produce mirror topic from home ([#4029](https://github.com/infinyon/fluvio/issues/4029))
+* Disallow delete topic from remote ([#4046](https://github.com/infinyon/fluvio/issues/4046))
+
+### Other
+
+* Tls and authorization on SC mirroring ([#4017](https://github.com/infinyon/fluvio/issues/4017))
+* Instance level authorization for basic authorization ([#4021](https://github.com/infinyon/fluvio/issues/4021))
+* Show remote and home cmds ([#4047](https://github.com/infinyon/fluvio/issues/4047))
+
+### Removed
+
+* Delete topic mirrors ([#4030](https://github.com/infinyon/fluvio/issues/4030))
+
+## Platform Version 0.11.9-dev - 2024-05-12
+
+### CI
+
+* Post-release ([#3996](https://github.com/infinyon/fluvio/issues/3996))
+* Update infinyon/regex-filter@0.2.0 for wasi ([#3997](https://github.com/infinyon/fluvio/issues/3997))
+* Use smdk artifact for ci tests ([#4000](https://github.com/infinyon/fluvio/issues/4000))
+
+### Fixed
+
+* Config parsing ignores invalid `transforms` value ([#4004](https://github.com/infinyon/fluvio/issues/4004))
+* `sink` generation for conns fails to build ([#4005](https://github.com/infinyon/fluvio/issues/4005))
+
+## Platform Version 0.11.8 - 2024-05-07
+
+### Added
+
+* Spu-to-spu mirroring connection ([#3956](https://github.com/infinyon/fluvio/issues/3956))
+
+### Changed
+
+* `PackageSet::check_artifact_updates` method ([#3987](https://github.com/infinyon/fluvio/issues/3987))
+
+### Fixed
+
+* Explicitly enable wasi on smartengine uses ([#3988](https://github.com/infinyon/fluvio/issues/3988))
+
+## Platform Version 0.11.7 - 2024-05-01
+
+### Added
+* Forbid `fluvio cluster start` when it should be resumed ([#3695](https://github.com/infinyon/fluvio/pull/3965))
+* Default to wasi supported build arch ([#3981](https://github.com/infinyon/fluvio/issues/3981))
+* Add cmd to create mirror topics ([#3962](https://github.com/infinyon/fluvio/issues/3962))
+
+### Fixed
+
+* Use fluvio_bin env instead fluvio directly ([#3960](https://github.com/infinyon/fluvio/issues/3960))
+* Typos for `Pacakge` in documentation ([#3964](https://github.com/infinyon/fluvio/issues/3964))
+* Upadate http client, better client isolation ([#3980](https://github.com/infinyon/fluvio/issues/3980))
+
+### Other
+
+* Enable `repository_url` ([#3961](https://github.com/infinyon/fluvio/issues/3961))
+* Rename mirroring cmds to home and remote ([#3959](https://github.com/infinyon/fluvio/issues/3959))
+* Rename SpuSocket to StreamSocket ([#3958](https://github.com/infinyon/fluvio/issues/3958))
+* Rename remote, edge and core to mirror, remote and home ([#3966](https://github.com/infinyon/fluvio/issues/3966))
+* Graceful period for stream interruption ([#3969](https://github.com/infinyon/fluvio/issues/3969))
+* Sc-to-sc mirroring connection ([#3946](https://github.com/infinyon/fluvio/issues/3946))
+* Allow enabling wasi for connectors ([#3977](https://github.com/infinyon/fluvio/issues/3977))
+* Set default offset flush interval to 2s ([#3976](https://github.com/infinyon/fluvio/issues/3976))
+* `v0.11.6` post-release ([#3955](https://github.com/infinyon/fluvio/issues/3955))
+
+## Platform Version 0.11.6 - 2024-04-20
+
+### Added
+
+* Added fluvio kv storage crate ([#3905](https://github.com/infinyon/fluvio/issues/3905))
+* Add docker compose example ([#3910](https://github.com/infinyon/fluvio/issues/3910))
+* Added public SPU requests for offset mngt ([#3918](https://github.com/infinyon/fluvio/issues/3918))
+* Add consumer storage to spu ([#3915](https://github.com/infinyon/fluvio/issues/3915))
+* Added offset management to consumer api(unstable) ([#3928](https://github.com/infinyon/fluvio/issues/3928))
+* Added hidden topics and partitions ([#3930](https://github.com/infinyon/fluvio/issues/3930))
+* Added auto-creation of offsets topic ([#3935](https://github.com/infinyon/fluvio/issues/3935))
+* Added consumer offset to cli ([#3941](https://github.com/infinyon/fluvio/issues/3941))
+* Support subset of partitions in consumer ext ([#3948](https://github.com/infinyon/fluvio/issues/3948))
+* Added consumer offset to connector config ([#3950](https://github.com/infinyon/fluvio/issues/3950))
+
+### CI
+
+* Ci, update fluvio publish workflows ([#3939](https://github.com/infinyon/fluvio/issues/3939))
+* Release `v0.11.6
+
+### Changed
+
+* Update some dep ([#3929](https://github.com/infinyon/fluvio/issues/3929))
+
+### Fixed
+
+* Check if batch size exceeds segment size ([#3900](https://github.com/infinyon/fluvio/issues/3900))
+* Improve kubectl access errors ([#3895](https://github.com/infinyon/fluvio/issues/3895))
+* Use specialized error for evicted offset case ([#3902](https://github.com/infinyon/fluvio/issues/3902))
+* Fvm switch bug #3765 ([#3912](https://github.com/infinyon/fluvio/issues/3912))
+* Cargo_template Cargo.toml noise ([#3919](https://github.com/infinyon/fluvio/issues/3919))
+* Cdk deploy, fix contention on ipkg binary and/or log path ([#3926](https://github.com/infinyon/fluvio/issues/3926))
+
+### Other
+
+* Enable minallocator to improve perf ([#3924](https://github.com/infinyon/fluvio/issues/3924))
+* Avoid merging PR if a job was skipped/failed ([#3934](https://github.com/infinyon/fluvio/issues/3934))
+* Disallow deletion system topic unless forced ([#3942](https://github.com/infinyon/fluvio/issues/3942))
+* Mark consumers offset feature as stable ([#3945](https://github.com/infinyon/fluvio/issues/3945))
+* Ci, bind latest to latest fluvio-cloud ([#3949](https://github.com/infinyon/fluvio/issues/3949))
+
+### Removed
+
+* Set old consumer API deprecated ([#3947](https://github.com/infinyon/fluvio/issues/3947))
 
 ## Platform Version 0.11.5 - 2024-03-04
 

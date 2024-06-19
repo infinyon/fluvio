@@ -1,4 +1,5 @@
 use fluvio_protocol::link::ErrorCode;
+use fluvio_sc_schema::mirror::MirrorSpec;
 use fluvio_stream_model::core::MetadataItem;
 use tracing::{instrument, debug, error};
 use anyhow::Result;
@@ -35,6 +36,8 @@ pub async fn handle_create_request<AC: AuthContext, C: MetadataItem>(
         super::smartmodule::handle_create_smartmodule_request(create, auth_context).await?
     } else if let Some(create) = req.downcast()? as Option<CreateRequest<TableFormatSpec>> {
         super::tableformat::handle_create_tableformat_request(create, auth_context).await?
+    } else if let Some(create) = req.downcast()? as Option<CreateRequest<MirrorSpec>> {
+        super::mirror::handle_register_mirror(create, auth_context).await?
     } else {
         error!("unknown create request: {:#?}", req);
         Status::new(

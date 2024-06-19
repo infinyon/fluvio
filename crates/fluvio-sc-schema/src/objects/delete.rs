@@ -19,6 +19,8 @@ use super::{COMMON_VERSION, TypeBuffer};
 #[derive(Debug, Default, Encoder, Decoder)]
 pub struct DeleteRequest<S: DeletableAdminSpec> {
     key: S::DeleteKey,
+    #[fluvio(min_version = 13)]
+    force: bool,
 }
 
 impl<S> DeleteRequest<S>
@@ -26,11 +28,19 @@ where
     S: DeletableAdminSpec,
 {
     pub fn new(key: S::DeleteKey) -> Self {
-        Self { key }
+        Self { key, force: false }
+    }
+
+    pub fn with(key: S::DeleteKey, force: bool) -> Self {
+        Self { key, force }
     }
 
     pub fn key(self) -> S::DeleteKey {
         self.key
+    }
+
+    pub fn is_force(&self) -> bool {
+        self.force
     }
 }
 

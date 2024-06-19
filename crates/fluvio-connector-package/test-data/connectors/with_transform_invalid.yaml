@@ -1,0 +1,20 @@
+apiVersion: 0.1.0
+meta:
+  version: 0.3.3
+  name: cat-facts
+  type: http-source
+  topic: cat-facts
+  create-topic: true
+http:
+  endpoint: "https://catfact.ninja/fact"
+  interval: 10s
+transforms:
+  - uses: infinyon/jolt@0.1.0
+    with:
+      - spec:
+        - operation: default
+            spec:
+              source: "http-connector"
+        - operation: remove
+            spec:
+              length: ""

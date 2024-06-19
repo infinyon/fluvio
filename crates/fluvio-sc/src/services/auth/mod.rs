@@ -33,53 +33,6 @@ mod common {
         }
     }
 
-    /// Authorization that allows anything
-    /// Used for personal development
-    #[derive(Debug, Clone)]
-    pub struct RootAuthorization {}
-
-    #[async_trait]
-    impl Authorization for RootAuthorization {
-        type Context = RootAuthContext;
-
-        async fn create_auth_context(
-            &self,
-            _socket: &mut FluvioSocket,
-        ) -> Result<Self::Context, AuthError> {
-            Ok(RootAuthContext {})
-        }
-    }
-
-    impl RootAuthorization {
-        pub fn new() -> Self {
-            Self {}
-        }
-    }
-
-    #[derive(Debug)]
-    pub struct RootAuthContext {}
-
-    #[async_trait]
-    impl AuthContext for RootAuthContext {
-        async fn allow_type_action(
-            &self,
-            _ty: ObjectType,
-            _action: TypeAction,
-        ) -> Result<bool, AuthError> {
-            Ok(true)
-        }
-
-        /// check if specific instance of spec can be deleted
-        async fn allow_instance_action(
-            &self,
-            _ty: ObjectType,
-            _action: InstanceAction,
-            _key: &str,
-        ) -> Result<bool, AuthError> {
-            Ok(true)
-        }
-    }
-
     /// Auth Service Context, this hold individual context that is enough enforce auth
     /// for this service context
     #[derive(Debug, Clone)]
@@ -145,9 +98,9 @@ mod common {
 
     #[cfg(test)]
     mod test {
-        use fluvio_auth::AuthContext;
+        use fluvio_auth::{root::RootAuthContext, AuthContext};
 
-        use super::{ObjectType, ReadOnlyAuthContext, RootAuthContext, TypeAction};
+        use super::{ObjectType, ReadOnlyAuthContext, TypeAction};
 
         /// test read only context
         /// read only context allows read on everything

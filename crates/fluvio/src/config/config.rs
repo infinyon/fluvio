@@ -4,15 +4,13 @@
 //! Contains contexts, profiles
 //!
 use std::env;
-use std::fs::read_to_string;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
-use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::collections::HashMap;
-use std::fs::File;
 use std::fs::create_dir_all;
 
+use fluvio_types::config_file::LoadConfigError;
 use thiserror::Error;
 
 use tracing::debug;
@@ -28,6 +26,7 @@ use serde::Deserialize;
 use serde::Serialize;
 
 use fluvio_types::defaults::CLI_CONFIG_PATH;
+use fluvio_types::config_file::SaveLoadConfig;
 use crate::{FluvioConfig, FluvioError};
 
 use super::TlsPolicy;
@@ -96,13 +95,16 @@ impl ConfigFile {
     /// read from file
     fn from_file<T: AsRef<Path>>(path: T) -> Result<Self, FluvioError> {
         let path_ref = path.as_ref();
-        debug!(?path_ref, "loading from");
-        let file_str: String = read_to_string(path_ref)
-            .map_err(|e| config_file_error(&format!("{:?}", path_ref.as_os_str()), e))?;
-        let config = toml::from_str(&file_str).map_err(|e| ConfigError::TomlError {
-            msg: path_ref.display().to_string(),
-            source: e,
+        let config = Config::load_from(path_ref).map_err(|e| match e {
+            LoadConfigError::IoError(e) => {
+                config_file_error(&format!("{:?}", path_ref.as_os_str()), e)
+            }
+            LoadConfigError::TomlError(e) => ConfigError::TomlError {
+                msg: path_ref.display().to_string(),
+                source: e,
+            },
         })?;
+
         Ok(Self::new(path_ref.to_owned(), config))
     }
 
@@ -229,19 +231,6 @@ impl Config {
 
     pub fn add_profile(&mut self, profile: Profile, name: String) {
         self.profile.insert(name, profile);
-    }
-
-    // save to file
-    fn save_to<T: AsRef<Path>>(&self, path: T) -> Result<(), IoError> {
-        let path_ref = path.as_ref();
-        debug!("saving config: {:#?} to: {:#?}", self, path_ref);
-        let toml = toml::to_string(self)
-            .map_err(|err| IoError::new(ErrorKind::Other, format!("{err}")))?;
-
-        let mut file = File::create(path_ref)?;
-        file.write_all(toml.as_bytes())?;
-        // On windows flush() is noop, but sync_all() calls FlushFileBuffers.
-        file.sync_all()
     }
 
     pub fn version(&self) -> &str {

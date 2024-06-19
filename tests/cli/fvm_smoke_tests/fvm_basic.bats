@@ -22,6 +22,29 @@ setup_file() {
     export STABLE_VERSION
     debug_msg "Stable Version: $STABLE_VERSION"
 
+    # Fetches current Fluvio Cloud CLI Stable Version
+    FLUVIO_CLOUD_STABLE_VERSION=$(curl "https://packages.fluvio.io/v1/packages/fluvio/fluvio-cloud/tags/stable")
+    export FLUVIO_CLOUD_STABLE_VERSION
+    debug_msg "Fluvio Cloud Stable Version: $FLUVIO_CLOUD_STABLE_VERSION"
+
+    # Fetches current FVM Stable Version
+    FVM_VERSION_STABLE=$(curl "https://packages.fluvio.io/v1/packages/fluvio/fvm/tags/stable")
+    export FVM_VERSION_STABLE
+    debug_msg "FVM Stable Version: $FVM_VERSION_STABLE"
+
+    # Fetches current FVM Stable Version Sha256
+    FVM_VERSION_STABLE_SHA256=$(curl "https://packages.fluvio.io/v1/packages/fluvio/fvm/$FVM_VERSION_STABLE/x86_64-unknown-linux-musl/fvm.sha256")
+    export FVM_VERSION_STABLE_SHA256
+    debug_msg "FVM Stable Version Sha256: $FVM_VERSION_STABLE_SHA256"
+
+    FVM_UPDATE_CUSTOM_VERSION="0.11.0"
+    export FVM_UPDATE_CUSTOM_VERSION
+    debug_msg "FVM Update Custom Version: $FVM_UPDATE_CUSTOM_VERSION"
+
+    FVM_UPDATE_CUSTOM_VERSION_SHA256=$(curl "https://packages.fluvio.io/v1/packages/fluvio/fvm/$FVM_UPDATE_CUSTOM_VERSION/x86_64-unknown-linux-musl/fvm.sha256")
+    export FVM_UPDATE_CUSTOM_VERSION_SHA256
+    debug_msg "FVM Update Custom Version Sha256: $FVM_UPDATE_CUSTOM_VERSION_SHA256"
+
     # The directory where FVM files live
     FVM_HOME_DIR="$HOME/.fvm"
     export FVM_HOME_DIR
@@ -847,6 +870,142 @@ setup_file() {
 
     # Removes FVM
     run bash -c 'fvm self uninstall --yes'
+    assert_success
+
+    # Removes Fluvio
+    rm -rf $FLUVIO_HOME_DIR
+    assert_success
+}
+
+@test "Updates artifacts in the stable channel" {
+    run bash -c '$FVM_BIN self install'
+    assert_success
+
+    # Sets `fvm` in the PATH using the "env" file included in the installation
+    source ~/.fvm/env
+
+    # Install stable version
+    run bash -c 'fvm install stable'
+    assert_success
+
+    # Ensure `~/.fvm/versions/stable` is present
+    run bash -c 'test -d $FVM_HOME_DIR/versions/stable'
+    assert_success
+
+    # Checks for updates
+    run bash -c 'fvm update'
+    assert_line --index 0 "done: You are already up to date"
+    assert_success
+
+    # Updates manifest to trigger update
+    sed -i -e "s/$FLUVIO_CLOUD_STABLE_VERSION/0.2.21/g" $FVM_HOME_DIR/versions/stable/manifest.json
+
+    # Removes current `fluvio-cloud` binary so we check it is re-downloaded
+    rm -rf $FVM_HOME_DIR/versions/stable/fluvio-cloud
+
+    # Ensure `~/.fvm/versions/stable/fluvio-cloud` IS NOT present
+    run bash -c '! test -f $FVM_HOME_DIR/versions/stable/fluvio-cloud'
+    assert_success
+
+    # Downloads the update
+    run bash -c 'fvm update'
+    assert_line --index 0 "info: Found 1 packages in this version that needs update."
+    assert_line --index 1 "info: Downloading (1/1): fluvio-cloud@$FLUVIO_CLOUD_STABLE_VERSION"
+    assert_line --index 2 "info: Updated fluvio-cloud from 0.2.21 to $FLUVIO_CLOUD_STABLE_VERSION"
+    assert_success
+
+    # Ensure `~/.fvm/versions/stable/fluvio-cloud` IS present
+    run bash -c 'test -f $FVM_HOME_DIR/versions/stable/fluvio-cloud'
+    assert_success
+
+    # Removes FVM
+    run bash -c 'fvm self uninstall --yes'
+    assert_success
+
+    # Removes Fluvio
+    rm -rf $FLUVIO_HOME_DIR
+    assert_success
+}
+
+@test "Updates FVM" {
+    run bash -c '$FVM_BIN self install'
+    assert_success
+
+    # Sets `fvm` in the PATH using the "env" file included in the installation
+    source ~/.fvm/env
+
+    # Checks installed version
+    run bash -c 'fvm version'
+    assert_line --index 0 "fvm CLI: $VERSION_FILE"
+    assert_success
+
+    # Store this file Sha256 Checksum
+    export CURR_FVM_BIN_CHECKSUM=$(sha256sum "$FVM_HOME_DIR/bin/fvm" | awk '{ print $1 }')
+
+    # Store FVM_BIN file Sha256 Checksum
+    export FVM_BIN_CHECKSUM=$(sha256sum "$FVM_BIN" | awk '{ print $1 }')
+
+    # Ensure the installed FVM matches test binary FVM
+    [[ "$CURR_FVM_BIN_CHECKSUM" == "$FVM_BIN_CHECKSUM" ]]
+    assert_success
+
+    if [[ "$FVM_VERSION_STABLE" = "$VERSION_FILE" ]]; then
+        # Updates FVM
+        run bash -c 'fvm self update'
+        assert_line --index 0 "info: Already up-to-date"
+        assert_success
+    else
+        # Updates FVM
+        run bash -c 'fvm self update'
+        assert_line --index 0 "info: Updating FVM from $VERSION_FILE to $FVM_VERSION_STABLE"
+        assert_line --index 1 "info: Downloading fvm@$FVM_VERSION_STABLE"
+        assert_line --index 2 "info: Installing fvm@$FVM_VERSION_STABLE"
+        assert_line --index 3 "done: Installed fvm@$FVM_VERSION_STABLE with success"
+        assert_success
+
+        # Store FVM Binary Sha256 Checksum
+        export NEXT_FVM_BIN_CHECKSUM=$(sha256sum "$FVM_HOME_DIR/bin/fvm" | awk '{ print $1 }')
+
+        # Ensure the checksums matches upstream FVM checksum for this architecture
+        run bash -c "[[ "$FVM_VERSION_STABLE_SHA256" == "$NEXT_FVM_BIN_CHECKSUM" ]]"
+        assert_success
+    fi
+
+    # Removes FVM
+    run bash -c 'fvm self uninstall --yes'
+    assert_success
+
+    # Removes Fluvio
+    rm -rf $FLUVIO_HOME_DIR
+    assert_success
+}
+
+@test "Installs Custom FVM Version on FVM Update" {
+    run bash -c '$FVM_BIN self install'
+    assert_success
+
+    # Sets `fvm` in the PATH using the "env" file included in the installation
+    source ~/.fvm/env
+
+    # Checks installed version
+    run bash -c '$FVM_BIN version'
+    assert_line --index 0 "fvm CLI: $VERSION_FILE"
+    assert_success
+
+    # Updates FVM using FVM as of Fluvio 0.11.0
+    run bash -c "FVM_UPDATE_VERSION=$FVM_UPDATE_CUSTOM_VERSION $FVM_BIN self update"
+    assert_line --index 0 "info: Updating FVM from $VERSION_FILE to $FVM_UPDATE_CUSTOM_VERSION"
+    assert_success
+
+    # Store FVM Binary Sha256 Checksum
+    export NEXT_FVM_BIN_CHECKSUM=$(sha256sum "$FVM_HOME_DIR/bin/fvm" | awk '{ print $1 }')
+
+    # Ensure the checksums matches upstream FVM checksum for this architecture
+    run bash -c "[[ "$FVM_UPDATE_CUSTOM_VERSION_SHA256" == "$NEXT_FVM_BIN_CHECKSUM" ]]"
+    assert_success
+
+    # Removes FVM
+    run bash -c '$FVM_BIN self uninstall --yes'
     assert_success
 
     # Removes Fluvio

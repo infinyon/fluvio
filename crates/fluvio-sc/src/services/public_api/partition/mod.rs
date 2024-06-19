@@ -14,6 +14,7 @@ use crate::services::auth::AuthServiceContext;
 #[instrument(skip(_filters, auth_ctx))]
 pub async fn handle_fetch_request<AC: AuthContext, C: MetadataItem>(
     _filters: ListFilters,
+    system: bool,
     auth_ctx: &AuthServiceContext<AC, C>,
 ) -> Result<ListResponse<PartitionSpec>> {
     debug!("fetching custom spu list");
@@ -38,6 +39,7 @@ pub async fn handle_fetch_request<AC: AuthContext, C: MetadataItem>(
         .read()
         .await
         .values()
+        .filter(|value| value.inner().spec().system == system)
         .map(|value| value.inner().clone().into())
         .collect();
 

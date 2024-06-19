@@ -75,6 +75,22 @@ fluvio consume hello-fluvio -B -d
 
 Just like that! You have a local cluster running.
 
+## Using Pre-Build Fluvio Versions
+
+You may want to prefer other Fluvio versions than the latest stable release. You can do so by specifying the version in the `VERSION` environment variable.
+
+**Install Latest Release (as of `master` branch)**
+
+```bash
+$ curl -fsS https://hub.infinyon.cloud/install/install.sh | VERSION=latest bash
+```
+
+**Install Specific Version**
+
+```bash
+$ curl -fsS https://hub.infinyon.cloud/install/install.sh | VERSION=x.y.z bash
+```
+
 ## Next Steps
 Now that you have a cluster running you can try building data flows in different paradigms.
 
@@ -96,7 +112,7 @@ Using Connector Development Kit, we built our existing connectors in a matter of
 - [Connector Development Kit docs](https://www.fluvio.io/connectors/cdk/overview/)
 
 #### Learn how to build custom smart modules
-Fluvio applies wasm based stream processing and data transformations. We call these reusable transformation functions smart modules. Reusable Smart modules are built using Smart Module Development Kit and can be distributed using InfinyOn Cloud hub. 
+Fluvio applies wasm based stream processing and data transformations. We call these reusable transformation functions smart modules. Reusable Smart modules are built using Smart Module Development Kit and can be distributed using InfinyOn Cloud hub.
 
 - [Smart Modules docs](https://www.fluvio.io/smartmodules/)
 - [Smart Modules Development Kit docs](https://www.fluvio.io/smartmodules/)

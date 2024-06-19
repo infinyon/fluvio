@@ -7,6 +7,7 @@ use anyhow::Result;
 use colored::Colorize;
 use semver::Version;
 use derive_builder::Builder;
+use serde::{Serialize, Deserialize};
 use tracing::{debug, error, instrument, warn};
 use once_cell::sync::Lazy;
 
@@ -15,6 +16,7 @@ use fluvio::config::{TlsPolicy, ConfigFile, LOCAL_PROFILE};
 use fluvio_controlplane_metadata::spu::{SpuSpec, CustomSpuSpec};
 use fluvio_future::timer::sleep;
 use fluvio_command::CommandExt;
+use fluvio_types::config_file::SaveLoadConfig;
 use k8_types::{InputK8Obj, InputObjectMeta};
 use k8_client::SharedK8Client;
 
@@ -28,6 +30,8 @@ use crate::progress::{InstallProgressMessage, ProgressBarFactory};
 use super::constants::MAX_PROVISION_TIME_SEC;
 use super::common::check_crd;
 
+pub static LOCAL_CONFIG_PATH: Lazy<Option<PathBuf>> =
+    Lazy::new(|| directories::BaseDirs::new().map(|it| it.home_dir().join(".fluvio/local-config")));
 pub static DEFAULT_DATA_DIR: Lazy<Option<PathBuf>> =
     Lazy::new(|| directories::BaseDirs::new().map(|it| it.home_dir().join(".fluvio/data")));
 pub const DEFAULT_METADATA_SUB_DIR: &str = "metadata";
@@ -37,12 +41,12 @@ const DEFAULT_RUST_LOG: &str = "info";
 const DEFAULT_SPU_REPLICAS: u16 = 1;
 const DEFAULT_TLS_POLICY: TlsPolicy = TlsPolicy::Disabled;
 const LOCAL_SC_ADDRESS: &str = "127.0.0.1:9003";
-const LOCAL_SC_PORT: u16 = 9003;
+const LOCAL_SC_PORT: &str = "9003";
 
 static DEFAULT_RUNNER_PATH: Lazy<Option<PathBuf>> = Lazy::new(|| std::env::current_exe().ok());
 
 /// Describes how to install Fluvio locally
-#[derive(Builder, Debug, Clone)]
+#[derive(Builder, Debug, Clone, Serialize, Deserialize)]
 #[builder(build_fn(private, name = "build_impl"))]
 pub struct LocalConfig {
     /// Platform version
@@ -125,6 +129,10 @@ pub struct LocalConfig {
     /// The TLS policy for the client
     #[builder(private, default = "DEFAULT_TLS_POLICY")]
     client_tls_policy: TlsPolicy,
+    #[builder(default = "LOCAL_SC_ADDRESS.to_string()")]
+    sc_pub_addr: String,
+    #[builder(setter(into), default)]
+    sc_priv_addr: Option<String>,
     /// The version of the Fluvio system chart to install
     ///
     /// This is the only required field that does not have a default value.
@@ -173,6 +181,9 @@ pub struct LocalConfig {
 
     #[builder(default)]
     read_only_config: Option<PathBuf>,
+
+    #[builder(default = "false")]
+    save_profile: bool,
 }
 
 impl LocalConfig {
@@ -193,6 +204,10 @@ impl LocalConfig {
             builder.data_dir(data_dir);
         }
         builder
+    }
+
+    pub fn platform_version(&self) -> &Version {
+        &self.platform_version
     }
 
     pub fn launcher_path(&self) -> Option<&Path> {
@@ -404,6 +419,11 @@ impl LocalInstaller {
             self.preflight_check(true).await?;
         };
 
+        self.install_only().await
+    }
+
+    #[instrument(skip(self))]
+    pub async fn install_only(&self) -> Result<StartStatus> {
         let pb = self.pb_factory.create()?;
 
         debug!("using log dir: {}", self.config.log_dir.display());
@@ -438,17 +458,22 @@ impl LocalInstaller {
             .result()
             .map_err(|e| LocalInstallError::Other(format!("sync issue: {e:#?}")))?;
 
-        // set host name and port for SC
-        // this should mirror K8
-        let (address, port) = (LOCAL_SC_ADDRESS.to_owned(), LOCAL_SC_PORT);
         pb.println(format!("{} {}", "✅".bold(), "Local Cluster initialized"));
         pb.finish_and_clear();
         drop(pb);
 
-        self.set_profile()?;
+        if self.config.save_profile {
+            self.set_profile()?;
+        }
 
         let pb = self.pb_factory.create()?;
-        let fluvio = self.launch_sc(&address, port, &pb).await?;
+        let fluvio = self
+            .launch_sc(
+                self.config.sc_pub_addr.clone(),
+                self.config.sc_priv_addr.clone(),
+                &pb,
+            )
+            .await?;
         pb.println(InstallProgressMessage::ScLaunched.msg());
         pb.finish_and_clear();
 
@@ -469,14 +494,32 @@ impl LocalInstaller {
         self.pb_factory
             .println("🎯 Successfully installed Local Fluvio cluster");
 
-        Ok(StartStatus { address, port })
+        self.save_config_file();
+
+        let port: u16 = self
+            .config
+            .sc_pub_addr
+            .split(':')
+            .last()
+            .unwrap_or(LOCAL_SC_PORT)
+            .parse()?;
+
+        Ok(StartStatus {
+            address: self.config.sc_pub_addr.clone(),
+            port,
+        })
     }
 
     /// Launches an SC on the local machine
     ///
     /// Returns the address of the SC if successful
     #[instrument(skip(self))]
-    async fn launch_sc(&self, host_name: &str, port: u16, pb: &ProgressRenderer) -> Result<Fluvio> {
+    async fn launch_sc(
+        &self,
+        public_address: String,
+        private_address: Option<String>,
+        pb: &ProgressRenderer,
+    ) -> Result<Fluvio> {
         use super::common::try_connect_to_sc;
 
         pb.set_message(InstallProgressMessage::LaunchingSC.msg());
@@ -503,6 +546,8 @@ impl LocalInstaller {
             tls_policy: self.config.server_tls_policy.clone(),
             rust_log: self.config.rust_log.clone(),
             mode,
+            private_address,
+            public_address: public_address.clone(),
         };
 
         sc_process.start()?;
@@ -512,27 +557,26 @@ impl LocalInstaller {
 
         // construct config to connect to SC
         let cluster_config =
-            FluvioConfig::new(LOCAL_SC_ADDRESS).with_tls(self.config.client_tls_policy.clone());
+            FluvioConfig::new(public_address).with_tls(self.config.client_tls_policy.clone());
 
-        if let Some(fluvio) =
-            try_connect_to_sc(&cluster_config, &self.config.platform_version, pb).await
-        {
-            Ok(fluvio)
-        } else {
-            Err(LocalInstallError::SCServiceTimeout.into())
-        }
+        try_connect_to_sc(&cluster_config, &self.config.platform_version, pb)
+            .await
+            .ok_or(LocalInstallError::SCServiceTimeout.into())
     }
 
     /// set local profile
     #[instrument(skip(self))]
     fn set_profile(&self) -> Result<()> {
         let pb = self.pb_factory.create()?;
-        pb.set_message(format!("Creating Local Profile to: {LOCAL_SC_ADDRESS}"));
+        pb.set_message(format!(
+            "Creating Local Profile to: {}",
+            self.config.sc_pub_addr
+        ));
 
         let mut config_file = ConfigFile::load_default_or_new()?;
         config_file.add_or_replace_profile(
             LOCAL_PROFILE,
-            LOCAL_SC_ADDRESS,
+            &self.config.sc_pub_addr,
             &self.config.client_tls_policy,
         )?;
         let config = config_file.mut_config().current_cluster_mut()?;
@@ -681,5 +725,19 @@ impl LocalInstaller {
             time.elapsed().unwrap().as_secs()
         ))
         .into())
+    }
+
+    fn save_config_file(&self) {
+        let save_to_res = match LOCAL_CONFIG_PATH.as_ref() {
+            None => {
+                warn!("Local config path");
+                return;
+            }
+            Some(local_config_path) => self.config.save_to(local_config_path),
+        };
+
+        if let Err(err) = save_to_res {
+            warn!("Save error: {:?}", err);
+        }
     }
 }

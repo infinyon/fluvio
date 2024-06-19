@@ -20,6 +20,7 @@
 
 use std::time::Duration;
 use async_std::future::timeout;
+use fluvio::{consumer::ConsumerConfigExtBuilder, Fluvio, Offset};
 
 const TIMEOUT_MS: u64 = 3_000;
 
@@ -43,8 +44,16 @@ async fn main() {
 async fn consume() -> anyhow::Result<()> {
     use futures_lite::StreamExt;
 
-    let consumer = fluvio::consumer("simple", 0).await?;
-    let mut stream = consumer.stream(fluvio::Offset::beginning()).await?;
+    let fluvio = Fluvio::connect().await?;
+    let mut stream = fluvio
+        .consumer_with_config(
+            ConsumerConfigExtBuilder::default()
+                .topic("simple")
+                .partition(0)
+                .offset_start(Offset::beginning())
+                .build()?,
+        )
+        .await?;
 
     while let Some(Ok(record)) = stream.next().await {
         println!("{}", record.get_value().as_utf8_lossy_string());

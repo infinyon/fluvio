@@ -7,10 +7,13 @@ use fluvio_controlplane_metadata::spu::SpuSpec;
 use k8_client::SharedK8Client;
 use once_cell::sync::Lazy;
 use semver::Version;
-use tracing::{debug, error, instrument, warn};
+use tracing::{debug, error, info, instrument, warn};
 
 use fluvio::{Fluvio, FluvioConfig};
-use fluvio_future::timer::sleep;
+use fluvio_future::{
+    retry::{retry, ExponentialBackoff, RetryExt},
+    timer::sleep,
+};
 
 use crate::render::ProgressRenderer;
 
@@ -19,6 +22,18 @@ static MAX_SC_LOOP: Lazy<u8> = Lazy::new(|| {
     let var_value = env::var("FLV_CLUSTER_MAX_SC_VERSION_LOOP").unwrap_or_default();
     var_value.parse().unwrap_or(120)
 });
+
+#[derive(Debug)]
+enum TryConnectError {
+    Timeout,
+    #[allow(dead_code)]
+    UnexpectedVersion {
+        expected: Version,
+        current: Version,
+    },
+    #[allow(dead_code)]
+    Unexpected(anyhow::Error),
+}
 
 /// try connection to SC
 #[instrument]
@@ -30,40 +45,36 @@ pub async fn try_connect_to_sc(
     async fn try_connect_sc(
         fluvio_config: &FluvioConfig,
         expected_version: &Version,
-    ) -> Option<Fluvio> {
-        use tokio::select;
-
-        select! {
-            _ = &mut sleep(Duration::from_secs(10)) => {
-                debug!("timer expired");
-                None
-            },
-
-            connection = Fluvio::connect_with_config(fluvio_config) =>  {
-
-                match connection {
-                    Ok(fluvio) => {
-                        let current_version = fluvio.platform_version();
-                        if current_version == expected_version {
-                            debug!("Got updated SC Version{}", &expected_version);
-                            Some(fluvio)
-                        } else {
-                            warn!("Current Version {} is not same as expected: {}",current_version,expected_version);
-                            None
-                        }
-                    }
-                    Err(err) => {
-                        debug!("couldn't connect: {:#?}", err);
-                        None
-                    }
+    ) -> Result<Fluvio, TryConnectError> {
+        match Fluvio::connect_with_config(fluvio_config).await {
+            Ok(fluvio) => {
+                let current_version = fluvio.platform_version();
+                if current_version == expected_version {
+                    debug!(version = %current_version, "Got updated SC Version");
+                    Ok(fluvio)
+                } else {
+                    warn!(
+                        "Current Version {} is not same as expected: {}",
+                        current_version, expected_version
+                    );
+                    Err(TryConnectError::UnexpectedVersion {
+                        expected: expected_version.clone(),
+                        current: current_version.clone(),
+                    })
                 }
-
+            }
+            Err(err) => {
+                warn!("couldn't connect: {:#?}", err);
+                Err(TryConnectError::Unexpected(err))
             }
         }
     }
 
+    let mut attempt = 0u16;
     let time = SystemTime::now();
-    for attempt in 0..*MAX_SC_LOOP {
+    let operation = || {
+        attempt += 1;
+
         debug!(
             "Trying to connect to sc at: {}, attempt: {}",
             config.endpoint, attempt
@@ -74,17 +85,34 @@ pub async fn try_connect_to_sc(
             config.endpoint,
             elapsed.as_secs()
         ));
-        if let Some(fluvio) = try_connect_sc(config, platform_version).await {
-            debug!("Connection to sc succeed!");
-            return Some(fluvio);
-        } else if attempt < *MAX_SC_LOOP - 1 {
-            debug!("Connection failed.  sleeping 10 seconds");
-            sleep(Duration::from_secs(1)).await;
+        async move {
+            let retry_timeout = 10;
+            match try_connect_sc(config, platform_version)
+                .timeout(Duration::from_secs(retry_timeout))
+                .await
+                .unwrap_or(Err(TryConnectError::Timeout))
+            {
+                Ok(fluvio) => {
+                    info!("Connection to sc succeed!");
+                    Ok(fluvio)
+                }
+                Err(err) => {
+                    warn!("Connection failed with {:?}", err);
+                    Err(err)
+                }
+            }
         }
-    }
+    };
 
-    error!("fail to connect to sc at: {}", config.endpoint);
-    None
+    retry(
+        ExponentialBackoff::from_millis(2)
+            .max_delay(Duration::from_secs(10))
+            .take(*MAX_SC_LOOP as usize),
+        operation,
+    )
+    .await
+    .map_err(|_| error!("fail to connect to sc at: {}", config.endpoint))
+    .ok()
 }
 
 // hack

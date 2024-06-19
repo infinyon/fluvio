@@ -1,17 +1,17 @@
 use std::fs::{read_dir, copy, create_dir_all, remove_dir_all};
-
-#[cfg(target_os = "macos")]
 use std::fs::remove_file;
 
 use std::path::PathBuf;
 
-use anyhow::Result;
+use anyhow::{bail, Result};
 
-use fluvio_hub_util::fvm::Channel;
+use fluvio_hub_util::fvm::{Artifact, Channel, PackageSet};
+use semver::Version;
 
 use crate::common::manifest::{PACKAGE_SET_MANIFEST_FILENAME, VersionManifest};
 use crate::common::settings::Settings;
 use crate::common::workdir::fluvio_binaries_path;
+use crate::common::TARGET;
 
 /// Represents the contents of a version directory (`~/.fvm/versions/<version>`)
 /// where binaries and the manifest are stored.
@@ -21,6 +21,7 @@ use crate::common::workdir::fluvio_binaries_path;
 ///
 /// - `contents`: Every file in the directory except for the manifest
 /// - `manifest`: The manifest file
+#[derive(Debug)]
 pub struct VersionDirectory {
     /// The Path to this [`VersionDirectory`]
     pub path: PathBuf,
@@ -96,8 +97,6 @@ impl VersionDirectory {
             ))?;
             let target_path = fluvio_bin_dir.join(filename);
 
-            //remove for macos to sync w/ downloaded bin restrictions
-            #[cfg(target_os = "macos")]
             if let Err(err) = remove_file(&target_path) {
                 use tracing::debug;
                 match err.kind() {
@@ -151,6 +150,43 @@ impl VersionDirectory {
 
         Ok((manifests, active_version))
     }
+
+    /// Builds a "dummy" [`PackageSet`] from the current `manifest.json`.
+    ///
+    /// This is useful to perform operations that require a [`PackageSet`] instance,
+    /// for example, version diffing.
+    pub fn as_package_set(&self) -> Result<PackageSet> {
+        if let Some(ref versioned_artifacts) = self.manifest.contents {
+            let artifacts = versioned_artifacts
+                .iter()
+                .filter_map(|va| {
+                    let Ok(version) = Version::parse(&va.version) else {
+                        return None;
+                    };
+
+                    Some(Artifact {
+                        version,
+                        name: va.name.clone(),
+                        download_url: String::from("N/A"),
+                        sha256_url: String::from("N/A"),
+                    })
+                })
+                .collect();
+            let pkgset = PackageSet {
+                pkgset: self.manifest.version.clone(),
+                arch: String::from(TARGET),
+                artifacts,
+            };
+
+            return Ok(pkgset);
+        }
+
+        tracing::debug!(version=%self.manifest.version, "The manifest containing artifacts details is not available");
+        bail!(
+            "No versioned artifacts manifest available for version: {}",
+            self.manifest.version
+        );
+    }
 }
 
 #[cfg(test)]
@@ -164,6 +200,7 @@ mod tests {
 
     use fluvio_hub_util::sha256_digest;
 
+    use crate::common::manifest::VersionedArtifact;
     use crate::common::settings::tests::{create_fvm_dir, delete_fvm_dir};
 
     use super::*;
@@ -340,5 +377,58 @@ mod tests {
         .unwrap();
 
         assert_eq!(active.unwrap().channel, Channel::Stable);
+    }
+
+    #[test]
+    fn creates_pakageset_instance_from_version_dir() {
+        let version_manifest = VersionManifest {
+            channel: Channel::Stable,
+            version: Version::parse("0.11.8").unwrap(),
+            contents: Some(vec![
+                VersionedArtifact {
+                    name: String::from("fluvio"),
+                    version: String::from("0.11.8"),
+                },
+                VersionedArtifact {
+                    name: String::from("fluvio-cloud"),
+                    version: String::from("0.2.22"),
+                },
+                VersionedArtifact {
+                    name: String::from("cdk"),
+                    version: String::from("0.11.8"),
+                },
+            ]),
+        };
+        let version_directory = VersionDirectory {
+            manifest: version_manifest,
+            path: PathBuf::new(),
+            contents: vec![],
+        };
+        let package_set = PackageSet {
+            pkgset: Version::parse("0.11.8").unwrap(),
+            arch: TARGET.to_owned(),
+            artifacts: vec![
+                Artifact {
+                    name: String::from("fluvio"),
+                    version: Version::parse("0.11.8").unwrap(),
+                    download_url: String::from("N/A"),
+                    sha256_url: String::from("N/A"),
+                },
+                Artifact {
+                    name: String::from("fluvio-cloud"),
+                    version: Version::parse("0.2.22").unwrap(),
+                    download_url: String::from("N/A"),
+                    sha256_url: String::from("N/A"),
+                },
+                Artifact {
+                    name: String::from("cdk"),
+                    version: Version::parse("0.11.8").unwrap(),
+                    download_url: String::from("N/A"),
+                    sha256_url: String::from("N/A"),
+                },
+            ],
+        };
+
+        assert_eq!(version_directory.as_package_set().unwrap(), package_set);
     }
 }

@@ -1,6 +1,14 @@
+#![allow(dead_code)]
+
+mod config;
+mod stream;
+mod offset;
+
 use std::sync::Arc;
 
 use anyhow::Result;
+use async_channel::Sender;
+use fluvio_spu_schema::server::consumer_offset::UpdateConsumerOffsetRequest;
 use tracing::{debug, error, trace, instrument, info, warn};
 use futures_util::stream::{Stream, select_all};
 use once_cell::sync::Lazy;
@@ -10,11 +18,10 @@ use futures_util::FutureExt;
 
 use fluvio_types::PartitionId;
 use fluvio_types::defaults::{FLUVIO_CLIENT_MAX_FETCH_BYTES, FLUVIO_MAX_SIZE_TOPIC_NAME};
-use fluvio_types::event::offsets::OffsetPublisher;
 use fluvio_spu_schema::server::stream_fetch::{
     DefaultStreamFetchRequest, DefaultStreamFetchResponse, CHAIN_SMARTMODULE_API,
+    OFFSET_MANAGEMENT_API,
 };
-use fluvio_spu_schema::Isolation;
 use fluvio_protocol::record::ReplicaKey;
 use fluvio_protocol::link::ErrorCode;
 use fluvio_protocol::record::Batch;
@@ -23,7 +30,11 @@ use crate::FluvioError;
 use crate::metrics::ClientMetrics;
 use crate::offset::{Offset, fetch_offsets};
 use crate::spu::{SpuDirectory, SpuPool};
-use derive_builder::Builder;
+
+pub use config::{ConsumerConfig, ConsumerConfigBuilder};
+pub use config::{ConsumerConfigExt, ConsumerConfigExtBuilder, OffsetManagementStrategy};
+pub use stream::{ConsumerStream, MultiplePartitionConsumerStream, SinglePartitionConsumerStream};
+pub use offset::ConsumerOffset;
 
 pub use fluvio_protocol::record::ConsumerRecord as Record;
 pub use fluvio_spu_schema::server::smartmodule::SmartModuleInvocation;
@@ -31,6 +42,8 @@ pub use fluvio_spu_schema::server::smartmodule::SmartModuleInvocationWasm;
 pub use fluvio_spu_schema::server::smartmodule::SmartModuleKind;
 pub use fluvio_spu_schema::server::smartmodule::SmartModuleContextData;
 pub use fluvio_smartmodule::dataplane::smartmodule::SmartModuleExtraParams;
+
+const STREAM_TO_SERVER_CHANNEL_SIZE: usize = 100;
 
 /// An interface for consuming events from a particular partition
 ///
@@ -129,6 +142,11 @@ where
     /// [`ConsumerConfig`]: struct.ConsumerConfig.html
     /// [`stream_with_config`]: struct.ConsumerConfig.html#method.stream_with_config
     #[instrument(skip(self, offset))]
+    #[deprecated(
+        since = "0.21.8",
+        note = "use `Fluvio::consumer_with_config()` instead"
+    )]
+    #[allow(deprecated)]
     pub async fn stream(
         &self,
         offset: Offset,
@@ -178,13 +196,17 @@ where
     /// [`Offset`]: struct.Offset.html
     /// [`ConsumerConfig`]: struct.ConsumerConfig.html
     #[instrument(skip(self, offset, config))]
+    #[deprecated(
+        since = "0.21.8",
+        note = "use `Fluvio::consumer_with_config()` instead"
+    )]
     pub async fn stream_with_config(
         &self,
         offset: Offset,
         config: ConsumerConfig,
     ) -> Result<impl Stream<Item = Result<Record, ErrorCode>>> {
-        let (stream, start_offset) = self
-            .inner_stream_batches_with_config(offset, config)
+        let (stream, start_offset, _) = self
+            .inner_stream_batches_with_config(offset, config, None)
             .await?;
         let partition = self.partition;
         let flattened = stream.flat_map(move |result: Result<Batch, _>| match result {
@@ -233,13 +255,17 @@ where
     /// # }
     /// ```
     #[instrument(skip(self, offset, config))]
+    #[deprecated(
+        since = "0.21.8",
+        note = "use `Fluvio::consumer_with_config()` instead"
+    )]
     pub async fn stream_batches_with_config(
         &self,
         offset: Offset,
         config: ConsumerConfig,
     ) -> Result<impl Stream<Item = Result<Batch, ErrorCode>>> {
-        let (stream, _start_offset) = self
-            .inner_stream_batches_with_config(offset, config)
+        let (stream, _start_offset, _) = self
+            .inner_stream_batches_with_config(offset, config, None)
             .await?;
         Ok(stream)
     }
@@ -251,11 +277,14 @@ where
         &self,
         offset: Offset,
         config: ConsumerConfig,
+        consumer_id: Option<String>,
     ) -> Result<(
         impl Stream<Item = Result<Batch, ErrorCode>>,
         fluvio_protocol::record::Offset,
+        Sender<StreamToServer>,
     )> {
-        let (stream, start_offset) = self.request_stream(offset, config).await?;
+        let (stream, start_offset, stream_to_server) =
+            self.request_stream(offset, config, consumer_id).await?;
         let metrics = self.metrics.clone();
         let flattened =
             stream.flat_map(move |batch_result: Result<DefaultStreamFetchResponse, _>| {
@@ -287,7 +316,10 @@ where
                             let batch: Result<Batch, _> = raw_batch.try_into();
                             match batch {
                                 Ok(batch) => Ok(batch),
-                                Err(err) => Err(ErrorCode::Other(err.to_string())),
+                                Err(err) => {
+                                    tracing::error!("{err:?}");
+                                    Err(ErrorCode::Other(err.to_string()))
+                                }
                             }
                         });
                 let error = {
@@ -302,7 +334,7 @@ where
                 Either::Left(iter(items))
             });
 
-        Ok((flattened, start_offset))
+        Ok((flattened, start_offset, stream_to_server))
     }
 
     /// Creates a stream of `DefaultStreamFetchResponse` for older consumers who rely
@@ -314,16 +346,18 @@ where
         &self,
         offset: Offset,
         config: ConsumerConfig,
+        consumer_id: Option<String>,
     ) -> Result<(
         impl Stream<Item = Result<DefaultStreamFetchResponse, ErrorCode>>,
         fluvio_protocol::record::Offset,
+        Sender<StreamToServer>,
     )> {
         use fluvio_future::task::spawn;
         use futures_util::stream::empty;
 
         let replica = ReplicaKey::new(&self.topic, self.partition);
         let mut serial_socket = self.pool.create_serial_socket(&replica).await?;
-        let offsets = fetch_offsets(&mut serial_socket, &replica).await?;
+        let offsets = fetch_offsets(&mut serial_socket, &replica, consumer_id.clone()).await?;
 
         let start_absolute_offset = offset.resolve(&offsets).await?;
         let end_absolute_offset = offsets.last_stable_offset;
@@ -331,6 +365,7 @@ where
 
         debug!(start_absolute_offset, end_absolute_offset, record_count);
 
+        let with_consumer_id = consumer_id.is_some();
         let stream_request = DefaultStreamFetchRequest::builder()
             .topic(self.topic.to_owned())
             .partition(self.partition)
@@ -338,6 +373,7 @@ where
             .isolation(config.isolation)
             .max_bytes(config.max_bytes)
             .smartmodules(config.smartmodule)
+            .consumer_id(consumer_id)
             .build()?;
 
         let stream_fetch_version = serial_socket
@@ -348,11 +384,19 @@ where
         if stream_fetch_version < CHAIN_SMARTMODULE_API {
             warn!("SPU does not support SmartModule chaining. SmartModules will not be applied to the stream");
         }
+        if with_consumer_id && stream_fetch_version < OFFSET_MANAGEMENT_API {
+            warn!("SPU does not support Offset Management API");
+        }
 
         let mut stream = self
             .pool
             .create_stream_with_version(&replica, stream_request, stream_fetch_version)
             .await?;
+
+        let (server_sender, server_recv) =
+            async_channel::bounded::<StreamToServer>(STREAM_TO_SERVER_CHANNEL_SIZE);
+
+        let server_sender_clone = server_sender.clone();
 
         let ft_stream = async move {
             if let Some(Ok(raw_response)) = stream.next().await {
@@ -367,35 +411,58 @@ where
                     "first stream response"
                 );
 
-                let publisher = OffsetPublisher::shared(0);
-                let mut listener = publisher.change_listener();
-
                 // update stream with received offsets
                 spawn(async move {
                     use fluvio_spu_schema::server::update_offset::{UpdateOffsetsRequest, OffsetUpdate};
 
                     loop {
-                        let fetch_last_value = listener.listen().await;
-                        debug!(fetch_last_value, stream_id, "received end fetch");
-                        if fetch_last_value < 0 {
-                            info!("fetch last is end, terminating");
-                            break;
-                        } else {
-                            debug!(
-                                offset = fetch_last_value,
-                                session_id = stream_id,
-                                "sending back offset to spu"
-                            );
-                            let request = UpdateOffsetsRequest {
-                                offsets: vec![OffsetUpdate {
-                                    offset: fetch_last_value,
+                        match server_recv.recv().await {
+                            Ok(StreamToServer::UpdateOffset(fetch_last_value)) => {
+                                debug!(fetch_last_value, stream_id, "received end fetch");
+                                debug!(
+                                    offset = fetch_last_value,
+                                    session_id = stream_id,
+                                    "sending back offset to spu"
+                                );
+                                let request = UpdateOffsetsRequest {
+                                    offsets: vec![OffsetUpdate {
+                                        offset: fetch_last_value,
+                                        session_id: stream_id,
+                                    }],
+                                };
+                                debug!(?request, "Sending offset update request:");
+                                let response = serial_socket.send_receive(request).await;
+                                if let Err(err) = response {
+                                    error!("error sending offset: {:#?}", err);
+                                    break;
+                                }
+                            }
+                            Ok(StreamToServer::Close) => {
+                                debug!("fetch last is end, terminating");
+                                break;
+                            }
+                            Ok(StreamToServer::FlushManagedOffset { offset, callback }) => {
+                                debug!(offset, stream_id, "flush offset request");
+                                let request = UpdateConsumerOffsetRequest {
                                     session_id: stream_id,
-                                }],
-                            };
-                            debug!(?request, "Sending offset update request:");
-                            let response = serial_socket.send_receive(request).await;
-                            if let Err(err) = response {
-                                error!("error sending offset: {:#?}", err);
+                                    offset,
+                                };
+                                let response = serial_socket.send_receive(request).await;
+                                match response {
+                                    Ok(response) => callback.send(response.error_code).await,
+                                    Err(err) => {
+                                        error!("offset flush request error: {:?}", err);
+                                        callback
+                                            .send(ErrorCode::OffsetFlushRequestError(
+                                                err.to_string(),
+                                            ))
+                                            .await;
+                                        break;
+                                    }
+                                };
+                            }
+                            Err(err) => {
+                                debug!("stream to server channel closed: {err:?}");
                                 break;
                             }
                         }
@@ -406,15 +473,18 @@ where
                 // send back first offset records exists
                 if let Some(last_offset) = response.partition.next_offset_for_fetch() {
                     debug!(last_offset, "notify new last offset");
-                    publisher.update(last_offset);
+                    let _ = server_sender_clone
+                        .send(StreamToServer::UpdateOffset(last_offset))
+                        .await;
                 }
 
-                let response_publisher = publisher.clone();
+                let server_sender_clone2 = server_sender_clone.clone();
                 let update_stream = StreamExt::map(stream, move |item| {
                     item.map(|response| {
                         if let Some(last_offset) = response.partition.next_offset_for_fetch() {
                             debug!(last_offset, stream_id, "received last offset from spu");
-                            response_publisher.update(last_offset);
+                            let _ = server_sender_clone
+                                .try_send(StreamToServer::UpdateOffset(last_offset));
                         }
                         response
                     })
@@ -424,8 +494,10 @@ where
                     })
                 });
                 Either::Left(
-                    iter(vec![Ok(response)])
-                        .chain(publish_stream::EndPublishSt::new(update_stream, publisher)),
+                    iter(vec![Ok(response)]).chain(publish_stream::EndPublishSt::new(
+                        update_stream,
+                        server_sender_clone2,
+                    )),
                 )
             } else {
                 info!("stream ended");
@@ -439,7 +511,41 @@ where
             ft_stream.flatten_stream().boxed()
         };
 
-        Ok((stream, start_absolute_offset))
+        Ok((stream, start_absolute_offset, server_sender))
+    }
+
+    #[instrument(skip(self, config))]
+    pub(crate) async fn consumer_stream_with_config(
+        &self,
+        config: ConsumerConfigExt,
+    ) -> Result<SinglePartitionConsumerStream<impl Stream<Item = Result<Record, ErrorCode>>>> {
+        let (offset, config, consumer_id, strategy, flush_period) = config.into_parts();
+        let (stream, start_offset, stream_to_server) = self
+            .inner_stream_batches_with_config(offset, config, consumer_id)
+            .await?;
+        let partition = self.partition;
+        let flattened = stream.flat_map(move |result: Result<Batch, _>| match result {
+            Err(e) => Either::Right(once(err(e))),
+            Ok(batch) => {
+                let records =
+                    batch
+                        .into_consumer_records_iter(partition)
+                        .filter_map(move |record| {
+                            if record.offset >= start_offset {
+                                Some(Ok(record))
+                            } else {
+                                None
+                            }
+                        });
+                Either::Left(iter(records))
+            }
+        });
+        Ok(SinglePartitionConsumerStream::new(
+            flattened,
+            strategy,
+            flush_period,
+            stream_to_server,
+        ))
     }
 }
 
@@ -507,25 +613,24 @@ where
 mod publish_stream {
 
     use std::pin::Pin;
-    use std::sync::Arc;
     use std::task::{Poll, Context};
 
+    use async_channel::Sender;
     use pin_project::pin_project;
     use futures_util::ready;
 
-    use super::Stream;
-    use super::OffsetPublisher;
+    use super::{Stream, StreamToServer};
 
     // signal offset when stream is done
     #[pin_project]
     pub struct EndPublishSt<St> {
         #[pin]
         stream: St,
-        publisher: Arc<OffsetPublisher>,
+        publisher: Sender<StreamToServer>,
     }
 
     impl<St> EndPublishSt<St> {
-        pub fn new(stream: St, publisher: Arc<OffsetPublisher>) -> Self {
+        pub fn new(stream: St, publisher: Sender<StreamToServer>) -> Self {
             Self { stream, publisher }
         }
     }
@@ -538,7 +643,7 @@ mod publish_stream {
 
             let item = ready!(this.stream.poll_next(cx));
             if item.is_none() {
-                this.publisher.update(-1);
+                let _ = this.publisher.try_send(StreamToServer::Close);
             }
             Poll::Ready(item)
         }
@@ -569,35 +674,6 @@ static MAX_FETCH_BYTES: Lazy<i32> = Lazy::new(|| {
     });
     max_bytes
 });
-
-/// Configures the behavior of consumer fetching and streaming
-#[derive(Debug, Builder, Clone)]
-#[builder(build_fn(private, name = "build_impl"))]
-pub struct ConsumerConfig {
-    #[builder(default)]
-    disable_continuous: bool,
-    #[builder(default = "*MAX_FETCH_BYTES")]
-    pub max_bytes: i32,
-    #[builder(default)]
-    pub isolation: Isolation,
-    #[builder(default)]
-    pub(crate) smartmodule: Vec<SmartModuleInvocation>,
-}
-
-impl ConsumerConfig {
-    pub fn builder() -> ConsumerConfigBuilder {
-        ConsumerConfigBuilder::default()
-    }
-}
-
-impl ConsumerConfigBuilder {
-    pub fn build(&self) -> Result<ConsumerConfig> {
-        let config = self.build_impl().map_err(|e| {
-            FluvioError::ConsumerConfig(format!("Missing required config option: {e}"))
-        })?;
-        Ok(config)
-    }
-}
 
 /// Strategy used to select which partitions and from which topics should be streamed by the [`MultiplePartitionConsumer`]
 #[derive(Clone)]
@@ -683,6 +759,11 @@ impl MultiplePartitionConsumer {
     /// [`ConsumerConfig`]: struct.ConsumerConfig.html
     /// [`stream_with_config`]: struct.ConsumerConfig.html#method.stream_with_config
     #[instrument(skip(self, offset))]
+    #[deprecated(
+        since = "0.21.8",
+        note = "use `Fluvio::consumer_with_config()` instead"
+    )]
+    #[allow(deprecated)]
     pub async fn stream(
         &self,
         offset: Offset,
@@ -732,6 +813,11 @@ impl MultiplePartitionConsumer {
     /// [`Offset`]: struct.Offset.html
     /// [`ConsumerConfig`]: struct.ConsumerConfig.html
     #[instrument(skip(self, offset, config))]
+    #[deprecated(
+        since = "0.21.8",
+        note = "use `Fluvio::consumer_with_config()` instead"
+    )]
+    #[allow(deprecated)]
     pub async fn stream_with_config(
         &self,
         offset: Offset,
@@ -761,6 +847,35 @@ impl MultiplePartitionConsumer {
         let streams = streams_result.into_iter().collect::<Result<Vec<_>, _>>()?;
 
         Ok(select_all(streams))
+    }
+}
+
+#[derive(Debug, Clone)]
+pub(crate) enum StreamToServer {
+    UpdateOffset(i64),
+    FlushManagedOffset {
+        offset: i64,
+        callback: StreamToServerCallback<ErrorCode>,
+    },
+    Close,
+}
+
+#[derive(Debug, Clone)]
+pub(crate) enum StreamToServerCallback<T> {
+    NoOp,
+    Channel(Sender<T>),
+}
+
+impl<T> StreamToServerCallback<T> {
+    pub(crate) async fn send(&self, value: T) {
+        match self {
+            Self::NoOp => {}
+            Self::Channel(channel) => {
+                if let Err(err) = channel.send(value).await {
+                    error!("stream callback error: {err:?}");
+                }
+            }
+        }
     }
 }
 

@@ -236,7 +236,7 @@ impl PartitionProducer {
 
         request.isolation = self.config.isolation;
         request.timeout = self.config.timeout;
-        request.smartmodules = self.config.smartmodules.clone();
+        request.smartmodules.clone_from(&self.config.smartmodules);
         request.topics.push(topic_request);
 
         let (response, _) = self.send_to_socket(spu_socket, request).await?;

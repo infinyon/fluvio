@@ -1,5 +1,15 @@
+
+SMDK_BIN ?= smdk
+SMDK_OPT ?=
+
 default: build
 
-build:
-	rustup target add wasm32-unknown-unknown
-	cargo build --profile release-lto --target wasm32-unknown-unknown
+setup:
+	rustup target add wasm32-wasi
+
+build: setup
+	${SMDK_BIN} build ${SMDK_OPT}
+
+build-raw:
+	cargo build --target wasm32-wasi
+

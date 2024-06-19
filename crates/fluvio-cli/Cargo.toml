@@ -38,7 +38,7 @@ smartengine = ["fluvio-smartengine/default"]
 producer-file-io = ["fluvio-cli-common/file-records"]
 
 [dependencies]
-
+async-channel = { workspace = true }
 async-net = { workspace = true }
 async-trait = { workspace = true }
 anyhow = { workspace = true }
@@ -64,6 +64,7 @@ tui = { workspace = true, features = ['crossterm'] }
 futures = { workspace = true }
 futures-util = { workspace = true, features = ["sink"] }
 humantime = { workspace = true }
+mimalloc = { workspace = true }
 static_assertions = { workspace = true }
 sysinfo = { workspace = true }
 serde_yaml = { workspace = true }
@@ -82,7 +83,8 @@ k8-client = { workspace = true, optional = true }
 k8-types = { workspace = true , features = ["core"] }
 fluvio-cluster = { path = "../fluvio-cluster", default-features = false, features = ["cli"], optional = true }
 
-fluvio = { workspace = true  }
+fluvio = { workspace = true }
+fluvio-auth = { workspace = true }
 fluvio-socket = { workspace = true }
 fluvio-command = { workspace = true  }
 fluvio-package-index = { workspace = true }

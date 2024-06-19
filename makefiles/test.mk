@@ -39,7 +39,7 @@ clean_cluster:
 else
 clean_cluster:
 	echo "clean up previous installation"
-	$(FLUVIO_BIN) cluster delete
+	$(FLUVIO_BIN) cluster delete --force
 endif
 
 test-setup:	build-test-ci clean_cluster
@@ -122,6 +122,13 @@ reconnection-test: REPL=1
 reconnection-test: test-setup
 	$(TEST_BIN) reconnection  ${TEST_ARG_COMMON}
 
+consumer-offsets-test: TEST_ARG_EXTRA=--local $(EXTRA_ARG)
+consumer-offsets-test: DEFAULT_SPU=1
+consumer-offsets-test: REPL=1
+consumer-offsets-test: test-setup
+	$(TEST_BIN) consumer_offsets  ${TEST_ARG_COMMON} --partition 1 --topic-name consumer-offset-single
+	$(TEST_BIN) consumer_offsets  ${TEST_ARG_COMMON} --partition 5 --topic-name consumer-offset-multiple
+
 # test rbac with user1 who doesn't have topic creation permission
 # assumes cluster is set
 SC_HOST=localhost
@@ -202,10 +209,17 @@ cli-partition-test-multiple-partitions:
 
 cli-fluvio-smoke:
 	bats $(shell ls -1 ./tests/cli/fluvio_smoke_tests/*.bats | sort -R)
+	bats ./tests/cli/fluvio_smoke_tests/non-concurrent/local-resume.bats
 	bats ./tests/cli/fluvio_smoke_tests/non-concurrent/cluster-delete.bats
 
 cli-fluvio-read-only-smoke:
 	bats $(shell ls -1 ./tests/cli/fluvio_read_only/*.bats | sort -R)
+
+cli-fluvio-mirroring-smoke:
+	bats $(shell ls -1 ./tests/cli/mirroring_smoke_tests/*.bats | sort -R)
+
+cli-fluvio-mirroring-smoke-e2e:
+	bats $(shell ls -1 ./tests/cli/mirroring_smoke_tests/e2e/*.bats | sort -R)
 
 cli-smdk-smoke:
 	bats $(shell ls -1 ./tests/cli/smdk_smoke_tests/*.bats | sort -R)

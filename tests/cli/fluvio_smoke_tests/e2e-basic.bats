@@ -318,9 +318,6 @@ teardown_file() {
 }
 
 @test "Consume all partitions by default" {
-    if [ "$FLUVIO_CLI_RELEASE_CHANNEL" == "stable" ]; then
-        skip "don't run on stable version"
-    fi
     run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_14" -B -d
 
     assert_output --partial "1"
@@ -330,9 +327,6 @@ teardown_file() {
 }
 
 @test "Consume subset of partitions" {
-    if [ "$FLUVIO_CLI_RELEASE_CHANNEL" == "stable" ]; then
-        skip "don't run on stable version"
-    fi
     run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_14" -p 1 -p 2 -B -d
 
     assert_output --partial "1"

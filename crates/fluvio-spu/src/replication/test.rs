@@ -65,7 +65,7 @@ impl TestConfig {
 
     pub fn leader_config(&self) -> SpuConfig {
         let mut config = SpuConfig::default();
-        config.log.base_dir = self.base_dir.clone();
+        config.log.base_dir.clone_from(&self.base_dir);
         config.id = self.base_id;
         config.private_endpoint = format!("{}:{}", HOST, self.base_port);
         config
@@ -74,7 +74,7 @@ impl TestConfig {
     pub fn follower_config(&self, follower_index: u16) -> SpuConfig {
         assert!(follower_index < self.followers);
         let mut config = SpuConfig::default();
-        config.log.base_dir = self.base_dir.clone();
+        config.log.base_dir.clone_from(&self.base_dir);
         config.replication.min_in_sync_replicas = self.in_sync_replica;
         config.id = self.follower_id(follower_index);
         config

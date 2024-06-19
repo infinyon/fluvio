@@ -27,7 +27,7 @@ setup_file() {
     # Test
     cd $CONNECTOR_DIR
     run $CDK_BIN test --target x86_64-unknown-linux-gnu \
-        $CONFIG_FILE_FLAG 
+        $CONFIG_FILE_FLAG
     assert_success
 
     assert_output --partial "Connector runs with process id"
@@ -39,7 +39,7 @@ setup_file() {
     # Test
     cd $CONNECTOR_DIR
     run $CDK_BIN test --target x86_64-unknown-linux-gnu \
-        $CONFIG_FILE_FLAG_V2 
+        $CONFIG_FILE_FLAG_V2
     assert_success
 
     assert_output --partial "Connector runs with process id"
@@ -56,15 +56,18 @@ setup_file() {
     # Deploy
     cd $CONNECTOR_DIR
     run $CDK_BIN deploy --target x86_64-unknown-linux-gnu start \
-        $CONFIG_FILE_FLAG 
+        $CONFIG_FILE_FLAG
     assert_success
 
     assert_output --partial "Connector runs with process id"
 
     sleep 10
 
-    run cat json-test-connector.log
+    run cat my-json-test-connector.log
     assert_output --partial "producing a value"
+    assert_success
+
+    run $CDK_BIN deploy shutdown --name my-json-test-connector
     assert_success
 }
 
@@ -77,15 +80,18 @@ setup_file() {
     # Deploy
     cd $CONNECTOR_DIR
     run $CDK_BIN deploy --target x86_64-unknown-linux-gnu start \
-        $CONFIG_FILE_FLAG_V2 
+        $CONFIG_FILE_FLAG_V2
     assert_success
 
     assert_output --partial "Connector runs with process id"
 
     sleep 10
 
-    run cat json-test-connector.log
+    run cat my-json-test-connector.log
     assert_output --partial "producing a value"
+    assert_success
+
+    run $CDK_BIN deploy shutdown --name my-json-test-connector
     assert_success
 }
 
@@ -105,6 +111,7 @@ setup_file() {
     # Creates a directory to store the dummy readme
     cd $CONNECTOR_DIR
 
+    rm -rf ../testing
     mkdir ../testing
     echo "# Testing Connector Readme" > ../testing/README.md
 
@@ -129,13 +136,16 @@ setup_file() {
 
     mkdir $IPKG_DIR
     cp .hub/json-test-connector-0.1.0.ipkg $IPKG_DIR
-    cp sample-config.yaml $IPKG_DIR 
+    cp sample-config.yaml $IPKG_DIR
 
     cd $IPKG_DIR
 
     run $CDK_BIN deploy start --ipkg json-test-connector-0.1.0.ipkg --config sample-config.yaml
     assert_success
     assert_output --partial "Connector runs with process id"
+
+    run $CDK_BIN deploy shutdown --name my-json-test-connector
+    assert_success
 }
 
 @test "Run connector with --ipkg V2" {
@@ -148,13 +158,75 @@ setup_file() {
 
     mkdir $IPKG_DIR
     cp .hub/json-test-connector-0.1.0.ipkg $IPKG_DIR
-    cp sample-config-v2.yaml $IPKG_DIR 
+    cp sample-config-v2.yaml $IPKG_DIR
 
     cd $IPKG_DIR
 
     run $CDK_BIN deploy start --ipkg json-test-connector-0.1.0.ipkg --config sample-config-v2.yaml
     assert_success
     assert_output --partial "Connector runs with process id"
+
+    run $CDK_BIN deploy shutdown --name my-json-test-connector
+    assert_success
+}
+
+@test "Generate and Builds a Sink Connector Package" {
+    export SINK_CONN_NAME="$PROJECT_NAME_PREFIX-my-sink-conn"
+
+    # move into test dir
+    cd $TEST_DIR
+
+    # generate a sink connector
+    run $CDK_BIN generate $SINK_CONN_NAME \
+        --group "$PROJECT_NAME_PREFIX" \
+        --conn-description "My Sink Connector" \
+        --conn-type sink \
+        --conn-public true
+    assert_success
+
+    # cd into the sink connector directory
+    cd $SINK_CONN_NAME
+
+    # build connector
+    run $CDK_BIN build --target x86_64-unknown-linux-gnu
+    assert_success
+}
+
+@test "Generate and Builds a Source Connector Package" {
+    export SOURCE_CONN_NAME="$PROJECT_NAME_PREFIX-my-source-conn"
+
+    # move into test dir
+    cd $TEST_DIR
+
+    # generate a source connector
+    run $CDK_BIN generate $SOURCE_CONN_NAME \
+        --group "$PROJECT_NAME_PREFIX" \
+        --conn-description "My Source Connector" \
+        --conn-type source \
+        --conn-public true
+    assert_success
+
+    # cd into the source connector directory
+    cd $SOURCE_CONN_NAME
+
+    # build connector
+    run $CDK_BIN build --target x86_64-unknown-linux-gnu
+    assert_success
+}
+
+@test "Fails on unsupported/invalid connector type" {
+    export BAD_TYPE_CONN_NAME="$PROJECT_NAME_PREFIX-my-bad-type-conn"
+
+    # move into test dir
+    cd $TEST_DIR
+
+    # generate a sink connector
+    run $CDK_BIN generate $BAD_TYPE_CONN_NAME \
+        --group "$PROJECT_NAME_PREFIX" \
+        --conn-description "My Source Connector" \
+        --conn-type bad-type \
+        --conn-public true
+    assert_failure
 }
 
 # fix CI authentication to hub service first:

@@ -20,6 +20,9 @@
         ],
         "TableFormat": [
             "All"
+        ],
+        "Mirror": [
+            "All"
         ]
     },
     "Root": {
@@ -45,6 +48,9 @@
             "All"
         ],
         "TableFormat": [
+            "All"
+        ],
+        "Mirror": [
             "All"
         ]
     }

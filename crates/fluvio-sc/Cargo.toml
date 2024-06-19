@@ -32,6 +32,7 @@ cfg-if = { workspace = true }
 clap = { workspace = true,features = ["std", "derive", "env"]}
 event-listener = { workspace = true }
 futures-util = { workspace = true }
+mimalloc = { workspace = true }
 once_cell = { workspace = true }
 rand = { workspace = true }
 regex = { workspace = true }
@@ -46,6 +47,7 @@ tracing = { workspace = true }
 
 
 # Fluvio dependencies
+fluvio = { workspace = true }
 fluvio-auth = { workspace = true }
 fluvio-future = { workspace = true, features = [
     "subscriber",

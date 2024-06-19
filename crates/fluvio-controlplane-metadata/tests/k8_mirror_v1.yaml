@@ -1,0 +1,13 @@
+# full V2 Kubernets CRD
+# 
+apiVersion: fluvio.infinyon.com/v1
+kind: Mirror
+metadata:
+  name: onshore
+spec:
+  mirrorType: 
+    home: 
+      id: onshore-core-1
+      remoteId: offshore-edge-1
+      publicEndpoint: fluvio.com:9000
+    

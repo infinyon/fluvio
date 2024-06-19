@@ -6,6 +6,7 @@
 //!
 
 use fluvio_protocol::link::ErrorCode;
+use fluvio_sc_schema::mirror::MirrorSpec;
 use fluvio_stream_model::core::MetadataItem;
 use tracing::{instrument, trace, debug, error};
 use anyhow::Result;
@@ -33,7 +34,8 @@ pub async fn handle_delete_request<AC: AuthContext, C: MetadataItem>(
     debug!(?del_req, "del request");
 
     let status = if let Some(req) = del_req.downcast()? as Option<DeleteRequest<TopicSpec>> {
-        super::topic::handle_delete_topic(req.key(), auth_ctx).await?
+        let force = req.is_force();
+        super::topic::handle_delete_topic(req.key(), force, auth_ctx).await?
     } else if let Some(req) = del_req.downcast()? as Option<DeleteRequest<CustomSpuSpec>> {
         super::spu::handle_un_register_custom_spu_request(req.key(), auth_ctx).await?
     } else if let Some(req) = del_req.downcast()? as Option<DeleteRequest<SpuGroupSpec>> {
@@ -42,6 +44,8 @@ pub async fn handle_delete_request<AC: AuthContext, C: MetadataItem>(
         super::smartmodule::handle_delete_smartmodule(req.key(), auth_ctx).await?
     } else if let Some(req) = del_req.downcast()? as Option<DeleteRequest<TableFormatSpec>> {
         super::tableformat::handle_delete_tableformat(req.key(), auth_ctx).await?
+    } else if let Some(req) = del_req.downcast()? as Option<DeleteRequest<MirrorSpec>> {
+        super::mirror::handle_unregister_mirror(req.key(), auth_ctx).await?
     } else {
         error!("unknown create request: {:#?}", del_req);
         Status::new(

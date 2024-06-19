@@ -12,6 +12,7 @@ use fluvio_types::SpuId;
 use fluvio_storage::ReplicaStorage;
 
 use crate::config::SpuConfig;
+use crate::kv::consumer::SharedConsumerOffsetStorages;
 use crate::replication::follower::FollowersState;
 use crate::replication::follower::SharedFollowersState;
 use crate::replication::leader::{
@@ -22,6 +23,8 @@ use crate::core::metrics::SpuMetrics;
 use crate::smartengine::SmartEngine;
 
 use super::leader_client::LeaderConnections;
+use super::mirror::MirrorLocalStore;
+use super::mirror::SharedMirrorLocalStore;
 use super::smartmodule::SmartModuleLocalStore;
 use super::spus::SharedSpuLocalStore;
 use super::SharedReplicaLocalStore;
@@ -44,7 +47,9 @@ pub struct GlobalContext<S> {
     status_update: SharedStatusUpdate,
     sm_engine: SmartEngine,
     leaders: Arc<LeaderConnections>,
+    mirrors: SharedMirrorLocalStore,
     metrics: Arc<SpuMetrics>,
+    consumer_offset: SharedConsumerOffsetStorages,
 }
 
 // -----------------------------------
@@ -75,7 +80,9 @@ where
             status_update: StatusMessageSink::shared(),
             sm_engine: SmartEngine::new(),
             leaders: LeaderConnections::shared(spus, replicas),
+            mirrors: MirrorLocalStore::new_shared(),
             metrics,
+            consumer_offset: SharedConsumerOffsetStorages::default(),
         }
     }
 
@@ -100,6 +107,15 @@ where
         &self.smartmodule_localstore
     }
 
+    pub fn mirrors_localstore(&self) -> &MirrorLocalStore {
+        &self.mirrors
+    }
+
+    #[allow(dead_code)]
+    pub fn mirrors_localstore_owned(&self) -> SharedMirrorLocalStore {
+        self.mirrors.clone()
+    }
+
     pub fn leaders_state(&self) -> &ReplicaLeadersState<S> {
         &self.leaders_state
     }
@@ -120,7 +136,7 @@ where
         self.config.clone()
     }
 
-    pub fn follower_notifier(&self) -> &FollowerNotifier {
+    pub fn follower_notifier(&self) -> &Arc<FollowerNotifier> {
         &self.spu_followers
     }
 
@@ -152,6 +168,10 @@ where
 
     pub(crate) fn metrics(&self) -> Arc<SpuMetrics> {
         self.metrics.clone()
+    }
+
+    pub(crate) fn consumer_offset(&self) -> &SharedConsumerOffsetStorages {
+        &self.consumer_offset
     }
 }
 

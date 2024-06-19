@@ -113,6 +113,12 @@ pub enum ErrorCode {
     #[fluvio(tag = 3002)]
     #[error("the fetch session was not found")]
     FetchSessionNotFoud,
+    #[fluvio(tag = 3003)]
+    #[error("offset flush error: {0}")]
+    OffsetFlushRequestError(String),
+    #[fluvio(tag = 3004)]
+    #[error("the offset management is disabled for the stream")]
+    OffsetManagementDisabled,
 
     // Legacy SmartModule errors
     #[cfg(feature = "smartmodule")]
@@ -201,6 +207,25 @@ pub enum ErrorCode {
     #[fluvio(tag = 10001)]
     #[error("Deduplication SmartModule name is invalid: {0}")]
     DeduplicationSmartModuleNameInvalid(String),
+
+    // Remote
+    #[fluvio(tag = 11001)]
+    #[error("the mirror was not found")]
+    MirrorNotFound,
+    #[fluvio(tag = 11002)]
+    #[error("the mirror already exists")]
+    MirrorAlreadyExists,
+    #[fluvio(tag = 11003)]
+    #[error("produce from home is not allowed")]
+    MirrorProduceFromHome,
+    #[fluvio(tag = 11004)]
+    #[error("delete from remote is not allowed")]
+    MirrorDeleteFromRemote,
+
+    // Specs
+    #[fluvio(tag = 12001)]
+    #[error("system {kind} '{name}' can only be deleted forcibly")]
+    SystemSpecDeletionAttempt { kind: String, name: String },
 }
 
 impl ErrorCode {

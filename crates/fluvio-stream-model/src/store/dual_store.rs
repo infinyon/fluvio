@@ -100,22 +100,19 @@ where
     }
 
     /// copy of the value
-    pub async fn value<K: ?Sized>(
-        &self,
-        key: &K,
-    ) -> Option<DualEpochCounter<MetadataStoreObject<S, C>>>
+    pub async fn value<K>(&self, key: &K) -> Option<DualEpochCounter<MetadataStoreObject<S, C>>>
     where
         S::IndexKey: Borrow<K>,
-        K: Eq + Hash,
+        K: ?Sized + Eq + Hash,
     {
         self.read().await.get(key).cloned()
     }
 
     /// copy spec
-    pub async fn spec<K: ?Sized>(&self, key: &K) -> Option<S>
+    pub async fn spec<K>(&self, key: &K) -> Option<S>
     where
         S::IndexKey: Borrow<K>,
-        K: Eq + Hash,
+        K: ?Sized + Eq + Hash,
     {
         self.read().await.get(key).map(|value| value.spec.clone())
     }
@@ -135,10 +132,10 @@ where
         }
     }
 
-    pub async fn contains_key<K: ?Sized>(&self, key: &K) -> bool
+    pub async fn contains_key<K>(&self, key: &K) -> bool
     where
         S::IndexKey: Borrow<K>,
-        K: Eq + Hash,
+        K: ?Sized + Eq + Hash,
     {
         self.read().await.contains_key(key)
     }

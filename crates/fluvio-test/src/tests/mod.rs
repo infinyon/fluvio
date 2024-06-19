@@ -15,6 +15,7 @@ pub mod expected_pass;
 pub mod expected_timeout;
 pub mod expected_fail_join_fail_first;
 pub mod expected_fail_join_success_first;
+pub mod consumer_offsets;
 // pub mod stats;
 
 use serde::{Serialize, Deserialize};

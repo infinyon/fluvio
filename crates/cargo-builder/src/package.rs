@@ -121,6 +121,16 @@ impl PackageInfo {
         Ok(path)
     }
 
+    /// path to package's wasm32-wasi target
+    pub fn target_wasm32_wasi_path(&self) -> anyhow::Result<PathBuf> {
+        let mut path = self.target_dir.clone();
+        path.push("wasm32-wasi");
+        path.push(&self.profile);
+        path.push(self.target_name()?.replace('-', "_"));
+        path.set_extension("wasm");
+        Ok(path)
+    }
+
     pub fn target_name(&self) -> anyhow::Result<&str> {
         self.package
             .targets
@@ -167,14 +177,18 @@ mod tests {
         assert!(package_info
             .package_path()
             .ends_with("crates/cargo-builder"));
-        assert_eq!(package_info.target_name().unwrap(), "cargo-builder");
+        assert_eq!(package_info.target_name().unwrap(), "cargo_builder");
         assert!(package_info
             .target_bin_path()
             .unwrap()
-            .ends_with("x86_64-unknown-linux-gnu/release-lto/cargo-builder"));
+            .ends_with("x86_64-unknown-linux-gnu/release-lto/cargo_builder"));
         assert!(package_info
             .target_wasm32_path()
             .unwrap()
             .ends_with("wasm32-unknown-unknown/release-lto/cargo_builder.wasm"));
+        assert!(package_info
+            .target_wasm32_wasi_path()
+            .unwrap()
+            .ends_with("wasm32-wasi/release-lto/cargo_builder.wasm"));
     }
 }

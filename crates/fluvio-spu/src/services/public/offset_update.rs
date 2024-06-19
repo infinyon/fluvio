@@ -27,7 +27,7 @@ pub(crate) async fn handle_offset_update(
                     session_id = update.session_id,
                     "published offsets"
                 );
-                publisher.update(update.offset);
+                publisher.offset_publisher.update(update.offset);
                 OffsetUpdateStatus {
                     session_id: update.session_id,
                     error: ErrorCode::None,

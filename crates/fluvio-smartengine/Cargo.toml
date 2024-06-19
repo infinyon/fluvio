@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-smartengine"
-version = "0.7.10"
+version = "0.7.13"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -12,8 +12,7 @@ description = "The official Fluvio SmartEngine"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-engine = ["wasmtime"]
-wasi = ["wasmtime-wasi", "engine"]
+engine = ["wasmtime", "wasmtime-wasi"]
 transformation = ["serde_json", "serde_yaml", "humantime-serde"]
 default = ["engine"]
 

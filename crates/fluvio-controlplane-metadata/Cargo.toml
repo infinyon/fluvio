@@ -1,7 +1,7 @@
 [package]
 name = "fluvio-controlplane-metadata"
 edition = "2021"
-version = "0.25.1"
+version = "0.28.2"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Metadata definition for Fluvio control plane"
 repository = "https://github.com/infinyon/fluvio"
@@ -40,7 +40,7 @@ flv-util = { workspace = true }
 
 fluvio-types = { workspace = true }
 fluvio-stream-model = { workspace = true }
-fluvio-protocol = { workspace = true, features = [ "record",] }
+fluvio-protocol = { workspace = true, features = [ "record", "link", "api"] }
 
 
 [dev-dependencies]

@@ -91,6 +91,58 @@ mod policy {
 
     type Role = String;
 
+    #[derive(Debug, Clone, Eq, PartialEq)]
+    pub struct ActionUrn {
+        pub action: Action,
+        pub instance: Option<String>,
+    }
+
+    impl ActionUrn {
+        pub fn new(action: Action, instance: Option<String>) -> Self {
+            Self { action, instance }
+        }
+    }
+
+    impl Serialize for ActionUrn {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: serde::Serializer,
+        {
+            let action_str =
+                serde_json::to_string(&self.action).map_err(serde::ser::Error::custom)?;
+            let urn = match &self.instance {
+                Some(instance) => {
+                    format!("{}:{}", action_str.trim_matches('"'), instance)
+                }
+                None => action_str.trim_matches('"').to_string(),
+            };
+            serializer.serialize_str(&urn)
+        }
+    }
+
+    impl<'de> serde::Deserialize<'de> for ActionUrn {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: serde::Deserializer<'de>,
+        {
+            use serde::de::Error;
+            let urn = String::deserialize(deserializer)?;
+            let parts: Vec<&str> = urn.split(':').collect();
+
+            let action_str = parts.first().ok_or(Error::custom("missing action"))?;
+            let action = serde_json::from_str(format!("\"{}\"", action_str).as_str())
+                .map_err(Error::custom)?;
+
+            let instance = if parts.len() > 1 {
+                Some(parts[1].to_string())
+            } else {
+                None
+            };
+
+            Ok(Self { action, instance })
+        }
+    }
+
     #[derive(Debug, Clone, PartialEq, Hash, Eq, Deserialize, Serialize)]
     pub enum Action {
         Create,
@@ -113,15 +165,16 @@ mod policy {
         fn from(action: InstanceAction) -> Self {
             match action {
                 InstanceAction::Delete => Action::Delete,
+                InstanceAction::Update => Action::Update,
             }
         }
     }
 
     #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
-    pub struct BasicRbacPolicy(pub HashMap<Role, HashMap<ObjectType, Vec<Action>>>);
+    pub struct BasicRbacPolicy(pub HashMap<Role, HashMap<ObjectType, Vec<ActionUrn>>>);
 
-    impl From<HashMap<Role, HashMap<ObjectType, Vec<Action>>>> for BasicRbacPolicy {
-        fn from(map: HashMap<Role, HashMap<ObjectType, Vec<Action>>>) -> Self {
+    impl From<HashMap<Role, HashMap<ObjectType, Vec<ActionUrn>>>> for BasicRbacPolicy {
+        fn from(map: HashMap<Role, HashMap<ObjectType, Vec<ActionUrn>>>) -> Self {
             Self(map)
         }
     }
@@ -141,7 +194,7 @@ mod policy {
             &self,
             action: Action,
             object_type: ObjectType,
-            _instance: Option<&str>,
+            instance: Option<&str>,
             identity: &X509Identity,
         ) -> Result<bool, AuthError> {
             //   let (action,object,_instance) = request;
@@ -155,7 +208,17 @@ mod policy {
                             .get(&object_type)
                             .map(|actions| {
                                 actions.iter().any(|permission| {
-                                    permission == &action || permission == &Action::All
+                                    match (&permission.instance, instance) {
+                                        (Some(_), None) => return false,
+                                        (Some(pi), Some(i)) => {
+                                            if !pi.contains(&i.to_string()) {
+                                                return false;
+                                            }
+                                        }
+                                        _ => {}
+                                    }
+
+                                    permission.action == action || permission.action == Action::All
                                 })
                             })
                             .unwrap_or(false)
@@ -170,14 +233,33 @@ mod policy {
     impl Default for BasicRbacPolicy {
         // default only allows the `Root` role to have full permissions;
         fn default() -> Self {
-            let mut root_policy: HashMap<ObjectType, Vec<Action>> = HashMap::new();
+            let mut root_policy: HashMap<ObjectType, Vec<ActionUrn>> = HashMap::new();
 
-            root_policy.insert(ObjectType::Spu, vec![Action::All]);
-            root_policy.insert(ObjectType::CustomSpu, vec![Action::All]);
-            root_policy.insert(ObjectType::SpuGroup, vec![Action::All]);
-            root_policy.insert(ObjectType::Topic, vec![Action::All]);
-            root_policy.insert(ObjectType::Partition, vec![Action::All]);
-            root_policy.insert(ObjectType::TableFormat, vec![Action::All]);
+            root_policy.insert(ObjectType::Spu, vec![ActionUrn::new(Action::All, None)]);
+            root_policy.insert(
+                ObjectType::CustomSpu,
+                vec![ActionUrn::new(Action::All, None)],
+            );
+            root_policy.insert(
+                ObjectType::SpuGroup,
+                vec![ActionUrn::new(Action::All, None)],
+            );
+            root_policy.insert(ObjectType::Topic, vec![ActionUrn::new(Action::All, None)]);
+            root_policy.insert(
+                ObjectType::Partition,
+                vec![ActionUrn::new(Action::All, None)],
+            );
+            root_policy.insert(
+                ObjectType::TableFormat,
+                vec![ActionUrn::new(Action::All, None)],
+            );
+            root_policy.insert(
+                ObjectType::Mirror,
+                vec![
+                    ActionUrn::new(Action::All, Some("user1".to_string())),
+                    ActionUrn::new(Action::All, Some("user2".to_string())),
+                ],
+            );
 
             let mut policy = HashMap::new();
 
@@ -202,16 +284,50 @@ mod test {
     use super::ObjectType;
 
     #[test]
+    fn test_action_urn_serialization() {
+        let action_urn = ActionUrn::new(Action::Read, Some("user1".to_string()));
+        let serialized =
+            serde_json::to_string(&action_urn).expect("failed to serialize action urn");
+        assert_eq!(serialized, r#""Read:user1""#);
+    }
+
+    #[test]
+    fn test_action_urn_deserialization() {
+        let deserialized: ActionUrn =
+            serde_json::from_str(r#""Read:user1""#).expect("failed to deserialize action urn");
+        assert_eq!(
+            deserialized,
+            ActionUrn::new(Action::Read, Some("user1".to_string()))
+        );
+    }
+
+    #[test]
     fn test_policy_serialization() {
         let mut policy = BasicRbacPolicy::default();
 
         let mut default_role = HashMap::new();
 
-        default_role.insert(ObjectType::Topic, vec![Action::All]);
-        default_role.insert(ObjectType::Partition, vec![Action::All]);
-        default_role.insert(ObjectType::SpuGroup, vec![Action::Read]);
-        default_role.insert(ObjectType::CustomSpu, vec![Action::Read]);
-        default_role.insert(ObjectType::Spu, vec![Action::Read]);
+        default_role.insert(ObjectType::Topic, vec![ActionUrn::new(Action::All, None)]);
+        default_role.insert(
+            ObjectType::Partition,
+            vec![ActionUrn::new(Action::All, None)],
+        );
+        default_role.insert(
+            ObjectType::SpuGroup,
+            vec![ActionUrn::new(Action::Read, None)],
+        );
+        default_role.insert(
+            ObjectType::CustomSpu,
+            vec![ActionUrn::new(Action::Read, None)],
+        );
+        default_role.insert(ObjectType::Spu, vec![ActionUrn::new(Action::Read, None)]);
+        default_role.insert(
+            ObjectType::Mirror,
+            vec![
+                ActionUrn::new(Action::Read, Some("edge1".to_string())),
+                ActionUrn::new(Action::Read, Some("edge2".to_string())),
+            ],
+        );
 
         policy.0.insert(String::from("Default"), default_role);
 
@@ -234,7 +350,20 @@ mod test {
         let identity = X509Identity::new("User".to_owned(), vec!["Default".to_owned()]);
 
         let mut role1 = HashMap::new();
-        role1.insert(ObjectType::Topic, vec![Action::Delete, Action::Read]);
+        role1.insert(
+            ObjectType::Topic,
+            vec![
+                ActionUrn::new(Action::Delete, None),
+                ActionUrn::new(Action::Read, None),
+            ],
+        );
+        role1.insert(
+            ObjectType::Mirror,
+            vec![
+                ActionUrn::new(Action::Update, Some("user1".to_string())),
+                ActionUrn::new(Action::Update, Some("user2".to_string())),
+            ],
+        );
 
         policy.0.insert(String::from("Default"), role1);
 
@@ -252,6 +381,18 @@ mod test {
             .expect("eval"));
         assert!(policy
             .evaluate(Action::Delete, ObjectType::Topic, Some("test"), &identity)
+            .await
+            .expect("eval"));
+        assert!(policy
+            .evaluate(Action::Update, ObjectType::Mirror, Some("user1"), &identity)
+            .await
+            .expect("eval"));
+        assert!(policy
+            .evaluate(Action::Update, ObjectType::Mirror, Some("user2"), &identity)
+            .await
+            .expect("eval"));
+        assert!(!policy
+            .evaluate(Action::Update, ObjectType::Mirror, Some("user3"), &identity)
             .await
             .expect("eval"));
     }

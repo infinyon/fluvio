@@ -1,8 +1,11 @@
 use std::path::{Path, PathBuf};
-use std::fs::remove_dir_all;
-use anyhow::{Result, anyhow, Context};
+use std::fs::{remove_dir_all, read_to_string};
+
+use anyhow::{anyhow, bail, Context, Result};
 use cargo_builder::package::PackageInfo;
 use clap::Parser;
+use toml::Value;
+use tracing::debug;
 
 use fluvio_controlplane_metadata::smartmodule::SmartModuleMetadata;
 use fluvio_future::task::run_block_on;
@@ -11,9 +14,10 @@ use hubutil::{
     DEF_HUB_INIT_DIR, DEF_HUB_PKG_META, HubAccess, PackageMeta, PkgVisibility, PackageMetaExt,
     package_meta_relative_path, packagename_validate,
 };
-use tracing::debug;
 
+use crate::ENV_SMDK_NOWASI;
 use crate::cmd::PackageCmd;
+use crate::hub::set_hubid;
 
 pub const SMARTMODULE_TOML: &str = "SmartModule.toml";
 
@@ -43,14 +47,29 @@ pub struct PublishCmd {
 
     #[arg(long, hide_short_help = true)]
     remote: Option<String>,
+
+    #[arg(long, env=ENV_SMDK_NOWASI, hide_short_help = true)]
+    nowasi: bool,
+
+    /// Relative path to this connector package README
+    #[clap(long, default_value = "./README.md")]
+    readme: PathBuf,
 }
 
 impl PublishCmd {
     pub(crate) fn process(&self) -> Result<()> {
-        let access = HubAccess::default_load(&self.remote)?;
+        let mut access = HubAccess::default_load(&self.remote)?;
+
+        if !self.readme.exists() {
+            return Err(anyhow!("README file not found at {:?}", self.readme));
+        }
 
         match (self.pack, self.push) {
             (false, false) | (true, true) => {
+                if self.push {
+                    self.validate_group(&mut access)?;
+                }
+
                 let hubdir = self.run_in_cargo_project()?;
                 let package_meta_path = self.package_meta_path(&hubdir);
                 let pkgdata = package_assemble(package_meta_path, &access)?;
@@ -67,6 +86,8 @@ impl PublishCmd {
 
             // --push only, needs ipkg file or expects to be run in project folder
             (false, true) => {
+                self.validate_group(&mut access)?;
+
                 let ipkg_path = match self.ipkg.as_ref() {
                     Some(ipkg_path) => ipkg_path.into(),
                     None => self.default_ipkg_file_path()?,
@@ -97,7 +118,13 @@ impl PublishCmd {
 
         Self::cleanup(&hubdir)?;
 
-        init_package_template(&package_info)?;
+        init_package_template(
+            &package_info,
+            &InitPackageTemplateOptions {
+                readme: &self.readme,
+                nowasi: self.nowasi,
+            },
+        )?;
         check_package_meta_visiblity(&package_info)?;
 
         Ok(hubdir)
@@ -136,6 +163,22 @@ impl PublishCmd {
 
         Ok(ipkg_path)
     }
+
+    fn validate_group(&self, access: &mut HubAccess) -> Result<()> {
+        let opt = self.package.as_opt();
+        let pkg_info = PackageInfo::from_options(&opt).context("Failed to read package info. Should either specify --ipkg or run in the smartmodule project folder")?;
+        let sm_toml_path = find_smartmodule_toml(&pkg_info)?;
+        let sm_toml_file = read_to_string(sm_toml_path)?;
+        let sm_toml: Value = toml::from_str(&sm_toml_file)?;
+
+        if let Value::Table(package) = &sm_toml["package"] {
+            if let Some(Value::String(groupname)) = package.get("group") {
+                return set_hubid(groupname, access);
+            }
+        }
+
+        bail!("Failed to read group from smartmodule.toml")
+    }
 }
 
 pub fn package_assemble<P: AsRef<Path>>(pkgmeta: P, access: &HubAccess) -> Result<String> {
@@ -166,7 +209,15 @@ pub fn package_push(opts: &PublishCmd, pkgpath: &str, access: &HubAccess) -> Res
     Ok(())
 }
 
-pub fn init_package_template(package_info: &PackageInfo) -> Result<()> {
+pub struct InitPackageTemplateOptions<'a> {
+    pub nowasi: bool,
+    pub readme: &'a PathBuf,
+}
+
+pub fn init_package_template(
+    package_info: &PackageInfo,
+    options: &InitPackageTemplateOptions,
+) -> Result<()> {
     let sm_toml_path = find_smartmodule_toml(package_info)?;
     let sm_metadata = SmartModuleMetadata::from_toml(&sm_toml_path)?;
 
@@ -198,7 +249,11 @@ pub fn init_package_template(package_info: &PackageInfo) -> Result<()> {
         })?,
     );
 
-    let wasmpath = package_info.target_wasm32_path()?;
+    let wasmpath = if options.nowasi {
+        package_info.target_wasm32_path()?
+    } else {
+        package_info.target_wasm32_wasi_path()?
+    };
     pm.manifest.push(
         package_meta_relative_path(&package_meta_path, &wasmpath).ok_or_else(|| {
             anyhow!(
@@ -207,6 +262,11 @@ pub fn init_package_template(package_info: &PackageInfo) -> Result<()> {
             )
         })?,
     );
+
+    let readme_path = options.readme.canonicalize()?;
+    let readme_md_relative_path = package_meta_relative_path(&package_meta_path, &readme_path);
+    pm.manifest
+        .push(readme_md_relative_path.unwrap_or_else(|| readme_path.to_string_lossy().to_string()));
 
     println!("Creating package {}", pm.pkg_name());
     pm.write(&package_meta_path)?;
@@ -271,8 +331,8 @@ impl PackageMetaSmartModuleExt for PackageMeta {
 
         packagename_validate(&spk.name)?;
 
-        self.name = spk.name.clone();
-        self.group = spk.group.clone();
+        self.name.clone_from(&spk.name);
+        self.group.clone_from(&spk.group);
         self.version = spk.version.to_string();
         self.description = spk.description.clone().unwrap_or_default();
         self.visibility = PkgVisibility::from(&spk.visibility);

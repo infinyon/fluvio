@@ -111,6 +111,8 @@ impl TryFrom<FluvioConfig> for fluvio_socket::ClientConfig {
 
 #[cfg(test)]
 mod test_metadata {
+    use fluvio_types::config_file::SaveLoadConfig;
+
     use serde::{Deserialize, Serialize};
     use crate::config::{Config, ConfigFile};
 
@@ -126,7 +128,7 @@ endpoint = "127.0.0.1:9003"
 [cluster.local.metadata.custom]
 name = "foo"
 "#;
-        let profile: Config = toml::de::from_str(toml).unwrap();
+        let profile = Config::load_str(toml).unwrap();
         let config = profile.cluster("local").unwrap();
 
         #[derive(Deserialize, Debug, PartialEq)]
@@ -153,7 +155,7 @@ cluster = "local"
 [cluster.local]
 endpoint = "127.0.0.1:9003"
 "#;
-        let mut profile: Config = toml::de::from_str(toml).unwrap();
+        let mut profile = Config::load_str(toml).unwrap();
         let config = profile.cluster_mut("local").unwrap();
 
         #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -186,7 +188,7 @@ endpoint = "127.0.0.1:9003"
 [cluster.local.metadata.installation]
 type = "local"
 "#;
-        let mut profile: Config = toml::de::from_str(toml).unwrap();
+        let mut profile = Config::load_str(toml).unwrap();
         let config = profile.cluster_mut("local").unwrap();
 
         #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -206,7 +208,7 @@ type = "local"
             }
         );
 
-        install.typ = "cloud".to_owned();
+        "cloud".clone_into(&mut install.typ);
 
         config
             .update_metadata_by_name("installation", install)
@@ -231,7 +233,7 @@ endpoint = "127.0.0.1:9003"
 [cluster.local.metadata.installation]
 type = "local"
 "#;
-        let mut profile: Config = toml::de::from_str(toml).unwrap();
+        let mut profile = Config::load_str(toml).unwrap();
         let config = profile.cluster_mut("local").unwrap();
 
         #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
