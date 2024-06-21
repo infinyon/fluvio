@@ -9,6 +9,7 @@ mod table_format;
 mod record_format;
 
 use table_format::TableModel;
+
 pub use cmd::ConsumeOpt;
 
 mod cmd {
@@ -16,7 +17,7 @@ mod cmd {
     use std::sync::atomic::{AtomicBool, Ordering};
     use std::time::{UNIX_EPOCH, Duration};
     use std::{io::Error as IoError, path::PathBuf};
-    use std::io::{self, ErrorKind, Stdout};
+    use std::io::{self, ErrorKind, IsTerminal, Stdout};
     use std::collections::BTreeMap;
     use std::fmt::Debug;
     use std::sync::Arc;
@@ -708,7 +709,8 @@ mod cmd {
 
         fn print_status(&self) {
             use colored::*;
-            if !atty::is(atty::Stream::Stdout) {
+
+            if !std::io::stdout().is_terminal() {
                 return;
             }
 
