@@ -125,6 +125,11 @@ mod admin {
         type DeleteKey: Encoder + Decoder + Debug + Default;
     }
 
+    pub trait UpdatableAdminSpec: Spec + Encoder + Decoder {
+        type UpdateKey: Encoder + Decoder + Debug + Default;
+        type UpdateAction: Encoder + Decoder + Debug + Default + Clone;
+    }
+
     /// try to encode type object into dynamic type which can be downcast later
     pub trait TryEncodableFrom<T>: Sized + Encoder + Decoder {
         fn try_encode_from(value: T, version: Version) -> Result<Self>;
