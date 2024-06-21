@@ -189,7 +189,12 @@ impl<C: MetadataItem> TopicNextState<C> {
                     validate_computed_topic_parameters(param)
                 }
                 TopicResolution::Pending | TopicResolution::InsufficientResources => {
-                    let replica_map = scheduler.generate_replica_map_for_topic(param).await;
+                    let replica_map = scheduler
+                        .generate_replica_map_for_topic(
+                            param,
+                            Some(&topic.status().replica_map.clone().into()),
+                        )
+                        .await;
                     if replica_map.scheduled() {
                         debug!(
                             topic = %topic.key(),
@@ -269,7 +274,10 @@ impl<C: MetadataItem> TopicNextState<C> {
                     };
 
                     let replica_map = scheduler
-                        .generate_replica_map_for_topic(&replica_param)
+                        .generate_replica_map_for_topic(
+                            &replica_param,
+                            Some(&topic.status().replica_map.clone().into()),
+                        )
                         .await;
 
                     if replica_map.scheduled() {
