@@ -85,7 +85,7 @@ pub async fn handle_add_partition<AC: AuthContext, C: MetadataItem>(
             }
             ReplicaSpec::Computed(replica_param) => {
                 let mut new_replica_param = replica_param.clone();
-                new_replica_param.partitions += request.number_of_partition;
+                new_replica_param.partitions += request.count;
                 spec.set_replicas(ReplicaSpec::Computed(new_replica_param));
             }
 

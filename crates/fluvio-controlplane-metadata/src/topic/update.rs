@@ -2,7 +2,7 @@ use fluvio_protocol::{Decoder, Encoder};
 
 #[derive(Debug, Default, Encoder, Decoder, Clone)]
 pub struct AddPartition {
-    pub number_of_partition: u32,
+    pub count: u32,
 }
 
 #[derive(Debug, Encoder, Decoder, Clone)]

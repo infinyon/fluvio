@@ -14,9 +14,9 @@ use fluvio::Fluvio;
 pub struct AddPartitionOpt {
     /// Topic name
     topic: String,
-    /// Number of Partitions
-    #[arg(long, default_value = "1")]
-    number_of_partition: i32,
+    /// Number of partitions to add
+    #[arg(short, long, default_value = "1")]
+    count: i32,
 }
 
 impl AddPartitionOpt {
@@ -24,7 +24,7 @@ impl AddPartitionOpt {
         let admin = fluvio.admin().await;
 
         let request = AddPartition {
-            number_of_partition: self.number_of_partition as u32,
+            count: self.count as u32,
         };
 
         let action = UpdateTopicAction::AddPartition(request);
