@@ -7,6 +7,7 @@ mod partition;
 mod api_version;
 mod create;
 mod delete;
+mod update;
 mod list;
 mod watch;
 mod tableformat;

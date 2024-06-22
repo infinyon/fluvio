@@ -1,12 +1,14 @@
 //!
 //! # Create Topic Request
 //!
-//! Create topic request handler. There are 2 types of topics:
+//! Create topic request handler. There are 3 types of topics:
 //!  * Topics with Computed Replicas (aka. Computed Topics)
 //!  * Topics with Assigned Replicas (aka. Assigned Topics)
+//!  * Topics with Mirror Replicas (aka. Mirror Topics)
 //!
 //! Computed Topics use Fluvio algorithm for replica assignment.
 //! Assigned Topics allow the users to apply their custom-defined replica assignment.
+//! Mirror Topics are used for mirroring data from one topic to another.
 //!
 
 use tracing::{info, debug, trace, instrument};

@@ -2,7 +2,7 @@ pub use fluvio_controlplane_metadata::tableformat::*;
 
 mod convert {
 
-    use crate::{DeletableAdminSpec, CreatableAdminSpec};
+    use crate::{CreatableAdminSpec, DeletableAdminSpec, UpdatableAdminSpec};
 
     use crate::AdminSpec;
     use super::TableFormatSpec;
@@ -13,5 +13,10 @@ mod convert {
 
     impl DeletableAdminSpec for TableFormatSpec {
         type DeleteKey = String;
+    }
+
+    impl UpdatableAdminSpec for TableFormatSpec {
+        type UpdateKey = String;
+        type UpdateAction = String;
     }
 }
