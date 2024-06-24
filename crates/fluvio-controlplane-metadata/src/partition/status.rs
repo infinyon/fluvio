@@ -38,6 +38,7 @@ pub struct PartitionStatus {
     #[fluvio(min_version = 5)]
     pub size: i64,
     pub is_being_deleted: bool,
+    #[cfg_attr(feature = "use_serde", serde(default))]
     #[fluvio(min_version = 15)]
     pub base_offset: i64,
 }
