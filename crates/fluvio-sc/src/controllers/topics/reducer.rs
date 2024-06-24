@@ -145,6 +145,22 @@ impl<C: MetadataItem> TopicReducer<C> {
             return;
         }
 
+        if topic.status().is_resolution_provisioned()
+            && topic.spec().replicas().partitions() > topic.status().replica_map.len() as u32
+        {
+            debug!(
+                "topic: {} has not enough partitions, waiting for more",
+                topic.key()
+            );
+            let mut status = topic.status().clone();
+            status.resolution = TopicResolution::Pending;
+            actions.topics.push(WSAction::<TopicSpec, C>::UpdateStatus((
+                topic.key_owned(),
+                status,
+            )));
+            return;
+        }
+
         let mut scheduler =
             PartitionScheduler::init(self.spu_store(), self.partition_store()).await;
         let next_state = TopicNextState::compute_next_state(topic, &mut scheduler).await;

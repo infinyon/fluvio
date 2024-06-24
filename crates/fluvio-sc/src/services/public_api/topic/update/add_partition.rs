@@ -1,12 +1,13 @@
 //!
 //! # Add Partition Request
 //!
-use tracing::instrument;
 use std::io::Error;
+
+use tracing::instrument;
 
 use fluvio_protocol::link::ErrorCode;
 use fluvio_sc_schema::{
-    topic::{AddPartition, ReplicaSpec, TopicResolution},
+    topic::{AddPartition, ReplicaSpec},
     Status,
 };
 use fluvio_stream_model::core::{MetadataItem, Spec};
@@ -58,19 +59,10 @@ pub async fn handle_add_partition<AC: AuthContext, C: MetadataItem>(
             }
         }
 
-        let mut status = topic.status().clone();
-        status.resolution = TopicResolution::Pending;
-
         auth_ctx
             .global_ctx
             .topics()
             .create_spec(topic.key.clone(), spec)
-            .await?;
-
-        auth_ctx
-            .global_ctx
-            .topics()
-            .update_status(topic.key.clone(), status)
             .await?;
 
         Ok(Status::new_ok(topic_name))

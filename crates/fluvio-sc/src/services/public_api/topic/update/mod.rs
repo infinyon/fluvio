@@ -3,10 +3,10 @@ mod add_partition;
 use std::io::{Error, ErrorKind};
 
 use anyhow::Result;
+use tracing::{info, instrument, trace};
 
 use fluvio_controlplane_metadata::extended::SpecExt;
 use fluvio_protocol::link::ErrorCode;
-use tracing::{info, instrument, trace};
 use fluvio_auth::{AuthContext, InstanceAction};
 use fluvio_stream_model::core::MetadataItem;
 use fluvio_sc_schema::{
