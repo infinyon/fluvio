@@ -30,15 +30,14 @@ impl AddPartitionOpt {
     pub async fn process(self, fluvio: &Fluvio) -> Result<()> {
         let admin = fluvio.admin().await;
 
-        let replica_map_before = admin
+        let topic = admin
             .list::<TopicSpec, _>(vec![self.topic.clone()])
             .await?
-            .first()
-            .ok_or_else(|| anyhow!("Topic not found"))?
-            .status
-            .replica_map
-            .clone();
+            .into_iter()
+            .find(|t| t.name == self.topic)
+            .ok_or_else(|| anyhow!("topic \"{}\" not found", self.topic))?;
 
+        let replica_map_before = topic.status.replica_map.clone();
         let replica_map_after = self
             .add_and_watch_new_partitions(&replica_map_before, &admin)
             .await?;
