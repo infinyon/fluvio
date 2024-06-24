@@ -4,22 +4,23 @@
 //! Maps SC Api Requests with their associated Responses.
 //!
 
-use std::convert::{TryInto};
+use std::convert::TryInto;
 use std::io::Error as IoError;
 use std::fmt::Debug;
 
-use tracing::{debug};
+use tracing::debug;
 
-use fluvio_protocol::bytes::{Buf};
+use fluvio_protocol::bytes::Buf;
 use fluvio_protocol::api::{ApiMessage, RequestHeader, RequestMessage};
 use fluvio_protocol::api::api_decode;
-use fluvio_protocol::core::{Decoder};
+use fluvio_protocol::core::Decoder;
 use fluvio_protocol::link::versions::ApiVersionsRequest;
 
 use crate::mirroring::ObjectMirroringRequest;
 use crate::AdminPublicApiKey;
 use crate::objects::{
-    ObjectApiCreateRequest, ObjectApiDeleteRequest, ObjectApiListRequest, ObjectApiWatchRequest,
+    ObjectApiCreateRequest, ObjectApiDeleteRequest, ObjectApiListRequest, ObjectApiUpdateRequest,
+    ObjectApiWatchRequest,
 };
 
 /// Non generic AdminRequest, This is typically used Decoding
@@ -31,6 +32,7 @@ pub enum AdminPublicDecodedRequest {
     ListRequest(RequestMessage<ObjectApiListRequest>),
     WatchRequest(RequestMessage<ObjectApiWatchRequest>),
     MirroringRequest(RequestMessage<ObjectMirroringRequest>),
+    UpdateRequest(RequestMessage<ObjectApiUpdateRequest>),
 }
 
 impl Default for AdminPublicDecodedRequest {
@@ -87,6 +89,10 @@ impl ApiMessage for AdminPublicDecodedRequest {
                 header,
                 ObjectMirroringRequest::decode_from(src, version)?,
             ))),
+            AdminPublicApiKey::Update => Ok(Self::UpdateRequest(RequestMessage::new(
+                header,
+                ObjectApiUpdateRequest::decode_from(src, version)?,
+            ))),
         }
     }
 }
@@ -98,7 +104,7 @@ mod test {
 
     use fluvio_controlplane_metadata::topic::TopicSpec;
     use fluvio_protocol::api::RequestMessage;
-    use fluvio_protocol::{Encoder};
+    use fluvio_protocol::Encoder;
     use fluvio_protocol::api::ApiMessage;
 
     use crate::objects::{ObjectApiListRequest, ListRequest, COMMON_VERSION};

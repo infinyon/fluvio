@@ -82,6 +82,7 @@ pub struct TopicProducerConfig {
     /// If there is a topic level compression and it is not compatible with this setting, the producer
     /// initialization will fail.
     #[builder(setter(into, strip_option), default)]
+    #[allow(dead_code)]
     pub(crate) compression: Option<Compression>,
 
     /// Max time duration that the server is allowed to process the batch.

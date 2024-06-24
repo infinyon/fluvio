@@ -1,5 +1,6 @@
 mod create;
 mod delete;
+mod update;
 mod list;
 mod watch;
 mod metadata;
@@ -8,6 +9,7 @@ mod metadata;
 pub mod classic;
 
 pub use create::*;
+pub use update::*;
 pub use delete::*;
 pub use list::*;
 pub use watch::*;

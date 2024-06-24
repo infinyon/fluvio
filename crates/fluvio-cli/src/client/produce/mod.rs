@@ -563,7 +563,9 @@ mod cmd {
 
         #[cfg(feature = "producer-file-io")]
         fn interactive_mode(&self) -> bool {
-            self.file.is_none() && atty::is(atty::Stream::Stdin)
+            use std::io::IsTerminal;
+
+            self.file.is_none() && std::io::stdin().is_terminal()
         }
 
         #[cfg(not(feature = "producer-file-io"))]
