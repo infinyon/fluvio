@@ -100,6 +100,7 @@ where
     pub async fn generate_replica_map_for_topic(
         &'a mut self,
         param: &TopicReplicaParam,
+        actual_replica_map: Option<&ReplicaPartitionMap>,
     ) -> ReplicaPartitionMap {
         let spu_count = self.spus.count().await as ReplicationFactor;
         if spu_count < param.replication_factor {
@@ -109,7 +110,8 @@ where
             );
             ReplicaPartitionMap::default()
         } else {
-            self.generate_partitions_without_rack(param).await
+            self.generate_partitions_without_rack(param, actual_replica_map)
+                .await
         }
     }
 
@@ -117,6 +119,7 @@ where
     pub(crate) async fn generate_partitions_without_rack(
         &mut self,
         param: &TopicReplicaParam,
+        actual_replica_map: Option<&ReplicaPartitionMap>,
     ) -> ReplicaPartitionMap {
         let mut online_spus = self.spus.online_spu_ids().await;
         online_spus.sort_unstable();
@@ -125,6 +128,17 @@ where
         let mut partition_map = BTreeMap::new();
         for p_idx in 0..param.partitions {
             let mut reserved_spus: Vec<i32> = vec![]; // spu reserved
+
+            // ensure we don't change old partitions for no reason
+            if let Some(actual_replica_map) = actual_replica_map {
+                if let Some(replicas) = actual_replica_map.get(&(p_idx as PartitionId)) {
+                    if replicas.len() == param.replication_factor as usize {
+                        partition_map.insert(p_idx as PartitionId, replicas.clone());
+                        continue;
+                    }
+                }
+            }
+
             for r_idx in 0..param.replication_factor {
                 // for each replica, they must be on different spu, anti-affinity
                 if let Some(spu) = self.scheduling_groups.find_suitable_spu(
@@ -183,7 +197,9 @@ pub mod replica_map_test {
         // this should be evenly distributed
         let expected: ReplicaPartitionMap = vec![(0, vec![0]), (1, vec![1])].into();
         assert_eq!(
-            scheduler.generate_partitions_without_rack(&param).await,
+            scheduler
+                .generate_partitions_without_rack(&param, None)
+                .await,
             expected
         );
     }
@@ -203,7 +219,9 @@ pub mod replica_map_test {
         let expected: ReplicaPartitionMap =
             vec![(0, vec![0]), (1, vec![1]), (2, vec![0]), (3, vec![1])].into();
         assert_eq!(
-            scheduler.generate_partitions_without_rack(&param).await,
+            scheduler
+                .generate_partitions_without_rack(&param, None)
+                .await,
             expected
         );
     }
@@ -221,7 +239,7 @@ pub mod replica_map_test {
         let mut scheduler = PartitionScheduler::init(&spus, &partitions).await;
         // not enough spus for replication
         assert!(scheduler
-            .generate_partitions_without_rack(&param)
+            .generate_partitions_without_rack(&param, None)
             .await
             .is_empty());
     }
@@ -249,7 +267,9 @@ pub mod replica_map_test {
         let expected: ReplicaPartitionMap =
             vec![(0, vec![0]), (1, vec![1]), (2, vec![2]), (3, vec![4])].into();
         assert_eq!(
-            scheduler.generate_partitions_without_rack(&param).await,
+            scheduler
+                .generate_partitions_without_rack(&param, None)
+                .await,
             expected
         );
     }
@@ -290,7 +310,9 @@ pub mod replica_map_test {
         ]
         .into();
 
-        let actual = scheduler.generate_partitions_without_rack(&param).await;
+        let actual = scheduler
+            .generate_partitions_without_rack(&param, None)
+            .await;
         //println!("after group: {:#?}", scheduler.scheduling_groups());
 
         assert_eq!(actual, expect);
