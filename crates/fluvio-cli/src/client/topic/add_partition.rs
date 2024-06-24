@@ -40,7 +40,7 @@ impl AddPartitionOpt {
             .clone();
 
         let replica_map_after = self
-            .add_and_watch_new_partitions_with_timeout(&replica_map_before, &admin)
+            .add_and_watch_new_partitions(&replica_map_before, &admin)
             .await?;
         let diff = replica_map_after
             .into_iter()
@@ -59,21 +59,6 @@ impl AddPartitionOpt {
         Ok(())
     }
 
-    async fn add_and_watch_new_partitions_with_timeout(
-        &self,
-        replica_map_before: &ReplicaMap,
-        admin: &FluvioAdmin,
-    ) -> Result<ReplicaMap> {
-        select! {
-            replica_map_after_result = self.add_and_watch_new_partitions(replica_map_before, admin) => {
-                replica_map_after_result
-            },
-            _ = sleep(std::time::Duration::from_millis(CHECK_NEW_PARTITIONS_TIMEOUT_MS)) => {
-                Err(anyhow!("response timeout exceeded"))
-            },
-        }
-    }
-
     async fn add_and_watch_new_partitions(
         &self,
         replica_map_before: &ReplicaMap,
@@ -87,20 +72,27 @@ impl AddPartitionOpt {
         let mut partition_stream = admin.watch::<TopicSpec>().await?;
         let mut connected = false;
         loop {
-            if let Some(Ok(event)) = partition_stream.next().await {
-                if !connected {
-                    let _ = admin
-                        .update::<TopicSpec>(self.topic.clone(), action.clone())
-                        .await;
-                    connected = true;
-                }
+            select! {
+                event = partition_stream.next() => {
+                    if let Some(Ok(event)) = event {
+                        if !connected {
+                            let _ = admin
+                                .update::<TopicSpec>(self.topic.clone(), action.clone())
+                                .await;
+                            connected = true;
+                        }
 
-                for change in event.inner().changes.iter() {
-                    let replica_map_after = &change.content.status.replica_map;
-                    if replica_map_after.len() == replica_map_before.len() + self.count as usize {
-                        return Ok(replica_map_after.clone());
+                        for change in event.inner().changes.iter() {
+                            let replica_map_after = &change.content.status.replica_map;
+                            if replica_map_after.len() == replica_map_before.len() + self.count as usize {
+                                return Ok(replica_map_after.clone());
+                            }
+                        }
                     }
                 }
+                _ = sleep(std::time::Duration::from_millis(CHECK_NEW_PARTITIONS_TIMEOUT_MS)) => {
+                    return Err(anyhow!("response timeout exceeded"))
+                },
             }
         }
     }

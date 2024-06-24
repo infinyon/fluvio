@@ -39,10 +39,13 @@ setup_file() {
     debug_msg "Add partitions to topic"
     run timeout 15s "$FLUVIO_BIN" topic add-partition "$TOPIC_NAME" -c 2
 
+    SPU_OF_PARTION1=$(echo "${lines[2]}" | awk '{print $2}')
+    SPU_OF_PARTION2=$(echo "${lines[3]}" | awk '{print $2}')
+
     assert_line --index 0 "added new partitions to topic: "\"$TOPIC_NAME\"""
     assert_line --partial --index 1 "PARTITION  SPU"
-    assert_line --partial --index 2 "1          5002"
-    assert_line --partial --index 3 "2          5001"
+    assert_line --partial --index 2 "1          $SPU_OF_PARTION1"
+    assert_line --partial --index 3 "2          $SPU_OF_PARTION2"
 
     assert_success
 }
@@ -62,9 +65,9 @@ setup_file() {
     #TODO: filter without grep when fluvio partition list has a filter option
     run bash -c 'timeout 15s "$FLUVIO_BIN" partition list | grep "$TOPIC_NAME"'
 
-    assert_line --partial --index 0 "$TOPIC_NAME  0          5001"
-    assert_line --partial --index 1 "$TOPIC_NAME  1          5002"
-    assert_line --partial --index 2 "$TOPIC_NAME  2          5001"
+    assert_line --partial --index 0 "$TOPIC_NAME  0          500"
+    assert_line --partial --index 1 "$TOPIC_NAME  1          $SPU_OF_PARTION1"
+    assert_line --partial --index 2 "$TOPIC_NAME  2          $SPU_OF_PARTION2"
     
     assert_success
 }
