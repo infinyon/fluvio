@@ -21,7 +21,6 @@ doc = false
 [features]
 default = ["consumer", "k8s", "producer-file-io"]
 consumer = [
-    "atty",
     "ctrlc",
     "content_inspector",
     "fluvio-types",
@@ -53,7 +52,6 @@ hex = { workspace = true }
 home = { workspace = true }
 current_platform = { workspace = true }
 comfy-table = { workspace = true }
-atty = { workspace = true, optional = true }
 ctrlc = { workspace = true, optional = true }
 colored = { workspace = true }
 handlebars = { workspace = true }

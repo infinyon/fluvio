@@ -13,9 +13,12 @@ pub mod validate {
 
 mod convert {
 
+    use fluvio_controlplane_metadata::topic::UpdateTopicAction;
+
     use crate::CreatableAdminSpec;
     use crate::DeletableAdminSpec;
     use crate::AdminSpec;
+    use crate::UpdatableAdminSpec;
 
     use super::TopicSpec;
 
@@ -25,5 +28,10 @@ mod convert {
 
     impl DeletableAdminSpec for TopicSpec {
         type DeleteKey = String;
+    }
+
+    impl UpdatableAdminSpec for TopicSpec {
+        type UpdateKey = String;
+        type UpdateAction = UpdateTopicAction;
     }
 }

@@ -23,6 +23,7 @@ pub enum AdminPublicApiKey {
     List = 1003,
     Watch = 1004,
     Mirroring = 1005,
+    Update = 1006,
 }
 
 impl Default for AdminPublicApiKey {

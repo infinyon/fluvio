@@ -96,6 +96,12 @@ where
                 shared_sink,
                 "create  handler"
             ),
+            AdminPublicDecodedRequest::UpdateRequest(request) => call_service!(
+                request,
+                super::update::handle_update_request(request, &service_context),
+                shared_sink,
+                "update handler"
+            ),
             AdminPublicDecodedRequest::DeleteRequest(request) => call_service!(
                 request,
                 super::delete::handle_delete_request(request, &service_context),
