@@ -93,7 +93,7 @@ pub struct CreateTopicOpt {
     )]
     replica_assignment: Option<PathBuf>,
 
-    /// Replica assignment file
+    /// Mirror apply file
     #[arg(
         short = 'm',
         long = "mirror-apply",
