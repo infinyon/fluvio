@@ -6,10 +6,10 @@
 use clap::Parser;
 use anyhow::{anyhow, Result};
 use comfy_table::{Cell, Row, Table};
-use fluvio_types::ReplicaMap;
 use tokio::select;
 use futures::StreamExt;
 
+use fluvio_types::ReplicaMap;
 use fluvio_future::timer::sleep;
 use fluvio_sc_schema::topic::{AddPartition, TopicSpec, UpdateTopicAction};
 use fluvio::{Fluvio, FluvioAdmin};
@@ -39,38 +39,42 @@ impl AddPartitionOpt {
             .replica_map
             .clone();
 
-        select! {
-            replica_map_after_result = self.send_new_partitions_and_watch_them(&replica_map_before, &admin) => {
-                match replica_map_after_result {
-                    Ok(replica_map_after) => {
-                        let diff = replica_map_after
-                            .into_iter()
-                            .filter(|(k, v)| {
-                                let before = replica_map_before.get(k);
-                                match before {
-                                    Some(before) => *before != *v,
-                                    None => true,
-                                }
-                            })
-                            .collect::<Vec<_>>();
-
-                        println!("added new partitions to topic: \"{}\"", self.topic);
-                        println!("{}", display_new_partitions_spu_table(diff));
-                    },
-                    Err(err) => {
-                        eprintln!("add partition failed: {err}");
-                    },
+        let replica_map_after = self
+            .add_and_watch_new_partitions_with_timeout(&replica_map_before, &admin)
+            .await?;
+        let diff = replica_map_after
+            .into_iter()
+            .filter(|(k, v)| {
+                let before = replica_map_before.get(k);
+                match before {
+                    Some(before) => *before != *v,
+                    None => true,
                 }
-            },
-            _ = sleep(std::time::Duration::from_millis(CHECK_NEW_PARTITIONS_TIMEOUT_MS)) => {
-                println!("response timeout exceeded");
-            },
-        }
+            })
+            .collect::<Vec<_>>();
+
+        println!("added new partitions to topic: \"{}\"", self.topic);
+        println!("{}", display_new_partitions_spu_table(diff));
 
         Ok(())
     }
 
-    async fn send_new_partitions_and_watch_them(
+    async fn add_and_watch_new_partitions_with_timeout(
+        &self,
+        replica_map_before: &ReplicaMap,
+        admin: &FluvioAdmin,
+    ) -> Result<ReplicaMap> {
+        select! {
+            replica_map_after_result = self.add_and_watch_new_partitions(replica_map_before, admin) => {
+                replica_map_after_result
+            },
+            _ = sleep(std::time::Duration::from_millis(CHECK_NEW_PARTITIONS_TIMEOUT_MS)) => {
+                Err(anyhow!("response timeout exceeded"))
+            },
+        }
+    }
+
+    async fn add_and_watch_new_partitions(
         &self,
         replica_map_before: &ReplicaMap,
         admin: &FluvioAdmin,
