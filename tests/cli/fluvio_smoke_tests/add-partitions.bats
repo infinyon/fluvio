@@ -72,3 +72,17 @@ setup_file() {
     assert_success
 }
 
+# Not found topic
+@test "Add partitions to a topic that doesn't exist" {
+    if [ "$FLUVIO_CLI_RELEASE_CHANNEL" == "stable" ]; then
+        skip "don't run on fluvio cli stable version"
+    fi
+    if [ "$FLUVIO_CLUSTER_RELEASE_CHANNEL" == "stable" ]; then
+        skip "don't run on cluster stable version"
+    fi
+    debug_msg "Add partitions to a topic that doesn't exist"
+    run timeout 15s "$FLUVIO_BIN" topic add-partition "not-exist-topic" -c 2
+    assert_output --partial 'topic "not-exist-topic" not found'
+    assert_failure
+}
+
