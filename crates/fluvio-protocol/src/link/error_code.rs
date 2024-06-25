@@ -100,6 +100,9 @@ pub enum ErrorCode {
     #[fluvio(tag = 2007)]
     #[error("the topic was deleted")]
     TopicDeleted,
+    #[fluvio(tag = 2008)]
+    #[error("the topic has invalid replica type")]
+    TopicInvalidReplicaType,
 
     // Partition errors
     #[fluvio(tag = 3000)]
@@ -226,6 +229,9 @@ pub enum ErrorCode {
     #[fluvio(tag = 12001)]
     #[error("system {kind} '{name}' can only be deleted forcibly")]
     SystemSpecDeletionAttempt { kind: String, name: String },
+    #[fluvio(tag = 12002)]
+    #[error("system {kind} '{name}' can only be updated forcibly")]
+    SystemSpecUpdatingAttempt { kind: String, name: String },
 }
 
 impl ErrorCode {

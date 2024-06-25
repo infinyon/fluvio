@@ -19,17 +19,18 @@ use fluvio_auth::AuthContext;
 use crate::services::auth::AuthServiceContext;
 
 /// Handler for update topic request
-#[instrument(skip(request, _auth_ctx))]
+#[instrument(skip(request, auth_ctx))]
 pub async fn handle_update_request<AC: AuthContext, C: MetadataItem>(
     request: RequestMessage<ObjectApiUpdateRequest>,
-    _auth_ctx: &AuthServiceContext<AC, C>,
+    auth_ctx: &AuthServiceContext<AC, C>,
 ) -> Result<ResponseMessage<Status>> {
     let (header, del_req) = request.get_header_request();
 
     debug!(?del_req, "del request");
 
-    let status = if let Some(_req) = del_req.downcast()? as Option<UpdateRequest<TopicSpec>> {
-        todo!("handle update request");
+    let status = if let Some(req) = del_req.downcast()? as Option<UpdateRequest<TopicSpec>> {
+        let action = req.action.clone();
+        super::topic::update::handle_topic_update_request(req.key(), action, auth_ctx).await?
     } else {
         error!("unknown update request: {:#?}", del_req);
         Status::new(
