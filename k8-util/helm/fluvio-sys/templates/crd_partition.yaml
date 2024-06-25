@@ -10,7 +10,7 @@ spec:
     plural: partitions
     singular: partition
   versions:
-    - name: v1
+    - name: v2
       served: true
       storage:  true
       schema:
