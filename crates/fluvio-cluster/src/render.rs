@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::io::{stdout, IsTerminal};
 
 use indicatif::ProgressBar;
 
@@ -46,6 +47,10 @@ impl From<ProgressBar> for ProgressRenderer {
 
 impl Default for ProgressRenderer {
     fn default() -> Self {
-        Self::Std
+        if stdout().is_terminal() {
+            Self::Indicatiff(ProgressBar::new_spinner())
+        } else {
+            Self::Std
+        }
     }
 }
