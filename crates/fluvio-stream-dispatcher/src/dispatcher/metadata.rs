@@ -229,7 +229,7 @@ where
                 drop(read_guard);
                 match self
                     .client
-                    .update_status(meta, status.clone(), &self.namespace)
+                    .update_status(meta.clone(), status.clone(), &self.namespace)
                     .await
                 {
                     Ok(updated_item) => {
@@ -250,6 +250,15 @@ where
                             key,
                             status
                         );
+
+                        tracing::warn!("Attempting to patch status on retry");
+                        if let Err(err) = self
+                            .client
+                            .patch_status::<S>(meta, status.clone(), &self.namespace)
+                            .await
+                        {
+                            tracing::error!(%err, %status, "Failed to patch status on retry");
+                        }
                     }
                 }
             }
