@@ -119,7 +119,10 @@ impl SpuGroupObj {
         };
 
         let ns = self.ctx().item().namespace();
-        let private_svc_fqdn = format!("fluvio-spg-{}.{ns}.svc.cluster.local", self.key(),);
+        let private_svc_fqdn = format!(
+            "fluvio-spg-main-{spu}.fluvio-spg-{}.{ns}.svc.cluster.local",
+            self.key()
+        );
         let public_svc_fqdn = format!("fluvio-spu-{spu_name}.{ns}.svc.cluster.local");
 
         let spu_spec = SpuSpec {
