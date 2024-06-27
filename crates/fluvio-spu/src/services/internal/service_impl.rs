@@ -40,6 +40,8 @@ impl FluvioService for InternalService {
         let (mut sink, mut stream) = socket.split();
         let mut api_stream = stream.api_stream::<SpuPeerRequest, SPUPeerApiEnum>();
 
+        let spu_id = ctx.local_spu_id();
+
         // register follower
         wait_for_request!(
             api_stream,
@@ -48,13 +50,25 @@ impl FluvioService for InternalService {
 
                 let request = &req_msg.request;
                 let follower_id = request.spu_id;
+                let leader_spu_id = request.leader_spu_id;
                 debug!(
                     follower_id,
                     "received fetch stream"
                 );
+
+                if leader_spu_id != spu_id || follower_id == spu_id {
+                    warn!(follower_id, spu_id, "spu id does not match, dropping connection");
+                    let response = FetchStreamResponse::new(None);
+                    let res_msg = req_msg.new_response(response);
+                    sink
+                        .send_response(&res_msg, req_msg.header.api_version())
+                        .await?;
+                }
+
+
                 // check if follower_id is valid
                 if let Some(spu_update) = ctx.follower_notifier().get(&follower_id).await {
-                    let response = FetchStreamResponse::new(follower_id);
+                    let response = FetchStreamResponse::new(Some(follower_id));
                     let res_msg = req_msg.new_response(response);
                     sink
                         .send_response(&res_msg, req_msg.header.api_version())
@@ -63,7 +77,11 @@ impl FluvioService for InternalService {
                     FollowerHandler::start(ctx, follower_id, spu_update, sink, stream).await;
                 } else {
                     warn!(follower_id, "unknown spu, dropping connection");
-                    return Ok(())
+                    let response = FetchStreamResponse::new(None);
+                    let res_msg = req_msg.new_response(response);
+                    sink
+                        .send_response(&res_msg, req_msg.header.api_version())
+                        .await?;
                 }
 
             },
