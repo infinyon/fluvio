@@ -324,14 +324,20 @@ where
             .get_partition_size()
             .try_into()
             .unwrap_or(PartitionStatus::SIZE_ERROR);
+        let base_offset = storage_reader.get_log_start_offset();
 
-        LrsRequest::new(self.id().to_owned(), leader, replicas, size)
+        LrsRequest::new(self.id().to_owned(), leader, replicas, size, base_offset)
     }
 
     #[instrument(skip(self))]
     pub async fn update_status(&self) {
         let lrs = self.as_lrs_request().await;
-        debug!(hw = lrs.leader.hw, leo = lrs.leader.leo, size = lrs.size);
+        debug!(
+            hw = lrs.leader.hw,
+            leo = lrs.leader.leo,
+            size = lrs.size,
+            base_offset = lrs.base_offset
+        );
         self.status_update.send(lrs).await
     }
 
@@ -920,7 +926,7 @@ mod test_leader {
         type ReplicaConfig = MockConfig;
 
         fn get_log_start_offset(&self) -> Offset {
-            todo!()
+            (self.pos.hw * 10) as Offset
         }
 
         async fn remove(&self) -> Result<(), fluvio_storage::StorageError> {
