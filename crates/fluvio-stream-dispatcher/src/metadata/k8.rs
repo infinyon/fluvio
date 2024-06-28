@@ -253,7 +253,7 @@ impl<T: K8MetadataClient> MetadataClient<K8MetaItem> for T {
             self,
             &metadata.as_input(),
             &patch,
-            PatchMergeType::JsonMerge,
+            PatchMergeType::Apply,
         )
         .await?;
         let multi_namespace_context = matches!(namespace, NameSpace::All);
