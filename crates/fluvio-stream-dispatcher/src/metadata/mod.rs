@@ -56,6 +56,15 @@ pub trait MetadataClient<M: MetadataItem>: Send + Sync {
     where
         S: K8ExtendedSpec;
 
+    async fn patch_status<S>(
+        &self,
+        metadata: M,
+        status: S::Status,
+        namespace: &NameSpace,
+    ) -> Result<MetadataStoreObject<S, M>>
+    where
+        S: K8ExtendedSpec;
+
     fn watch_stream_since<S>(
         &self,
         namespace: &NameSpace,
