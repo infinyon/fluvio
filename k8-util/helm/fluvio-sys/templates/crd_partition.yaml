@@ -143,6 +143,11 @@ spec:
         format: int64
         description: Leader High Watermark
         jsonPath: .status.leader.hw
+      - name: Base Offset
+        type: integer
+        format: int64
+        description: Base Offset
+        jsonPath: .status.baseOffset
       - name: EOF
         type: integer
         format: int64
