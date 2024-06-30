@@ -40,6 +40,7 @@ producer-file-io = ["fluvio-cli-common/file-records"]
 async-channel = { workspace = true }
 async-net = { workspace = true }
 async-trait = { workspace = true }
+async-std = { workspace = true }
 anyhow = { workspace = true }
 bytesize = { workspace = true, features = ['serde'] }
 clap = { workspace = true, features = ["std", "derive", "string", "help", "usage", "env", "error-context"] }
