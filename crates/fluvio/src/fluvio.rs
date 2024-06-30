@@ -188,7 +188,7 @@ impl Fluvio {
             return Err(FluvioError::TopicNotFound(topic).into());
         }
 
-        TopicProducer::new(topic, spu_pool, config, self.metric.clone()).await
+        TopicProducer::new(topic, spu_pool, Arc::new(config), self.metric.clone()).await
     }
 
     /// Creates a new `PartitionConsumer` for the given topic and partition

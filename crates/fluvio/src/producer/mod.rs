@@ -1,5 +1,7 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
+//use async_std::println;
 use tracing::instrument;
 use async_lock::RwLock;
 use anyhow::Result;
@@ -33,7 +35,9 @@ pub use crate::producer::partitioning::{Partitioner, PartitionerConfig};
 #[cfg(feature = "stats")]
 use crate::stats::{ClientStats, ClientStatsDataCollect, metrics::ClientStatsDataFrame};
 
+use self::accumulator::BatchEvents;
 use self::accumulator::BatchHandler;
+use self::accumulator::BatchesDeque;
 pub use self::config::{
     TopicProducerConfigBuilder, TopicProducerConfig, TopicProducerConfigBuilderError,
     DeliverySemantic, RetryPolicy, RetryStrategy,
@@ -46,9 +50,9 @@ pub use self::record::{FutureRecordMetadata, RecordMetadata};
 
 /// Pool of producers for a given topic. There is a producer per partition
 struct ProducerPool {
-    flush_events: Vec<(Arc<EventHandler>, Arc<EventHandler>)>,
-    end_events: Vec<Arc<StickyEvent>>,
-    errors: Vec<Arc<RwLock<Option<ProducerError>>>>,
+    flush_events: HashMap<PartitionId, (Arc<EventHandler>, Arc<EventHandler>)>,
+    end_events: HashMap<PartitionId, Arc<StickyEvent>>,
+    errors: HashMap<PartitionId, Arc<RwLock<Option<ProducerError>>>>,
 }
 
 impl ProducerPool {
@@ -56,16 +60,16 @@ impl ProducerPool {
         config: Arc<TopicProducerConfig>,
         topic: String,
         spu_pool: Arc<SpuPool>,
-        batches: Arc<Vec<BatchHandler>>,
+        batches: Arc<HashMap<PartitionId, BatchHandler>>,
         client_metric: Arc<ClientMetrics>,
     ) -> Self {
-        let mut end_events = vec![];
-        let mut flush_events = vec![];
-        let mut errors = vec![];
-        for (partition_id, (batch_events, batch_list)) in batches.iter().enumerate() {
+        let mut end_events = HashMap::new();
+        let mut flush_events = HashMap::new();
+        let mut errors = HashMap::new();
+        for (partition_id, (batch_events, batch_list)) in batches.iter() {
             let end_event = StickyEvent::shared();
             let flush_event = (EventHandler::shared(), EventHandler::shared());
-            let replica = ReplicaKey::new(topic.clone(), partition_id as PartitionId);
+            let replica = ReplicaKey::new(topic.clone(), *partition_id);
             let error = Arc::new(RwLock::new(None));
 
             PartitionProducer::start(
@@ -79,9 +83,9 @@ impl ProducerPool {
                 flush_event.clone(),
                 client_metric.clone(),
             );
-            errors.push(error);
-            end_events.push(end_event);
-            flush_events.push(flush_event);
+            errors.insert(*partition_id, error);
+            end_events.insert(*partition_id, end_event);
+            flush_events.insert(*partition_id, flush_event);
         }
         Self {
             end_events,
@@ -90,31 +94,77 @@ impl ProducerPool {
         }
     }
 
-    fn shared(
+    #[allow(clippy::too_many_arguments)]
+    pub async fn add_producer_if_needed(
+        &mut self,
         config: Arc<TopicProducerConfig>,
         topic: String,
         spu_pool: Arc<SpuPool>,
-        batches: Arc<Vec<BatchHandler>>,
         client_metric: Arc<ClientMetrics>,
-    ) -> Arc<Self> {
-        Arc::new(ProducerPool::new(
+        partition_id: PartitionId,
+        batchs: Arc<BatchesDeque>,
+        batch_events: Arc<BatchEvents>,
+        record_accumulator: Arc<RecordAccumulator>,
+    ) -> Option<(Arc<BatchEvents>, Arc<BatchesDeque>)> {
+        if self.flush_events.contains_key(&partition_id) {
+            return None;
+        }
+
+        record_accumulator
+            .add_partition(partition_id, (batch_events.clone(), batchs.clone()))
+            .await;
+
+        self.add_producer(
             config,
             topic,
             spu_pool,
-            batches,
             client_metric,
-        ))
+            partition_id,
+            batchs.clone(),
+            batch_events.clone(),
+        );
+        Some((batch_events.clone(), batchs.clone()))
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn add_producer(
+        &mut self,
+        config: Arc<TopicProducerConfig>,
+        topic: String,
+        spu_pool: Arc<SpuPool>,
+        client_metric: Arc<ClientMetrics>,
+        partition_id: PartitionId,
+        batchs: Arc<BatchesDeque>,
+        batch_events: Arc<BatchEvents>,
+    ) {
+        let end_event = StickyEvent::shared();
+        let flush_event = (EventHandler::shared(), EventHandler::shared());
+        let replica = ReplicaKey::new(topic.clone(), partition_id);
+        let error: Arc<RwLock<Option<ProducerError>>> = Arc::new(RwLock::new(None));
+
+        PartitionProducer::start(
+            config,
+            replica,
+            spu_pool,
+            batchs,
+            batch_events,
+            error.clone(),
+            end_event.clone(),
+            flush_event.clone(),
+            client_metric,
+        );
+        self.errors.insert(partition_id, error);
+        self.end_events.insert(partition_id, end_event);
+        self.flush_events.insert(partition_id, flush_event);
     }
 
     async fn flush_all_batches(&self) -> Result<()> {
-        for ((manual_flush_notifier, batch_flushed_event), error) in
-            self.flush_events.iter().zip(self.errors.iter())
-        {
-            let listener = batch_flushed_event.listen();
-            manual_flush_notifier.notify().await;
+        for ((_, events), error) in self.flush_events.iter().zip(self.errors.iter()) {
+            let listener = events.1.listen();
+            events.0.notify().await;
             listener.await;
             {
-                let error_handle = error.read().await;
+                let error_handle = error.1.read().await;
                 if let Some(error) = &*error_handle {
                     return Err(error.clone().into());
                 }
@@ -125,12 +175,12 @@ impl ProducerPool {
     }
 
     async fn last_error(&self, partition_id: PartitionId) -> Option<ProducerError> {
-        let error = self.errors[partition_id as usize].read().await;
+        let error = self.errors.get(&partition_id)?.read().await;
         error.clone()
     }
 
     async fn clear_errors(&self) {
-        for error in self.errors.iter() {
+        for (_, error) in self.errors.iter() {
             let mut error_handle = error.write().await;
             *error_handle = None;
         }
@@ -138,7 +188,7 @@ impl ProducerPool {
 
     fn end(&self) {
         for event in &self.end_events {
-            event.notify();
+            event.1.notify();
         }
     }
 }
@@ -167,14 +217,15 @@ struct InnerTopicProducer {
     config: Arc<TopicProducerConfig>,
     topic: String,
     spu_pool: Arc<SpuPool>,
-    record_accumulator: RecordAccumulator,
-    producer_pool: Arc<ProducerPool>,
+    record_accumulator: Arc<RecordAccumulator>,
+    producer_pool: Arc<RwLock<ProducerPool>>,
+    metrics: Arc<ClientMetrics>,
 }
 
 impl InnerTopicProducer {
     /// Flush all the PartitionProducers and wait for them.
     async fn flush(&self) -> Result<()> {
-        self.producer_pool.flush_all_batches().await?;
+        self.producer_pool.read().await.flush_all_batches().await?;
         Ok(())
     }
 
@@ -196,9 +247,24 @@ impl InnerTopicProducer {
             .partitioner
             .partition(&partition_config, key, value);
 
-        if let Some(error) = self.producer_pool.last_error(partition).await {
+        let mut producer_pool = self.producer_pool.write().await;
+
+        if let Some(error) = producer_pool.last_error(partition).await {
             return Err(error.into());
         }
+
+        let _ = producer_pool
+            .add_producer_if_needed(
+                self.config.clone(),
+                self.topic.clone(),
+                self.spu_pool.clone(),
+                self.metrics.clone(),
+                partition,
+                BatchesDeque::shared(),
+                BatchEvents::shared(),
+                self.record_accumulator.clone(),
+            )
+            .await;
 
         let push_record = self
             .record_accumulator
@@ -209,7 +275,7 @@ impl InnerTopicProducer {
     }
 
     async fn clear_errors(&self) {
-        self.producer_pool.clear_errors().await;
+        self.producer_pool.read().await.clear_errors().await;
     }
 }
 
@@ -313,10 +379,9 @@ impl TopicProducer {
     pub(crate) async fn new(
         topic: String,
         spu_pool: Arc<SpuPool>,
-        config: TopicProducerConfig,
+        config: Arc<TopicProducerConfig>,
         metrics: Arc<ClientMetrics>,
     ) -> Result<Self> {
-        let config = Arc::new(config);
         let topics = spu_pool.metadata.topics();
         let topic_spec: fluvio_sc_schema::topic::TopicSpec = topics
             .lookup_by_key(&topic)
@@ -339,11 +404,11 @@ impl TopicProducer {
             partition_count,
             compression,
         );
-        let producer_pool = ProducerPool::shared(
+        let producer_pool = ProducerPool::new(
             config.clone(),
             topic.clone(),
             spu_pool.clone(),
-            record_accumulator.batches(),
+            Arc::new(record_accumulator.batches().await),
             metrics.clone(),
         );
 
@@ -352,8 +417,9 @@ impl TopicProducer {
                 config,
                 topic,
                 spu_pool,
-                producer_pool,
-                record_accumulator,
+                producer_pool: Arc::new(RwLock::new(producer_pool)),
+                record_accumulator: Arc::new(record_accumulator),
+                metrics: metrics.clone(),
             }),
             #[cfg(feature = "smartengine")]
             sm_chain: Default::default(),

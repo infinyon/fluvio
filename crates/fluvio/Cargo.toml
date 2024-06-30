@@ -61,6 +61,7 @@ fluvio-socket = { workspace = true }
 fluvio-protocol = { workspace = true, features = ["record", "api"] }
 fluvio-compression = { workspace = true, default-features = false }
 fluvio-smartmodule = { workspace = true }
+fluvio-stream-dispatcher = { workspace = true, features = ["local"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 dirs = { workspace = true }
