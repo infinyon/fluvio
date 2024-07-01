@@ -9,6 +9,7 @@ use tracing::debug;
 
 mod group;
 mod spu;
+mod options;
 mod start;
 mod resume;
 mod delete;
@@ -125,25 +126,12 @@ impl ClusterCmd {
                     }
                 };
 
-                start.process(platform_version, false).await?;
+                start.process(platform_version).await?;
             }
             Self::Resume(opt) => {
                 opt.process(platform_version).await?;
             }
-            Self::Upgrade(mut upgrade) => {
-                if let Ok(tag_strategy_value) = std::env::var(FLUVIO_IMAGE_TAG_STRATEGY) {
-                    let tag_strategy = ImageTagStrategy::from_str(&tag_strategy_value, true)
-                        .unwrap_or(ImageTagStrategy::Version);
-                    match tag_strategy {
-                        ImageTagStrategy::Version => {}
-                        ImageTagStrategy::VersionGit => {
-                            let image_version = format!("{}-{}", VERSION, env!("GIT_HASH"));
-                            upgrade.start.k8_config.image_version = Some(image_version);
-                        }
-                        ImageTagStrategy::Git => upgrade.start.develop = true,
-                    }
-                };
-
+            Self::Upgrade(upgrade) => {
                 upgrade.process(platform_version).await?;
             }
             Self::Delete(uninstall) => {
