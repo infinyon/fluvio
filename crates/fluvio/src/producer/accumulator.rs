@@ -79,7 +79,7 @@ impl RecordAccumulator {
         }
     }
 
-    pub async fn add_partition(
+    pub(crate) async fn add_partition(
         &self,
         partition_id: PartitionId,
         value: (Arc<BatchEvents>, Arc<BatchesDeque>),
@@ -384,7 +384,6 @@ mod test {
             .batches()
             .await
             .get(&0)
-            //.first()
             .expect("failed to get batch info")
             .0
             .clone();
@@ -423,6 +422,37 @@ mod test {
             async_std::future::timeout(timeout, batches.listen_batch_full())
                 .await
                 .is_ok()
+        );
+
+        let record_2 = Record::from(("key_2", "value_2"));
+        let batch_events = BatchEvents::shared();
+        let batches_deque = BatchesDeque::shared();
+        accumulator
+            .add_partition(1, (batch_events.clone(), batches_deque.clone()))
+            .await;
+        accumulator
+            .push_record(record_2.clone(), 1)
+            .await
+            .expect("failed push");
+
+        let batches = accumulator
+            .batches()
+            .await
+            .get(&1)
+            .expect("failed to get batch info")
+            .0
+            .clone();
+
+        assert!(
+            async_std::future::timeout(timeout, batches.listen_new_batch())
+                .await
+                .is_ok()
+        );
+
+        assert!(
+            async_std::future::timeout(timeout, batches.listen_batch_full())
+                .await
+                .is_err()
         );
     }
 

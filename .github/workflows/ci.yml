@@ -969,6 +969,11 @@ jobs:
         uses: mig4/setup-bats@v1
         with:
           bats-version: ${{ env.BATS_VERSION }}
+      - name: Install expect
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update -o="APT::Acquire::Retries=3"
+          sudo apt-get install -y -V -o="APT::Acquire::Retries=3" expect
 
       # Download stable, this will load into ~/.fluvio/bin which will be in PATH
       # from now, fluvio will be stable

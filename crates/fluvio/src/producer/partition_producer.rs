@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use async_lock::{RwLock};
+use async_lock::RwLock;
 use tracing::{debug, info, instrument, error, trace};
 
 use fluvio_protocol::record::ReplicaKey;
@@ -18,7 +18,7 @@ use fluvio_socket::VersionedSerialSocket;
 use crate::spu::SpuPool;
 use crate::TopicProducerConfig;
 
-use super::ProducerError;
+use super::{PartitionProducerParams, ProducerError};
 use super::accumulator::{BatchEvents, BatchesDeque};
 use super::event::EventHandler;
 
@@ -35,66 +35,37 @@ pub(crate) struct PartitionProducer {
 
 impl PartitionProducer {
     fn new(
-        config: Arc<TopicProducerConfig>,
+        params: PartitionProducerParams,
         replica: ReplicaKey,
-        spu_pool: Arc<SpuPool>,
-        batches_lock: Arc<BatchesDeque>,
-        batch_events: Arc<BatchEvents>,
         last_error: Arc<RwLock<Option<ProducerError>>>,
-        metrics: Arc<ClientMetrics>,
     ) -> Self {
         Self {
-            config,
+            config: params.config,
             replica,
-            spu_pool,
-            batches_lock,
-            batch_events,
+            spu_pool: params.spu_pool,
+            batches_lock: params.batches_deque,
+            batch_events: params.batch_events,
             last_error,
-            metrics,
+            metrics: params.client_metric,
         }
     }
 
     pub fn shared(
-        config: Arc<TopicProducerConfig>,
+        params: PartitionProducerParams,
         replica: ReplicaKey,
-        spu_pool: Arc<SpuPool>,
-        batches: Arc<BatchesDeque>,
-        batch_events: Arc<BatchEvents>,
         error: Arc<RwLock<Option<ProducerError>>>,
-        metrics: Arc<ClientMetrics>,
     ) -> Arc<Self> {
-        Arc::new(PartitionProducer::new(
-            config,
-            replica,
-            spu_pool,
-            batches,
-            batch_events,
-            error,
-            metrics,
-        ))
+        Arc::new(PartitionProducer::new(params, replica, error))
     }
 
-    #[allow(clippy::too_many_arguments)]
     pub(crate) fn start(
-        config: Arc<TopicProducerConfig>,
-        replica: ReplicaKey,
-        spu_pool: Arc<SpuPool>,
-        batches: Arc<BatchesDeque>,
-        batch_events: Arc<BatchEvents>,
+        params: PartitionProducerParams,
         error: Arc<RwLock<Option<ProducerError>>>,
         end_event: Arc<StickyEvent>,
         flush_event: (Arc<EventHandler>, Arc<EventHandler>),
-        metrics: Arc<ClientMetrics>,
+        replica: ReplicaKey,
     ) {
-        let producer = PartitionProducer::shared(
-            config,
-            replica,
-            spu_pool,
-            batches,
-            batch_events,
-            error,
-            metrics,
-        );
+        let producer = PartitionProducer::shared(params, replica, error);
         fluvio_future::task::spawn(async move {
             producer.run(end_event, flush_event).await;
         });
