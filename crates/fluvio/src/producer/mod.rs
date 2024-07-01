@@ -55,6 +55,15 @@ struct ProducerPool {
     errors: HashMap<PartitionId, Arc<RwLock<Option<ProducerError>>>>,
 }
 
+#[derive(Clone)]
+struct PartitionProducerParams {
+    config: Arc<TopicProducerConfig>,
+    spu_pool: Arc<SpuPool>,
+    batches_deque: Arc<BatchesDeque>,
+    batch_events: Arc<BatchEvents>,
+    client_metric: Arc<ClientMetrics>,
+}
+
 impl ProducerPool {
     fn new(
         config: Arc<TopicProducerConfig>,
@@ -72,16 +81,20 @@ impl ProducerPool {
             let replica = ReplicaKey::new(topic.clone(), *partition_id);
             let error = Arc::new(RwLock::new(None));
 
+            let params = PartitionProducerParams {
+                config: config.clone(),
+                spu_pool: spu_pool.clone(),
+                batches_deque: batch_list.clone(),
+                batch_events: batch_events.clone(),
+                client_metric: client_metric.clone(),
+            };
+
             PartitionProducer::start(
-                config.clone(),
-                replica,
-                spu_pool.clone(),
-                batch_list.clone(),
-                batch_events.clone(),
+                params,
                 error.clone(),
                 end_event.clone(),
                 flush_event.clone(),
-                client_metric.clone(),
+                replica,
             );
             errors.insert(*partition_id, error);
             end_events.insert(*partition_id, end_event);
@@ -94,64 +107,42 @@ impl ProducerPool {
         }
     }
 
-    #[allow(clippy::too_many_arguments)]
-    pub async fn add_producer_if_needed(
+    async fn ensure_partition_producer(
         &mut self,
-        config: Arc<TopicProducerConfig>,
+        params: PartitionProducerParams,
         topic: String,
-        spu_pool: Arc<SpuPool>,
-        client_metric: Arc<ClientMetrics>,
         partition_id: PartitionId,
-        batchs: Arc<BatchesDeque>,
-        batch_events: Arc<BatchEvents>,
         record_accumulator: Arc<RecordAccumulator>,
-    ) -> Option<(Arc<BatchEvents>, Arc<BatchesDeque>)> {
+    ) {
         if self.flush_events.contains_key(&partition_id) {
-            return None;
+            return;
         }
-
         record_accumulator
-            .add_partition(partition_id, (batch_events.clone(), batchs.clone()))
+            .add_partition(
+                partition_id,
+                (params.batch_events.clone(), params.batches_deque.clone()),
+            )
             .await;
 
-        self.add_producer(
-            config,
-            topic,
-            spu_pool,
-            client_metric,
-            partition_id,
-            batchs.clone(),
-            batch_events.clone(),
-        );
-        Some((batch_events.clone(), batchs.clone()))
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    pub fn add_producer(
-        &mut self,
-        config: Arc<TopicProducerConfig>,
-        topic: String,
-        spu_pool: Arc<SpuPool>,
-        client_metric: Arc<ClientMetrics>,
-        partition_id: PartitionId,
-        batchs: Arc<BatchesDeque>,
-        batch_events: Arc<BatchEvents>,
-    ) {
         let end_event = StickyEvent::shared();
         let flush_event = (EventHandler::shared(), EventHandler::shared());
         let replica = ReplicaKey::new(topic.clone(), partition_id);
         let error: Arc<RwLock<Option<ProducerError>>> = Arc::new(RwLock::new(None));
 
+        let params = PartitionProducerParams {
+            config: params.config,
+            spu_pool: params.spu_pool,
+            batches_deque: params.batches_deque,
+            batch_events: params.batch_events,
+            client_metric: params.client_metric,
+        };
+
         PartitionProducer::start(
-            config,
-            replica,
-            spu_pool,
-            batchs,
-            batch_events,
+            params,
             error.clone(),
             end_event.clone(),
             flush_event.clone(),
-            client_metric,
+            replica,
         );
         self.errors.insert(partition_id, error);
         self.end_events.insert(partition_id, end_event);
@@ -159,12 +150,14 @@ impl ProducerPool {
     }
 
     async fn flush_all_batches(&self) -> Result<()> {
-        for ((_, events), error) in self.flush_events.iter().zip(self.errors.iter()) {
-            let listener = events.1.listen();
-            events.0.notify().await;
+        for ((_, (manual_flush_notifier, batch_flushed_event)), (_, error)) in
+            self.flush_events.iter().zip(self.errors.iter())
+        {
+            let listener = batch_flushed_event.listen();
+            manual_flush_notifier.notify().await;
             listener.await;
             {
-                let error_handle = error.1.read().await;
+                let error_handle = error.read().await;
                 if let Some(error) = &*error_handle {
                     return Err(error.clone().into());
                 }
@@ -187,9 +180,9 @@ impl ProducerPool {
     }
 
     fn end(&self) {
-        for event in &self.end_events {
-            event.1.notify();
-        }
+        self.end_events.iter().for_each(|(_, event)| {
+            event.notify();
+        });
     }
 }
 
@@ -253,15 +246,19 @@ impl InnerTopicProducer {
             return Err(error.into());
         }
 
+        let params = PartitionProducerParams {
+            config: self.config.clone(),
+            spu_pool: self.spu_pool.clone(),
+            batches_deque: BatchesDeque::shared(),
+            batch_events: BatchEvents::shared(),
+            client_metric: self.metrics.clone(),
+        };
+
         let _ = producer_pool
-            .add_producer_if_needed(
-                self.config.clone(),
+            .ensure_partition_producer(
+                params,
                 self.topic.clone(),
-                self.spu_pool.clone(),
-                self.metrics.clone(),
                 partition,
-                BatchesDeque::shared(),
-                BatchEvents::shared(),
                 self.record_accumulator.clone(),
             )
             .await;
