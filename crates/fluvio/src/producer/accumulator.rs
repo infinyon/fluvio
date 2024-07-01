@@ -79,7 +79,7 @@ impl RecordAccumulator {
         }
     }
 
-    pub async fn add_partition(
+    pub(crate) async fn add_partition(
         &self,
         partition_id: PartitionId,
         value: (Arc<BatchEvents>, Arc<BatchesDeque>),
@@ -384,7 +384,6 @@ mod test {
             .batches()
             .await
             .get(&0)
-            //.first()
             .expect("failed to get batch info")
             .0
             .clone();

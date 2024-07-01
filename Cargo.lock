@@ -2310,7 +2310,6 @@ dependencies = [
  "anyhow",
  "async-channel 1.9.0",
  "async-net",
- "async-std",
  "async-trait",
  "bytesize",
  "clap",

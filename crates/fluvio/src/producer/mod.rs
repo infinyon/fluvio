@@ -95,7 +95,7 @@ impl ProducerPool {
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub async fn add_producer_if_needed(
+    async fn add_producer_if_needed(
         &mut self,
         config: Arc<TopicProducerConfig>,
         topic: String,
@@ -127,7 +127,7 @@ impl ProducerPool {
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn add_producer(
+    fn add_producer(
         &mut self,
         config: Arc<TopicProducerConfig>,
         topic: String,
@@ -159,12 +159,14 @@ impl ProducerPool {
     }
 
     async fn flush_all_batches(&self) -> Result<()> {
-        for ((_, events), error) in self.flush_events.iter().zip(self.errors.iter()) {
-            let listener = events.1.listen();
-            events.0.notify().await;
+        for ((_, (manual_flush_notifier, batch_flushed_event)), (_, error)) in
+            self.flush_events.iter().zip(self.errors.iter())
+        {
+            let listener = batch_flushed_event.listen();
+            manual_flush_notifier.notify().await;
             listener.await;
             {
-                let error_handle = error.1.read().await;
+                let error_handle = error.read().await;
                 if let Some(error) = &*error_handle {
                     return Err(error.clone().into());
                 }
@@ -187,9 +189,9 @@ impl ProducerPool {
     }
 
     fn end(&self) {
-        for event in &self.end_events {
-            event.1.notify();
-        }
+        self.end_events.iter().for_each(|(_, event)| {
+            event.notify();
+        });
     }
 }
 
