@@ -3037,12 +3037,13 @@ dependencies = [
 
 [[package]]
 name = "fluvio-stream-dispatcher"
-version = "0.13.2"
+version = "0.13.3"
 dependencies = [
  "anyhow",
  "async-channel 1.9.0",
  "async-lock 2.8.0",
  "async-trait",
+ "cfg-if",
  "event-listener 3.1.0",
  "fluvio-future",
  "fluvio-stream-model",

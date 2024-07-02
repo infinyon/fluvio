@@ -3,7 +3,6 @@ pub mod dispatcher;
 pub mod actions;
 
 mod error;
-#[cfg(feature = "k8")]
 pub mod metadata;
 
 pub use error::StoreError;
