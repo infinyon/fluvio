@@ -3,19 +3,22 @@ pub mod k8;
 #[cfg(feature = "local")]
 pub mod local;
 
-use anyhow::Result;
-use async_trait::async_trait;
-use futures_util::stream::BoxStream;
-use fluvio_stream_model::{
-    store::{
-        MetadataStoreList, k8::K8ExtendedSpec, MetadataStoreObject, actions::LSUpdate, NameSpace,
-    },
-    core::{Spec, MetadataItem},
-};
+cfg_if::cfg_if! {
+    if #[cfg(feature = "k8")] {
+        use anyhow::Result;
+        use async_trait::async_trait;
 
+        use futures_util::stream::BoxStream;
+        use fluvio_stream_model::{
+            store::{MetadataStoreList, k8::K8ExtendedSpec, MetadataStoreObject, actions::LSUpdate, NameSpace},
+            core::{Spec, MetadataItem},
+        };
+    }
+}
 pub type SharedClient<C> = std::sync::Arc<C>;
 
 #[async_trait]
+#[cfg(feature = "k8")]
 pub trait MetadataClient<M: MetadataItem>: Send + Sync {
     async fn retrieve_items<S>(&self, namespace: &NameSpace) -> Result<MetadataStoreList<S, M>>
     where
