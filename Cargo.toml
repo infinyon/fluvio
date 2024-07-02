@@ -78,7 +78,7 @@ chrono = { version = "0.4.23", default-features = false }
 clap = { version = "4.0.10", default-features = false }
 clap_complete = "4.0.2"
 color-eyre = { version = "0.6.0", default-features = false }
-colored = "2.0.0"
+colored = "2.1.0"
 comfy-table = { version = "7.0.1", default-features = false }
 const_format = { version = "0.2" }
 content_inspector = { version = "0.2" }
