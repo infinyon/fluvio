@@ -86,3 +86,19 @@ setup_file() {
     assert_failure
 }
 
+@test "Delete topic" {
+    if [ "$FLUVIO_CLI_RELEASE_CHANNEL" == "stable" ]; then
+        skip "don't run on fluvio cli stable version"
+    fi
+    if [ "$FLUVIO_CLUSTER_RELEASE_CHANNEL" == "stable" ]; then
+        skip "don't run on cluster stable version"
+    fi
+    debug_msg "Delete topic"
+    run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME"
+    assert_success
+
+    sleep 1
+    debug_msg "Check if the new partition received the message"
+    run bash -c 'timeout 15s "$FLUVIO_BIN" partition list | grep "$TOPIC_NAME"'
+    assert [ ${#lines[@]} -eq 0 ]
+}
