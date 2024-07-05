@@ -51,7 +51,7 @@ mod context {
     }
 
     #[derive(Debug, Clone)]
-    pub(crate) struct StoreContext<S>
+    pub struct StoreContext<S>
     where
         S: Spec,
     {

@@ -29,7 +29,7 @@ use fluvio_protocol::record::Batch;
 use crate::FluvioError;
 use crate::metrics::ClientMetrics;
 use crate::offset::{Offset, fetch_offsets};
-use crate::spu::{SpuDirectory, SpuPool};
+use crate::spu::{SpuDirectory, SpuSocketPool};
 
 pub use config::{ConsumerConfig, ConsumerConfigBuilder};
 pub use config::{ConsumerConfigExt, ConsumerConfigExtBuilder, OffsetManagementStrategy};
@@ -52,7 +52,7 @@ const STREAM_TO_SERVER_CHANNEL_SIZE: usize = 100;
 /// [`Offset`]: struct.Offset.html
 /// [`partition_consumer`]: struct.Fluvio.html#method.partition_consumer
 /// [`Fluvio`]: struct.Fluvio.html
-pub struct PartitionConsumer<P = SpuPool> {
+pub struct PartitionConsumer<P = SpuSocketPool> {
     topic: String,
     partition: PartitionId,
     pool: Arc<P>,
@@ -685,7 +685,7 @@ pub enum PartitionSelectionStrategy {
 }
 
 impl PartitionSelectionStrategy {
-    async fn selection(&self, spu_pool: Arc<SpuPool>) -> Result<Vec<(String, PartitionId)>> {
+    async fn selection(&self, spu_pool: Arc<SpuSocketPool>) -> Result<Vec<(String, PartitionId)>> {
         let pairs = match self {
             PartitionSelectionStrategy::All(topic) => {
                 let topics = spu_pool.metadata.topics();
@@ -707,14 +707,14 @@ impl PartitionSelectionStrategy {
 #[derive(Clone)]
 pub struct MultiplePartitionConsumer {
     strategy: PartitionSelectionStrategy,
-    pool: Arc<SpuPool>,
+    pool: Arc<SpuSocketPool>,
     metrics: Arc<ClientMetrics>,
 }
 
 impl MultiplePartitionConsumer {
     pub(crate) fn new(
         strategy: PartitionSelectionStrategy,
-        pool: Arc<SpuPool>,
+        pool: Arc<SpuSocketPool>,
         metrics: Arc<ClientMetrics>,
     ) -> Self {
         Self {

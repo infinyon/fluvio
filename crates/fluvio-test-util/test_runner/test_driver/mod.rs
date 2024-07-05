@@ -1,6 +1,7 @@
 //use fluvio::consumer::{PartitionSelectionStrategy, ConsumerConfig};
 
 use fluvio::dataplane::link::ErrorCode;
+use fluvio::spu::SpuSocketPool;
 use tracing::debug;
 use anyhow::Result;
 
@@ -78,7 +79,7 @@ impl TestDriver {
         &self,
         topic: &str,
         config: TopicProducerConfig,
-    ) -> TopicProducer {
+    ) -> TopicProducer<SpuSocketPool> {
         debug!(topic, "creating producer");
         let fluvio_client = self.create_client().await.expect("cant' create client");
         match fluvio_client
@@ -96,7 +97,7 @@ impl TestDriver {
     }
 
     // Wrapper to getting a producer. We keep track of the number of producers we create
-    pub async fn create_producer(&self, topic: &str) -> TopicProducer {
+    pub async fn create_producer(&self, topic: &str) -> TopicProducer<SpuSocketPool> {
         self.create_producer_with_config(topic, Default::default())
             .await
     }
@@ -104,7 +105,7 @@ impl TestDriver {
     // Wrapper to producer send. We measure the latency and accumulation of message payloads sent.
     pub async fn send_count(
         &self,
-        p: &TopicProducer,
+        p: &TopicProducer<SpuSocketPool>,
         key: RecordKey,
         message: Vec<u8>,
     ) -> Result<()> {
