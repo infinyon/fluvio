@@ -2,14 +2,14 @@ mod config;
 use config::CustomConfig;
 
 {% if connector-type == "source" %}
-use fluvio::{RecordKey, TopicProducer};
+use fluvio::{RecordKey, TopicProducer, spu::SpuSocketPool};
 use fluvio_connector_common::{
     connector,
     Result
 };
 
 #[connector(source)]
-async fn start(config: CustomConfig, producer: TopicProducer) -> Result<()> {
+async fn start(config: CustomConfig, producer: TopicProducer<SpuSocketPool>) -> Result<()> {
     println!("Starting {{project-name}} source connector with {config:?}");
     for i in 1..1000 {
         let value = format!("Hello, Fluvio - {i}");

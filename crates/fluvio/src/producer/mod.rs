@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-//use async_std::println;
 use tracing::instrument;
 use async_lock::RwLock;
 use anyhow::Result;
@@ -27,9 +26,9 @@ pub mod event;
 
 pub use fluvio_protocol::record::{RecordKey, RecordData};
 
+use crate::spu::SpuPool;
 use crate::FluvioError;
 use crate::metrics::ClientMetrics;
-use crate::spu::SpuPool;
 use crate::producer::accumulator::{RecordAccumulator, PushRecord};
 pub use crate::producer::partitioning::{Partitioner, PartitionerConfig};
 #[cfg(feature = "stats")]
@@ -56,22 +55,28 @@ struct ProducerPool {
 }
 
 #[derive(Clone)]
-struct PartitionProducerParams {
+struct PartitionProducerParams<S>
+where
+    S: SpuPool + Send + Sync + 'static,
+{
     config: Arc<TopicProducerConfig>,
-    spu_pool: Arc<SpuPool>,
+    spu_pool: Arc<S>,
     batches_deque: Arc<BatchesDeque>,
     batch_events: Arc<BatchEvents>,
     client_metric: Arc<ClientMetrics>,
 }
 
 impl ProducerPool {
-    fn new(
+    fn new<S>(
         config: Arc<TopicProducerConfig>,
         topic: String,
-        spu_pool: Arc<SpuPool>,
+        spu_pool: Arc<S>,
         batches: Arc<HashMap<PartitionId, BatchHandler>>,
         client_metric: Arc<ClientMetrics>,
-    ) -> Self {
+    ) -> Self
+    where
+        S: SpuPool + Send + Sync + 'static,
+    {
         let mut end_events = HashMap::new();
         let mut flush_events = HashMap::new();
         let mut errors = HashMap::new();
@@ -107,13 +112,15 @@ impl ProducerPool {
         }
     }
 
-    async fn ensure_partition_producer(
+    async fn ensure_partition_producer<S>(
         &mut self,
-        params: PartitionProducerParams,
+        params: PartitionProducerParams<S>,
         topic: String,
         partition_id: PartitionId,
         record_accumulator: Arc<RecordAccumulator>,
-    ) {
+    ) where
+        S: SpuPool + Send + Sync + 'static,
+    {
         if self.flush_events.contains_key(&partition_id) {
             return;
         }
@@ -128,14 +135,6 @@ impl ProducerPool {
         let flush_event = (EventHandler::shared(), EventHandler::shared());
         let replica = ReplicaKey::new(topic.clone(), partition_id);
         let error: Arc<RwLock<Option<ProducerError>>> = Arc::new(RwLock::new(None));
-
-        let params = PartitionProducerParams {
-            config: params.config,
-            spu_pool: params.spu_pool,
-            batches_deque: params.batches_deque,
-            batch_events: params.batch_events,
-            client_metric: params.client_metric,
-        };
 
         PartitionProducer::start(
             params,
@@ -198,24 +197,33 @@ impl Drop for ProducerPool {
 /// topic it was initialized for. Once you have a `TopicProducer`,
 /// you can send events to the topic, choosing which partition /// each event should be delivered to.
 #[derive(Clone)]
-pub struct TopicProducer {
-    inner: Arc<InnerTopicProducer>,
+pub struct TopicProducer<S>
+where
+    S: SpuPool + Send + Sync + 'static,
+{
+    inner: Arc<InnerTopicProducer<S>>,
     #[cfg(feature = "smartengine")]
     sm_chain: Option<Arc<RwLock<fluvio_smartengine::SmartModuleChainInstance>>>,
     #[allow(unused)]
     metrics: Arc<ClientMetrics>,
 }
 
-struct InnerTopicProducer {
+struct InnerTopicProducer<S>
+where
+    S: SpuPool + Send + Sync + 'static,
+{
     config: Arc<TopicProducerConfig>,
     topic: String,
-    spu_pool: Arc<SpuPool>,
+    spu_pool: Arc<S>,
     record_accumulator: Arc<RecordAccumulator>,
     producer_pool: Arc<RwLock<ProducerPool>>,
     metrics: Arc<ClientMetrics>,
 }
 
-impl InnerTopicProducer {
+impl<S> InnerTopicProducer<S>
+where
+    S: SpuPool + Send + Sync + 'static,
+{
     /// Flush all the PartitionProducers and wait for them.
     async fn flush(&self) -> Result<()> {
         self.producer_pool.read().await.flush_all_batches().await?;
@@ -223,7 +231,7 @@ impl InnerTopicProducer {
     }
 
     async fn push_record(self: Arc<Self>, record: Record) -> Result<PushRecord> {
-        let topics = self.spu_pool.metadata.topics();
+        let topics = self.spu_pool.topics();
 
         let topic_spec = topics
             .lookup_by_key(&self.topic)
@@ -291,7 +299,10 @@ cfg_if::cfg_if! {
             fluvio_smartengine::SmartEngine::new()
         });
 
-        impl TopicProducer {
+        impl<S> TopicProducer<S>
+            where
+                S: SpuPool + Send + Sync + 'static,
+        {
             /// Adds a chain of SmartModules to this TopicProducer
             pub async fn with_chain(mut self, chain_builder: SmartModuleChainBuilder) -> Result<Self> {
                 let mut chain_instance = chain_builder.initialize(&SM_ENGINE).map_err(|e| FluvioError::Other(format!("SmartEngine - {e:?}")))?;
@@ -372,14 +383,17 @@ cfg_if::cfg_if! {
     }
 }
 
-impl TopicProducer {
+impl<S> TopicProducer<S>
+where
+    S: SpuPool + Send + Sync + 'static,
+{
     pub(crate) async fn new(
         topic: String,
-        spu_pool: Arc<SpuPool>,
+        spu_pool: Arc<S>,
         config: Arc<TopicProducerConfig>,
         metrics: Arc<ClientMetrics>,
     ) -> Result<Self> {
-        let topics = spu_pool.metadata.topics();
+        let topics = spu_pool.topics();
         let topic_spec: fluvio_sc_schema::topic::TopicSpec = topics
             .lookup_by_key(&topic)
             .await?
@@ -429,8 +443,8 @@ impl TopicProducer {
     /// # Example
     ///
     /// ```
-    /// # use fluvio::{TopicProducer, FluvioError};
-    /// # async fn example(producer: &TopicProducer) -> anyhow::Result<()> {
+    /// # use fluvio::{TopicProducer, FluvioError, spu::SpuSocketPool};
+    /// # async fn example(producer: &TopicProducer<SpuSocketPool>) -> anyhow::Result<()> {
     /// producer.send("Key", "Value").await?;
     /// producer.flush().await?;
     /// # Ok(())
@@ -452,8 +466,8 @@ impl TopicProducer {
     /// # Example
     ///
     /// ```
-    /// # use fluvio::{TopicProducer, FluvioError};
-    /// # async fn example(producer: &TopicProducer) -> anyhow::Result<()> {
+    /// # use fluvio::{TopicProducer, FluvioError, spu::SpuSocketPool};
+    /// # async fn example(producer: &TopicProducer<SpuSocketPool>) -> anyhow::Result<()> {
     /// producer.send("Key", "Value").await?;
     /// # Ok(())
     /// # }
@@ -588,4 +602,139 @@ fn determine_producer_compression_algo(
     };
 
     Ok(result)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+
+    use async_trait::async_trait;
+    use fluvio_protocol::record::RecordKey;
+    use fluvio_sc_schema::{partition::PartitionSpec, store::MetadataStoreObject, topic::TopicSpec};
+    use fluvio_socket::{ClientConfig, SocketError, StreamSocket, VersionedSerialSocket};
+    use fluvio_stream_dispatcher::metadata::local::LocalMetadataItem;
+    use fluvio_types::SpuId;
+
+    use crate::{
+        metrics::ClientMetrics,
+        spu::SpuPool,
+        sync::{MetadataStores, StoreContext},
+        FluvioError, TopicProducer, TopicProducerConfig,
+    };
+
+    struct SpuPoolMock {
+        topics: StoreContext<TopicSpec>,
+    }
+
+    #[async_trait]
+    impl SpuPool for SpuPoolMock {
+        fn start(
+            _config: Arc<ClientConfig>,
+            _metadata: MetadataStores,
+        ) -> Result<Self, SocketError> {
+            todo!()
+        }
+
+        async fn connect_to_leader(&self, _leader: SpuId) -> Result<StreamSocket, FluvioError> {
+            todo!()
+        }
+
+        async fn create_serial_socket_from_leader(
+            &self,
+            _leader_id: SpuId,
+        ) -> Result<VersionedSerialSocket, FluvioError> {
+            todo!()
+        }
+
+        async fn topic_exists(&self, _topic: String) -> Result<bool, FluvioError> {
+            todo!()
+        }
+
+        fn shutdown(&mut self) {
+            todo!()
+        }
+
+        fn topics(&self) -> &StoreContext<TopicSpec> {
+            &self.topics
+        }
+
+        fn partitions(&self) -> &StoreContext<PartitionSpec> {
+            todo!()
+        }
+    }
+
+    #[fluvio_future::test]
+    async fn test_topic_producer_should_detect_new_partitions() {
+        let topic = "test".to_string();
+        let config = Arc::new(TopicProducerConfig::default());
+        let metrics = Arc::new(ClientMetrics::default());
+        let partitions_count = 2;
+
+        let topic_2_partitions = vec![
+            MetadataStoreObject::<TopicSpec, LocalMetadataItem>::with_spec(
+                "test",
+                (partitions_count, 2, false).into(), // 2 partitions, 2 replicas, not ignore rack
+            ),
+        ];
+
+        let topics = StoreContext::<TopicSpec>::new();
+        let spu_pool = Arc::new(SpuPoolMock { topics });
+        spu_pool.topics().store().sync_all(topic_2_partitions).await;
+        let producer = TopicProducer::new(topic.clone(), spu_pool.clone(), config, metrics)
+            .await
+            .expect("producer");
+
+        let _ = producer
+            .send(RecordKey::NULL, "123".to_string())
+            .await
+            .expect("send");
+        let _ = producer
+            .send(RecordKey::NULL, "456".to_string())
+            .await
+            .expect("send");
+
+        let batches = producer.inner.record_accumulator.batches().await;
+
+        assert_eq!(batches.len(), partitions_count as usize);
+
+        let producer_pool = producer.inner.producer_pool.read().await;
+        assert_eq!(producer_pool.errors.len(), partitions_count as usize);
+        assert!(producer_pool.errors.get(&0).unwrap().read().await.is_none());
+        assert!(producer_pool.errors.get(&1).unwrap().read().await.is_none());
+        assert_eq!(producer_pool.flush_events.len(), partitions_count as usize);
+        assert_eq!(producer_pool.end_events.len(), partitions_count as usize);
+        drop(producer_pool);
+
+        assert_eq!(producer.inner.topic, topic.clone());
+
+        let new_partitions_count = 3;
+
+        let topic_3_partitions = vec![
+            MetadataStoreObject::<TopicSpec, LocalMetadataItem>::with_spec(
+                "test",
+                (new_partitions_count, 2, false).into(), // 3 partitions, 2 replicas, not ignore rack
+            ),
+        ];
+
+        spu_pool.topics.store().sync_all(topic_3_partitions).await;
+
+        let _ = producer
+            .send(RecordKey::NULL, "789".to_string())
+            .await
+            .expect("send");
+
+        let producer_pool = producer.inner.producer_pool.read().await;
+        assert_eq!(producer_pool.errors.len(), new_partitions_count as usize);
+        assert!(producer_pool.errors.get(&0).unwrap().read().await.is_none());
+        assert!(producer_pool.errors.get(&1).unwrap().read().await.is_none());
+        assert_eq!(
+            producer_pool.flush_events.len(),
+            new_partitions_count as usize
+        );
+        assert_eq!(
+            producer_pool.end_events.len(),
+            new_partitions_count as usize
+        );
+        drop(producer_pool);
+    }
 }

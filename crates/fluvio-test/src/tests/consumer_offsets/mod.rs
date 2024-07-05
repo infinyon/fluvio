@@ -10,6 +10,7 @@ use anyhow::{bail, ensure, Result};
 use fluvio::{
     consumer::{ConsumerConfigExt, ConsumerConfigExtBuilder, ConsumerOffset, ConsumerStream},
     metadata::objects::ListRequest,
+    spu::SpuSocketPool,
     Fluvio, Offset, RecordKey, TopicProducer, TopicProducerConfigBuilder,
 };
 use fluvio_controlplane_metadata::topic::TopicSpec;
@@ -63,7 +64,7 @@ pub async fn consumer_offsets(
 }
 
 async fn produce_records(client: &Fluvio, topic: &str, partitions: usize) -> Result<()> {
-    let producer: TopicProducer = client
+    let producer: TopicProducer<SpuSocketPool> = client
         .topic_producer_with_config(
             topic,
             TopicProducerConfigBuilder::default()

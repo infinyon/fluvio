@@ -2,6 +2,8 @@ use std::sync::Arc;
 use std::collections::HashMap;
 use anyhow::Result;
 
+use fluvio_sc_schema::partition::PartitionSpec;
+use fluvio_sc_schema::topic::TopicSpec;
 use tracing::{debug, trace, instrument};
 use async_lock::Mutex;
 use async_trait::async_trait;
@@ -14,7 +16,7 @@ use fluvio_socket::{
     VersionedSerialSocket,
 };
 use crate::FluvioError;
-use crate::sync::MetadataStores;
+use crate::sync::{MetadataStores, StoreContext};
 
 /// used for connecting to spu
 #[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
@@ -42,25 +44,47 @@ pub trait SpuDirectory {
 }
 
 /// connection pool to spu
-pub struct SpuPool {
+pub struct SpuSocketPool {
     config: Arc<ClientConfig>,
     pub(crate) metadata: MetadataStores,
     spu_clients: Arc<Mutex<HashMap<SpuId, StreamSocket>>>,
 }
 
-impl Drop for SpuPool {
+impl Drop for SpuSocketPool {
     fn drop(&mut self) {
         trace!("dropping spu pool");
         self.shutdown();
     }
 }
 
-impl SpuPool {
+#[async_trait]
+pub trait SpuPool {
     /// start synchronize based on pool
-    pub(crate) fn start(
-        config: Arc<ClientConfig>,
-        metadata: MetadataStores,
-    ) -> Result<Self, SocketError> {
+    fn start(config: Arc<ClientConfig>, metadata: MetadataStores) -> Result<Self, SocketError>
+    where
+        Self: std::marker::Sized;
+
+    /// create new spu socket
+    async fn connect_to_leader(&self, leader: SpuId) -> Result<StreamSocket, FluvioError>;
+
+    async fn create_serial_socket_from_leader(
+        &self,
+        leader_id: SpuId,
+    ) -> Result<VersionedSerialSocket, FluvioError>;
+
+    async fn topic_exists(&self, topic: String) -> Result<bool, FluvioError>;
+
+    fn shutdown(&mut self);
+
+    fn topics(&self) -> &StoreContext<TopicSpec>;
+
+    fn partitions(&self) -> &StoreContext<PartitionSpec>;
+}
+
+#[async_trait]
+impl SpuPool for SpuSocketPool {
+    /// start synchronize based on pool
+    fn start(config: Arc<ClientConfig>, metadata: MetadataStores) -> Result<Self, SocketError> {
         debug!("starting spu pool");
         Ok(Self {
             metadata,
@@ -70,7 +94,6 @@ impl SpuPool {
     }
 
     /// create new spu socket
-    #[instrument(skip(self))]
     async fn connect_to_leader(&self, leader: SpuId) -> Result<StreamSocket, FluvioError> {
         let spu = self.metadata.spus().look_up_by_id(leader).await?;
 
@@ -97,7 +120,7 @@ impl SpuPool {
     }
 
     #[instrument(skip(self))]
-    pub async fn create_serial_socket_from_leader(
+    async fn create_serial_socket_from_leader(
         &self,
         leader_id: SpuId,
     ) -> Result<VersionedSerialSocket, FluvioError> {
@@ -119,24 +142,27 @@ impl SpuPool {
         Ok(serial_socket)
     }
 
-    pub async fn topic_exists(&self, topic: impl Into<String>) -> Result<bool, FluvioError> {
+    async fn topic_exists(&self, topic: String) -> Result<bool, FluvioError> {
         let replica = ReplicaKey::new(topic, 0u32);
-        Ok(self
-            .metadata
-            .partitions()
-            .lookup_by_key(&replica)
-            .await?
-            .is_some())
+        Ok(self.partitions().lookup_by_key(&replica).await?.is_some())
     }
 
-    pub(crate) fn shutdown(&mut self) {
+    fn shutdown(&mut self) {
         self.metadata.shutdown();
+    }
+
+    fn topics(&self) -> &StoreContext<TopicSpec> {
+        self.metadata.topics()
+    }
+
+    fn partitions(&self) -> &StoreContext<PartitionSpec> {
+        self.metadata.partitions()
     }
 }
 
 #[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
 #[cfg_attr(not(target_arch = "wasm32"), async_trait)]
-impl SpuDirectory for SpuPool {
+impl SpuDirectory for SpuSocketPool {
     /// Create request/response socket to SPU for a replica
     ///
     /// All sockets to same SPU use a single TCP connection.

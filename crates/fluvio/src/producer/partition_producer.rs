@@ -23,19 +23,25 @@ use super::accumulator::{BatchEvents, BatchesDeque};
 use super::event::EventHandler;
 
 /// Struct that is responsible for sending produce requests to the SPU in a given partition.
-pub(crate) struct PartitionProducer {
+pub(crate) struct PartitionProducer<S>
+where
+    S: SpuPool + Send + Sync + 'static,
+{
     config: Arc<TopicProducerConfig>,
     replica: ReplicaKey,
-    spu_pool: Arc<SpuPool>,
+    spu_pool: Arc<S>,
     batches_lock: Arc<BatchesDeque>,
     batch_events: Arc<BatchEvents>,
     last_error: Arc<RwLock<Option<ProducerError>>>,
     metrics: Arc<ClientMetrics>,
 }
 
-impl PartitionProducer {
+impl<S> PartitionProducer<S>
+where
+    S: SpuPool + Send + Sync + 'static,
+{
     fn new(
-        params: PartitionProducerParams,
+        params: PartitionProducerParams<S>,
         replica: ReplicaKey,
         last_error: Arc<RwLock<Option<ProducerError>>>,
     ) -> Self {
@@ -51,7 +57,7 @@ impl PartitionProducer {
     }
 
     pub fn shared(
-        params: PartitionProducerParams,
+        params: PartitionProducerParams<S>,
         replica: ReplicaKey,
         error: Arc<RwLock<Option<ProducerError>>>,
     ) -> Arc<Self> {
@@ -59,7 +65,7 @@ impl PartitionProducer {
     }
 
     pub(crate) fn start(
-        params: PartitionProducerParams,
+        params: PartitionProducerParams<S>,
         error: Arc<RwLock<Option<ProducerError>>>,
         end_event: Arc<StickyEvent>,
         flush_event: (Arc<EventHandler>, Arc<EventHandler>),
@@ -133,7 +139,6 @@ impl PartitionProducer {
     async fn current_leader(&self) -> Result<SpuId> {
         let partition_spec = self
             .spu_pool
-            .metadata
             .partitions()
             .lookup_by_key(&self.replica)
             .await?
