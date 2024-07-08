@@ -57,7 +57,8 @@ impl Drop for SpuSocketPool {
     }
 }
 
-#[async_trait]
+#[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
+#[cfg_attr(not(target_arch = "wasm32"), async_trait)]
 pub trait SpuPool {
     /// start synchronize based on pool
     fn start(config: Arc<ClientConfig>, metadata: MetadataStores) -> Result<Self, SocketError>
@@ -81,7 +82,8 @@ pub trait SpuPool {
     fn partitions(&self) -> &StoreContext<PartitionSpec>;
 }
 
-#[async_trait]
+#[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
+#[cfg_attr(not(target_arch = "wasm32"), async_trait)]
 impl SpuPool for SpuSocketPool {
     /// start synchronize based on pool
     fn start(config: Arc<ClientConfig>, metadata: MetadataStores) -> Result<Self, SocketError> {
@@ -94,6 +96,7 @@ impl SpuPool for SpuSocketPool {
     }
 
     /// create new spu socket
+    #[instrument(skip(self))]
     async fn connect_to_leader(&self, leader: SpuId) -> Result<StreamSocket, FluvioError> {
         let spu = self.metadata.spus().look_up_by_id(leader).await?;
 
