@@ -2,7 +2,7 @@ use clap::Parser;
 
 use anyhow::Result;
 
-use fluvio::{RecordKey, TopicProducer, TopicProducerConfigBuilder, FluvioAdmin, spu::SpuSocketPool};
+use fluvio::{DefaultTopicProducer, FluvioAdmin, RecordKey, TopicProducerConfigBuilder};
 use fluvio_controlplane_metadata::partition::PartitionSpec;
 
 use fluvio_test_derive::fluvio_test;
@@ -25,7 +25,7 @@ pub async fn produce_batch(
         .build()
         .expect("failed to build config");
 
-    let producer: TopicProducer<SpuSocketPool> = test_driver
+    let producer: DefaultTopicProducer = test_driver
         .create_producer_with_config(&topic_name, config)
         .await;
 

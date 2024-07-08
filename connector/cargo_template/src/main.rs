@@ -9,7 +9,7 @@ use fluvio_connector_common::{
 };
 
 #[connector(source)]
-async fn start(config: CustomConfig, producer: TopicProducer<SpuSocketPool>) -> Result<()> {
+async fn start(config: CustomConfig, producer: DefaultTopicProducer) -> Result<()> {
     println!("Starting {{project-name}} source connector with {config:?}");
     for i in 1..1000 {
         let value = format!("Hello, Fluvio - {i}");

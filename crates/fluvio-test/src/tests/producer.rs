@@ -1,8 +1,7 @@
 use std::any::Any;
 use clap::Parser;
 
-use fluvio::spu::SpuSocketPool;
-use fluvio::{RecordKey, TopicProducer};
+use fluvio::{DefaultTopicProducer, RecordKey};
 use fluvio_test_derive::fluvio_test;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase};
@@ -75,7 +74,7 @@ impl TestOption for ProducerTestOption {
 
 // The total num_records should be divided up and assigned per producer
 async fn producer_work(
-    producer: TopicProducer<SpuSocketPool>,
+    producer: DefaultTopicProducer,
     producer_id: u32,
     workload_size: u32,
     record_tag_start: u32,
