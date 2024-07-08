@@ -27,6 +27,7 @@ pub mod event;
 pub use fluvio_protocol::record::{RecordKey, RecordData};
 
 use crate::spu::SpuPool;
+use crate::spu::SpuSocketPool;
 use crate::FluvioError;
 use crate::metrics::ClientMetrics;
 use crate::producer::accumulator::{RecordAccumulator, PushRecord};
@@ -46,6 +47,8 @@ use self::event::EventHandler;
 pub use self::output::ProduceOutput;
 use self::partition_producer::PartitionProducer;
 pub use self::record::{FutureRecordMetadata, RecordMetadata};
+
+pub type DefaultTopicProducer = TopicProducer<SpuSocketPool>;
 
 /// Pool of producers for a given topic. There is a producer per partition
 struct ProducerPool {
@@ -443,8 +446,8 @@ where
     /// # Example
     ///
     /// ```
-    /// # use fluvio::{TopicProducer, FluvioError, spu::SpuSocketPool};
-    /// # async fn example(producer: &TopicProducer<SpuSocketPool>) -> anyhow::Result<()> {
+    /// # use fluvio::{DefaultTopicProducer, FluvioError};
+    /// # async fn example(producer: &DefaultTopicProducer) -> anyhow::Result<()> {
     /// producer.send("Key", "Value").await?;
     /// producer.flush().await?;
     /// # Ok(())
@@ -466,8 +469,8 @@ where
     /// # Example
     ///
     /// ```
-    /// # use fluvio::{TopicProducer, FluvioError, spu::SpuSocketPool};
-    /// # async fn example(producer: &TopicProducer<SpuSocketPool>) -> anyhow::Result<()> {
+    /// # use fluvio::{DefaultTopicProducer, FluvioError};
+    /// # async fn example(producer: &DefaultTopicProducer) -> anyhow::Result<()> {
     /// producer.send("Key", "Value").await?;
     /// # Ok(())
     /// # }

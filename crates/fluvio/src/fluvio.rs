@@ -18,6 +18,7 @@ use fluvio_future::net::DomainConnector;
 use semver::Version;
 
 use crate::admin::FluvioAdmin;
+use crate::producer::DefaultTopicProducer;
 use crate::spu::SpuPool;
 use crate::TopicProducer;
 use crate::PartitionConsumer;
@@ -154,10 +155,7 @@ impl Fluvio {
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn topic_producer(
-        &self,
-        topic: impl Into<String>,
-    ) -> Result<TopicProducer<SpuSocketPool>> {
+    pub async fn topic_producer(&self, topic: impl Into<String>) -> Result<DefaultTopicProducer> {
         self.topic_producer_with_config(topic, Default::default())
             .await
     }
@@ -183,7 +181,7 @@ impl Fluvio {
         &self,
         topic: impl Into<String>,
         config: TopicProducerConfig,
-    ) -> Result<TopicProducer<SpuSocketPool>> {
+    ) -> Result<DefaultTopicProducer> {
         let topic = topic.into();
         debug!(topic = &*topic, "Creating producer");
 

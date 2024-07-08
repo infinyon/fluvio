@@ -1,13 +1,13 @@
 mod source;
 
-use fluvio::{spu::SpuSocketPool, RecordKey, TopicProducer};
+use fluvio::{DefaultTopicProducer, RecordKey};
 use fluvio_connector_common::{Source, connector, Result};
 use futures::StreamExt;
 
 use crate::source::TestJsonSource;
 
 #[connector(source)]
-async fn start(config: CustomConfig, producer: TopicProducer<SpuSocketPool>) -> Result<()> {
+async fn start(config: CustomConfig, producer: DefaultTopicProducer) -> Result<()> {
     let source = TestJsonSource::new(&config)?;
     let mut stream = source.connect(None).await?;
     while let Some(item) = stream.next().await {

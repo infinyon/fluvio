@@ -1,12 +1,11 @@
-use fluvio::spu::SpuSocketPool;
-use fluvio::{FluvioConfig, Fluvio, TopicProducer, TopicProducerConfigBuilder};
+use fluvio::{DefaultTopicProducer, Fluvio, FluvioConfig, TopicProducerConfigBuilder};
 use crate::{config::ConnectorConfig, Result};
 
 use crate::{ensure_topic_exists, smartmodule::smartmodule_chain_from_config};
 
 pub async fn producer_from_config(
     config: &ConnectorConfig,
-) -> Result<(Fluvio, TopicProducer<SpuSocketPool>)> {
+) -> Result<(Fluvio, DefaultTopicProducer)> {
     let mut cluster_config = FluvioConfig::load()?;
     cluster_config.client_id = Some(format!("fluvio_connector_{}", &config.meta().name()));
 
