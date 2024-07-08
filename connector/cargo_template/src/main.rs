@@ -2,7 +2,7 @@ mod config;
 use config::CustomConfig;
 
 {% if connector-type == "source" %}
-use fluvio::{RecordKey, TopicProducer, spu::SpuSocketPool};
+use fluvio::{RecordKey, TopicProducer, DefaultTopicProducer};
 use fluvio_connector_common::{
     connector,
     Result
