@@ -184,15 +184,15 @@ impl CreateTopicOpt {
                 .iter()
                 .map(|r| r.name.clone())
                 .collect::<Vec<String>>();
-            let not_registered_mirros = targets
+            let not_registered_mirrors = targets
                 .iter()
                 .filter(|t| !mirrors.contains(t))
                 .collect::<Vec<&String>>();
 
-            if !not_registered_mirros.is_empty() {
+            if !not_registered_mirrors.is_empty() {
                 return Err(CliError::InvalidArg(format!(
                     "Remote clusters not registered: {:?}",
-                    not_registered_mirros
+                    not_registered_mirrors
                 ))
                 .into());
             }
