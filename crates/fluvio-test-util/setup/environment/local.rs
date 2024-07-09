@@ -66,7 +66,7 @@ impl EnvironmentDriver for LocalEnvDriver {
     }
 
     async fn start_cluster(&self) -> StartStatus {
-        let installer = LocalInstaller::from_config(self.config.clone());
+        let installer = LocalInstaller::from_config(self.config.clone(), false);
         installer
             .install()
             .await
