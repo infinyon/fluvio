@@ -20,10 +20,6 @@ impl MirrorSpec {
             MirrorType::Home(_) => "home",
         }
     }
-
-    pub fn is_home_mirror(&self) -> bool {
-        matches!(self.mirror_type, MirrorType::Home(_))
-    }
 }
 
 impl fmt::Display for MirrorSpec {

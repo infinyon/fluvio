@@ -7,6 +7,7 @@ use tracing::instrument;
 
 use fluvio_protocol::{link::ErrorCode, record::ReplicaKey};
 use fluvio_sc_schema::{
+    mirror::MirrorType,
     partition::HomePartitionConfig,
     topic::{AddMirror, MirrorConfig, ReplicaSpec},
     Status,
@@ -38,26 +39,52 @@ pub async fn handle_add_mirror<AC: AuthContext, C: MetadataItem>(
         .value(&request.remote_cluster)
         .await;
 
-    match remote {
-        None => {
-            return Ok(Status::new(
-                topic_name,
-                ErrorCode::MirrorNotFound,
-                Some("remote cluster not found".to_owned()),
-            ));
-        }
-        Some(r) => {
-            if r.spec().is_home_mirror() {
+    if let Some(topic) = topic {
+        match remote {
+            None => {
                 return Ok(Status::new(
                     topic_name,
-                    ErrorCode::MirrorInvalidType,
-                    Some("remote cluster is not a remote mirror".to_owned()),
+                    ErrorCode::MirrorNotFound,
+                    Some("not found".to_owned()),
                 ));
             }
+            Some(mirror) => match &mirror.spec().mirror_type {
+                MirrorType::Remote(_) => {
+                    match topic.spec().replicas() {
+                        ReplicaSpec::Mirror(mc) => {
+                            for (i, partition) in mc.as_partition_maps().maps().iter().enumerate() {
+                                if let Some(partitions_mirror_config) = &partition.mirror {
+                                    if let Some(home) = partitions_mirror_config.home() {
+                                        if home.remote_cluster == request.remote_cluster {
+                                            return Ok(Status::new(
+                                                topic_name,
+                                                ErrorCode::MirrorAlreadyExists,
+                                                Some(format!("remote \"{}\" is already assigned to partition: \"{}\"", home.remote_cluster, i)),
+                                            ));
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        _ => {
+                            return Ok(Status::new(
+                                topic_name,
+                                ErrorCode::TopicError,
+                                Some("invalid replica type".to_owned()),
+                            ));
+                        }
+                    };
+                }
+                _ => {
+                    return Ok(Status::new(
+                        topic_name,
+                        ErrorCode::MirrorInvalidType,
+                        Some("remote cluster is not a remote mirror".to_owned()),
+                    ));
+                }
+            },
         }
-    }
 
-    if let Some(topic) = topic {
         let mut spec = topic.spec().clone();
 
         if spec.is_system() {
@@ -100,7 +127,7 @@ pub async fn handle_add_mirror<AC: AuthContext, C: MetadataItem>(
     } else {
         // topic does not exist
         Ok(Status::new(
-            topic_name,
+            topic_name.clone(),
             ErrorCode::TopicNotFound,
             Some("not found".to_owned()),
         ))
