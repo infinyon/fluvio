@@ -2208,6 +2208,7 @@ dependencies = [
  "fluvio-smartmodule",
  "fluvio-socket",
  "fluvio-spu-schema",
+ "fluvio-stream-dispatcher",
  "fluvio-types",
  "fluvio_ws_stream_wasm",
  "futures-util",

@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
@@ -7,6 +7,7 @@ use std::time::Duration;
 
 use async_lock::Mutex;
 use async_channel::Sender;
+use async_rwlock::RwLock;
 use tracing::trace;
 
 use fluvio_future::sync::Condvar;
@@ -55,7 +56,7 @@ impl BatchesDeque {
 pub(crate) struct RecordAccumulator {
     batch_size: usize,
     queue_size: usize,
-    batches: Arc<Vec<BatchHandler>>,
+    batches: Arc<RwLock<HashMap<PartitionId, BatchHandler>>>,
     compression: Compression,
 }
 
@@ -66,16 +67,29 @@ impl RecordAccumulator {
         partition_n: PartitionCount,
         compression: Compression,
     ) -> Self {
-        let mut batches = Vec::with_capacity(partition_n as usize);
-        for _ in 0..batches.capacity() {
-            batches.push((BatchEvents::shared(), BatchesDeque::shared()));
+        let mut batches = HashMap::new();
+        for p in 0..partition_n {
+            batches.insert(p, (BatchEvents::shared(), BatchesDeque::shared()));
         }
         Self {
-            batches: Arc::new(batches),
+            batches: Arc::new(RwLock::new(batches)),
             batch_size,
             compression,
             queue_size,
         }
+    }
+
+    pub(crate) async fn add_partition(
+        &self,
+        partition_id: PartitionId,
+        value: (Arc<BatchEvents>, Arc<BatchesDeque>),
+    ) -> BatchHandler {
+        self.batches
+            .write()
+            .await
+            .insert(partition_id, value.clone());
+
+        value
     }
 
     /// Add a record to the accumulator.
@@ -84,9 +98,9 @@ impl RecordAccumulator {
         record: Record,
         partition_id: PartitionId,
     ) -> Result<PushRecord, ProducerError> {
-        let (batch_events, batches_lock) = self
-            .batches
-            .get(partition_id as usize)
+        let batches_lock = self.batches.read().await;
+        let (batch_events, batches_lock) = batches_lock
+            .get(&partition_id)
             .ok_or(ProducerError::PartitionNotFound(partition_id))?;
 
         let mut batches = batches_lock.batches.lock().await;
@@ -140,8 +154,8 @@ impl RecordAccumulator {
         }
     }
 
-    pub(crate) fn batches(&self) -> Arc<Vec<BatchHandler>> {
-        self.batches.clone()
+    pub(crate) async fn batches(&self) -> HashMap<PartitionId, BatchHandler> {
+        self.batches.read().await.clone()
     }
 }
 
@@ -368,7 +382,8 @@ mod test {
 
         let batches = accumulator
             .batches()
-            .first()
+            .await
+            .get(&0)
             .expect("failed to get batch info")
             .0
             .clone();
@@ -407,6 +422,37 @@ mod test {
             async_std::future::timeout(timeout, batches.listen_batch_full())
                 .await
                 .is_ok()
+        );
+
+        let record_2 = Record::from(("key_2", "value_2"));
+        let batch_events = BatchEvents::shared();
+        let batches_deque = BatchesDeque::shared();
+        accumulator
+            .add_partition(1, (batch_events.clone(), batches_deque.clone()))
+            .await;
+        accumulator
+            .push_record(record_2.clone(), 1)
+            .await
+            .expect("failed push");
+
+        let batches = accumulator
+            .batches()
+            .await
+            .get(&1)
+            .expect("failed to get batch info")
+            .0
+            .clone();
+
+        assert!(
+            async_std::future::timeout(timeout, batches.listen_new_batch())
+                .await
+                .is_ok()
+        );
+
+        assert!(
+            async_std::future::timeout(timeout, batches.listen_batch_full())
+                .await
+                .is_err()
         );
     }
 

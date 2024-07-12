@@ -5,9 +5,8 @@ use tracing::debug;
 use anyhow::Result;
 
 use fluvio::consumer::{ConsumerConfigExt, ConsumerConfigExtBuilder, ConsumerStream, Record};
-use fluvio::{Fluvio, Offset};
+use fluvio::{TopicProducerPool, Fluvio, Offset, RecordKey};
 use fluvio::metadata::topic::TopicSpec;
-use fluvio::{TopicProducer, RecordKey};
 use fluvio::TopicProducerConfig;
 use fluvio::metadata::topic::CleanupPolicy;
 use fluvio::metadata::topic::SegmentBasedPolicy;
@@ -78,7 +77,7 @@ impl TestDriver {
         &self,
         topic: &str,
         config: TopicProducerConfig,
-    ) -> TopicProducer {
+    ) -> TopicProducerPool {
         debug!(topic, "creating producer");
         let fluvio_client = self.create_client().await.expect("cant' create client");
         match fluvio_client
@@ -96,7 +95,7 @@ impl TestDriver {
     }
 
     // Wrapper to getting a producer. We keep track of the number of producers we create
-    pub async fn create_producer(&self, topic: &str) -> TopicProducer {
+    pub async fn create_producer(&self, topic: &str) -> TopicProducerPool {
         self.create_producer_with_config(topic, Default::default())
             .await
     }
@@ -104,7 +103,7 @@ impl TestDriver {
     // Wrapper to producer send. We measure the latency and accumulation of message payloads sent.
     pub async fn send_count(
         &self,
-        p: &TopicProducer,
+        p: &TopicProducerPool,
         key: RecordKey,
         message: Vec<u8>,
     ) -> Result<()> {

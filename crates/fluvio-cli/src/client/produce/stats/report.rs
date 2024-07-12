@@ -8,6 +8,7 @@ use fluvio::stats::{
 };
 use indicatif::ProgressBar;
 use fluvio::TopicProducer;
+use fluvio::spu::SpuPool;
 use crate::Result;
 use crate::error::CliError;
 
@@ -16,7 +17,7 @@ use crate::error::CliError;
 /// Column names include units
 pub async fn start_csv_report(
     stats_path: &PathBuf,
-    producer: &Arc<TopicProducer>,
+    producer: &Arc<TopicProducerPool>,
 ) -> Result<BufWriter<File>, crate::error::CliError> {
     let mut stats_file = BufWriter::new(
         OpenOptions::new()
@@ -40,7 +41,7 @@ pub async fn start_csv_report(
 /// Writes a row of CSV data to stats report file
 /// Header contents dependent on what stats producer configured to collect
 pub async fn write_csv_dataframe(
-    producer: &Arc<TopicProducer>,
+    producer: &Arc<TopicProducerPool>,
     last_update_check: i64,
     maybe_stats_file: Option<&mut BufWriter<File>>,
 ) -> Result<i64, CliError> {
@@ -197,7 +198,7 @@ pub async fn format_summary_stats(client_stats: ClientStatsDataFrame) -> String 
 
 /// Report the producer summary to stdout with the `ProgressBar`
 pub async fn producer_summary(
-    producer: &Arc<TopicProducer>,
+    producer: &Arc<TopicProducerPool>,
     maybe_stats_bar: Option<&ProgressBar>,
     force_print_stats: bool,
 ) {

@@ -25,7 +25,7 @@ use super::StoreContext;
 
 #[derive(Clone)]
 /// global cached stores necessary for consumer and producers
-pub(crate) struct MetadataStores {
+pub struct MetadataStores {
     shutdown: Arc<SimpleEvent>,
     spus: StoreContext<SpuSpec>,
     partitions: StoreContext<PartitionSpec>,

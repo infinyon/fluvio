@@ -369,8 +369,8 @@ impl FluvioAdmin {
 #[cfg(feature = "unstable")]
 mod unstable {
     use super::*;
+    use fluvio_stream_dispatcher::metadata::local::LocalMetadataItem;
     use futures_util::Stream;
-    use crate::sync::AlwaysNewContext;
     use crate::metadata::topic::TopicSpec;
     use crate::metadata::partition::PartitionSpec;
     use crate::metadata::spu::SpuSpec;
@@ -380,19 +380,21 @@ mod unstable {
         /// Create a stream that yields updates to Topic metadata
         pub fn watch_topics(
             &self,
-        ) -> impl Stream<Item = MetadataChanges<TopicSpec, AlwaysNewContext>> {
+        ) -> impl Stream<Item = MetadataChanges<TopicSpec, LocalMetadataItem>> {
             self.metadata.topics().watch()
         }
 
         /// Create a stream that yields updates to Partition metadata
         pub fn watch_partitions(
             &self,
-        ) -> impl Stream<Item = MetadataChanges<PartitionSpec, AlwaysNewContext>> {
+        ) -> impl Stream<Item = MetadataChanges<PartitionSpec, LocalMetadataItem>> {
             self.metadata.partitions().watch()
         }
 
         /// Create a stream that yields updates to SPU metadata
-        pub fn watch_spus(&self) -> impl Stream<Item = MetadataChanges<SpuSpec, AlwaysNewContext>> {
+        pub fn watch_spus(
+            &self,
+        ) -> impl Stream<Item = MetadataChanges<SpuSpec, LocalMetadataItem>> {
             self.metadata.spus().watch()
         }
     }

@@ -20,9 +20,9 @@ pub mod spu;
 pub use error::FluvioError;
 pub use config::FluvioConfig;
 pub use producer::{
-    TopicProducerConfigBuilder, TopicProducerConfig, TopicProducer, RecordKey, ProduceOutput,
-    FutureRecordMetadata, RecordMetadata, DeliverySemantic, RetryPolicy, RetryStrategy,
-    Partitioner, PartitionerConfig, ProducerError,
+    TopicProducerConfigBuilder, TopicProducerConfig, TopicProducer, TopicProducerPool, RecordKey,
+    ProduceOutput, FutureRecordMetadata, RecordMetadata, DeliverySemantic, RetryPolicy,
+    RetryStrategy, Partitioner, PartitionerConfig, ProducerError,
 };
 #[cfg(feature = "smartengine")]
 pub use producer::{SmartModuleChainBuilder, SmartModuleConfig, SmartModuleInitialData};
@@ -108,7 +108,9 @@ const MINIMUM_PLATFORM_VERSION: &str = "0.9.0";
 ///
 /// [`Fluvio`]: ./struct.Fluvio.html
 #[instrument(skip(topic))]
-pub async fn producer(topic: impl Into<String>) -> anyhow::Result<TopicProducer> {
+pub async fn producer(
+    topic: impl Into<String>,
+) -> anyhow::Result<TopicProducer<spu::SpuSocketPool>> {
     let fluvio = Fluvio::connect().await?;
     let producer = fluvio.topic_producer(topic).await?;
     Ok(producer)
