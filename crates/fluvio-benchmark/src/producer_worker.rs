@@ -3,7 +3,7 @@ use std::time::Instant;
 use async_channel::Sender;
 use anyhow::Result;
 
-use fluvio::{DefaultTopicProducer, Fluvio, RecordKey, TopicProducerConfigBuilder};
+use fluvio::{TopicProducerPool, Fluvio, RecordKey, TopicProducerConfigBuilder};
 
 use crate::{
     benchmark_config::{
@@ -15,7 +15,7 @@ use crate::{
 };
 
 pub struct ProducerWorker {
-    fluvio_producer: DefaultTopicProducer,
+    fluvio_producer: TopicProducerPool,
     records_to_send: Option<Vec<BenchmarkRecord>>,
     config: BenchmarkConfig,
     producer_id: u64,

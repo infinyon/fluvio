@@ -48,7 +48,7 @@ pub use self::output::ProduceOutput;
 use self::partition_producer::PartitionProducer;
 pub use self::record::{FutureRecordMetadata, RecordMetadata};
 
-pub type DefaultTopicProducer = TopicProducer<SpuSocketPool>;
+pub type TopicProducerPool = TopicProducer<SpuSocketPool>;
 
 /// Pool of producers for a given topic. There is a producer per partition
 struct ProducerPool {
@@ -446,8 +446,8 @@ where
     /// # Example
     ///
     /// ```
-    /// # use fluvio::{DefaultTopicProducer, FluvioError};
-    /// # async fn example(producer: &DefaultTopicProducer) -> anyhow::Result<()> {
+    /// # use fluvio::{TopicProducerPool, FluvioError};
+    /// # async fn example(producer: &TopicProducerPool) -> anyhow::Result<()> {
     /// producer.send("Key", "Value").await?;
     /// producer.flush().await?;
     /// # Ok(())
@@ -469,8 +469,8 @@ where
     /// # Example
     ///
     /// ```
-    /// # use fluvio::{DefaultTopicProducer, FluvioError};
-    /// # async fn example(producer: &DefaultTopicProducer) -> anyhow::Result<()> {
+    /// # use fluvio::{TopicProducerPool, FluvioError};
+    /// # async fn example(producer: &TopicProducerPool) -> anyhow::Result<()> {
     /// producer.send("Key", "Value").await?;
     /// # Ok(())
     /// # }

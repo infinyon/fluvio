@@ -23,9 +23,8 @@ mod cmd {
     use anyhow::Result;
 
     use fluvio::{
-        Compression, Fluvio, FluvioError, DefaultTopicProducer, TopicProducerConfigBuilder,
-        RecordKey, ProduceOutput, DeliverySemantic, SmartModuleContextData, Isolation,
-        SmartModuleInvocation,
+        Compression, Fluvio, FluvioError, TopicProducerPool, TopicProducerConfigBuilder, RecordKey,
+        ProduceOutput, DeliverySemantic, SmartModuleContextData, Isolation, SmartModuleInvocation,
     };
     use fluvio_extension_common::Terminal;
     use fluvio_types::print_cli_ok;
@@ -350,7 +349,7 @@ mod cmd {
 
     impl ProduceOpt {
         #[cfg(feature = "producer-file-io")]
-        async fn process_raw_file(&self, producer: &DefaultTopicProducer) -> Result<()> {
+        async fn process_raw_file(&self, producer: &TopicProducerPool) -> Result<()> {
             let key = self.key.clone().map(Bytes::from);
             // Read all input and send as one record
             let buffer = match &self.file {
@@ -405,7 +404,7 @@ mod cmd {
 
         async fn produce_lines(
             &self,
-            producer: Arc<DefaultTopicProducer>,
+            producer: Arc<TopicProducerPool>,
             #[cfg(feature = "stats")] maybe_stats_bar: Option<&ProgressBar>,
         ) -> Result<()> {
             #[cfg(feature = "stats")]
@@ -477,7 +476,7 @@ mod cmd {
             Ok(())
         }
 
-        async fn producer_stdin(&self, producer: &Arc<DefaultTopicProducer>) -> Result<()> {
+        async fn producer_stdin(&self, producer: &Arc<TopicProducerPool>) -> Result<()> {
             let mut lines = BufReader::new(std::io::stdin()).lines();
             if self.interactive_mode() {
                 eprint!("> ");
@@ -522,7 +521,7 @@ mod cmd {
 
         async fn produce_line(
             &self,
-            producer: &Arc<DefaultTopicProducer>,
+            producer: &Arc<TopicProducerPool>,
             line: &str,
         ) -> Result<Option<ProduceOutput>> {
             let produce_output = if let Some(separator) = &self.key_separator {
@@ -539,7 +538,7 @@ mod cmd {
 
         async fn produce_key_value(
             &self,
-            producer: Arc<DefaultTopicProducer>,
+            producer: Arc<TopicProducerPool>,
             line: &str,
             separator: &str,
         ) -> Result<Option<ProduceOutput>> {
@@ -588,7 +587,7 @@ mod cmd {
         fn update_stats_bar(
             &self,
             maybe_stats_bar: Option<&ProgressBar>,
-            producer: &Arc<DefaultTopicProducer>,
+            producer: &Arc<TopicProducerPool>,
             line: &str,
         ) {
             if self.is_print_live_stats() {
@@ -658,7 +657,7 @@ mod cmd {
     #[cfg(feature = "stats")]
     /// Initialize Ctrl-C event handler to print session summary when we are collecting stats
     async fn init_ctrlc(
-        producer: Arc<DefaultTopicProducer>,
+        producer: Arc<TopicProducerPool>,
         maybe_stats_bar: Option<ProgressBar>,
         force_print_summary: bool,
     ) -> Result<()> {

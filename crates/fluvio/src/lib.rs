@@ -20,8 +20,8 @@ pub mod spu;
 pub use error::FluvioError;
 pub use config::FluvioConfig;
 pub use producer::{
-    TopicProducerConfigBuilder, TopicProducerConfig, TopicProducer, DefaultTopicProducer,
-    RecordKey, ProduceOutput, FutureRecordMetadata, RecordMetadata, DeliverySemantic, RetryPolicy,
+    TopicProducerConfigBuilder, TopicProducerConfig, TopicProducer, TopicProducerPool, RecordKey,
+    ProduceOutput, FutureRecordMetadata, RecordMetadata, DeliverySemantic, RetryPolicy,
     RetryStrategy, Partitioner, PartitionerConfig, ProducerError,
 };
 #[cfg(feature = "smartengine")]

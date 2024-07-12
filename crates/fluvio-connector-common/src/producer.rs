@@ -1,11 +1,9 @@
-use fluvio::{DefaultTopicProducer, Fluvio, FluvioConfig, TopicProducerConfigBuilder};
+use fluvio::{TopicProducerPool, Fluvio, FluvioConfig, TopicProducerConfigBuilder};
 use crate::{config::ConnectorConfig, Result};
 
 use crate::{ensure_topic_exists, smartmodule::smartmodule_chain_from_config};
 
-pub async fn producer_from_config(
-    config: &ConnectorConfig,
-) -> Result<(Fluvio, DefaultTopicProducer)> {
+pub async fn producer_from_config(config: &ConnectorConfig) -> Result<(Fluvio, TopicProducerPool)> {
     let mut cluster_config = FluvioConfig::load()?;
     cluster_config.client_id = Some(format!("fluvio_connector_{}", &config.meta().name()));
 
