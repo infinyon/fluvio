@@ -56,6 +56,9 @@ mod error {
                 ApiError::Code(ErrorCode::TopicNotFound, _) => {
                     write!(f, "Topic not found")
                 }
+                ApiError::Code(ErrorCode::MirrorNotFound, _) => {
+                    write!(f, "Mirror not found")
+                }
                 ApiError::Code(ErrorCode::SmartModuleNotFound { name: _ }, _) => {
                     write!(f, "SmartModule not found")
                 }

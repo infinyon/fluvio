@@ -16,6 +16,10 @@ setup_file() {
     export REMOTE_NAME
     debug_msg "Remote name: $REMOTE_NAME"
 
+    REMOTE_NAME_2="$(random_string 7)"
+    export REMOTE_NAME_2
+    debug_msg "Remote name 2: $REMOTE_NAME_2"
+
     MESSAGE="$(random_string 7)"
     export MESSAGE
     debug_msg "$MESSAGE"
@@ -25,10 +29,15 @@ setup_file() {
     debug_msg "Topic name: $TOPIC_NAME"
 }
 
-@test "Can register an remote cluster" {
+@test "Can register an remote clusters" {
     run timeout 15s "$FLUVIO_BIN" remote register "$REMOTE_NAME"
 
     assert_output "remote cluster \"$REMOTE_NAME\" was registered"
+    assert_success
+
+    run timeout 15s "$FLUVIO_BIN" remote register "$REMOTE_NAME_2"
+
+    assert_output "remote cluster \"$REMOTE_NAME_2\" was registered"
     assert_success
 }
 
@@ -39,6 +48,35 @@ setup_file() {
     assert_output "topic \"$TOPIC_NAME\" created"
     assert_success
 }
+
+@test "Can add a new remote to the mirror topic" {
+    run timeout 15s "$FLUVIO_BIN" topic add-mirror "$TOPIC_NAME" "$REMOTE_NAME_2"
+
+    assert_output "added new mirror: \"$REMOTE_NAME_2\" to topic: \"$TOPIC_NAME\""
+    assert_success
+}
+
+@test "Can't add a non existent remote to the mirror topic" {
+    run timeout 15s "$FLUVIO_BIN" topic add-mirror "$TOPIC_NAME" "nonexistent-remote"
+
+    assert_output "Mirror not found"
+    assert_failure
+}
+
+@test "Can't add a remote to the mirror topic that doesn't exist" {
+    run timeout 15s "$FLUVIO_BIN" topic add-mirror "nonexistent-topic" "$REMOTE_NAME"
+
+    assert_output "Topic not found"
+    assert_failure
+}
+
+@test "Can't add a remote to the mirror topic that is already assigned" {
+    run timeout 15s "$FLUVIO_BIN" topic add-mirror "$TOPIC_NAME" "$REMOTE_NAME"
+
+    assert_output "remote \"$REMOTE_NAME\" is already assigned to partition: \"0\"" 
+    assert_failure
+}
+
 
 @test "Can't produce to a mirror topic from home" {
     MESSAGE="$(random_string 7)"

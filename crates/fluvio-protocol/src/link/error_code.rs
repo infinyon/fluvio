@@ -224,6 +224,9 @@ pub enum ErrorCode {
     #[fluvio(tag = 11004)]
     #[error("delete from remote is not allowed")]
     MirrorDeleteFromRemote,
+    #[fluvio(tag = 11005)]
+    #[error("the mirror is invalid")]
+    MirrorInvalidType,
 
     // Specs
     #[fluvio(tag = 12001)]
