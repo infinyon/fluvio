@@ -1,7 +1,7 @@
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use tracing::{debug, error, trace, warn, instrument};
-use async_rwlock::RwLock;
+use async_lock::RwLock;
 use adaptive_backoff::prelude::*;
 
 use fluvio_types::SpuId;

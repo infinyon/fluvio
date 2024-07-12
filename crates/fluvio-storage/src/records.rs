@@ -1,7 +1,8 @@
 use std::io::Error as IoError;
 use std::io::ErrorKind;
+use std::os::fd::FromRawFd;
+use std::os::fd::OwnedFd;
 use std::os::unix::prelude::AsRawFd;
-use std::os::unix::prelude::FromRawFd;
 use std::path::PathBuf;
 use std::path::Path;
 use std::sync::Arc;
@@ -117,7 +118,7 @@ impl FileRecordsSlice {
 
 impl FileRecords for FileRecordsSlice {
     fn file(&self) -> File {
-        unsafe { File::from_raw_fd(self.file.as_raw_fd()) }
+        unsafe { File::from(<OwnedFd as FromRawFd>::from_raw_fd(self.file.as_raw_fd())) }
     }
 
     fn get_base_offset(&self) -> Offset {

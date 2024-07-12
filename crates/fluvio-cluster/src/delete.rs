@@ -5,7 +5,7 @@ use std::fs::{remove_dir_all, remove_file};
 use derive_builder::Builder;
 use k8_client::meta_client::MetadataClient;
 use tracing::{info, warn, debug, instrument};
-use sysinfo::{ProcessExt, System, SystemExt};
+use sysinfo::System;
 
 use fluvio_command::CommandExt;
 use fluvio_types::defaults::SPU_MONITORING_UNIX_SOCKET;

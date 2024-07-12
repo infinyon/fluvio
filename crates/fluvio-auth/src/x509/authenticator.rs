@@ -90,7 +90,7 @@ impl X509Authenticator {
         let principal = Self::principal_from_raw_certificate(
             &client_certificate
                 .to_der()
-                .map_err(|err| err.into_io_error())?,
+                .map_err(|err| IoError::new(IoErrorKind::Other, err))?,
         )?;
 
         Ok(principal)

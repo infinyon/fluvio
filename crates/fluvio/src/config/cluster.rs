@@ -98,7 +98,7 @@ impl FluvioConfig {
 }
 
 impl TryFrom<FluvioConfig> for fluvio_socket::ClientConfig {
-    type Error = std::io::Error;
+    type Error = anyhow::Error;
     fn try_from(config: FluvioConfig) -> Result<Self, Self::Error> {
         let connector = fluvio_future::net::DomainConnector::try_from(config.tls.clone())?;
         Ok(Self::new(

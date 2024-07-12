@@ -5,7 +5,7 @@ use std::io::Error as IoError;
 use clap::Parser;
 use serde::Serialize;
 use duct::cmd;
-use sysinfo::{System, SystemExt, NetworkExt, ProcessExt, DiskExt, PidExt};
+use sysinfo::{System, Networks, Disks};
 use which::which;
 use anyhow::Result;
 
@@ -263,10 +263,12 @@ impl DiagnosticsOpt {
         };
 
         let mut sys = System::new_all();
+        let mut net = Networks::new();
 
         // First we update all information of our `System` struct.
         println!("getting system info");
         sys.refresh_all();
+        net.refresh();
 
         let info = SystemInfo::load(&sys);
         write(serde_yaml::to_string(&info).unwrap(), "sysinfo")?;
@@ -276,7 +278,7 @@ impl DiagnosticsOpt {
         //println!("{}", disk_string);
         //  write(&disk_string, "disk")?;
 
-        let networks = NetworkInfo::load(&sys);
+        let networks = NetworkInfo::load(&net);
         write(serde_yaml::to_string(&networks).unwrap(), "networks")?;
 
         let processes = ProcessInfo::load(&sys);
@@ -374,10 +376,10 @@ struct SystemInfo {
 impl SystemInfo {
     fn load(sys: &System) -> Self {
         Self {
-            name: sys.name().unwrap_or_default(),
-            kernel_version: sys.kernel_version().unwrap_or_default(),
-            os_version: sys.os_version().unwrap_or_default(),
-            host_name: sys.host_name().unwrap_or_default(),
+            name: System::name().unwrap_or_default(),
+            kernel_version: System::kernel_version().unwrap_or_default(),
+            os_version: System::os_version().unwrap_or_default(),
+            host_name: System::host_name().unwrap_or_default(),
             processors: sys.cpus().len(),
             total_memory: sys.total_memory(),
             total_swap: sys.total_swap(),
@@ -397,10 +399,10 @@ struct DiskInfo {
 }
 
 impl DiskInfo {
-    fn _load(sys: &System) -> Vec<DiskInfo> {
+    fn _load(diskinfo: &Disks) -> Vec<DiskInfo> {
         let mut disks = Vec::new();
 
-        for disk in sys.disks() {
+        for disk in diskinfo {
             disks.push(DiskInfo {
                 name: format!("{:?}", disk.name()),
                 mount_point: format!("{:?}", disk.mount_point()),
@@ -422,10 +424,10 @@ struct NetworkInfo {
 }
 
 impl NetworkInfo {
-    fn load(sys: &System) -> Vec<NetworkInfo> {
+    fn load(net: &Networks) -> Vec<NetworkInfo> {
         let mut networks = Vec::new();
 
-        for network in sys.networks() {
+        for network in net {
             networks.push(NetworkInfo {
                 name: network.0.to_string(),
                 received: network.1.received(),

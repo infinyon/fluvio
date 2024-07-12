@@ -25,7 +25,7 @@ pub type DefaultStreamFetchRequest = StreamFetchRequest<RecordSet<RawRecords>>;
 
 use super::SpuServerApiKey;
 #[allow(deprecated)]
-use super::smartmodule::{LegacySmartModulePayload, SmartModuleInvocation};
+use super::smartmodule::SmartModuleInvocation;
 
 // version for WASM_MODULE
 pub const WASM_MODULE_API: i16 = 11;
@@ -75,9 +75,6 @@ pub struct StreamFetchRequest<R> {
     #[builder(setter(skip))]
     #[fluvio(min_version = 11, max_version = 18)]
     wasm_module: Vec<u8>,
-    #[builder(setter(skip))]
-    #[fluvio(min_version = 12, max_version = 18)]
-    wasm_payload: Option<LegacySmartModulePayload>,
     #[builder(setter(skip))]
     #[fluvio(min_version = 16, max_version = 18)]
     smartmodule: Option<SmartModuleInvocation>,
@@ -192,8 +189,8 @@ mod tests {
         let expected = vec![
             0x00, 0x03, 0x6f, 0x6e, 0x65, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x00, 0x00, 0x00, 0x04, 0xde, 0xad, 0xbe, 0xef,
-            0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x01, 0x01, 0x00, 0x00, 0x00, 0x04, 0xde, 0xad, 0xbe, 0xef, 0x00,
+            0x00, 0x00,
         ];
         assert_eq!(dest, expected);
     }
@@ -261,8 +258,8 @@ mod tests {
         let bytes = vec![
             0x00, 0x03, 0x6f, 0x6e, 0x65, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x00, 0x00, 0x00, 0x04, 0xde, 0xad, 0xbe, 0xef,
-            0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x01, 0x01, 0x00, 0x00, 0x00, 0x04, 0xde, 0xad, 0xbe, 0xef, 0x00,
+            0x00, 0x00,
         ];
         let mut value = DefaultStreamFetchRequest::default();
         value
@@ -272,7 +269,7 @@ mod tests {
         assert_eq!(value.partition, 3);
         let sm = match value.smartmodules.first() {
             Some(wasm) => wasm,
-            _ => panic!("should have smartstreeam payload"),
+            _ => panic!("should have smartmodule payload"),
         };
         let wasm = match &sm.wasm {
             SmartModuleInvocationWasm::AdHoc(wasm) => wasm.as_slice(),
@@ -302,7 +299,7 @@ mod tests {
         assert_eq!(value.partition, 3);
         let sm = match value.smartmodules.first() {
             Some(wasm) => wasm,
-            _ => panic!("should have smartstreeam payload"),
+            _ => panic!("should have smartmodule payload"),
         };
         assert_eq!(sm.params.lookback(), Some(&Lookback::last(1)));
         let wasm = match &sm.wasm {
@@ -333,7 +330,7 @@ mod tests {
         assert_eq!(value.partition, 3);
         let sm = match value.smartmodules.first() {
             Some(wasm) => wasm,
-            _ => panic!("should have smartstreeam payload"),
+            _ => panic!("should have smartmodule payload"),
         };
         assert_eq!(sm.params.lookback(), Some(&Lookback::last(1)));
         let wasm = match &sm.wasm {

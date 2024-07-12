@@ -1,11 +1,12 @@
 use std::io::Error as IoError;
 use std::io::Write;
+use std::os::fd::OwnedFd;
 use std::os::unix::prelude::AsRawFd;
 use std::os::unix::prelude::FromRawFd;
 use std::path::PathBuf;
 use std::path::Path;
 use std::fmt;
-use std::time::{Instant};
+use std::time::Instant;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 
@@ -331,7 +332,7 @@ impl FileRecords for MutFileRecords {
     }
 
     fn file(&self) -> File {
-        unsafe { File::from_raw_fd(self.file.as_raw_fd()) }
+        unsafe { File::from(<OwnedFd as FromRawFd>::from_raw_fd(self.file.as_raw_fd())) }
     }
 }
 

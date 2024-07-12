@@ -18,9 +18,9 @@ mod monitor_impl {
 
     use tracing::debug;
 
-    use async_net::unix::UnixListener;
     use futures_util::{StreamExt, AsyncWriteExt};
 
+    use fluvio_future::net::unix::UnixListener;
     use fluvio_future::task::spawn;
 
     use super::ClientMetrics;

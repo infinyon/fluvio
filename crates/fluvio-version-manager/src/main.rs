@@ -20,7 +20,7 @@ pub const BINARY_NAME: &str = env!("CARGO_BIN_NAME");
 /// Binary version is read from `VERSION` file, which is the same as Fluvio version
 pub const VERSION: &str = include_str!("../../../VERSION");
 
-#[async_std::main]
+#[fluvio_future::main_async]
 async fn main() -> Result<()> {
     fluvio_future::subscriber::init_tracer(None);
 

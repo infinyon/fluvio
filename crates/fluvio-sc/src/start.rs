@@ -69,19 +69,18 @@ pub fn main_loop(opt: ScOpt) {
 /// print out system information
 fn inspect_system() {
     use sysinfo::System;
-    use sysinfo::SystemExt;
 
     let mut sys = System::new_all();
     sys.refresh_all();
     info!(version = crate::VERSION, "Platform");
     info!(commit = env!("GIT_HASH"), "Git");
-    info!(name = ?sys.name(),"System");
-    info!(kernel = ?sys.kernel_version(),"System");
-    info!(os_version = ?sys.long_os_version(),"System");
+    info!(name = ?System::name(),"System");
+    info!(kernel = ?System::kernel_version(),"System");
+    info!(os_version = ?System::long_os_version(),"System");
     info!(core_count = ?sys.physical_core_count(),"System");
     info!(total_memory = sys.total_memory(), "System");
     info!(available_memory = sys.available_memory(), "System");
-    info!(uptime = sys.uptime(), "Uptime in secs");
+    info!(uptime = System::uptime(), "Uptime in secs");
 }
 
 fn k8_main_loop<C>(

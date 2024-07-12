@@ -178,15 +178,16 @@ impl SpuOpt {
                 .as_ref()
                 .ok_or_else(|| IoError::new(ErrorKind::NotFound, "missing ca cert"))?;
             TlsAcceptor::builder()
-                .map_err(|err| err.into_io_error())?
+                .map_err(|err| std::io::Error::new(std::io::ErrorKind::Other, err))?
                 .with_ssl_verify_mode(SslVerifyMode::PEER)
                 .with_ca_from_pem_file(ca_path)
-                .map_err(|err| err.into_io_error())?
+                .map_err(|err| std::io::Error::new(std::io::ErrorKind::Other, err))?
         } else {
-            TlsAcceptor::builder().map_err(|err| err.into_io_error())?
+            TlsAcceptor::builder()
+                .map_err(|err| std::io::Error::new(std::io::ErrorKind::Other, err))?
         })
         .with_certifiate_and_key_from_pem_files(server_crt_path, server_key_path)
-        .map_err(|err| err.into_io_error())?;
+        .map_err(|err| std::io::Error::new(std::io::ErrorKind::Other, err))?;
 
         Ok(Some(builder.build()))
     }
