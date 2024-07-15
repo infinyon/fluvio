@@ -631,3 +631,17 @@ In certain cases, partition may not be deleted correctly.  In this case, you can
 ```bash
 $ kubectl patch partition  <partition_name> -p '{"metadata":{"finalizers":null}}' --type merge
 ```
+
+### Cross-compile Fluvio on macOS for Linux
+
+If you encounter issues cross-compiling Fluvio on macOS for Linux, using
+Zigbuild could be of help.
+
+Update the `makefiles/check.mk` file's `fluvio_run_bin` recipe to use the
+`cargo zigbuild` command instead of `cargo build`.
+
+```diff
+fluvio_run_bin: install_rustup_target
+	- cargo build --bin fluvio-run -p fluvio-run $(RELEASE_FLAG) --target $(TARGET) $(DEBUG_SMARTMODULE_FLAG)
+	+ cargo zigbuild --bin fluvio-run -p fluvio-run $(RELEASE_FLAG) --target $(TARGET) $(DEBUG_SMARTMODULE_FLAG)
+```
