@@ -3,7 +3,7 @@
 # This is optimized for installing on GitHub Actions
 set -e
 MATRIX_OS=${1}
-ZIG_VER=0.11.0
+ZIG_VER=0.12.1
 ARCH=x86_64
 OS=linux
 
