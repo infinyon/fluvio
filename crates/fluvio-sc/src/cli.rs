@@ -223,18 +223,14 @@ impl TlsConfig {
                 .as_ref()
                 .ok_or_else(|| anyhow!("missing ca cert"))?;
             info!("using client cert CA path: {}", ca_path);
-            TlsAcceptor::builder()
-                .map_err(|err| std::io::Error::new(std::io::ErrorKind::Other, err))?
+            TlsAcceptor::builder()?
                 .with_ssl_verify_mode(SslVerifyMode::PEER)
-                .with_ca_from_pem_file(ca_path)
-                .map_err(|err| std::io::Error::new(std::io::ErrorKind::Other, err))?
+                .with_ca_from_pem_file(ca_path)?
         } else {
             info!("using tls anonymous access");
-            TlsAcceptor::builder()
-                .map_err(|err| std::io::Error::new(std::io::ErrorKind::Other, err))?
+            TlsAcceptor::builder()?
         })
-        .with_certifiate_and_key_from_pem_files(server_crt_path, server_key_path)
-        .map_err(|err| std::io::Error::new(std::io::ErrorKind::Other, err))?;
+        .with_certifiate_and_key_from_pem_files(server_crt_path, server_key_path)?;
 
         Ok(builder.build())
     }
