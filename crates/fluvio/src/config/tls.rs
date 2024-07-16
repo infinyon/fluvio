@@ -305,7 +305,7 @@ cfg_if::cfg_if! {
     } else {
         // by default, no TLS
         impl TryFrom<TlsPolicy> for DomainConnector {
-            type Error = IoError;
+            type Error = anyhow::Error;
 
             fn try_from(_config: TlsPolicy) -> Result<Self, Self::Error> {
                 info!("Using Default Domain connector for wasm");

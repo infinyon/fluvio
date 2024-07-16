@@ -154,7 +154,7 @@ impl ClusterUninstaller {
             for process in sys.processes_by_exact_name(name) {
                 if let Some(cmd_args) = command_args {
                     // First command is the executable so cut that out.
-                    let proc_cmds = &process.cmd()[1..];
+                    let proc_cmds = &process.cmd();
                     if cmd_args.len() > proc_cmds.len() {
                         continue; // Ignore procs with less command_args than the target.
                     }
