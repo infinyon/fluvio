@@ -17,7 +17,7 @@ clap = { workspace = true, features = ["std","derive"] }
 derive_builder = { workspace = true }
 futures-util = { workspace = true }
 hdrhistogram = { workspace = true }
-madato = "0.7.0"
+madato = { workspace = true }
 rand = { workspace = true }
 serde = { workspace = true , features = ['derive'] }
 serde_yaml = { workspace = true }

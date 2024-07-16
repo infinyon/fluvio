@@ -2303,7 +2303,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.22.4"
+version = "0.23.0"
 dependencies = [
  "anyhow",
  "async-channel 1.9.0",
@@ -2347,6 +2347,7 @@ dependencies = [
 name = "fluvio-auth"
 version = "0.0.0"
 dependencies = [
+ "anyhow",
  "async-trait",
  "fluvio-controlplane-metadata",
  "fluvio-future",
