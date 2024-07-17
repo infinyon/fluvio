@@ -37,10 +37,102 @@ env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
+  # this job set up dynamic configuration shared among jobs
+  config:
+    name: Set up Config
+    runs-on: ubuntu-latest
+    env:
+      ENABLE_CHECK: true
+      TEST_RUNS: "[r1]" # default runs
+    outputs:
+      check: ${{ steps.check.outputs.check }}
+      runs: ${{ steps.runs.outputs.runs }}
+    steps:
+      - id: check
+        run: echo "check=${{ env.ENABLE_CHECK }}" >> "$GITHUB_OUTPUT"
+      #- name: Set Staging runs
+      ##  if: github.event_name == 'merge_group'
+      #  run: echo "TEST_RUNS='[r1,r2,r3,r4,r5]'" | tee -a $GITHUB_ENV
+
+  # build binaries for linux x86_64/aarch64 musl which is primary OS for testing clusters
+  build_primary_binaries:
+    name: Primary build ${{ matrix.binary }} for ${{ matrix.rust-target }} on (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        rust-target:
+          - x86_64-unknown-linux-musl
+          - aarch64-unknown-linux-musl
+        binary: [fluvio, fluvio-run, fluvio-test, fluvio-channel, smdk, fbm, cdk, fvm]
+        os: [ubuntu-latest]
+    env:
+      RUST_BACKTRACE: full
+      TARGET: ${{ matrix.rust-target }}
+      RUST_BIN_DIR: target/${{ matrix.rust-target }}/release
+      RELEASE_NAME: release
+      RELEASE: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Print env
+        run: |
+          echo "RUST_BIN_DIR = ${{ env.RUST_BIN_DIR }} "
+      - name: Install Rust Stable
+        uses: dtolnay/rust-toolchain@stable
+      - name: install rust target
+        run: rustup target add ${{ matrix.rust-target }}
+      - name: Install zig
+        run: ./actions/zig-install.sh
+      - uses: Swatinem/rust-cache@v2
+        timeout-minutes: 10
+        with:
+          key: ${{ matrix.os }}-${{ env.RUST_BIN_DIR }}-${{ matrix.binary }}
+
+      - name: Build fluvio
+        if: matrix.binary == 'fluvio'
+        run: make build-cli
+
+      - name: Build fluvio-run
+        if: matrix.binary == 'fluvio-run'
+        run: make build-cluster
+
+      - name: Build fluvio-test
+        if: matrix.binary == 'fluvio-test'
+        run: make build-test
+
+      - name: Build fluvio-channel
+        if: matrix.binary == 'fluvio-channel'
+        run: make build-channel
+
+      - name: Build smdk
+        if: matrix.binary == 'smdk'
+        run: make build-smdk
+
+      - name: Build cdk
+        timeout-minutes: 40
+        if: matrix.binary == 'cdk'
+        run: make build-cdk
+
+      - name: Build fbm
+        if: matrix.binary == 'fbm'
+        run: make build-fbm
+
+      - name: Build fvm
+        if: matrix.binary == 'fvm'
+        run: make build-fvm
+
+      # Upload artifacts
+      - name: Upload artifact - ${{ matrix.binary }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.binary }}-${{ matrix.rust-target }}
+          path: ${{ env.RUST_BIN_DIR }}/${{ matrix.binary }}
+          retention-days: 1
+
   # build other binaries which doesn't need test
   build_binaries:
     name: Build ${{ matrix.binary }} for ${{ matrix.rust-target }} on (${{ matrix.os }})
-    #  aif: github.event_name == 'merge_group'
+    if: github.event_name == 'merge_group'
     runs-on: ${{ matrix.os }}
     strategy:
       #    fail-fast: false
@@ -56,6 +148,23 @@ jobs:
           - os: ubuntu-latest
             rust-target: armv7-unknown-linux-gnueabihf
             binary: fluvio-run
+          - os: ubuntu-latest
+            rust-target: x86_64-pc-windows-gnu
+            binary: fluvio.exe
+          - os: macos-12
+            rust-target: x86_64-apple-darwin
+            binary: fluvio
+          - os: macos-12
+            rust-target: aarch64-apple-darwin
+            binary: fluvio
+
+          # fluvio-run
+          - os: macos-12
+            rust-target: x86_64-apple-darwin
+            binary: fluvio-run
+          - os: macos-12
+            rust-target: aarch64-apple-darwin
+            binary: fluvio-run
 
           # fluvio-channel
           - os: ubuntu-latest
@@ -64,6 +173,32 @@ jobs:
           - os: ubuntu-latest
             rust-target: armv7-unknown-linux-gnueabihf
             binary: fluvio-channel
+          - os: ubuntu-latest
+            rust: stable
+            rust-target: x86_64-pc-windows-gnu
+            binary: fluvio-channel.exe
+          - os: macos-12
+            rust-target: x86_64-apple-darwin
+            binary: fluvio-channel
+          - os: macos-12
+            rust-target: aarch64-apple-darwin
+            binary: fluvio-channel
+
+          # smdk
+          - os: macos-12
+            rust-target: x86_64-apple-darwin
+            binary: smdk
+          - os: macos-12
+            rust-target: aarch64-apple-darwin
+            binary: smdk
+
+          # cdk
+          - os: macos-12
+            rust-target: x86_64-apple-darwin
+            binary: cdk
+          - os: macos-12
+            rust-target: aarch64-apple-darwin
+            binary: cdk
 
           # fbm
           - os: ubuntu-latest
@@ -72,6 +207,15 @@ jobs:
           - os: ubuntu-latest
             rust-target: armv7-unknown-linux-gnueabihf
             binary: fbm
+          - os: ubuntu-latest
+            rust-target: x86_64-pc-windows-gnu
+            binary: fbm.exe
+          - os: macos-12
+            rust-target: x86_64-apple-darwin
+            binary: fbm
+          - os: macos-12
+            rust-target: aarch64-apple-darwin
+            binary: fbm
 
           # fvm
           - os: ubuntu-latest
@@ -79,6 +223,15 @@ jobs:
             binary: fvm
           - os: ubuntu-latest
             rust-target: armv7-unknown-linux-gnueabihf
+            binary: fvm
+          - os: ubuntu-latest
+            rust-target: x86_64-pc-windows-gnu
+            binary: fvm.exe
+          - os: macos-12
+            rust-target: x86_64-apple-darwin
+            binary: fvm
+          - os: macos-12
+            rust-target: aarch64-apple-darwin
             binary: fvm
 
     env:
@@ -108,6 +261,8 @@ jobs:
         run: rustup target add ${{ matrix.rust-target }}
       - name: Install zig
         run: ./actions/zig-install.sh ${{ matrix.os }}
+      - name: Install gcc-multilib
+        run: sudo apt-get install gcc-multilib
       - name: Install NASM
         if: matrix.rust-target  == 'x86_64-pc-windows-gnu'
         uses: ilammy/setup-nasm@v1
@@ -119,20 +274,16 @@ jobs:
         run: brew install helm
         if: matrix.binary == 'fluvio' && matrix.os == 'macos-12'
 
-
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-
-      - name: Build fluvio
-        timeout-minutes: 40
-        if: matrix.binary == 'fluvio'
-        run: make build-cli
-
       - name: Install mingw gcc
         if: matrix.rust-target  == 'x86_64-pc-windows-gnu'
         run: |
           sudo apt-get update -o="APT::Acquire::Retries=3"
           sudo apt-get install -y -V -o="APT::Acquire::Retries=3" gcc-mingw-w64-x86-64
+
+      - name: Build fluvio
+        timeout-minutes: 40
+        if: matrix.binary == 'fluvio'
+        run: make build-cli
 
       - name: Build fluvio.exe
         timeout-minutes: 40
@@ -191,3 +342,1288 @@ jobs:
           name: ${{ matrix.binary }}-${{ matrix.rust-target }}
           path: ${{ env.RUST_BIN_DIR }}/${{ matrix.binary }}
           retention-days: 1
+
+  # Run all checks and unit test. This always run on debug mode
+  check:
+    name: Rust check ${{ matrix.check }} (${{ matrix.rust-target }})
+    needs: config
+    if: needs.config.outputs.check == 'true'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        rust-target: [x86_64-unknown-linux-gnu]
+        check:
+          [
+            fmt,
+            clippy,
+            doc,
+            doc-test,
+            test,
+            crate-version,
+            crate-audit,
+            crate-publish-check,
+          ]
+    env:
+      RUST_BACKTRACE: full
+      TARGET: ${{ matrix.rust-target }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust Stable
+        uses: dtolnay/rust-toolchain@stable
+      - name: Install Zig
+        run: ./actions/zig-install.sh ${{ matrix.os }}
+
+      # based upon https://github.com/orgs/community/discussions/25678
+      # check test regularly runs out of disk space
+      - name: Save Space
+        if: matrix.check == 'test'
+        run: rm -rf /opt/hostedtoolcache
+
+      - uses: Swatinem/rust-cache@v2
+        timeout-minutes: 10
+        with:
+          key: ${{ matrix.rust-target }}-${{ matrix.check }}
+      - name: Fmt
+        if: matrix.check == 'fmt'
+        run: |
+          rustup component add rustfmt
+          make check-fmt
+      - name: Clippy
+        if: matrix.check == 'clippy'
+        run: |
+          rustup component add clippy
+          make check-clippy
+      - name: Doc
+        if: matrix.check == 'doc'
+        run: make check-docs
+      - name: Doc Test
+        if: matrix.check == 'doc-test'
+        run: make run-all-doc-test
+      - name: Unit Test
+        if: matrix.check == 'test'
+        run: make run-all-unit-test
+      - name: Crate version check
+        if: matrix.check == 'crate-version'
+        run: cargo run --manifest-path release-tools/check-crate-version/Cargo.toml -- --crates-dir crates --publish-list-path release-tools/check-crate-version/publish-list.toml
+      - name: Audit crate licenses + advisories
+        if: matrix.check == 'crate-audit'
+        continue-on-error: true
+        uses: EmbarkStudios/cargo-deny-action@v1
+      - name: Crate version check
+        if: matrix.check == 'crate-publish-check'
+        run: ./release-tools/check-publish-crates.sh
+
+  # Run integration test. This always run on release mode
+  check_integration:
+    name: Rust integration test (${{ matrix.rust-target }})
+    needs: build_primary_binaries
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        rust-target: [x86_64-unknown-linux-gnu]
+    env:
+      RUST_BACKTRACE: full
+      TARGET: ${{ matrix.rust-target }}
+      RELEASE: true
+      RELEASE_NAME: release
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust Stable
+        uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        timeout-minutes: 10
+        with:
+          key: ${{ matrix.rust-target }}-check-integration
+      - name: Download smdk
+        uses: ./.github/actions/dl-smdk
+      - name: Integration test
+        env:
+          SMDK_BIN: ~/bin/smdk
+        run: make run-integration-test
+
+  build_smartmodule:
+    name: Build SmartModule
+    runs-on: ${{ matrix.os }}
+    needs: build_primary_binaries
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        rust-target: [x86_64-unknown-linux-gnu]
+    env:
+      RUST_BACKTRACE: full
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust Stable
+        uses: dtolnay/rust-toolchain@stable
+      - name: Download smdk
+        uses: ./.github/actions/dl-smdk
+      - name: Build Regex SmartModule
+        env:
+          SMDK_BIN: ~/bin/smdk
+        run: make -C smartmodule/regex-filter
+
+  check_wasm:
+    name: Build WASM crates (${{ matrix.context.crate }})
+    needs: config
+    if: needs.config.outputs.check == 'true'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        context:
+          - crate: fluvio
+            features: "--features=openssl"
+          - crate: fluvio-socket
+            features: ""
+          - crate: fluvio-protocol
+            features: "--features=fluvio-protocol-derive"
+          - crate: fluvio-spu-schema
+            features: ""
+          - crate: fluvio-sc-schema
+            features: ""
+          - crate: fluvio-types
+            features: ""
+    env:
+      RUST_BACKTRACE: full
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust Stable
+        uses: dtolnay/rust-toolchain@stable
+      - name: install wasm target
+        run: rustup target add wasm32-unknown-unknown
+      - name: Build WASM for ${{ matrix.context.crate }}
+        run: |
+            cargo check --manifest-path ./crates/${{matrix.context.crate}}/Cargo.toml \
+                --no-default-features \
+                ${{matrix.context.features}} \
+                --target wasm32-unknown-unknown
+
+  check_crate_feature_flags:
+    name: Check ${{matrix.features}} for (${{ matrix.crate }})
+    needs: config
+    if: needs.config.outputs.check == 'true'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        crate:
+          - fluvio
+          - fluvio-socket
+          - fluvio-smartengine
+          - fluvio-sc-schema
+          - fluvio-protocol
+          - fluvio-spu-schema
+          - fluvio-types
+        features:
+          - no-default-features
+          - all-features
+    env:
+      RUST_BACKTRACE: full
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: check for ${{ matrix.crate }} with ${{matrix.features}}
+        run: cargo check --manifest-path ./crates/${{matrix.crate}}/Cargo.toml --${{matrix.features}}
+
+  check_windows:
+    name: Check Windows for crates (${{ matrix.crate }})
+    needs: config
+    if: needs.config.outputs.check == 'true'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest]
+        crate:
+          - fluvio
+          - fluvio-cli
+          - fluvio-channel
+          #- smartmodule-development-kit
+    env:
+      RUST_BACKTRACE: full
+      RUSTV: ${{ matrix.rust }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust Stable
+        uses: dtolnay/rust-toolchain@stable
+      - name: Install NASM
+        uses: ilammy/setup-nasm@v1
+      - name: Rust version
+        run: rustc --version
+      - uses: Swatinem/rust-cache@v2
+        timeout-minutes: 10
+        with:
+          key: ${{ matrix.os }}-${{ matrix.crate }}-check-windows
+
+      - name: Build ${{ matrix.crate }} for ${{ matrix.os }}
+        run: cargo build -p ${{ matrix.crate }}
+
+      - name: Test ${{ matrix.crate }} for ${{ matrix.os }}
+        run: cargo test -p ${{ matrix.crate }}
+
+  local_cluster_test:
+    name: Local cluster (mode ${{ matrix.run-mode }}) test run (${{ matrix.run }})-${{ matrix.test }}
+    runs-on: ${{ matrix.os }}
+    needs:
+      - build_primary_binaries
+      - config
+    env:
+      UNINSTALL: noclean
+      FLUVIO_BIN: ~/bin/fluvio
+      TEST_BIN: ~/bin/fluvio-test
+      SERVER_LOG: fluvio=info
+      K8_NAMESPACE: fluvio-test
+    strategy:
+ #     fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        rust-target: [x86_64-unknown-linux-musl]
+        run: [r1]
+        spu: [2]
+        test:
+          [
+            validate-test-harness,
+            smoke-test,
+            smoke-test-tls,
+            smoke-test-at-most-once,
+            election,
+            multiple-partition,
+            reconnection,
+            batch-failure,
+            batch,
+            consumer-offsets
+          ]
+        run-mode: [local, local-k8]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download artifact - fluvio
+        uses: actions/download-artifact@v4
+        with:
+          name: fluvio-${{ matrix.rust-target }}
+          path: ~/bin
+      - name: Download artifact - fluvio-run
+        uses: actions/download-artifact@v4
+        with:
+          name: fluvio-run-${{ matrix.rust-target }}
+          path: ~/.fluvio/extensions
+      - name: Download artifact - fluvio-test
+        uses: actions/download-artifact@v4
+        with:
+          name: fluvio-test-${{ matrix.rust-target }}
+          path: ~/bin
+      - name: Set up Fluvio binaries
+        run: |
+          chmod +x ~/bin/fluvio ~/bin/fluvio-test ~/.fluvio/extensions/fluvio-run
+          echo "~/bin" >> $GITHUB_PATH
+          echo "DEFAULT_SPU=${{ matrix.spu }}" | tee -a $GITHUB_ENV
+          echo "REPL=${{ matrix.spu }}" | tee -a $GITHUB_ENV
+      - name: Print version
+        run: fluvio version
+      - name: Set up cluster
+        if: matrix.run-mode == 'local-k8'
+        run: |
+          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
+          ./k8-util/cluster/reset-k3d.sh
+      - name: Create k8 namespace
+        if: matrix.run-mode == 'local-k8'
+        run: |
+          kubectl create ns ${K8_NAMESPACE}
+      - name: Start fluvio cluster
+        timeout-minutes: 10
+        if: matrix.test != 'smoke-test-tls'
+        run: fluvio cluster start --${{ matrix.run-mode }} --develop --spu ${{ matrix.spu }} --rust-log ${{ env.SERVER_LOG }} --namespace ${K8_NAMESPACE}
+      - name: Start fluvio cluster TLS
+        if: matrix.test == 'smoke-test-tls'
+        timeout-minutes: 10
+        # note that Local config doesn't not support auth and scopes in the argument for now
+        run: >
+          AUTH_POLICY=${{ env.AUTH_FILE }}
+          X509_AUTH_SCOPES=${{ env.X509_SCOPE_FILE }}
+          fluvio cluster start --${{ matrix.run-mode }} --develop --spu ${{ matrix.spu }} --rust-log ${{ env.SERVER_LOG }} --namespace ${K8_NAMESPACE} ${{ env.TLS_ARGS }}
+      - name: sleep
+        run: sleep 15
+      - name: Validate test harness
+        if: matrix.test == 'validate-test-harness'
+        timeout-minutes: 15
+        run : |
+          make validate-test-harness
+      - name: Run smoke-test
+        if: matrix.test == 'smoke-test'
+        timeout-minutes: 15
+        run: |
+          make smoke-test-local
+      - name: Run smoke-test-at-most-once
+        if: matrix.test == 'smoke-test-at-most-once'
+        timeout-minutes: 15
+        run: |
+          make smoke-test-at-most-once
+      - name: Run smoke-test-tls
+        if: matrix.test == 'smoke-test-tls'
+        timeout-minutes: 15
+        run: |
+          make smoke-test-tls-root
+      #      kubectl get partitions
+      #      kubectl get partitions  -o=jsonpath='{.items[0].status.leader.leo}' | grep 100
+      #      echo "smoke test done"
+      #    make  RUST_LOG=fluvio_test=debug,fluvio_test=debug,fluvio_socket=trace,fluvio::consumer=debug,fluvio::producer=debug DEFAULT_ITERATION=10 DEFAULT_SPU=1 REPL=1 FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean smoke-test-local
+      - name: Run election-test
+        if: matrix.test == 'election'
+        timeout-minutes: 10
+        run: |
+          make election-test
+      - name: Run multiple-partition-test
+        if: matrix.test == 'multiple-partition'
+        timeout-minutes: 10
+        run: |
+          make  multiple-partition-test
+      - name: Run reconnection-test
+        if: matrix.test == 'reconnection'
+        timeout-minutes: 10
+        run: |
+          make reconnection-test
+      - name: Run batch-test
+        if: matrix.test == 'batch-failure'
+        timeout-minutes: 10
+        run: |
+          make batch-failure-test
+      - name: Run batch-test
+        if: matrix.test == 'batch'
+        timeout-minutes: 10
+        run: |
+          make batching-test
+      - name: Client stats validation
+        if: matrix.test == 'stats-validation'
+        run: make stats-test
+      - name: Run consumer-offsets
+        if: matrix.test == 'consumer-offsets'
+        run: make consumer-offsets-test
+      - name: Run diagnostics
+        if: ${{ !success() }}
+        timeout-minutes: 5
+        run: fluvio cluster diagnostics
+      - name: Upload diagnostics
+        uses: actions/upload-artifact@v4
+        timeout-minutes: 5
+        if: ${{ !success() }}
+        with:
+          name: local-${{ matrix.run }}-${{ matrix.test }}-diag
+          path: diagnostics*.gz
+          retention-days: 1
+
+  build_image:
+    name: Build Fluvio Docker image
+    needs: build_primary_binaries
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        rust-target:
+          - x86_64-unknown-linux-musl
+          - aarch64-unknown-linux-musl
+        rust: [stable]
+    steps:
+      # Needed for k8-util/docker/build.sh
+      - uses: actions/checkout@v4
+
+      # Download artifacts
+      - name: Download fluvio-run
+        uses: actions/download-artifact@v4
+        with:
+          name: fluvio-run-${{ matrix.rust-target }}
+          path: .
+
+      - name: Print fluvio-run path
+        run: pwd && ls -la . && chmod +x ./fluvio-run && ./fluvio-run -h || true
+
+      # Build and upload docker image
+      - name: Build Docker image
+        run: k8-util/docker/build.sh ${{ matrix.rust-target }} ${{ github.sha }} "$(pwd)/fluvio-run"
+      - name: Export Docker Image to tarball
+        run: docker image save infinyon/fluvio:${{ github.sha }}-${{ matrix.rust-target }} --output /tmp/infinyon-fluvio-${{ matrix.rust-target }}.tar
+      - name: Upload tarball as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: infinyon-fluvio-${{ matrix.rust-target }}.tar
+          path: /tmp/infinyon-fluvio-${{ matrix.rust-target }}.tar
+          retention-days: 1
+
+  k8_cluster_test:
+    name: Kubernetes cluster test - ${{ matrix.test }} (${{ matrix.run }}) on k8 (${{ matrix.k8 }})
+    needs: build_image
+    runs-on: ${{ matrix.os }}
+    env:
+      FLUVIO_BIN: ~/bin/fluvio
+      TEST_BIN: ~/bin/fluvio-test
+      UNINSTALL: noclean
+      SERVER_LOG: fluvio=debug
+      K8_NAMESPACE: fluvio-test
+    strategy:
+ #     fail-fast: true
+      matrix:
+        os: [ubuntu-latest]
+        rust-target: [x86_64-unknown-linux-musl]
+        run: [r1]
+        test:
+          [
+            smoke-test-k8,
+            smoke-test-k8-tls,
+            smoke-test-k8-tls-root-unclean,
+          ]
+        k8: [k3d]
+        spu: [1,2]
+    steps:
+      - uses: actions/checkout@v4
+      # Download artifacts
+      - name: Download artifact - fluvio
+        uses: actions/download-artifact@v4
+        with:
+          name: fluvio-${{ matrix.rust-target }}
+          path: ~/bin
+      - name: Download artifact - fluvio-test
+        uses: actions/download-artifact@v4
+        with:
+          name: fluvio-test-${{ matrix.rust-target }}
+          path: ~/bin
+      - name: Download Docker Image as Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: infinyon-fluvio-${{ matrix.rust-target }}.tar
+          path: /tmp
+
+      - name: Set up Fluvio binaries
+        run: |
+          chmod +x ~/bin/fluvio ~/bin/fluvio-test
+          echo "${HOME}/bin" >> $GITHUB_PATH
+          echo "DEFAULT_SPU=${{ matrix.spu }}" | tee -a $GITHUB_ENV
+          echo "REPL=${{ matrix.spu }}" | tee -a $GITHUB_ENV
+      - name: Print version
+        run: fluvio version && fluvio-test -h
+      # Retag image to remove arch from tag
+      - name: Load Fluvio Docker Image
+        run: |
+          ls -la /tmp
+          docker image load --input /tmp/infinyon-fluvio-${{ matrix.rust-target }}.tar
+          docker image tag infinyon/fluvio:${{ github.sha }}-${{ matrix.rust-target }} infinyon/fluvio:${{ github.sha }}
+          docker image ls -a
+      #- name: Load Docker image for Minikube
+      #    eval $(minikube -p minikube docker-env)
+      #    docker image load --input /tmp/infinyon-fluvio.tar
+      #    docker image ls -a
+
+      - name: Export Docker Image to tarball
+        run: docker image save infinyon/fluvio:${{ github.sha }} --output /tmp/infinyon-fluvio.tar
+      - name: Install K3d
+        if: matrix.k8 == 'k3d'
+        run: |
+          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
+          ./k8-util/cluster/reset-k3d.sh
+      - name: Load image to K3d
+        if: matrix.k8 == 'k3d'
+        run: |
+          k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio
+      - name: Install Minikube and import image
+        if: matrix.k8 == 'minikube'
+        uses: manusa/actions-setup-minikube@v2.7.2
+        with:
+          minikube version: ${{ env.MINIKUBE_VERSION}}
+          kubernetes version: ${{ env.K8_VERSION }}
+          github token: ${{ secrets.GITHUB_TOKEN }}
+          driver: docker
+      - name: Load image to minikube
+        if: matrix.k8 == 'minikube'
+        run: |
+          eval $(minikube -p minikube docker-env)
+          docker image load --input /tmp/infinyon-fluvio.tar
+      - name: Create k8 namespace
+        run: |
+          kubectl create ns fluvio-test
+      - name: Start fluvio cluster
+        if: matrix.test == 'smoke-test-k8' || matrix.test == 'stats-test'
+        timeout-minutes: 10
+        run: |
+          fluvio cluster start --k8 --develop --spu ${{ matrix.spu }} --rust-log ${{ env.SERVER_LOG }}  --namespace ${K8_NAMESPACE}
+      - name: Start fluvio cluster TLS
+        timeout-minutes: 10
+        if: matrix.test == 'smoke-test-k8-tls'
+        run: |
+          fluvio cluster start --k8 --develop --spu ${{ matrix.spu }} --rust-log ${{ env.SERVER_LOG }} ${{ env.TLS_ARGS }}  --namespace ${K8_NAMESPACE}
+      - name: Start fluvio cluster TLS with root
+        timeout-minutes: 10
+        if: matrix.test == 'smoke-test-k8-tls-root-unclean'
+        run: |
+          make smoke-test-k8-tls-policy-setup
+          fluvio cluster start --k8 --develop --spu ${{ matrix.spu }} --rust-log ${{ env.SERVER_LOG }} ${{ env.TLS_ARGS }}  --namespace ${K8_NAMESPACE} --authorization-config-map authorization
+      - name: Run ${{ matrix.test }}
+        timeout-minutes: 10
+        run: |
+          date
+          sleep 15
+          make ${{ matrix.test }}
+      - name: Run diagnostics
+        if: ${{ !success() }}
+        timeout-minutes: 5
+        run: fluvio cluster diagnostics
+      - name: Upload diagnostics
+        timeout-minutes: 5
+        if: ${{ !success() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: k8_${{ matrix.run }}-${{ matrix.test }}-log
+          path: diagnostics*.gz
+          retention-days: 1
+
+  k8_upgrade_test:
+    name: Upgrade cluster test on (${{ matrix.run }})
+    needs: build_image
+    runs-on: ${{ matrix.os }}
+    strategy:
+ #     fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        rust-target: [x86_64-unknown-linux-musl]
+        run: [r1]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup K3d
+        run: |
+          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
+          ./k8-util/cluster/reset-k3d.sh
+      # Download artifacts
+      - name: Download artifact - fluvio
+        uses: actions/download-artifact@v4
+        with:
+          name: fluvio-${{ matrix.rust-target }}
+          path: ~/bin
+      - name: Download Docker Image as Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: infinyon-fluvio-${{ matrix.rust-target }}.tar
+          path: /tmp
+      - name: Mark executable
+        run: |
+          chmod +x ~/bin/fluvio && ~/bin/fluvio version
+          echo "${HOME}/bin" >> $GITHUB_PATH
+
+      # Retag image to remove arch from tag
+      - name: Load Fluvio Docker Image
+        run: |
+          ls -la /tmp
+          docker image load --input /tmp/infinyon-fluvio-${{ matrix.rust-target }}.tar
+          docker image tag infinyon/fluvio:${{ github.sha }}-${{ matrix.rust-target }} infinyon/fluvio:${{ github.sha }}
+          docker image ls -a
+
+      - name: Export Docker Image to tarball
+        run: docker image save infinyon/fluvio:${{ github.sha }} --output /tmp/infinyon-fluvio.tar
+
+      - name: Run upgrade test with CI artifacts
+        timeout-minutes: 10
+        env:
+          TEST_DATA_BYTES: 10000
+        run: |
+          date
+          k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio
+          make FLUVIO_BIN=~/bin/fluvio upgrade-test
+
+      - name: Run diagnostics
+        if: ${{ !success() }}
+        timeout-minutes: 5
+        run: fluvio cluster diagnostics
+      - name: Upload logs
+        timeout-minutes: 5
+        if: ${{ !success() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: k8_upgrade_${{ matrix.run }}_log
+          path: diagnostics*.gz
+          retention-days: 1
+
+  # Smoke test across different version of fluvio
+  cli_smoke:
+    name: CLI smoke test (${{ matrix.test }}) CLI (${{ matrix.cli_version }}) on cluster (${{ matrix.cluster_version }})
+    needs: build_primary_binaries
+    runs-on: ${{ matrix.os }}
+    env:
+      SPU: 2
+      CLI_TEST_RETRIES: 3
+    strategy:
+ #     fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        cluster_version: [stable, dev]
+        cli_version: [stable, dev]
+        test: [fluvio,smdk,cdk]
+        # no need to test stable to stable
+        exclude:
+          - cluster_version:  stable
+            cli_version: stable
+          # temporary disable with known error w/ 0.11.7
+          - cluster_version:  stable
+            cli_version: dev
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+      - name: Setup BATS
+        uses: mig4/setup-bats@v1
+        with:
+          bats-version: ${{ env.BATS_VERSION }}
+      - name: Install expect
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update -o="APT::Acquire::Retries=3"
+          sudo apt-get install -y -V -o="APT::Acquire::Retries=3" expect
+
+      # Download stable, this will load into ~/.fluvio/bin which will be in PATH
+      # from now, fluvio will be stable
+      - name: Setup Fluvio
+        uses: infinyon/fluvio/.github/actions/setup-fluvio@master
+
+      # Download artifacts from development build
+      - name: Download artifact - fluvio
+        uses: actions/download-artifact@v4
+        with:
+          name: fluvio-x86_64-unknown-linux-musl
+          path: ~/bin
+      - name: rename dev fluvio as fluvio-dev
+        run: |
+          chmod +x ~/bin/fluvio
+          mv ~/bin/fluvio ~/bin/fluvio-dev
+      - name: Download artifact - fluvio-run
+        uses: actions/download-artifact@v4
+        with:
+          name: fluvio-run-x86_64-unknown-linux-musl
+          path: ~/bin
+      - name: Mark fluvio-run as executable
+        run: |
+          chmod +x ~/bin/fluvio-run
+      - name: Download smdk
+        uses: ./.github/actions/dl-smdk
+
+     # Set FLUVIO_BIN to either stable or dev, this is needed by CLI test
+      - name: set DEV fluvio for as test CLI
+        if: matrix.cli_version == 'dev'
+        run: |
+          FLUVIO_CLI_RELEASE_CHANNEL=dev
+          echo "FLUVIO_CLI_RELEASE_CHANNEL=${FLUVIO_CLI_RELEASE_CHANNEL}" >> $GITHUB_ENV
+          FLUVIO_BIN=~/bin/fluvio-dev
+          echo "FLUVIO_BIN=${FLUVIO_BIN}" >> $GITHUB_ENV
+      - name: set stable fluvio for as test CLI
+        if: matrix.cli_version == 'stable'
+        run: |
+          FLUVIO_CLI_RELEASE_CHANNEL=stable
+          echo "FLUVIO_CLI_RELEASE_CHANNEL=${FLUVIO_CLI_RELEASE_CHANNEL}" >> $GITHUB_ENV
+          FLUVIO_BIN=~/.fluvio/bin/fluvio
+          echo "FLUVIO_BIN=${FLUVIO_BIN}" >> $GITHUB_ENV
+
+
+      # Start stable cluster
+      - name: Start cluster for stable
+        if: matrix.cluster_version == 'stable'
+        timeout-minutes: 10
+        run: |
+          FLUVIO_CLUSTER_RELEASE_CHANNEL=stable
+          echo "FLUVIO_CLUSTER_RELEASE_CHANNEL=${FLUVIO_CLUSTER_RELEASE_CHANNEL}" >> $GITHUB_ENV
+          fluvio cluster start --local --spu ${{ env.SPU }}
+
+      # Start dev cluster
+      - name: Start cluster for dev
+        if: matrix.cluster_version == 'dev'
+        timeout-minutes: 10
+        run: |
+          FLUVIO_CLUSTER_RELEASE_CHANNEL=dev
+          echo "FLUVIO_CLUSTER_RELEASE_CHANNEL=${FLUVIO_CLUSTER_RELEASE_CHANNEL}" >> $GITHUB_ENV
+          ~/bin/fluvio-dev cluster start --local --spu ${{ env.SPU }}
+
+      - name: Build smartmodules for E2E test
+        env:
+          SMDK_BIN: ~/bin/smdk
+        run: |
+          make build_smartmodules
+
+      # Run fluvio test
+      - name: Run Fluvio CLI smoke tests
+        if: matrix.test == 'fluvio'
+        timeout-minutes: 15
+        run: make cli-fluvio-smoke
+
+      # test smdk
+      - name: Run SMDK smoke tests
+        if: matrix.test == 'smdk'
+        timeout-minutes: 20
+        run: make SMDK_BIN=~/bin/smdk cli-smdk-smoke
+
+      # test cdk
+      - name: Download artifact - cdk
+        if: matrix.test == 'cdk'
+        uses: actions/download-artifact@v4
+        with:
+          name: cdk-x86_64-unknown-linux-musl
+          path: ~/bin
+      - name: mark cdk as executable
+        if: matrix.test == 'cdk'
+        run: |
+          chmod +x ~/bin/cdk
+          echo "~/bin" >> $GITHUB_PATH
+      - name: Run CDK smoke tests
+        if: matrix.test == 'cdk'
+        timeout-minutes: 20
+        run: make CDK_BIN=~/bin/cdk cli-cdk-smoke
+
+      - name: Run diagnostics
+        if: ${{ !success() }}
+        timeout-minutes: 5
+        run: ~/bin/fluvio-dev cluster diagnostics
+      - name: Upload diagnostics
+        uses: actions/upload-artifact@v4
+        timeout-minutes: 5
+        if: ${{ !success() }}
+        with:
+          name: cli-smoke_log
+          path: diagnostics*.gz
+          retention-days: 1
+
+  fvm_cli_smoke:
+    name: CLI smoke test (fvm)
+    needs: build_primary_binaries
+    runs-on: ${{ matrix.os }}
+    env:
+      CLI_TEST_RETRIES: 3
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup BATS
+        uses: mig4/setup-bats@v1
+        with:
+          bats-version: ${{ env.BATS_VERSION }}
+      - name: Download artifact - fvm
+        uses: actions/download-artifact@v4
+        with:
+          name: fvm-x86_64-unknown-linux-musl
+          path: ~/bin
+      - name: mark fvm
+        run: |
+          chmod +x ~/bin/fvm
+          echo "~/bin" >> $GITHUB_PATH
+      - name: Run FVM smoke tests
+        timeout-minutes: 20
+        run: |
+          rm -rf ~/.fvm
+          make FVM_BIN=~/bin/fvm INFINYON_HUB_REMOTE="https://hub-dev.infinyon.cloud" cli-fvm-smoke
+
+
+  read_only_test:
+    runs-on: ubuntu-latest
+    needs: build_primary_binaries
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup BATS
+        uses: mig4/setup-bats@v1
+        with:
+          bats-version: ${{ env.BATS_VERSION }}
+
+      # Download artifacts from development build
+      - name: Download artifact - fluvio
+        uses: actions/download-artifact@v4
+        with:
+          name: fluvio-x86_64-unknown-linux-musl
+          path: ~/bin
+      - name: Download artifact - fluvio-run
+        uses: actions/download-artifact@v4
+        with:
+          name: fluvio-run-x86_64-unknown-linux-musl
+          path: ~/extensions
+      - run: |
+          chmod +x ~/bin/fluvio
+          chmod +x ~/extensions/fluvio-run
+
+          mkdir -p ~/.fluvio/bin
+          mkdir -p ~/.fluvio/extensions
+
+          mv ~/bin/fluvio ~/.fluvio/bin/fluvio
+          mv ~/extensions/fluvio-run ~/.fluvio/extensions/fluvio-run
+
+          echo "~/.fluvio/bin" >> $GITHUB_PATH
+
+      - name: Start cluster in read-only mode
+        run: |
+          fluvio cluster start  --read-only crates/fluvio-cluster/test-data/metadata.json
+      - name: Run Fluvio read-only tests
+        run: make FLUVIO_BIN=~/.fluvio/bin/fluvio cli-fluvio-read-only-smoke
+
+      - name: Print SC logs
+        if: ${{ !success() }}
+        timeout-minutes: 5
+        run: cat /tmp/flv_sc.log
+
+  mirroring_smoke_test:
+    runs-on: ubuntu-latest
+    needs:
+      - build_primary_binaries
+      - config
+    strategy:
+      matrix:
+        run-mode: [local, local-k8]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup BATS
+        uses: mig4/setup-bats@v1
+        with:
+          bats-version: ${{ env.BATS_VERSION }}
+
+      # Download artifacts from development build
+      - name: Download artifact - fluvio
+        uses: actions/download-artifact@v4
+        with:
+          name: fluvio-x86_64-unknown-linux-musl
+          path: ~/bin
+      - name: Download artifact - fluvio-run
+        uses: actions/download-artifact@v4
+        with:
+          name: fluvio-run-x86_64-unknown-linux-musl
+          path: ~/extensions
+
+      - name: Setup K8s Cluster
+        if: matrix.run-mode == 'local-k8'
+        run: |
+          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
+          ./k8-util/cluster/reset-k3d.sh
+      - name: Wait 15s for K3D Reset
+        if: matrix.run-mode == 'local-k8'
+        run: sleep 15
+
+      - run: |
+          chmod +x ~/bin/fluvio
+          chmod +x ~/extensions/fluvio-run
+          mkdir -p ~/.fluvio/bin
+          mkdir -p ~/.fluvio/extensions
+          mv ~/bin/fluvio ~/.fluvio/bin/fluvio
+          mv ~/extensions/fluvio-run ~/.fluvio/extensions/fluvio-run
+          echo "~/.fluvio/bin" >> $GITHUB_PATH
+
+      - name: Start cluster
+        run: fluvio cluster start --${{ matrix.run-mode }}
+      - name: Run Fluvio mirroring tests
+        run: make FLUVIO_BIN=~/.fluvio/bin/fluvio cli-fluvio-mirroring-smoke
+
+      - name: Print SC logs
+        if: ${{ !success() }}
+        timeout-minutes: 5
+        run: cat /tmp/flv_sc.log
+
+  mirroring_smoke_test_e2e:
+    runs-on: ${{ matrix.os }}
+    env:
+      REMOTE_2_SC_PUB_ADDR: "127.0.0.1:9103"
+      REMOTE_2_SC_PRIV_ADDR: "0.0.0.0:9104"
+      REMOTE_2_SPU_ID: 6001
+      REMOTE_2_SPU_PUB_ADDR: "0.0.0.0:9020"
+      REMOTE_2_SPU_PRIV_ADDR: "0.0.0.0:9021"
+      REMOTE_2_BASE_DIR: "~/.fluvio_2"
+    needs:
+      - build_image
+      - config
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        rust-target: [x86_64-unknown-linux-musl]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup BATS
+        uses: mig4/setup-bats@v1
+        with:
+          bats-version: ${{ env.BATS_VERSION }}
+
+      # Download artifacts from development build
+      - name: Download artifact - fluvio
+        uses: actions/download-artifact@v4
+        with:
+          name: fluvio-${{ matrix.rust-target }}
+          path: ~/bin
+      - name: Download artifact - fluvio-run
+        uses: actions/download-artifact@v4
+        with:
+          name: fluvio-run-${{ matrix.rust-target }}
+          path: ~/extensions
+      - name: Download artifact - fluvio-test
+        uses: actions/download-artifact@v4
+        with:
+          name: fluvio-test-${{ matrix.rust-target }}
+          path: ~/extensions
+      - name: Download Docker Image as Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: infinyon-fluvio-${{ matrix.rust-target }}.tar
+          path: /tmp
+
+      - name: Set up Fluvio binaries
+        run: |
+          chmod +x ~/bin/fluvio
+          chmod +x ~/extensions/fluvio-run
+          chmod +x ~/extensions/fluvio-test
+          mkdir -p ~/.fluvio/bin
+          mkdir -p ~/.fluvio/extensions
+          mv ~/bin/fluvio ~/.fluvio/bin/fluvio
+          mv ~/extensions/fluvio-run ~/.fluvio/bin/fluvio-run
+          mv ~/extensions/fluvio-test ~/.fluvio/bin/fluvio-test
+          echo "~/.fluvio/bin" >> $GITHUB_PATH
+
+      - name: Print version
+        run: fluvio version && fluvio-test -h
+
+      - name: Load Fluvio Docker Image
+        run: |
+          ls -la /tmp
+          docker image load --input /tmp/infinyon-fluvio-${{ matrix.rust-target }}.tar
+          docker image tag infinyon/fluvio:${{ github.sha }}-${{ matrix.rust-target }} infinyon/fluvio:${{ github.sha }}
+          docker image ls -a
+
+      - name: Export Docker Image to tarball
+        run: docker image save infinyon/fluvio:${{ github.sha }} --output /tmp/infinyon-fluvio.tar
+      - name: Install K3d
+        run: |
+          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
+          ./k8-util/cluster/reset-k3d.sh
+      - name: Load image to K3d
+        run: |
+          k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio
+
+      - name: Create k8 namespace
+        run: |
+          kubectl create ns fluvio-test
+
+      - name: Start edge cluster remote 1
+        timeout-minutes: 10
+        run: fluvio cluster start --local
+
+      - name: Start edge cluster remote 2
+        timeout-minutes: 10
+        run: | 
+          fluvio profile add local2 ${REMOTE_2_SC_PUB_ADDR} local
+          fluvio cluster start --skip-profile-creation --skip-checks --spu 0 --sc-pub-addr ${REMOTE_2_SC_PUB_ADDR} --sc-priv-addr ${REMOTE_2_SC_PRIV_ADDR} --data-dir ${REMOTE_2_SC_PRIV_ADDR}
+          fluvio cluster spu register --id ${REMOTE_2_SPU_ID} -p ${REMOTE_2_SPU_PUB_ADDR} -v ${REMOTE_2_SPU_PRIV_ADDR}
+          fluvio run spu -i ${REMOTE_2_SPU_ID} -p ${REMOTE_2_SPU_PUB_ADDR} -v ${REMOTE_2_SPU_PRIV_ADDR} --sc-addr ${REMOTE_2_SC_PRIV_ADDR} --log-base-dir ${REMOTE_2_SC_PRIV_ADDR}/data &
+
+      - name: Start home cluster in k8
+        timeout-minutes: 10
+        run: fluvio cluster start --k8 --develop --namespace fluvio-test --use-k8-port-forwarding
+
+      - name: Run Fluvio mirroring tests
+        timeout-minutes: 10
+        run: make FLUVIO_BIN=~/.fluvio/bin/fluvio cli-fluvio-mirroring-smoke-e2e
+
+      - name: Print SC logs
+        if: ${{ !success() }}
+        timeout-minutes: 5
+        run: cat /tmp/flv_sc.log
+
+
+  # Runs tests on `tests/cli/partition_test`
+  partition_test:
+    name: Partitions Test (${{ matrix.test }} with ${{ matrix.spu }} SPUs, ${{ matrix.partitions }} Partitions and ${{ matrix.replication }} Replicas), Run Mode ${{ matrix.run-mode }}
+    runs-on: ${{ matrix.os }}
+    env:
+      FLUVIO_BIN: "~/bin/fluvio"
+      SERVER_LOG: fluvio=info
+    needs:
+      - build_primary_binaries
+      - config
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+        rust-target:
+          - x86_64-unknown-linux-musl
+        test:
+          - multiple_partitions
+        spu:
+          - 2
+        partitions:
+          - 2
+          - 4
+          - 6
+        replication:
+          - 1
+        run-mode: [local, local-k8]
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      # Download Artifacts from Development Build (This Commit)
+      - name: Download artifact - fluvio
+        uses: actions/download-artifact@v4
+        with:
+          name: fluvio-${{ matrix.rust-target }}
+          path: ~/bin
+
+      - name: Download artifact - fluvio-run
+        uses: actions/download-artifact@v4
+        with:
+          name: fluvio-run-${{ matrix.rust-target }}
+          path: ~/.fluvio/extensions
+
+      - name: Setup K8s Cluster
+        if: matrix.run-mode == 'local-k8'
+        run: |
+          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
+          ./k8-util/cluster/reset-k3d.sh
+
+      - name: Wait 15s for K3D Reset
+        if: matrix.run-mode == 'local-k8'
+        run: sleep 15
+
+      - name: Set up Fluvio Binaries
+        run: |
+          chmod +x ~/bin/fluvio ~/.fluvio/extensions/fluvio-run
+          echo "~/bin" >> $GITHUB_PATH
+          FLUVIO_BIN=~/bin/fluvio
+          echo "FLUVIO_BIN=${FLUVIO_BIN}" >> $GITHUB_ENV
+
+      - name: Print version
+        run: fluvio version
+
+      - name: Start fluvio cluster
+        timeout-minutes: 10
+        run: fluvio cluster start --${{ matrix.run-mode }}  --spu ${{ matrix.spu }}
+
+      - name: Await Cluster Startup
+        run: sleep 15
+
+      - name: Setup BATS
+        uses: mig4/setup-bats@v1
+        with:
+          bats-version: ${{ env.BATS_VERSION }}
+
+      # Environment setup is ready, time to run the tests
+      - name: Run Multiple Partitions Test
+        if: matrix.test == 'multiple_partitions'
+        timeout-minutes: 15
+        env:
+          REPLICATION: ${{ matrix.replication }}
+          PARTITIONS: ${{ matrix.partitions }}
+        run: make cli-partition-test-multiple-partitions
+
+      - name: Shutdown Fluvio cluster
+        timeout-minutes: 10
+        run: fluvio cluster shutdown
+
+      - name: Run diagnostics
+        if: ${{ !success() }}
+        timeout-minutes: 5
+        run: fluvio cluster diagnostics
+
+      - name: Upload diagnostics
+        uses: actions/upload-artifact@v4
+        timeout-minutes: 5
+        if: ${{ !success() }}
+        with:
+          name: fluvio-components-${{ matrix.run-mode }}-${{ matrix.test }}-diag
+          path: diagnostics*.gz
+          retention-days: 1
+
+  # Ensure all checks, tests are perform and all binaries are built
+  # After this, we are committed for release
+  docker_push:
+    name: Publish Docker Image
+    if: github.event_name == 'merge_group'
+    needs:
+      - check
+      - check_wasm
+      - check_windows
+      - check_integration
+      - build_image
+      - local_cluster_test
+      - k8_cluster_test
+      - k8_upgrade_test
+      - cli_smoke
+      - build_binaries
+      - partition_test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download x86_64-unknown-linux-musl Docker Image as Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: infinyon-fluvio-x86_64-unknown-linux-musl.tar
+          path: /tmp
+      - name: Download aarch64-unknown-linux-musl Docker Image as Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: infinyon-fluvio-aarch64-unknown-linux-musl.tar
+          path: /tmp
+
+        # Load image infinyon/fluvio:SHA-ARCH
+      - name: Load Fluvio Docker Image
+        run: |
+          ls -la /tmp
+          docker image load --input /tmp/infinyon-fluvio-x86_64-unknown-linux-musl.tar
+          docker image load --input /tmp/infinyon-fluvio-aarch64-unknown-linux-musl.tar
+          docker image ls -a
+
+      - name: Publish Fluvio Docker images
+        run: |
+          export TAG="$(cat VERSION)-${{ github.sha }}"
+          docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }}
+          docker tag "infinyon/fluvio:${{ github.sha }}-x86_64-unknown-linux-musl" "docker.io/infinyon/fluvio:${TAG}-amd64"
+          docker tag "infinyon/fluvio:${{ github.sha }}-aarch64-unknown-linux-musl" "docker.io/infinyon/fluvio:${TAG}-arm64v8"
+          docker push "docker.io/infinyon/fluvio:${TAG}-amd64"
+          docker push "docker.io/infinyon/fluvio:${TAG}-arm64v8"
+          docker manifest create "docker.io/infinyon/fluvio:${TAG}" \
+            "docker.io/infinyon/fluvio:${TAG}-amd64" \
+            "docker.io/infinyon/fluvio:${TAG}-arm64v8"
+          docker manifest push "docker.io/infinyon/fluvio:${TAG}"
+
+  # When all required jobs pass, bump the `dev` GH prerelease to this commit
+  bump_github_release:
+    name: Bump dev tag
+    if: github.event_name == 'merge_group'
+    needs:
+      - docker_push
+    runs-on: ubuntu-latest
+    permissions: write-all
+    steps:
+      - uses: actions/checkout@v4
+      #- name: Login GH CLI
+      #  run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
+      - name: Delete old release
+        run: gh release delete -R infinyon/fluvio dev -y || true
+      - name: Bump dev tag
+        run: |
+          git tag -f dev
+          git push -f origin dev
+      - name: Create new release
+        run: gh release create -R infinyon/fluvio dev -p --notes "Published artifacts from the latest build"
+
+  # Upload the build artifacts to the `dev` GH release, overwriting old artifacts
+  publish_github_helm_pkg:
+    name: Publish helm chart to GitHub Releases dev
+    if: github.event_name == 'merge_group'
+    needs: bump_github_release
+    runs-on: ubuntu-latest
+    permissions: write-all
+    steps:
+      - uses: actions/checkout@v4
+      #- name: Login GH CLI
+      #  run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
+      - name: package helm
+        run: make helm_pkg
+      - name: Publish artifact
+        run: |
+          gh release upload -R infinyon/fluvio --clobber dev k8-util/helm/pkg_app/*.*
+          gh release upload -R infinyon/fluvio --clobber dev k8-util/helm/pkg_sys/*.*
+
+  publish_github_binaries:
+    name: Publish to GitHub Releases dev (${{ matrix.artifact }}-${{ matrix.rust-target }})
+    if: github.event_name == 'merge_group'
+    needs:
+      - bump_github_release
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust-target:
+          - aarch64-unknown-linux-musl
+          - aarch64-apple-darwin
+          - armv7-unknown-linux-gnueabihf
+          - arm-unknown-linux-gnueabihf
+          - x86_64-apple-darwin
+          - x86_64-unknown-linux-musl
+        artifact: [fluvio, fluvio-channel, smdk, fbm, cdk, fvm]
+        exclude:
+          - rust-target: armv7-unknown-linux-gnueabihf
+            artifact: smdk
+          - rust-target: arm-unknown-linux-gnueabihf
+            artifact: smdk
+          - rust-target: x86_64-pc-windows-gnu
+            artifact: smdk.exe
+          - rust-target: armv7-unknown-linux-gnueabihf
+            artifact: cdk
+          - rust-target: arm-unknown-linux-gnueabihf
+            artifact: cdk
+          - rust-target: x86_64-pc-windows-gnu
+            artifact: cdk.exe
+        include:
+          - rust-target: x86_64-unknown-linux-musl
+            artifact: fluvio-run
+          - rust-target: aarch64-unknown-linux-musl
+            artifact: fluvio-run
+          - rust-target: x86_64-apple-darwin
+            artifact: fluvio-run
+          - rust-target: aarch64-apple-darwin
+            artifact: fluvio-run
+          - rust-target: armv7-unknown-linux-gnueabihf
+            artifact: fluvio-run
+          - rust-target: x86_64-pc-windows-gnu
+            artifact: fluvio.exe
+          - rust-target: x86_64-pc-windows-gnu
+            artifact: fluvio-channel.exe
+          - rust-target: x86_64-unknown-linux-musl
+            artifact: fluvio-test
+          - rust-target: x86_64-pc-windows-gnu
+            artifact: fbm.exe
+    permissions: write-all
+    steps:
+      #- name: Login GH CLI
+      #  run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}-${{ matrix.rust-target }}
+      - name: Publish artifact
+        run: |
+          ls -la
+          echo "${{ matrix.rust-target }}" > .target
+          zip "${{ matrix.artifact }}-${{ matrix.rust-target }}.zip" "${{ matrix.artifact }}" .target
+          gh release upload -R infinyon/fluvio --clobber dev "${{ matrix.artifact }}-${{ matrix.rust-target }}.zip"
+
+  # Job that follows the success of all required jobs in this workflow.
+  done:
+    name: Done
+    permissions:
+      contents: write
+    if: always()
+    needs:
+      - check
+      - check_wasm
+      - check_windows
+      - check_integration
+      - build_image
+      - local_cluster_test
+      - k8_cluster_test
+      - k8_upgrade_test
+      - cli_smoke
+      - build_binaries
+      - partition_test
+      - publish_github_binaries
+      - publish_github_helm_pkg
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dump needs context
+        env:
+          CONTEXT: ${{ toJson(needs) }}
+        run: |
+          echo -e "\033[33;1;4mDump context\033[0m"
+          echo -e "$CONTEXT\n"
+      - name: Report failure on cancellation
+        if: ${{ contains(needs.*.result, 'cancelled') || cancelled() }}
+        run: exit 1
+      - name: Failing test and build
+        if: ${{ contains(needs.*.result, 'failure') }}
+        run: exit 1
+      - name: Don't allow skipped
+        if: ${{ contains(needs.*.result, 'skipped')  && github.event_name == 'merge_group' }}
+        run: exit 1
+      - name: Successful test and build
+        if: ${{ !(contains(needs.*.result, 'failure')) }}
+        run: exit 0
+      - name: Repo dispatch ci-success
+        if: github.event_name == 'merge_group'
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          event-type: ci-success
+          client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'
+
