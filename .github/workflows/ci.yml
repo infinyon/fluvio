@@ -119,6 +119,10 @@ jobs:
         run: brew install helm
         if: matrix.binary == 'fluvio' && matrix.os == 'macos-12'
 
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+
       - name: Build fluvio
         timeout-minutes: 40
         if: matrix.binary == 'fluvio'
@@ -129,9 +133,6 @@ jobs:
         run: |
           sudo apt-get update -o="APT::Acquire::Retries=3"
           sudo apt-get install -y -V -o="APT::Acquire::Retries=3" gcc-mingw-w64-x86-64
-
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
 
       - name: Build fluvio.exe
         timeout-minutes: 40
