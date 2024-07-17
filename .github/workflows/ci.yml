@@ -263,6 +263,7 @@ jobs:
         run: ./actions/zig-install.sh ${{ matrix.os }}
       - name: Install gcc-multilib
         run: sudo apt-get install gcc-multilib
+        if: matrix.rust-target  == 'arm-unknown-linux-gnueabihf' || matrix.rust-target  == 'armv7-unknown-linux-gnueabihf'
       - name: Install NASM
         if: matrix.rust-target  == 'x86_64-pc-windows-gnu'
         uses: ilammy/setup-nasm@v1
