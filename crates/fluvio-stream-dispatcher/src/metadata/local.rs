@@ -259,6 +259,24 @@ cfg_if::cfg_if! {
                     })
                     .boxed()
             }
+
+            async fn patch_status<S>(
+                &self,
+                metadata: LocalMetadataItem,
+                status: S::Status,
+                _namespace: &NameSpace,
+            ) -> Result<LocalStoreObject<S>>
+            where
+                S: K8ExtendedSpec,
+            {
+                trace!(?metadata, ?status, "patch status");
+                let store = self.get_store::<S>().await?;
+                let mut item = store.retrieve_item::<S>(&metadata).await?;
+                item.ctx_mut().set_item(metadata.clone());
+                item.set_status(status);
+                store.apply(item).await?;
+                store.retrieve_item::<S>(&metadata).await
+            }
         }
 
         #[derive(Debug)]

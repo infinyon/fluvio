@@ -229,7 +229,7 @@ where
                 drop(read_guard);
                 match self
                     .client
-                    .update_status(meta, status.clone(), &self.namespace)
+                    .update_status(meta.clone(), status.clone(), &self.namespace)
                     .await
                 {
                     Ok(updated_item) => {
@@ -250,6 +250,25 @@ where
                             key,
                             status
                         );
+
+                        if err.to_string().contains("409") {
+                            // Does server side apply on conflict as a workaround
+                            if let Err(err) = self
+                                .client
+                                .patch_status::<S>(meta, status.clone(), &self.namespace)
+                                .await
+                            {
+                                error!(
+                                    "{}, patch status err: {}, key: {}, status: {:#?}",
+                                    S::LABEL,
+                                    err,
+                                    key,
+                                    status
+                                );
+                            } else {
+                                tracing::info!("successfully patched status for {key}");
+                            }
+                        }
                     }
                 }
             }
