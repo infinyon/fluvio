@@ -107,6 +107,11 @@ jobs:
           sudo apt-get update -o="APT::Acquire::Retries=3"
           sudo apt-get install -y -V -o="APT::Acquire::Retries=3" gcc-mingw-w64-x86-64
 
+      - name: Install bindgen-cli
+        if: matrix.rust-target  == 'x86_64-pc-windows-gnu'
+        run: |
+          cargo install --force --locked bindgen-cli
+
       - name: Build fluvio.exe
         timeout-minutes: 40
         if: matrix.binary == 'fluvio.exe'
