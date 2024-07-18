@@ -269,6 +269,8 @@ impl FileReplica {
         }
 
         let size = Arc::new(ReplicaSize::default());
+        size.store_active(active_segment.occupied_memory());
+
         let cleaner = Cleaner::start_new(
             storage_config,
             shared_config.clone(),
@@ -636,7 +638,7 @@ mod tests {
     const TEST_OFFSET_DIR: &str = "test_offset";
 
     #[fluvio_future::test]
-    async fn test_replica_end_offset() {
+    async fn test_replica_load_end_offset_and_size() {
         let option = base_option(TEST_OFFSET_DIR);
 
         let mut rep_sink = create_replica("test", START_OFFSET, option.clone()).await;
@@ -653,6 +655,7 @@ mod tests {
         // open replica
         let replica2 = create_replica("test", 0, option).await;
         assert_eq!(replica2.get_leo(), START_OFFSET + 4); // should be 24 since we added 4 records
+        assert_eq!(replica2.size.get(), 158);
     }
 
     const TEST_REPLICA_DIR: &str = "test_replica";

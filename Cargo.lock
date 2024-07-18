@@ -423,9 +423,9 @@ dependencies = [
 
 [[package]]
 name = "async-signal"
-version = "0.2.8"
+version = "0.2.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "794f185324c2f00e771cd9f1ae8b5ac68be2ca7abb129a87afd6e86d228bc54d"
+checksum = "dfb3634b73397aa844481f814fad23bbf07fdb0eabec10f2eb95e58944b1ec32"
 dependencies = [
  "async-io 2.3.3",
  "async-lock 3.4.0",
@@ -867,7 +867,7 @@ dependencies = [
  "tempfile",
  "thiserror",
  "time",
- "toml 0.8.14",
+ "toml 0.8.15",
  "walkdir",
 ]
 
@@ -911,7 +911,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4895c018bb228aa6b3ba1a0285543fcb4b704734c3fb1f72afaa75aa769500c1"
 dependencies = [
  "serde",
- "toml 0.8.14",
+ "toml 0.8.15",
 ]
 
 [[package]]
@@ -959,7 +959,7 @@ dependencies = [
  "sysinfo",
  "tempfile",
  "thiserror",
- "toml 0.8.14",
+ "toml 0.8.15",
  "tracing",
 ]
 
@@ -1002,7 +1002,7 @@ dependencies = [
  "serde_json",
  "tar",
  "tokio",
- "toml 0.8.14",
+ "toml 0.8.15",
  "toml-diff",
 ]
 
@@ -2338,7 +2338,7 @@ dependencies = [
  "siphasher",
  "thiserror",
  "tokio",
- "toml 0.8.14",
+ "toml 0.8.15",
  "tracing",
  "wasm-bindgen-test",
 ]
@@ -2399,7 +2399,7 @@ dependencies = [
  "semver 1.0.23",
  "serde",
  "thiserror",
- "toml 0.8.14",
+ "toml 0.8.15",
  "tracing",
 ]
 
@@ -2652,7 +2652,7 @@ dependencies = [
  "serde",
  "serde_yaml 0.9.34+deprecated",
  "tempfile",
- "toml 0.8.14",
+ "toml 0.8.15",
  "tracing",
 ]
 
@@ -2689,7 +2689,7 @@ dependencies = [
  "serde_json",
  "serde_yaml 0.9.34+deprecated",
  "thiserror",
- "toml 0.8.14",
+ "toml 0.8.15",
  "tracing",
 ]
 
@@ -2783,7 +2783,7 @@ dependencies = [
  "serde_json",
  "serde_yaml 0.9.34+deprecated",
  "thiserror",
- "toml 0.8.14",
+ "toml 0.8.15",
  "tracing",
  "url",
 ]
@@ -2822,7 +2822,7 @@ dependencies = [
  "tar",
  "tempfile",
  "thiserror",
- "toml 0.8.14",
+ "toml 0.8.15",
  "tracing",
  "tracing-subscriber",
  "ureq",
@@ -3098,7 +3098,7 @@ dependencies = [
  "sysinfo",
  "thiserror",
  "tokio",
- "toml 0.8.14",
+ "toml 0.8.15",
  "tracing",
 ]
 
@@ -3308,7 +3308,7 @@ dependencies = [
  "serde",
  "thiserror",
  "tokio",
- "toml 0.8.14",
+ "toml 0.8.15",
  "tracing",
 ]
 
@@ -3333,7 +3333,7 @@ dependencies = [
  "sha2",
  "sysinfo",
  "tempfile",
- "toml 0.8.14",
+ "toml 0.8.15",
  "tracing",
  "ureq",
  "url",
@@ -3819,9 +3819,9 @@ dependencies = [
 
 [[package]]
 name = "gix-path"
-version = "0.10.8"
+version = "0.10.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ca987128ffb056d732bd545db5db3d8b103d252fbf083c2567bb0796876619a4"
+checksum = "8d23d5bbda31344d8abc8de7c075b3cf26e5873feba7c4a15d916bce67382bd9"
 dependencies = [
  "bstr",
  "gix-trace",
@@ -6901,7 +6901,7 @@ dependencies = [
  "lib-cargo-crate",
  "tempfile",
  "tokio",
- "toml 0.8.14",
+ "toml 0.8.15",
  "tracing",
 ]
 
@@ -7234,18 +7234,18 @@ checksum = "a38c90d48152c236a3ab59271da4f4ae63d678c5d7ad6b7714d7cb9760be5e4b"
 
 [[package]]
 name = "thiserror"
-version = "1.0.62"
+version = "1.0.63"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f2675633b1499176c2dff06b0856a27976a8f9d436737b4cf4f312d4d91d8bbb"
+checksum = "c0342370b38b6a11b6cc11d6a805569958d54cfa061a29969c3b5ce2ea405724"
 dependencies = [
  "thiserror-impl",
 ]
 
 [[package]]
 name = "thiserror-impl"
-version = "1.0.62"
+version = "1.0.63"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d20468752b09f49e909e55a5d338caa8bedf615594e9d80bc4c565d30faf798c"
+checksum = "a4558b58466b9ad7ca0f102865eccc95938dca1a74a856f2b57b6629050da261"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -7331,9 +7331,9 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "tokio"
-version = "1.38.0"
+version = "1.38.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ba4f4a02a7a80d6f274636f0aa95c7e383b912d41fe721a31f29e29698585a4a"
+checksum = "eb2caba9f80616f438e09748d5acda951967e1ea58508ef53d9c6402485a46df"
 dependencies = [
  "backtrace",
  "bytes",
@@ -7425,15 +7425,15 @@ dependencies = [
 
 [[package]]
 name = "toml"
-version = "0.8.14"
+version = "0.8.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f49eb2ab21d2f26bd6db7bf383edc527a7ebaee412d17af4d40fdccd442f335"
+checksum = "ac2caab0bf757388c6c0ae23b3293fdb463fee59434529014f85e3263b995c28"
 dependencies = [
  "indexmap 2.2.6",
  "serde",
  "serde_spanned",
  "toml_datetime",
- "toml_edit 0.22.15",
+ "toml_edit 0.22.16",
 ]
 
 [[package]]
@@ -7441,7 +7441,7 @@ name = "toml-diff"
 version = "0.0.0"
 dependencies = [
  "serde",
- "toml 0.8.14",
+ "toml 0.8.15",
 ]
 
 [[package]]
@@ -7468,9 +7468,9 @@ dependencies = [
 
 [[package]]
 name = "toml_edit"
-version = "0.22.15"
+version = "0.22.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d59a3a72298453f564e2b111fa896f8d07fabb36f51f06d7e875fc5e0b5a3ef1"
+checksum = "278f3d518e152219c994ce877758516bca5e118eaed6996192a774fb9fbf0788"
 dependencies = [
  "indexmap 2.2.6",
  "serde",
@@ -7598,7 +7598,7 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "termcolor",
- "toml 0.8.14",
+ "toml 0.8.15",
 ]
 
 [[package]]
@@ -7938,9 +7938,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-encoder"
-version = "0.213.0"
+version = "0.214.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "850e4e6a56413a8f33567741a2388c8f6dafd841a939d945c7248671a8739dd8"
+checksum = "ff694f02a8d7a50b6922b197ae03883fbf18cdb2ae9fbee7b6148456f5f44041"
 dependencies = [
  "leb128",
 ]
@@ -8063,7 +8063,7 @@ dependencies = [
  "serde",
  "serde_derive",
  "sha2",
- "toml 0.8.14",
+ "toml 0.8.15",
  "windows-sys 0.52.0",
  "zstd",
 ]
@@ -8247,24 +8247,24 @@ dependencies = [
 
 [[package]]
 name = "wast"
-version = "213.0.0"
+version = "214.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cd051172bc72db3567b039f710f27d6d80f358b8333088eb4c4c12dac2a4d993"
+checksum = "694bcdb24c49c8709bd8713768b71301a11e823923eee355d530f1d8d0a7f8e9"
 dependencies = [
  "bumpalo",
  "leb128",
  "memchr",
  "unicode-width",
- "wasm-encoder 0.213.0",
+ "wasm-encoder 0.214.0",
 ]
 
 [[package]]
 name = "wat"
-version = "1.213.0"
+version = "1.214.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5be77619385eca699d204399d2ffc9b1dfda1df3320266773d2d664ecb06cf3e"
+checksum = "347249eb56773fa728df2656cfe3a8c19437ded61a922a0b5e0839d9790e278e"
 dependencies = [
- "wast 213.0.0",
+ "wast 214.0.0",
 ]
 
 [[package]]
