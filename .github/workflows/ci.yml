@@ -44,20 +44,20 @@ jobs:
       #    fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             rust-target: x86_64-pc-windows-gnu
             binary: fluvio.exe
 
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             rust: stable
             rust-target: x86_64-pc-windows-gnu
             binary: fluvio-channel.exe
 
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             rust-target: x86_64-pc-windows-gnu
             binary: fbm.exe
 
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             rust-target: x86_64-pc-windows-gnu
             binary: fvm.exe
 
@@ -106,9 +106,6 @@ jobs:
         run: |
           sudo apt-get update -o="APT::Acquire::Retries=3"
           sudo apt-get install -y -V -o="APT::Acquire::Retries=3" gcc-mingw-w64-x86-64
-
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
 
       - name: Build fluvio.exe
         timeout-minutes: 40
