@@ -1,13 +1,13 @@
 use std::fs::File;
-use std::io::{copy, Cursor};
+use std::io::copy;
 use std::path::PathBuf;
 
-use anyhow::{Result, bail};
+use anyhow::{bail, Context, Result};
 use semver::Version;
 use tempfile::TempDir;
 
-use fluvio_future::http_client::{Client, ResponseExt};
 use fluvio_hub_util::sha256_digest;
+use ureq::OrAnyStatus;
 
 use crate::common::executable::{remove_fvm_binary_if_exists, set_executable_mode};
 
@@ -17,14 +17,12 @@ use super::TARGET;
 
 /// Updates Manager for the Fluvio Version Manager
 pub struct UpdateManager {
-    client: Client,
     notify: Notify,
 }
 
 impl UpdateManager {
     pub fn new(notify: &Notify) -> Self {
         Self {
-            client: Client::new(),
             notify: notify.to_owned(),
         }
     }
@@ -34,19 +32,15 @@ impl UpdateManager {
             "https://packages.fluvio.io/v1/packages/fluvio/fvm/{}/{}/fvm.sha256",
             version, TARGET
         );
-        let request = self.client.get(&checksum_url)?;
-        let response = request.send().await?;
+        let request = ureq::get(&checksum_url);
 
-        if response.status().is_success() {
-            let checksum = response.body_string().await?;
-            return Ok(checksum);
-        }
-
-        bail!(
+        let response = request.call().or_any_status().context(format!(
             "Failed to fetch checksum for fvm@{} from {}",
-            version,
-            checksum_url
-        );
+            version, checksum_url
+        ))?;
+
+        let checksum = response.into_string()?;
+        Ok(checksum)
     }
 
     pub async fn update(&self, version: &Version) -> Result<()> {
@@ -68,26 +62,23 @@ impl UpdateManager {
             "https://packages.fluvio.io/v1/packages/fluvio/fvm/{}/{}/fvm",
             version, TARGET
         );
-        let request = self.client.get(&download_url)?;
+        let request = ureq::get(&download_url);
 
         tracing::info!(download_url, "Downloading FVM");
 
-        let response = request.send().await?;
+        let response = request.call().or_any_status().context(format!(
+            "Failed to download fvm@{} from {}",
+            version, download_url
+        ))?;
 
-        if response.status().is_success() {
-            let out_path = tmp_dir.path().join("fvm");
-            let mut file = File::create(&out_path)?;
-            let bytes = response.bytes().await?;
-            let mut buf = Cursor::new(&bytes);
+        let out_path = tmp_dir.path().join("fvm");
+        let mut file = File::create(&out_path)?;
 
-            copy(&mut buf, &mut file)?;
-            self.checksum(version, &out_path).await?;
-            set_executable_mode(&out_path)?;
+        copy(&mut response.into_reader(), &mut file)?;
+        self.checksum(version, &out_path).await?;
+        set_executable_mode(&out_path)?;
 
-            return Ok((tmp_dir, out_path));
-        }
-
-        bail!("Failed to download fvm@{} from {}", version, download_url);
+        Ok((tmp_dir, out_path))
     }
 
     /// Verifies downloaded FVM binary checksums against the upstream checksums

@@ -4,7 +4,7 @@ use anyhow::Result;
 use clap::Args;
 use current_platform::CURRENT_PLATFORM;
 use sha2::{Digest, Sha256};
-use sysinfo::SystemExt;
+use sysinfo::System;
 
 use crate::{BINARY_NAME, VERSION};
 
@@ -42,12 +42,11 @@ impl VersionOpt {
 }
 
 fn os_info() -> Option<String> {
-    let sys = sysinfo::System::new_all();
     let info = format!(
         "{} {} (kernel {})",
-        sys.name()?,
-        sys.os_version()?,
-        sys.kernel_version()?,
+        System::name()?,
+        System::os_version()?,
+        System::kernel_version()?,
     );
 
     Some(info)

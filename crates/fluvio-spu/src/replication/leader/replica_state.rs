@@ -11,7 +11,7 @@ use async_lock::Mutex;
 use fluvio_controlplane::{replica::Replica, sc_api::update_lrs::LrsRequest};
 use tracing::{debug, error, warn};
 use tracing::instrument;
-use async_rwlock::RwLock;
+use async_lock::RwLock;
 use anyhow::{Result, Context};
 
 use fluvio_protocol::record::{RecordSet, Offset, ReplicaKey, RawRecords, Batch};

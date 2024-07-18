@@ -1,3 +1,10 @@
-#!/bin/sh
+#!/bin/bash
 
-$FLUVIO_BUILD_ZIG cc -target x86_64-linux-musl $@
+new_array=()
+
+for value in "$@"
+do
+    [[ $value != *self-contained/*crt* ]] && new_array+=($value)
+done
+
+$FLUVIO_BUILD_ZIG cc "${new_array[@]}" -target x86_64-linux-musl

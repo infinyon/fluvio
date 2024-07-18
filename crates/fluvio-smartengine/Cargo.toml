@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-smartengine"
-version = "0.7.13"
+version = "0.8.0"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -12,7 +12,7 @@ description = "The official Fluvio SmartEngine"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-engine = ["wasmtime", "wasmtime-wasi"]
+engine = ["wasmtime", "wasi-common"]
 transformation = ["serde_json", "serde_yaml", "humantime-serde"]
 default = ["engine"]
 
@@ -26,8 +26,8 @@ serde_json = { workspace = true, optional = true }
 serde_yaml = { workspace = true, default-features = false, optional = true }
 cfg-if = { workspace = true }
 derive_builder = { workspace = true }
+wasi-common = { workspace = true,  optional = true }
 wasmtime = { workspace = true,  optional = true }
-wasmtime-wasi = { workspace = true,  optional = true }
 humantime-serde = { workspace = true, optional = true }
 
 fluvio-future = { workspace = true, default-features = false }

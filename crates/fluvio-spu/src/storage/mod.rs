@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use std::time::Instant;
 
 use tracing::{debug, instrument};
-use async_rwlock::{RwLock, RwLockReadGuard, RwLockWriteGuard};
+use async_lock::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use anyhow::Result;
 
 use fluvio_protocol::record::BatchRecords;

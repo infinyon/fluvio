@@ -1,11 +1,11 @@
 use std::env::var;
 
-use anyhow::{bail, Result};
+use anyhow::Result;
 use clap::Parser;
 use colored::Colorize;
 use semver::Version;
 
-use fluvio_future::http_client::{Client, ResponseExt};
+use ureq::OrAnyStatus;
 
 use crate::{
     common::{notify::Notify, update_manager::UpdateManager},
@@ -54,18 +54,18 @@ impl SelfUpdateOpt {
 
     /// Fetches the `stable` channel tag from the Fluvio Version Manager
     async fn fetch_stable_tag(&self) -> Result<Version> {
-        let client = Client::new();
-        let request = client.get(FVM_STABLE_CHANNEL_URL)?;
-        let response = request.send().await?;
+        // let client = Client::new();
+        // let request = client.get(FVM_STABLE_CHANNEL_URL)?;
 
-        if response.status().is_success() {
-            let version = response.body_string().await?;
-            let version = Version::parse(&version)?;
+        let request = ureq::get(FVM_STABLE_CHANNEL_URL);
+        let response = request
+            .call()
+            .or_any_status()
+            .map_err(|e| anyhow::anyhow!("Unable to retrieve stable tag for FVM: {e}"))?;
 
-            return Ok(version);
-        }
+        let version = response.into_string()?;
+        let version = Version::parse(&version)?;
 
-        tracing::error!(status=%response.status(), "Unable to retrieve stable tag for FVM");
-        bail!("Failed to reach server when checking for updates")
+        Ok(version)
     }
 }

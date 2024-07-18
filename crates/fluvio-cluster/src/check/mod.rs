@@ -17,7 +17,7 @@ use async_trait::async_trait;
 use url::ParseError;
 use semver::Version;
 use serde_json::Error as JsonError;
-use sysinfo::{ProcessExt, System, SystemExt};
+use sysinfo::System;
 
 use fluvio_helm::{HelmClient, HelmError};
 use k8_config::{ConfigError as K8ConfigError, K8Config};

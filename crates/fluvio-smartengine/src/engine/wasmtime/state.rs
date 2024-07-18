@@ -18,7 +18,7 @@ pub struct WasmState(Store<Context>);
 
 pub struct Context {
     limiter: StoreResourceLimiter,
-    wasi_ctx: wasmtime_wasi::WasiCtx,
+    wasi_ctx: wasi_common::WasiCtx,
 }
 
 impl AsContext for WasmState {
@@ -55,7 +55,7 @@ impl WasmState {
 
 impl WasmState {
     pub(crate) fn new(engine: &Engine, limiter: StoreResourceLimiter) -> Self {
-        let wasi_ctx = wasmtime_wasi::WasiCtxBuilder::new()
+        let wasi_ctx = wasi_common::sync::WasiCtxBuilder::new()
             .inherit_stderr()
             .inherit_stdout()
             .build();
@@ -71,7 +71,7 @@ impl WasmState {
         host_fn: impl IntoFunc<<Self as AsContext>::Data, Params, Args>,
     ) -> Result<Instance, Error> {
         let mut linker = wasmtime::Linker::new(module.engine());
-        wasmtime_wasi::add_to_linker(&mut linker, |c: &mut Context| &mut c.wasi_ctx)?;
+        wasi_common::sync::add_to_linker(&mut linker, |c: &mut Context| &mut c.wasi_ctx)?;
         let copy_records_fn_import = module
             .imports()
             .find(|import| import.name().eq("copy_records"))

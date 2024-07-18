@@ -1,7 +1,6 @@
 use std::convert::{TryFrom, TryInto};
 use std::io::{Error as IoError, ErrorKind};
 use std::fmt::Display;
-use std::pin::Pin;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -38,7 +37,7 @@ impl SimpleEvent {
         self.flag.load(Ordering::SeqCst)
     }
 
-    pub(crate) fn listen(&self) -> Pin<Box<EventListener>> {
+    pub(crate) fn listen(&self) -> EventListener {
         self.event.listen()
     }
 

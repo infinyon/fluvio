@@ -240,7 +240,6 @@ mod file {
         use std::time::Duration;
         use std::io::Error as IoError;
 
-        use async_net::TcpListener;
         use bytes::Buf;
         use bytes::BufMut;
         use bytes::BytesMut;
@@ -250,6 +249,7 @@ mod file {
         use tracing::debug;
 
         use fluvio_future::file_slice::AsyncFileSlice;
+        use fluvio_future::net::TcpListener;
         use fluvio_protocol::Version;
         use fluvio_protocol::store::FileWrite;
         use fluvio_protocol::store::StoreValue;

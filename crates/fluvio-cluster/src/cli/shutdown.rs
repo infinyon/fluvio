@@ -5,7 +5,7 @@ use anyhow::bail;
 use anyhow::Result;
 use clap::Parser;
 use tracing::debug;
-use sysinfo::{ProcessExt, System, SystemExt};
+use sysinfo::System;
 
 use fluvio_types::defaults::SPU_MONITORING_UNIX_SOCKET;
 use fluvio_command::CommandExt;
@@ -60,8 +60,7 @@ impl ShutdownOpt {
             sys.refresh_processes(); // Only load what we need.
             for process in sys.processes_by_exact_name(name) {
                 if let Some(cmd_args) = command_args {
-                    // First command is the executable so cut that out.
-                    let proc_cmds = &process.cmd()[1..];
+                    let proc_cmds = process.cmd();
                     if cmd_args.len() > proc_cmds.len() {
                         continue; // Ignore procs with less command_args than the target.
                     }

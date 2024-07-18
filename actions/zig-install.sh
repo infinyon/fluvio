@@ -1,13 +1,11 @@
 #!/bin/bash
 # Install Zig
 # This is optimized for installing on GitHub Actions
-# To install llvm in Apple silicon, `brew install llvm@LLVM_VER`
 set -e
 MATRIX_OS=${1}
-ZIG_VER=0.11.0
+ZIG_VER=0.12.1
 ARCH=x86_64
 OS=linux
-LLVM_VER=16
 
 
 # auto detect OS

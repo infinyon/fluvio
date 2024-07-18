@@ -359,7 +359,7 @@ mod local_index {
 
     use anyhow::{anyhow, Result};
     use fluvio_connector_deployer::DeploymentResult;
-    use sysinfo::{SystemExt, Pid, PidExt, ProcessExt};
+    use sysinfo::Pid;
     use tracing::debug;
 
     const LOCAL_INDEX_FILE_NAME: &str = "fluvio_cdk_deploy_index.toml";
