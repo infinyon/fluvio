@@ -10,6 +10,7 @@ use crate::load::LoadCmd;
 use crate::publish::PublishCmd;
 use crate::hub::HubCmd;
 use crate::set_public::SetPublicOpt;
+use crate::clean::CleanCmd;
 
 /// SmartModule Development Kit utility
 #[derive(Debug, Parser)]
@@ -30,6 +31,8 @@ pub enum SmdkCommand {
     SetPublic(SetPublicOpt),
     /// Print smdk version information
     Version(BasicVersionCmd),
+    /// Calls cargo clean
+    Clean(CleanCmd),
 }
 
 impl SmdkCommand {
@@ -42,7 +45,9 @@ impl SmdkCommand {
             SmdkCommand::Publish(opt) => opt.process(),
             SmdkCommand::Hub(opt) => opt.process(),
             SmdkCommand::SetPublic(opt) => opt.process(),
+            SmdkCommand::Clean(opt) => opt.process(),
             SmdkCommand::Version(opt) => opt.process("SMDK"),
+            
         }
     }
 }

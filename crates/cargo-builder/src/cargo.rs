@@ -61,6 +61,12 @@ impl Cargo {
         builder
     }
 
+    pub fn clean() -> CargoBuilder {
+        let mut builder = CargoBuilder::default();
+        builder.cmd("clean");
+        builder
+    }
+
     /// Run Cargo using the `cargo` command line tool
     pub fn run(&self) -> Result<()> {
         let mut cargo = self.make_cargo_cmd()?;
