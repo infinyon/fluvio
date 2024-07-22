@@ -1,7 +1,8 @@
 //! Run Cargo using the `cargo` command line tool.
 
 use std::{
-    fmt::{Debug, Display, Formatter}, process::{Command, Stdio}
+    fmt::{Debug, Display, Formatter},
+    process::{Command, Stdio},
 };
 
 use anyhow::{Error, anyhow, Result};
@@ -12,8 +13,8 @@ use derive_builder::Builder;
 const AMBIGUOUS_TARGET_ERR_MSG: &str =
     "Cannot use `--target` as extra argument if `target` is also provided";
 
-const BUILD_CMD: &str = "build";    
-const CLEAN_CMD: &str = "clean";    
+const BUILD_CMD: &str = "build";
+const CLEAN_CMD: &str = "clean";
 
 #[derive(Default)]
 pub enum Profile {
@@ -22,12 +23,11 @@ pub enum Profile {
     Release,
 }
 
-
-#[derive(Default,Clone,Debug)]
-pub enum CargoCommand{
+#[derive(Default, Clone, Debug)]
+pub enum CargoCommand {
     #[default]
     Build,
-    Clean
+    Clean,
 }
 
 impl Display for Profile {
@@ -105,22 +105,19 @@ impl Cargo {
         match &self.cmd {
             CargoCommand::Build => {
                 cargo
-                .current_dir(&cwd)
-                .arg(BUILD_CMD)
-                .arg("--profile")
-                .arg(&self.profile);
-            },    
+                    .current_dir(&cwd)
+                    .arg(BUILD_CMD)
+                    .arg("--profile")
+                    .arg(&self.profile);
+            }
             CargoCommand::Clean => {
-                cargo
-                .current_dir(&cwd)
-                .arg(CLEAN_CMD);
-            },    
+                cargo.current_dir(&cwd).arg(CLEAN_CMD);
+            }
         }
 
         if self.lib {
             cargo.arg("--lib");
         }
-
 
         if let Some(pkg) = &self.package {
             cargo.arg("-p").arg(pkg);
@@ -133,8 +130,7 @@ impl Cargo {
         if !self.extra_arguments.is_empty() {
             cargo.args(&self.extra_arguments);
         }
-        println!("{:?}",cargo);
-        
+        println!("{:?}", cargo);
 
         Ok(cargo)
     }
@@ -194,29 +190,21 @@ mod test {
     fn test_builder_build() {
         let config = Cargo::build().build().expect("should build");
         assert!(matches!(config.cmd, CargoCommand::Build));
-        
+
         let cargo = config.make_cargo_cmd().expect("cmd");
         let args: Vec<&OsStr> = cargo.get_args().collect();
-        assert_eq!(
-            args,
-            &["build", "--profile", "release", "--lib"]
-        );
+        assert_eq!(args, &["build", "--profile", "release", "--lib"]);
     }
-
 
     #[test]
     fn test_builder_clean() {
         let config = Cargo::clean().build().expect("should build");
         assert!(matches!(config.cmd, CargoCommand::Clean));
-        
+
         let cargo = config.make_cargo_cmd().expect("cmd");
         let args: Vec<&OsStr> = cargo.get_args().collect();
-        assert_eq!(
-            args,
-            &["clean"]
-        );
+        assert_eq!(args, &["clean"]);
     }
-
 
     #[test]
     fn test_builder_target() {
