@@ -31,7 +31,7 @@ pub enum SmdkCommand {
     SetPublic(SetPublicOpt),
     /// Print smdk version information
     Version(BasicVersionCmd),
-    /// Calls cargo clean
+    /// Cleans the current directory
     Clean(CleanCmd),
 }
 
@@ -47,7 +47,6 @@ impl SmdkCommand {
             SmdkCommand::SetPublic(opt) => opt.process(),
             SmdkCommand::Clean(opt) => opt.process(),
             SmdkCommand::Version(opt) => opt.process("SMDK"),
-            
         }
     }
 }

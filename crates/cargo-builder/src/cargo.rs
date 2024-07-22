@@ -1,8 +1,7 @@
 //! Run Cargo using the `cargo` command line tool.
 
 use std::{
-    fmt::{Debug, Display, Formatter},
-    process::{Command, Stdio},
+    fmt::{Debug, Display, Formatter}, process::{Command, Stdio}
 };
 
 use anyhow::{Error, anyhow, Result};
@@ -13,11 +12,22 @@ use derive_builder::Builder;
 const AMBIGUOUS_TARGET_ERR_MSG: &str =
     "Cannot use `--target` as extra argument if `target` is also provided";
 
+const BUILD_CMD: &str = "build";    
+const CLEAN_CMD: &str = "clean";    
+
 #[derive(Default)]
 pub enum Profile {
     Debug,
     #[default]
     Release,
+}
+
+
+#[derive(Default,Clone,Debug)]
+pub enum CargoCommand{
+    #[default]
+    Build,
+    Clean
 }
 
 impl Display for Profile {
@@ -35,7 +45,7 @@ impl Display for Profile {
 #[builder(build_fn(validate = "Self::validate"))]
 pub struct Cargo {
     /// Basic cargo command
-    pub cmd: String,
+    pub cmd: CargoCommand,
 
     /// --profile
     #[builder(setter(into), default = "Profile::default().to_string()")]
@@ -57,13 +67,14 @@ pub struct Cargo {
 impl Cargo {
     pub fn build() -> CargoBuilder {
         let mut builder = CargoBuilder::default();
-        builder.cmd("build");
+        builder.cmd(CargoCommand::Build);
         builder
     }
 
     pub fn clean() -> CargoBuilder {
         let mut builder = CargoBuilder::default();
-        builder.cmd("clean");
+        builder.lib(false);
+        builder.cmd(CargoCommand::Clean);
         builder
     }
 
@@ -91,15 +102,25 @@ impl Cargo {
         cargo.stdout(Stdio::inherit());
         cargo.stderr(Stdio::inherit());
 
-        cargo
-            .current_dir(&cwd)
-            .arg(&self.cmd)
-            .arg("--profile")
-            .arg(&self.profile);
+        match &self.cmd {
+            CargoCommand::Build => {
+                cargo
+                .current_dir(&cwd)
+                .arg(BUILD_CMD)
+                .arg("--profile")
+                .arg(&self.profile);
+            },    
+            CargoCommand::Clean => {
+                cargo
+                .current_dir(&cwd)
+                .arg(CLEAN_CMD);
+            },    
+        }
 
         if self.lib {
             cargo.arg("--lib");
         }
+
 
         if let Some(pkg) = &self.package {
             cargo.arg("-p").arg(pkg);
@@ -112,6 +133,8 @@ impl Cargo {
         if !self.extra_arguments.is_empty() {
             cargo.args(&self.extra_arguments);
         }
+        println!("{:?}",cargo);
+        
 
         Ok(cargo)
     }
@@ -166,6 +189,34 @@ mod test {
             &["build", "--profile", "release", "--lib", "-p", "foo"]
         );
     }
+
+    #[test]
+    fn test_builder_build() {
+        let config = Cargo::build().build().expect("should build");
+        assert!(matches!(config.cmd, CargoCommand::Build));
+        
+        let cargo = config.make_cargo_cmd().expect("cmd");
+        let args: Vec<&OsStr> = cargo.get_args().collect();
+        assert_eq!(
+            args,
+            &["build", "--profile", "release", "--lib"]
+        );
+    }
+
+
+    #[test]
+    fn test_builder_clean() {
+        let config = Cargo::clean().build().expect("should build");
+        assert!(matches!(config.cmd, CargoCommand::Clean));
+        
+        let cargo = config.make_cargo_cmd().expect("cmd");
+        let args: Vec<&OsStr> = cargo.get_args().collect();
+        assert_eq!(
+            args,
+            &["clean"]
+        );
+    }
+
 
     #[test]
     fn test_builder_target() {
