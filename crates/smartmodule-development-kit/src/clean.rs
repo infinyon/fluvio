@@ -15,8 +15,6 @@ pub struct CleanCmd {
 
 impl CleanCmd {
     pub(crate) fn process(self) -> Result<()> {
-        println!("{:?}", self.extra_arguments);
-
         let cargo = Cargo::clean()
             .extra_arguments(self.extra_arguments)
             .build()?;
