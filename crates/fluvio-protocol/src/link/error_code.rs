@@ -123,13 +123,6 @@ pub enum ErrorCode {
     #[error("the offset management is disabled for the stream")]
     OffsetManagementDisabled,
 
-    // Legacy SmartModule errors
-    #[cfg(feature = "smartmodule")]
-    #[deprecated(since = "0.9.13")]
-    #[fluvio(tag = 4000)]
-    #[error("a legacy SmartModule error occurred")]
-    LegacySmartModuleError(#[from] crate::smartmodule::LegacySmartModuleError),
-
     // Managed Connector Errors
     #[fluvio(tag = 5000)]
     #[error("an error occurred while managing a connector")]
@@ -224,6 +217,9 @@ pub enum ErrorCode {
     #[fluvio(tag = 11004)]
     #[error("delete from remote is not allowed")]
     MirrorDeleteFromRemote,
+    #[fluvio(tag = 11005)]
+    #[error("the mirror is invalid")]
+    MirrorInvalidType,
 
     // Specs
     #[fluvio(tag = 12001)]

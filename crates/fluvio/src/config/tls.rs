@@ -1,9 +1,8 @@
 use std::convert::TryFrom;
-use std::io::Error as IoError;
-use std::io::ErrorKind;
 use std::path::PathBuf;
 use std::fmt::{Debug, self};
 
+use anyhow::{Result, Context};
 use tracing::info;
 use serde::{Deserialize, Serialize};
 use fluvio_future::net::{DomainConnector, DefaultDomainConnector};
@@ -130,24 +129,16 @@ impl Debug for TlsCerts {
 }
 
 impl TryFrom<TlsPaths> for TlsCerts {
-    type Error = IoError;
+    type Error = anyhow::Error;
 
     fn try_from(paths: TlsPaths) -> Result<Self, Self::Error> {
         use std::fs::read;
         Ok(Self {
             domain: paths.domain,
-            key: String::from_utf8(read(paths.key)?).map_err(|e| {
-                IoError::new(ErrorKind::InvalidData, format!("key should be UTF-8: {e}"))
-            })?,
-            cert: String::from_utf8(read(paths.cert)?).map_err(|e| {
-                IoError::new(ErrorKind::InvalidData, format!("cert should be UTF-8: {e}"))
-            })?,
-            ca_cert: String::from_utf8(read(paths.ca_cert)?).map_err(|e| {
-                IoError::new(
-                    ErrorKind::InvalidData,
-                    format!("CA cert should be UTF-8: {e}"),
-                )
-            })?,
+            key: String::from_utf8(read(paths.key)?).context("key should be UTF-8")?,
+            cert: String::from_utf8(read(paths.cert)?).context("cert should be UTF-8: {e}")?,
+            ca_cert: String::from_utf8(read(paths.ca_cert)?)
+                .context("CA cert should be UTF-8: {e}")?,
         })
     }
 }
@@ -169,7 +160,7 @@ cfg_if::cfg_if! {
     if #[cfg(target_arch = "wasm32")] {
 
         impl TryFrom<TlsPolicy> for DomainConnector {
-            type Error = IoError;
+            type Error = anyhow::Error;
 
             fn try_from(_config: TlsPolicy) -> Result<Self, Self::Error> {
                 info!("Using Default Domain connector for wasm");
@@ -180,11 +171,9 @@ cfg_if::cfg_if! {
     } else if #[cfg(feature = "openssl")] {
 
         impl TryFrom<TlsPolicy> for DomainConnector {
-            type Error = IoError;
+            type Error = anyhow::Error;
 
             fn try_from(config: TlsPolicy) -> Result<Self, Self::Error> {
-                use std::io::ErrorKind as IoErrorKind;
-
 
                 use fluvio_future::net::certs::CertBuilder;
                 use fluvio_future::openssl:: {TlsDomainConnector,TlsConnector,TlsAnonymousConnector};
@@ -195,10 +184,8 @@ cfg_if::cfg_if! {
                     TlsPolicy::Disabled => Ok(Box::new(DefaultDomainConnector::new())),
                     TlsPolicy::Anonymous => {
                         info!("Using anonymous TLS");
-                        let builder = TlsConnector::builder()
-                                .map_err(|err| IoError::new(IoErrorKind::InvalidData, err))?
-                                .with_hostname_verification_disabled()
-                                .map_err(|err| IoError::new(IoErrorKind::InvalidData, err))?;
+                        let builder = TlsConnector::builder()?
+                                .with_hostname_verification_disabled()?;
 
                         let connector: TlsAnonymousConnector = builder.build().into();
                         Ok(Box::new(connector))
@@ -210,20 +197,17 @@ cfg_if::cfg_if! {
                             "Using verified TLS with certificates from paths"
                         );
 
-                        let builder = TlsConnector::builder()
-                            .map_err(|err| IoError::new(IoErrorKind::InvalidData, err))?
+                        let builder = TlsConnector::builder()?
                             .with_identity(
                                 IdentityBuilder::from_x509(
                                     X509PemBuilder::from_path(&tls.cert)?,
                                     PrivateKeyBuilder::from_path(&tls.key)?
                                 )?
-                            )
-                            .map_err(|err| IoError::new(IoErrorKind::InvalidData, err))?
+                            )?
                             .add_root_certificate(
                                 X509PemBuilder::from_path(&tls.ca_cert)?
                                 .build()?
-                            )
-                            .map_err(|err| IoError::new(IoErrorKind::InvalidData, err))?;
+                            )?;
 
 
                         Ok(Box::new(TlsDomainConnector::new(
@@ -236,20 +220,17 @@ cfg_if::cfg_if! {
                             domain = &*tls.domain,
                             "Using verified TLS with inline certificates"
                         );
-                        let builder = TlsConnector::builder()
-                            .map_err(|err| IoError::new(IoErrorKind::InvalidData, err))?
+                        let builder = TlsConnector::builder()?
                             .with_identity(
                                 IdentityBuilder::from_x509(
                                     X509PemBuilder::from_reader(&mut tls.cert.as_bytes())?,
                                     PrivateKeyBuilder::from_reader(&mut tls.key.as_bytes())?
                                 )?
-                            )
-                            .map_err(|err| IoError::new(IoErrorKind::InvalidData, err))?
+                            )?
                             .add_root_certificate(
                                 X509PemBuilder::from_reader(&mut tls.ca_cert.as_bytes())?
                                 .build()?
-                            )
-                            .map_err(|err| IoError::new(IoErrorKind::InvalidData, err))?;
+                            )?;
 
 
                         Ok(Box::new(TlsDomainConnector::new(
@@ -324,7 +305,7 @@ cfg_if::cfg_if! {
     } else {
         // by default, no TLS
         impl TryFrom<TlsPolicy> for DomainConnector {
-            type Error = IoError;
+            type Error = anyhow::Error;
 
             fn try_from(_config: TlsPolicy) -> Result<Self, Self::Error> {
                 info!("Using Default Domain connector for wasm");

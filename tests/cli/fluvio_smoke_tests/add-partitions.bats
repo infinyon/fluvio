@@ -64,12 +64,11 @@ setup_file() {
 
     #TODO: filter without grep when fluvio partition list has a filter option
     run bash -c 'timeout 15s "$FLUVIO_BIN" partition list | grep "$TOPIC_NAME"'
-
+    assert_success
     assert_line --partial --index 0 "$TOPIC_NAME  0          500"
     assert_line --partial --index 1 "$TOPIC_NAME  1          $SPU_OF_PARTION1"
     assert_line --partial --index 2 "$TOPIC_NAME  2          $SPU_OF_PARTION2"
-    
-    assert_success
+    assert [ ${#lines[@]} -eq 3 ]
 }
 
 # Not found topic
@@ -86,3 +85,66 @@ setup_file() {
     assert_failure
 }
 
+# Produce must recognize new partitions
+@test "Produce message to new partitions while connected" {
+    if [ "$FLUVIO_CLI_RELEASE_CHANNEL" == "stable" ]; then
+        skip "don't run on fluvio cli stable version"
+    fi
+    if [ "$FLUVIO_CLUSTER_RELEASE_CHANNEL" == "stable" ]; then
+        skip "don't run on cluster stable version"
+    fi
+
+    debug_msg "Produce message to actual partitions, then wait the new one and produce to it"
+    run bash -c '/usr/bin/expect << EOF
+    spawn "$FLUVIO_BIN" produce "$TOPIC_NAME"
+    expect "> "
+    send "1\r"
+    expect "Ok!"
+    expect "> "
+    send "2\r"
+    expect "Ok!"
+    expect "> "
+    send "3\r"
+    expect "Ok!"
+    expect "> "
+    exec "$FLUVIO_BIN" topic add-partition "$TOPIC_NAME"
+    sleep 2
+    send "4\r"
+    expect "Ok!"
+    expect "> "
+    send "5\r"
+    expect "Ok!"
+    expect "> "
+    exit
+    EOF'
+    assert_success
+
+    sleep 2
+    debug_msg "Check if the new partition received the message"
+    run bash -c 'timeout 15s "$FLUVIO_BIN" partition list | grep "$TOPIC_NAME"'
+    assert_success
+    assert_line --partial --index 0 "2   2    2    0"
+    assert_line --partial --index 1 "1   1    1    0"
+    assert_line --partial --index 2 "1   1    1    0"
+    assert_line --partial --index 3 "1   1    1    0"
+    assert [ ${#lines[@]} -eq 4 ]
+}
+
+# Delete topic
+@test "Delete topic must delete all partitions" {
+    if [ "$FLUVIO_CLI_RELEASE_CHANNEL" == "stable" ]; then
+        skip "don't run on fluvio cli stable version"
+    fi
+    if [ "$FLUVIO_CLUSTER_RELEASE_CHANNEL" == "stable" ]; then
+        skip "don't run on cluster stable version"
+    fi
+
+    debug_msg "Delete topic"
+    run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME"
+    assert_success
+
+    sleep 1
+    debug_msg "Check if the new partition received the message"
+    run bash -c 'timeout 15s "$FLUVIO_BIN" partition list | grep "$TOPIC_NAME"'
+    assert [ ${#lines[@]} -eq 0 ]
+}

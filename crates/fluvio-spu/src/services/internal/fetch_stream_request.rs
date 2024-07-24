@@ -9,6 +9,7 @@ use super::SPUPeerApiEnum;
 #[derive(Decoder, Encoder, Debug, Default)]
 pub struct FetchStreamRequest {
     pub spu_id: SpuId,
+    pub leader_spu_id: SpuId,
     pub min_bytes: i32,
     pub max_bytes: i32,
 }
@@ -20,11 +21,11 @@ impl Request for FetchStreamRequest {
 
 #[derive(Decoder, Encoder, Default, Debug)]
 pub struct FetchStreamResponse {
-    pub spu_id: SpuId,
+    pub spu_id: Option<SpuId>,
 }
 
 impl FetchStreamResponse {
-    pub fn new(spu_id: SpuId) -> Self {
+    pub fn new(spu_id: Option<SpuId>) -> Self {
         FetchStreamResponse { spu_id }
     }
 }

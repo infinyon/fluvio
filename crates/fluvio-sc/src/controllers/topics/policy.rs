@@ -222,7 +222,7 @@ impl<C: MetadataItem> TopicNextState<C> {
                     if next_state.resolution == TopicResolution::Provisioned {
                         debug!("creating new partitions");
                         next_state.partitions =
-                            topic.create_new_partitions(scheduler.partitions()).await;
+                            topic.partitions_from_replicas(scheduler.partitions()).await;
                     }
                     next_state
                 }
@@ -239,7 +239,7 @@ impl<C: MetadataItem> TopicNextState<C> {
                             .await;
                     if next_state.resolution == TopicResolution::Provisioned {
                         next_state.partitions =
-                            topic.create_new_partitions(scheduler.partitions()).await;
+                            topic.partitions_from_replicas(scheduler.partitions()).await;
                     }
                     next_state
                 }
@@ -251,7 +251,7 @@ impl<C: MetadataItem> TopicNextState<C> {
                     let mut next_state = TopicNextState::same_next_state(topic);
                     if next_state.resolution == TopicResolution::Provisioned {
                         next_state.partitions =
-                            topic.create_new_partitions(scheduler.partitions()).await;
+                            topic.partitions_from_replicas(scheduler.partitions()).await;
                     }
                     next_state
                 }
@@ -335,7 +335,7 @@ impl<C: MetadataItem> TopicNextState<C> {
                     if next_state.resolution == TopicResolution::Provisioned {
                         debug!("creating new partitions");
                         next_state.partitions =
-                            topic.create_new_partitions(scheduler.partitions()).await;
+                            topic.partitions_from_replicas(scheduler.partitions()).await;
                     }
                     next_state
                 }

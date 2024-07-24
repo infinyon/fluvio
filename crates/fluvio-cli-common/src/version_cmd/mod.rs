@@ -7,7 +7,7 @@ pub use basic::BasicVersionCmd;
 use current_platform::CURRENT_PLATFORM;
 use comfy_table::Table;
 use sha2::{Digest, Sha256};
-use sysinfo::SystemExt;
+use sysinfo::System;
 
 #[cfg(feature = "serde")]
 use anyhow::Result;
@@ -39,13 +39,11 @@ pub fn calc_sha256() -> Option<String> {
 
 /// Retrieves OS details
 pub fn os_info() -> Option<String> {
-    let sys = sysinfo::System::new_all();
-
     let info = format!(
         "{} {} (kernel {})",
-        sys.name()?,
-        sys.os_version()?,
-        sys.kernel_version()?,
+        System::name()?,
+        System::os_version()?,
+        System::kernel_version()?,
     );
 
     Some(info)

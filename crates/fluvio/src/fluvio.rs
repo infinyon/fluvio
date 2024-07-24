@@ -18,6 +18,8 @@ use fluvio_future::net::DomainConnector;
 use semver::Version;
 
 use crate::admin::FluvioAdmin;
+use crate::producer::TopicProducerPool;
+use crate::spu::SpuPool;
 use crate::TopicProducer;
 use crate::PartitionConsumer;
 
@@ -29,7 +31,7 @@ use crate::consumer::{
 };
 use crate::metrics::ClientMetrics;
 use crate::producer::TopicProducerConfig;
-use crate::spu::SpuPool;
+use crate::spu::SpuSocketPool;
 use crate::sync::MetadataStores;
 
 /// An interface for interacting with Fluvio streaming
@@ -37,7 +39,7 @@ pub struct Fluvio {
     socket: SharedMultiplexerSocket,
     config: Arc<ClientConfig>,
     versions: Versions,
-    spu_pool: OnceCell<Arc<SpuPool>>,
+    spu_pool: OnceCell<Arc<SpuSocketPool>>,
     metadata: MetadataStores,
     watch_version: i16,
     metric: Arc<ClientMetrics>,
@@ -125,12 +127,12 @@ impl Fluvio {
     }
 
     /// lazy get spu pool
-    async fn spu_pool(&self) -> Result<Arc<SpuPool>> {
+    async fn spu_pool(&self) -> Result<Arc<SpuSocketPool>> {
         self.spu_pool
             .get_or_try_init(|| async {
                 let metadata =
                     MetadataStores::start(self.socket.clone(), self.watch_version).await?;
-                let pool = SpuPool::start(self.config.clone(), metadata);
+                let pool = SpuSocketPool::start(self.config.clone(), metadata);
                 Ok(Arc::new(pool?))
             })
             .await
@@ -153,7 +155,7 @@ impl Fluvio {
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn topic_producer(&self, topic: impl Into<String>) -> Result<TopicProducer> {
+    pub async fn topic_producer(&self, topic: impl Into<String>) -> Result<TopicProducerPool> {
         self.topic_producer_with_config(topic, Default::default())
             .await
     }
@@ -179,16 +181,16 @@ impl Fluvio {
         &self,
         topic: impl Into<String>,
         config: TopicProducerConfig,
-    ) -> Result<TopicProducer> {
+    ) -> Result<TopicProducerPool> {
         let topic = topic.into();
         debug!(topic = &*topic, "Creating producer");
 
         let spu_pool = self.spu_pool().await?;
-        if !spu_pool.topic_exists(&topic).await? {
+        if !spu_pool.topic_exists(topic.clone()).await? {
             return Err(FluvioError::TopicNotFound(topic).into());
         }
 
-        TopicProducer::new(topic, spu_pool, config, self.metric.clone()).await
+        TopicProducer::new(topic, spu_pool, Arc::new(config), self.metric.clone()).await
     }
 
     /// Creates a new `PartitionConsumer` for the given topic and partition

@@ -16,7 +16,6 @@ path = "src/main.rs"
 
 # Workspace Dependencies
 anyhow = { workspace = true }
-async-std = { workspace = true, features = ["attributes"] }
 clap = { workspace = true, features = ["std", "color", "help", "usage", "derive", "env"] }
 colored = { workspace = true }
 comfy-table = { workspace = true }
@@ -32,10 +31,11 @@ sysinfo = { workspace = true }
 tempfile = { workspace = true }
 tracing = { workspace = true }
 toml = { workspace = true }
+ureq = { workspace = true }
 url = { workspace = true }
 
 # Workspace Crates
-fluvio-future = { workspace = true, features = ["http-client", "subscriber"] }
+fluvio-future = { workspace = true, features = ["subscriber", "attributes"] }
 fluvio-hub-util = { workspace = true }
 
 [dev-dependencies]

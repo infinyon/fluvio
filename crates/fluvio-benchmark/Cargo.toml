@@ -17,11 +17,11 @@ clap = { workspace = true, features = ["std","derive"] }
 derive_builder = { workspace = true }
 futures-util = { workspace = true }
 hdrhistogram = { workspace = true }
-madato = "0.5.3"
+madato = { workspace = true }
 rand = { workspace = true }
 serde = { workspace = true , features = ['derive'] }
 serde_yaml = { workspace = true }
-statrs = "0.16.0"
+statrs = "0.17.1"
 thiserror = { workspace = true }
 tracing = {workspace = true }
 

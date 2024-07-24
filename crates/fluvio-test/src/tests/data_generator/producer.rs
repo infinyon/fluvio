@@ -2,7 +2,7 @@ use fluvio_test_util::test_runner::test_driver::TestDriver;
 use fluvio_test_util::test_meta::environment::EnvDetail;
 use std::time::SystemTime;
 use tracing::debug;
-use fluvio::{Offset, TopicProducer, TopicProducerConfigBuilder, RecordKey};
+use fluvio::{TopicProducerPool, Offset, RecordKey, TopicProducerConfigBuilder};
 use futures::StreamExt;
 use std::time::Duration;
 
@@ -142,7 +142,7 @@ async fn send_record(
     producer_id: u32,
     records_sent: u32,
     test_driver: &TestDriver,
-    producer: &TopicProducer,
+    producer: &TopicProducerPool,
 ) {
     let record = generate_record(option.clone(), producer_id, records_sent);
     test_driver

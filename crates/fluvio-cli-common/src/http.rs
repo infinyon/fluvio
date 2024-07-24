@@ -1,9 +1,8 @@
+use bytes::BufMut;
 use http::Request;
 use tracing::instrument;
 use anyhow::Result;
-
-use fluvio_future::http_client;
-use fluvio_future::http_client::ResponseExt;
+use ureq::OrAnyStatus;
 
 #[instrument]
 pub async fn get_bytes_req<T: std::fmt::Debug>(req: &Request<T>) -> Result<bytes::Bytes> {
@@ -13,9 +12,22 @@ pub async fn get_bytes_req<T: std::fmt::Debug>(req: &Request<T>) -> Result<bytes
 
 #[instrument]
 pub async fn get_bytes(uri: &str) -> Result<bytes::Bytes> {
-    let resp = http_client::get(&uri).await?;
-    let body_bytes = resp.bytes().await?;
-    Ok(body_bytes)
+    let req = ureq::get(uri);
+    let resp = req
+        .call()
+        .or_any_status()
+        .map_err(|e| anyhow::anyhow!("get transport error : {e}"))?;
+
+    let len: usize = match resp.header("Content-Length") {
+        Some(hdr) => hdr.parse()?,
+        None => 0usize,
+    };
+
+    let mut bytes_writer = bytes::BytesMut::with_capacity(len).writer();
+
+    std::io::copy(&mut resp.into_reader(), &mut bytes_writer)?;
+
+    Ok(bytes_writer.into_inner().freeze())
 }
 
 #[instrument]

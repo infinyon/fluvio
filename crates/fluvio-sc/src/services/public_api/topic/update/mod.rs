@@ -1,4 +1,5 @@
 mod add_partition;
+mod add_mirror;
 
 use std::io::{Error, ErrorKind};
 
@@ -44,6 +45,9 @@ pub async fn handle_topic_update_request<AC: AuthContext, C: MetadataItem>(
     let status = match action {
         UpdateTopicAction::AddPartition(req) => {
             add_partition::handle_add_partition(topic_name, req, auth_ctx).await?
+        }
+        UpdateTopicAction::AddMirror(req) => {
+            add_mirror::handle_add_mirror(topic_name, req, auth_ctx).await?
         }
     };
 

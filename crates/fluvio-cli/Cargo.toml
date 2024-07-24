@@ -38,7 +38,6 @@ producer-file-io = ["fluvio-cli-common/file-records"]
 
 [dependencies]
 async-channel = { workspace = true }
-async-net = { workspace = true }
 async-trait = { workspace = true }
 anyhow = { workspace = true }
 bytesize = { workspace = true, features = ['serde'] }
@@ -97,7 +96,7 @@ fluvio-controlplane-metadata = { workspace = true, features = ["smartmodule"] }
 
 # Optional Fluvio dependencies
 fluvio-types = { workspace = true,  optional = true }
-fluvio-future = { workspace = true, features = ["fs", "io", "subscriber", "native2_tls"], optional = true }
+fluvio-future = { workspace = true, features = ["fs", "io", "subscriber", "native_tls"], optional = true }
 fluvio-sc-schema = { workspace = true,  features = ["use_serde"], optional = true }
 fluvio-spu-schema = { workspace = true, optional = true }
 

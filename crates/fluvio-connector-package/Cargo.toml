@@ -14,8 +14,8 @@ default = ["toml"]
 anyhow = { workspace = true }
 bytesize = { workspace = true }
 humantime-serde = { workspace = true }
-minijinja = { version = "1.0.0", default-features = false, features = ["custom_syntax", "fuel"] }
-openapiv3 = { version = "1.0", default-features = false }
+minijinja = { version = "1.0", default-features = false, features = ["custom_syntax", "fuel"] }
+openapiv3 = { version = "2.0", default-features = false }
 serde = { workspace = true, features = ["derive"], default-features = false }
 serde_yaml = { workspace = true }
 toml = { workspace = true , optional = true, features = ["display", "parse", "preserve_order"] }

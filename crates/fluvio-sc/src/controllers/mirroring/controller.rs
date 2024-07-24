@@ -98,7 +98,7 @@ impl<C: MetadataItem> RemoteMirrorController<C> {
                                 now as u64,
                             );
                             self.mirrors.update_status(home.id.clone(), status).await?;
-                            return Err(err.into());
+                            return Err(err);
                         }
                     }
                 } else {

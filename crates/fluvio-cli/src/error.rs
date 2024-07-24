@@ -42,9 +42,6 @@ pub enum CliError {
     #[error("Package error: {0}")]
     PackageError(String),
 
-    #[error(transparent)]
-    TlsError(#[from] fluvio_future::openssl::TlsError),
-
     #[error("Invalid argument: {0}")]
     InvalidArg(String),
     #[error("Unknown error: {0}")]

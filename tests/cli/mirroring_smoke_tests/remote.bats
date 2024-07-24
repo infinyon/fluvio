@@ -43,8 +43,9 @@ setup_file() {
 }
 
 @test "Can't unregister an remote cluster that doesn't exist" {
+    sleep 1
     run timeout 15s "$FLUVIO_BIN" remote unregister "$REMOTE_NAME"
 
-    assert_output "remote cluster \"$REMOTE_NAME\" not found"
+    assert_output "Mirror not found"
     assert_failure
 }

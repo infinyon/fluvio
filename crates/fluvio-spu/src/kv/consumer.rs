@@ -6,7 +6,7 @@ use std::{
 };
 
 use anyhow::Result;
-use async_rwlock::RwLock;
+use async_lock::RwLock;
 use tracing::trace;
 
 use fluvio_kv_storage::KVStorage;

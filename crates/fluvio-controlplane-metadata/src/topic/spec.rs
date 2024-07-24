@@ -711,6 +711,11 @@ impl HomeMirrorConfig {
     pub fn validate(&self) -> anyhow::Result<()> {
         Ok(())
     }
+
+    /// Add partition to home mirror config
+    pub fn add_partition(&mut self, partition: HomePartitionConfig) {
+        self.0.push(partition);
+    }
 }
 
 #[derive(Decoder, Encoder, Default, Debug, Clone, Eq, PartialEq)]

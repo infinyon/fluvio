@@ -14,21 +14,6 @@ use fluvio_smartmodule::dataplane::smartmodule::SmartModuleExtraParams;
 
 /// The request payload when using a Consumer SmartModule.
 ///
-/// This includes the WASM content as well as the type of SmartModule being used.
-/// It also carries any data that is required for specific types of SmartModules.
-#[derive(Debug, Default, Clone, Encoder, Decoder)]
-#[deprecated(
-    since = "0.10.0",
-    note = "will be removed in the next version. Use SmartModuleInvocation instead "
-)]
-pub(crate) struct LegacySmartModulePayload {
-    pub wasm: SmartModuleWasmCompressed,
-    pub kind: SmartModuleKind,
-    pub params: SmartModuleExtraParams,
-}
-
-/// The request payload when using a Consumer SmartModule.
-///
 /// This includes the WASM module name as well as the invocation being used.
 /// It also carries any data that is required for specific invocations of SmartModules.
 #[derive(Debug, Default, Clone, Encoder, Decoder)]
@@ -143,33 +128,6 @@ pub enum SmartModuleContextData {
         topic: String,
         derivedstream: String,
     },
-}
-
-/// Different possible representations of WASM modules.
-///
-/// In a fetch request, a WASM module may be given directly in the request
-/// as raw bytes.
-///
-#[deprecated(
-    since = "0.10.0",
-    note = "will be removed in the next version. Use SmartModuleInvocationWasm instead"
-)]
-#[derive(Clone, Encoder, Decoder, Debug)]
-pub enum SmartModuleWasmCompressed {
-    #[fluvio(tag = 0)]
-    Raw(Vec<u8>),
-    /// compressed WASM module payload using Gzip
-    #[fluvio(tag = 1)]
-    #[fluvio(min_version = 14)]
-    Gzip(Vec<u8>),
-    // TODO implement named WASM modules once we have a WASM store
-    // Url(String),
-}
-
-impl Default for SmartModuleWasmCompressed {
-    fn default() -> Self {
-        Self::Raw(Default::default())
-    }
 }
 
 fn zip(raw: &[u8]) -> io::Result<Vec<u8>> {

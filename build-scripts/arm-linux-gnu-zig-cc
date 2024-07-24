@@ -1,0 +1,3 @@
+#!/bin/bash
+
+$FLUVIO_BUILD_ZIG cc $(echo $@ | sed s/\-latomic\ //g) -target arm-linux-gnueabihf

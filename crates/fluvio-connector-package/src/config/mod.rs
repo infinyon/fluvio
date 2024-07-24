@@ -845,52 +845,54 @@ mod tests {
             "invalid value: string \"1\", expected a duration",
             format!("{connector_cfg}")
         );
-        let connector_cfg =
+        let connector_cfg_err =
             ConnectorConfig::from_file("test-data/connectors/error-compression.yaml")
                 .expect_err("This yaml should error");
         #[cfg(unix)]
         assert_eq!(
             "unknown variant `gzipaoeu`, expected one of `none`, `gzip`, `snappy`, `lz4`, `zstd`",
-            format!("{connector_cfg}")
+            format!("{connector_cfg_err}")
         );
 
-        let connector_cfg = ConnectorConfig::from_file("test-data/connectors/error-batchsize.yaml")
-            .expect_err("This yaml should error");
+        let connector_cfg_err =
+            ConnectorConfig::from_file("test-data/connectors/error-batchsize.yaml")
+                .expect_err("This yaml should error");
         #[cfg(unix)]
         assert_eq!(
             "invalid value: string \"1aoeu\", expected parsable string",
-            format!("{connector_cfg:?}")
+            format!("{connector_cfg_err}")
         );
-        let connector_cfg = ConnectorConfig::from_file("test-data/connectors/error-version.yaml")
-            .expect_err("This yaml should error");
+        let connector_cfg_err =
+            ConnectorConfig::from_file("test-data/connectors/error-version.yaml")
+                .expect_err("This yaml should error");
         #[cfg(unix)]
-        assert_eq!("missing field `version`", format!("{connector_cfg:?}"));
+        assert_eq!("missing field `version`", format!("{connector_cfg_err}"));
 
-        let connector_cfg =
+        let connector_cfg_err =
             ConnectorConfig::from_file("test-data/connectors/error-secret-with-spaces.yaml")
                 .expect_err("This yaml should error");
         #[cfg(unix)]
         assert_eq!(
             "Secret name `secret name` can only contain alphanumeric ASCII characters and underscores",
-            format!("{connector_cfg:?}")
+            format!("{connector_cfg_err}")
         );
 
-        let connector_cfg =
+        let connector_cfg_err =
             ConnectorConfig::from_file("test-data/connectors/error-secret-starts-with-number.yaml")
                 .expect_err("This yaml should error");
         #[cfg(unix)]
         assert_eq!(
             "Secret name `1secret` cannot start with a number",
-            format!("{connector_cfg:?}")
+            format!("{connector_cfg_err}")
         );
 
-        let connector_cfg =
+        let connector_cfg_err =
             ConnectorConfig::from_file("test-data/connectors/error-invalid-api-version.yaml")
                 .expect_err("This yaml should error");
         #[cfg(unix)]
         assert_eq!(
             "apiVersion: unknown variant `v1`, expected one of `0.0.0`, `0.1.0`, `0.2.0` at line 1 column 13",
-            format!("{connector_cfg:?}")
+            format!("{connector_cfg_err}")
         );
     }
 
