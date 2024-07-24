@@ -13,6 +13,7 @@ use crate::config::ConfigError;
 use crate::producer::ProducerError;
 use crate::producer::TopicProducerConfigBuilderError;
 
+/// Resurl wrapper for Fluvio errors
 pub type Result<T, Err = FluvioError> = std::result::Result<T, Err>;
 
 /// Possible errors that may arise when using Fluvio
