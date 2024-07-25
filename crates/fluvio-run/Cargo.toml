@@ -21,6 +21,7 @@ doc = false
 default = ["spu_smartengine"]
 spu_smartengine = ["fluvio-spu/smartengine"]
 rustls = ["fluvio-future/rust_tls"]
+telemetry = []
 
 [dependencies]
 clap = { workspace = true, features = ["std", "derive", "help", "usage", "error-context"]}

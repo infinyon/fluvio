@@ -20,8 +20,10 @@ admin = ["fluvio-sc-schema/use_serde"]
 smartengine = ["fluvio-smartengine"]
 openssl = ["fluvio-future/openssl_tls"]
 rustls = ["fluvio-future/rust_tls"]
-unstable = []
 compress = ["fluvio-compression/compress", "fluvio-protocol/compress"]
+nightly = []
+unstable = []
+stats = []
 
 [dependencies]
 async-channel = { workspace = true }
