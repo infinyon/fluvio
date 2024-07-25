@@ -130,7 +130,7 @@ impl Cargo {
         if !self.extra_arguments.is_empty() {
             cargo.args(&self.extra_arguments);
         }
-        
+
         Ok(cargo)
     }
 }
