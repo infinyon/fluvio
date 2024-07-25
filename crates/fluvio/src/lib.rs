@@ -1,6 +1,6 @@
 #![cfg_attr(
     feature = "nightly",
-    doc(include = "../../../website/kubernetes/INSTALL.md")
+    doc = include_str!("../../../DEVELOPER.md")
 )]
 
 #[doc = include_str!("../README.md")]

@@ -31,9 +31,8 @@ use crate::spu::SpuSocketPool;
 use crate::FluvioError;
 use crate::metrics::ClientMetrics;
 use crate::producer::accumulator::{RecordAccumulator, PushRecord};
+
 pub use crate::producer::partitioning::{Partitioner, PartitionerConfig};
-#[cfg(feature = "stats")]
-use crate::stats::{ClientStats, ClientStatsDataCollect, metrics::ClientStatsDataFrame};
 
 use self::accumulator::BatchEvents;
 use self::accumulator::BatchHandler;
@@ -551,16 +550,6 @@ where
     /// Return a shared instance of `ClientMetrics`
     pub fn metrics(&self) -> Arc<ClientMetrics> {
         self.metrics.clone()
-    }
-
-    #[cfg(feature = "stats")]
-    /// Return a `ClientStatsDataFrame` to represent the current recorded client stats
-    pub fn stats(&self) -> Option<ClientStatsDataFrame> {
-        if self.inner.client_stats.stats_collect() != ClientStatsDataCollect::None {
-            Some(self.inner.client_stats.get_dataframe())
-        } else {
-            None
-        }
     }
 }
 
