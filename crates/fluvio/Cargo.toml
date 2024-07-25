@@ -23,7 +23,6 @@ rustls = ["fluvio-future/rust_tls"]
 compress = ["fluvio-compression/compress", "fluvio-protocol/compress"]
 nightly = []
 unstable = []
-stats = []
 
 [dependencies]
 async-channel = { workspace = true }

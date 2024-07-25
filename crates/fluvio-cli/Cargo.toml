@@ -35,7 +35,6 @@ k8s = [
 ]
 smartengine = ["fluvio-smartengine/default"]
 producer-file-io = ["fluvio-cli-common/file-records"]
-stats = []
 
 [dependencies]
 async-channel = { workspace = true }
