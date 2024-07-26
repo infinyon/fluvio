@@ -2303,7 +2303,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.23.0"
+version = "0.23.1"
 dependencies = [
  "anyhow",
  "async-channel 1.9.0",
@@ -2668,7 +2668,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-controlplane-metadata"
-version = "0.28.3"
+version = "0.28.4"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3006,7 +3006,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartmodule"
-version = "0.7.3"
+version = "0.7.4"
 dependencies = [
  "criterion",
  "eyre",
@@ -3155,7 +3155,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-stream-dispatcher"
-version = "0.13.3"
+version = "0.13.4"
 dependencies = [
  "anyhow",
  "async-channel 1.9.0",
@@ -3180,7 +3180,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-stream-model"
-version = "0.11.3"
+version = "0.11.4"
 dependencies = [
  "async-lock 3.4.0",
  "event-listener 5.3.1",
@@ -4576,9 +4576,9 @@ dependencies = [
 
 [[package]]
 name = "k8-client"
-version = "13.0.0"
+version = "13.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7ca6b993fbf01b2f00bdc53697e588755ef8d945027eed0680957bb7a594f820"
+checksum = "ca8f69e3bf7449d83cdf385a974ab91113cc399248fb8e7a811f3067c04a7fad"
 dependencies = [
  "anyhow",
  "async-channel 2.3.1",
@@ -4633,9 +4633,9 @@ dependencies = [
 
 [[package]]
 name = "k8-metadata-client"
-version = "7.0.0"
+version = "7.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "deae805435efcaf6bead5801c7c6170ebce24ec6c3b534d601a9b5b040139413"
+checksum = "9e17c8d86c67c0237653cbd597db61ad711da782c25a18e151c0ee5fece74e54"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4645,14 +4645,15 @@ dependencies = [
  "pin-utils",
  "serde",
  "serde_json",
+ "serde_qs",
  "tracing",
 ]
 
 [[package]]
 name = "k8-types"
-version = "0.8.6"
+version = "0.8.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fd8f33fe5d7008ed216d7d808ef3e1ccc6728fd2af2186d76f9616beddf4f95c"
+checksum = "5b1996eb39fe3991c64d32262261d3a37a8a43fcf7bc3a5456ab399f02a50114"
 dependencies = [
  "serde",
  "serde_json",

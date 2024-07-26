@@ -1,6 +1,3 @@
-#[cfg(feature = "stats")]
-mod stats;
-
 pub use cmd::ProduceOpt;
 
 mod cmd {
@@ -45,9 +42,6 @@ mod cmd {
     use crate::client::smartmodule_invocation::create_smartmodule_from_path;
     use crate::CliError;
     use fluvio_smartengine::transformation::TransformationConfig;
-
-    #[cfg(feature = "stats")]
-    use super::stats::*;
 
     // -----------------------------------
     // CLI Options
@@ -173,32 +167,6 @@ mod cmd {
         /// E.g. fluvio produce topic-name --transforms-line='{"uses":"infinyon/jolt@0.1.0","with":{"spec":"[{\"operation\":\"default\",\"spec\":{\"source\":\"test\"}}]"}}'
         #[arg(long, conflicts_with_all = &["smartmodule_group", "transforms"], alias = "transform")]
         pub transforms_line: Vec<String>,
-        /*
-        #[cfg(feature = "stats")]
-        /// Experimental: Collect basic producer session statistics and print in stats bar
-        #[arg(long)]
-        pub stats: bool,
-
-        #[cfg(feature = "stats")]
-        /// Experimental: Collect all producer session statistics and print in stats bar (Implies --stats)
-        #[arg(long)]
-        pub stats_plus: bool,
-
-        #[cfg(feature = "stats")]
-        /// Experimental: Save producer session stats to file. The resulting file formatted for spreadsheet, as comma-separated values
-        #[arg(long)]
-        pub stats_path: Option<PathBuf>,
-
-        #[cfg(feature = "stats")]
-        /// Experimental: Don't display stats bar when using `--stats` or `--stats-plus`. Use with `--stats-path`.
-        #[arg(long)]
-        pub no_stats_bar: bool,
-
-        #[cfg(feature = "stats")]
-        /// Experimental: Only print the stats summary. Implies `--stats` and `--no-stats-bar`
-        #[arg(long)]
-        pub stats_summary: bool,
-        */
     }
 
     fn validate_key_separator(separator: &str) -> std::result::Result<String, String> {
@@ -251,16 +219,6 @@ mod cmd {
                 config_builder
             };
 
-            #[cfg(feature = "stats")]
-            // Stats
-            let config_builder = match (self.stats, self.stats_summary, self.stats_plus) {
-                (_, _, true) => config_builder.stats_collect(ClientStatsDataCollect::All),
-                (true, _, false) | (_, true, false) => {
-                    config_builder.stats_collect(ClientStatsDataCollect::Data)
-                }
-                _ => config_builder,
-            };
-
             // Delivery Semantic
             if self.delivery_semantic == DeliverySemantic::AtMostOnce && self.isolation.is_some() {
                 warn!("Isolation is ignored for AtMostOnce delivery semantic");
@@ -285,59 +243,19 @@ mod cmd {
                     .await?,
             );
 
-            #[cfg(feature = "stats")]
-            let maybe_stats_bar = if io::stdout().is_tty() {
-                if self.is_stats_collect() {
-                    let stats_bar = if self.is_print_live_stats() {
-                        let s = indicatif::ProgressBar::with_draw_target(
-                            Some(100),
-                            indicatif::ProgressDrawTarget::stderr(),
-                        );
-                        s.set_style(indicatif::ProgressStyle::default_bar().template("{msg}")?);
-                        Some(s)
-                    } else {
-                        None
-                    };
-
-                    // Handle ctrl+c to print summary stats
-                    init_ctrlc(producer.clone(), stats_bar.clone(), self.stats_summary).await?;
-
-                    stats_bar
-                } else {
-                    None
-                }
-            } else {
-                // No tty
-                None
-            };
-
             #[cfg(feature = "producer-file-io")]
             if self.raw {
                 self.process_raw_file(&producer).await?;
             } else {
-                // Read input line-by-line and send as individual records
-                #[cfg(feature = "stats")]
-                self.produce_lines(producer.clone(), maybe_stats_bar.as_ref())
-                    .await?;
-                #[cfg(not(feature = "stats"))]
                 self.produce_lines(producer.clone()).await?;
             };
 
             #[cfg(not(feature = "producer-file-io"))]
             {
-                #[cfg(feature = "stats")]
-                self.produce_lines(producer.clone(), maybe_stats_bar.as_ref())
-                    .await?;
-                #[cfg(not(feature = "stats"))]
                 self.produce_lines(producer.clone()).await?;
             }
 
             producer.flush().await?;
-
-            #[cfg(feature = "stats")]
-            if self.is_stats_collect() {
-                producer_summary(&producer, maybe_stats_bar.as_ref(), self.stats_summary).await;
-            }
 
             if self.interactive_mode() {
                 print_cli_ok!();
@@ -384,11 +302,6 @@ mod cmd {
                 produce_output.wait().await?;
             }
 
-            #[cfg(feature = "stats")]
-            if self.is_stats_collect() && self.is_print_live_stats() {
-                self.update_stats_bar(maybe_stats_bar.as_ref(), &producer, "");
-            }
-
             Ok(())
         }
 
@@ -402,28 +315,7 @@ mod cmd {
             }
         }
 
-        async fn produce_lines(
-            &self,
-            producer: Arc<TopicProducerPool>,
-            #[cfg(feature = "stats")] maybe_stats_bar: Option<&ProgressBar>,
-        ) -> Result<()> {
-            #[cfg(feature = "stats")]
-            // If stats file
-            let mut maybe_stats_file = if self.is_stats_collect() {
-                if let Some(stats_path) = &self.stats_path {
-                    let stats_file = start_csv_report(stats_path, &producer).await?;
-                    Some(stats_file)
-                } else {
-                    None
-                }
-            } else {
-                None
-            };
-
-            #[cfg(feature = "stats")]
-            // Avoid writing duplicate data to disk
-            let mut stats_dataframe_check = 0;
-
+        async fn produce_lines(&self, producer: Arc<TopicProducerPool>) -> Result<()> {
             #[cfg(feature = "producer-file-io")]
             if let Some(path) = &self.file {
                 let reader = BufReader::new(File::open(path)?);
@@ -433,20 +325,6 @@ mod cmd {
 
                     if let Some(produce_output) = produce_output {
                         produce_outputs.push(produce_output);
-                    }
-
-                    #[cfg(feature = "stats")]
-                    if self.is_stats_collect() {
-                        if self.is_print_live_stats() {
-                            self.update_stats_bar(maybe_stats_bar, &producer, &line);
-                        }
-
-                        stats_dataframe_check = write_csv_dataframe(
-                            &producer,
-                            stats_dataframe_check,
-                            maybe_stats_file.as_mut(),
-                        )
-                        .await?;
                     }
                 }
 
@@ -468,11 +346,6 @@ mod cmd {
             #[cfg(not(feature = "producer-file-io"))]
             self.producer_stdin(&producer).await?;
 
-            #[cfg(feature = "stats")]
-            if let Some(file) = maybe_stats_file.as_mut() {
-                file.flush()?;
-            }
-
             Ok(())
         }
 
@@ -492,26 +365,7 @@ mod cmd {
                     }
                 }
 
-                #[cfg(feature = "stats")]
-                if self.is_stats_collect() {
-                    if self.is_print_live_stats() {
-                        self.update_stats_bar(maybe_stats_bar, &producer, &line);
-                    }
-
-                    stats_dataframe_check = write_csv_dataframe(
-                        &producer,
-                        stats_dataframe_check,
-                        maybe_stats_file.as_mut(),
-                    )
-                    .await?;
-                }
-
                 if self.interactive_mode() {
-                    #[cfg(feature = "stats")]
-                    if let Some(file) = maybe_stats_file.as_mut() {
-                        file.flush()?;
-                    }
-
                     print_cli_ok!();
                     eprint!("> ");
                 }
@@ -573,35 +427,6 @@ mod cmd {
             atty::is(atty::Stream::Stdin)
         }
 
-        #[cfg(feature = "stats")]
-        fn is_stats_collect(&self) -> bool {
-            self.stats || self.stats_plus || self.stats_summary
-        }
-
-        #[cfg(feature = "stats")]
-        fn is_print_live_stats(&self) -> bool {
-            !self.no_stats_bar && !self.stats_summary
-        }
-
-        #[cfg(feature = "stats")]
-        fn update_stats_bar(
-            &self,
-            maybe_stats_bar: Option<&ProgressBar>,
-            producer: &Arc<TopicProducerPool>,
-            line: &str,
-        ) {
-            if self.is_print_live_stats() {
-                if let (Some(stats_bar), Some(producer_stats)) = (maybe_stats_bar, producer.stats())
-                {
-                    stats_bar.set_message(format_current_stats(producer_stats));
-
-                    if self.interactive_mode() {
-                        stats_bar.println(line);
-                    }
-                }
-            }
-        }
-
         pub fn metadata() -> FluvioExtensionMetadata {
             FluvioExtensionMetadata {
                 title: "produce".into(),
@@ -652,31 +477,5 @@ mod cmd {
 
             Ok(Vec::new())
         }
-    }
-
-    #[cfg(feature = "stats")]
-    /// Initialize Ctrl-C event handler to print session summary when we are collecting stats
-    async fn init_ctrlc(
-        producer: Arc<TopicProducerPool>,
-        maybe_stats_bar: Option<ProgressBar>,
-        force_print_summary: bool,
-    ) -> Result<()> {
-        let result = ctrlc::set_handler(move || {
-            fluvio_future::task::run_block_on(async {
-                producer_summary(&producer, maybe_stats_bar.as_ref(), force_print_summary).await;
-            });
-
-            debug!("detected control c, setting end");
-            std::process::exit(0);
-        });
-
-        if let Err(err) = result {
-            return Err(IoError::new(
-                ErrorKind::InvalidData,
-                format!("CTRL-C handler can't be initialized {}", err),
-            )
-            .into());
-        }
-        Ok(())
     }
 }

@@ -125,7 +125,7 @@ topic "echo-test" deleted
 ## Learn More
 
 - [Read on tutorials][Tutorials] to get the most from Fluvio and InfinyOn Cloud
-to scale your streaming solution.
+  to scale your streaming solution.
 
 - You can use Fluvio to send or receive records from different sources using [Connectors][Connectors].
 

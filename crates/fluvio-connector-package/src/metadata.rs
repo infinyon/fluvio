@@ -300,7 +300,7 @@ fn validate_schema_object(kind: &SchemaKind, value: &serde_yaml::Value) -> anyho
         for required_prop in required {
             match (
                 properties.get(required_prop),
-                map.get(&serde_yaml::Value::String(required_prop.clone())),
+                map.get(serde_yaml::Value::String(required_prop.clone())),
             ) {
                 (None, _) => anyhow::bail!("required property is missing in the config schema"),
                 (Some(ReferenceOr::Item(present_schema)), Some(present)) => {
