@@ -157,8 +157,8 @@ pub type MaybeVersion = Option<PackageVersion>;
 /// formatting and parsing rules.
 ///
 /// 1) A `PackageId<WithVersion>` represents a fully-qualified package
-/// name that also refers to a specific version of the package. It is
-/// rendered (and parsed) as a string in the following form:
+///    name that also refers to a specific version of the package. It is
+///    rendered (and parsed) as a string in the following form:
 ///
 /// ```text
 /// <registry>/<group>/<name>:<version>
@@ -174,11 +174,11 @@ pub type MaybeVersion = Option<PackageVersion>;
 /// embedded in it, which can be accessed via `.version()`.
 ///
 /// 2) A `PackageId` (i.e. `PackageId<MaybeVersion>`) might or might not contain a
-/// version, and will parse a package string that does OR does not have a version
-/// in it. This is the type you should use if you don't need a version or if you
-/// want to do something different based on whether or not a version is given. An
-/// example of this might be installing a specific version of a package if a
-/// version is given, or defaulting to the latest version if not given.
+///    version, and will parse a package string that does OR does not have a version
+///    in it. This is the type you should use if you don't need a version or if you
+///    want to do something different based on whether or not a version is given. An
+///    example of this might be installing a specific version of a package if a
+///    version is given, or defaulting to the latest version if not given.
 ///
 /// Valid forms that will parse into a `PackageId` include:
 ///
