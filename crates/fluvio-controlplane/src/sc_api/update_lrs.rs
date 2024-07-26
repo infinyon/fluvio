@@ -63,7 +63,7 @@ pub struct LrsRequest {
     pub leader: ReplicaStatus,
     pub replicas: Vec<ReplicaStatus>,
     pub size: i64,
-    #[fluvio(min_version = 15)]
+    #[fluvio(min_version = 1)]
     pub base_offset: i64,
 }
 
