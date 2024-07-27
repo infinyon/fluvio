@@ -233,6 +233,7 @@ where
                 lrs_req.replicas,
                 lrs_req.size,
                 PartitionResolution::Online,
+                lrs_req.base_offset,
             );
             current_status.merge(new_status);
 
