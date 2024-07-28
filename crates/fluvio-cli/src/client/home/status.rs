@@ -24,16 +24,18 @@ impl StatusOpt {
         let list = admin.all::<MirrorSpec>().await?;
         let now = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?;
 
-        let outlist: Vec<(String, String, String, String)> = list
+        let outlist: Vec<(String, String, String, String, String, String)> = list
             .into_iter()
             .filter_map(|item| {
                 match item.spec.mirror_type {
                     MirrorType::Home(home) => {
                         Some((
-                            home.id.to_string(),        // Source ID
-                            home.public_endpoint,       // Route
-                            item.status.to_string(),    // Status
-                            item.status.last_seen(now), // Last-Seen
+                            home.id.to_string(),                 // Source ID
+                            home.public_endpoint,                // Route
+                            item.status.pairing_sc.to_string(),  // SC Status
+                            item.status.pairing_spu.to_string(), // SPU Status
+                            item.status.last_seen(now),          // Last-Seen
+                            item.status.pair_errors(),           // Errors
                         ))
                     }
                     _ => None,
@@ -60,7 +62,7 @@ mod output {
     use fluvio_extension_common::output::TableOutputHandler;
     use fluvio_extension_common::t_println;
 
-    type ListVec = Vec<(String, String, String, String)>;
+    type ListVec = Vec<(String, String, String, String, String, String)>;
 
     #[derive(Serialize)]
     struct TableList(ListVec);
@@ -92,7 +94,17 @@ mod output {
     impl TableOutputHandler for TableList {
         /// table header implementation
         fn header(&self) -> Row {
-            Row::from(["HOME", "ROUTE", "STATUS", "LAST SEEN"])
+            Row::from(
+                [
+                    "HOME",
+                    "ROUTE",
+                    "SC STATUS",
+                    "SPU STATUS",
+                    "LAST SEEN",
+                    "ERRORS",
+                ]
+                .iter(),
+            )
         }
 
         /// return errors in string format
@@ -110,6 +122,8 @@ mod output {
                         Cell::new(&e.1).set_alignment(CellAlignment::Left),
                         Cell::new(&e.2).set_alignment(CellAlignment::Left),
                         Cell::new(&e.3).set_alignment(CellAlignment::Left),
+                        Cell::new(&e.4).set_alignment(CellAlignment::Left),
+                        Cell::new(&e.5).set_alignment(CellAlignment::Left),
                     ])
                 })
                 .collect()

@@ -3104,7 +3104,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-spu-schema"
-version = "0.15.0"
+version = "0.15.1"
 dependencies = [
  "bytes",
  "derive_builder",

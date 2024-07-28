@@ -1,13 +1,14 @@
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 use std::{fmt, sync::Arc};
 use std::sync::atomic::AtomicU64;
 
+use fluvio_controlplane::sc_api::update_mirror::MirrorStatRequest;
 use tokio::select;
 use tracing::{debug, error, instrument, warn};
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 
 use fluvio_auth::{AuthContext, InstanceAction};
-use fluvio_controlplane_metadata::mirror::MirrorType;
+use fluvio_controlplane_metadata::mirror::{MirrorPairStatus, MirrorStatus, MirrorType};
 use fluvio_controlplane_metadata::extended::ObjectType;
 use fluvio_future::timer::sleep;
 use fluvio_protocol::api::RequestMessage;
@@ -15,6 +16,7 @@ use fluvio_spu_schema::server::mirror::StartMirrorRequest;
 use futures_util::StreamExt;
 use fluvio_socket::{ExclusiveFlvSink, FluvioStream};
 
+use crate::control_plane::SharedMirrorStatusUpdate;
 use crate::core::DefaultSharedGlobalContext;
 use crate::mirroring::remote::api_key::MirrorRemoteApiEnum;
 use crate::mirroring::remote::remote_api::RemoteMirrorRequest;
@@ -52,6 +54,8 @@ pub(crate) struct MirrorHomeHandler {
     metrics: Arc<MirrorRequestMetrics>,
     leader: SharedFileLeaderState,
     ctx: DefaultSharedGlobalContext,
+    status_update: SharedMirrorStatusUpdate,
+    remote_cluster_id: String,
 }
 
 impl fmt::Debug for MirrorHomeHandler {
@@ -68,25 +72,10 @@ impl MirrorHomeHandler {
         auth_ctx: &SpuAuthServiceContext<AC>,
         sink: ExclusiveFlvSink,
         stream: FluvioStream,
-    ) {
+    ) -> Result<()> {
+        let mirror_status_update = auth_ctx.global_ctx.mirror_status_update_owned();
         // authorization check
-        if let Ok(authorized) = auth_ctx
-            .auth
-            .allow_instance_action(
-                ObjectType::Mirror,
-                InstanceAction::Update,
-                &req_msg.request.remote_cluster_id,
-            )
-            .await
-        {
-            if !authorized {
-                warn!(
-                    "identity mismatch for remote_id: {}",
-                    req_msg.request.remote_cluster_id
-                );
-                return;
-            }
-        }
+        MirrorHomeHandler::authorize(auth_ctx, &req_msg, &mirror_status_update).await?;
 
         // check if remote cluster exists
         let mirrors = auth_ctx.global_ctx.mirrors_localstore().all_values();
@@ -102,13 +91,12 @@ impl MirrorHomeHandler {
                 "remote cluster not found: {}",
                 req_msg.request.remote_cluster_id
             );
-            return;
+            return Err(anyhow!("remote cluster not found"));
         }
 
         debug!("handling mirror request: {:#?}", req_msg);
         let remote_replica = req_msg.request.remote_replica;
         let remote_cluster_id = req_msg.request.remote_cluster_id;
-        let _access_key = req_msg.request.access_key;
 
         if let Some(leader) = auth_ctx
             .global_ctx
@@ -124,17 +112,65 @@ impl MirrorHomeHandler {
                 metrics: metrics.clone(),
                 leader,
                 ctx: auth_ctx.global_ctx.clone(),
+                status_update: mirror_status_update.clone(),
+                remote_cluster_id: remote_cluster_id.clone(),
             };
 
             if let Err(err) = handler.inner_respond(sink, stream).await {
+                MirrorHomeHandler::update_remote_status(
+                    &mirror_status_update,
+                    remote_cluster_id.clone(),
+                    MirrorPairStatus::Failed(err.to_string()),
+                )
+                .await?;
                 error!("error handling mirror request: {:#?}", err);
+                return Err(err);
             }
+
+            Ok(())
         } else {
             warn!(
                 remote_replica,
                 remote_cluster_id, "no leader replica found for this mirror request"
             );
+            Err(anyhow!("no leader replica found for this mirror request"))
         }
+    }
+
+    async fn authorize<AC: AuthContext>(
+        auth_ctx: &SpuAuthServiceContext<AC>,
+        req_msg: &RequestMessage<StartMirrorRequest>,
+        status_update: &SharedMirrorStatusUpdate,
+    ) -> Result<()> {
+        if let Ok(authorized) = auth_ctx
+            .auth
+            .allow_instance_action(
+                ObjectType::Mirror,
+                InstanceAction::Update,
+                &req_msg.request.remote_cluster_id,
+            )
+            .await
+        {
+            if !authorized {
+                warn!(
+                    "identity mismatch for remote_id: {}",
+                    req_msg.request.remote_cluster_id
+                );
+
+                let now = SystemTime::now()
+                    .duration_since(SystemTime::UNIX_EPOCH)
+                    .unwrap()
+                    .as_millis();
+
+                let status = MirrorStatus::new_by_spu(MirrorPairStatus::Unauthorized, now as u64);
+                let req = MirrorStatRequest::new(req_msg.request.remote_cluster_id.clone(), status);
+                status_update.send(req).await;
+
+                return Err(anyhow!("unauthorized"));
+            }
+        }
+
+        Ok(())
     }
 
     /// main respond handler
@@ -160,11 +196,12 @@ impl MirrorHomeHandler {
                 "waiting for mirror request"
             );
 
+            self.update_status(MirrorPairStatus::Succesful).await?;
+
             select! {
                 _ = &mut timer => {
                     debug!("timer expired, sending reconciliation");
                     self.send_offsets_to_remote(&mut sink).await?;
-                    timer = sleep(Duration::from_secs(MIRROR_RECONCILIATION_INTERVAL_SEC));
                 },
                 remote_msg = api_stream.next() => {
                     if let Some(req_msg_res) = remote_msg {
@@ -177,6 +214,7 @@ impl MirrorHomeHandler {
                          }
 
                     } else {
+                        self.update_status(MirrorPairStatus::Failed("closed connection".to_owned())).await?;
                         debug!("leader socket has terminated");
                         break;
                     }
@@ -187,6 +225,11 @@ impl MirrorHomeHandler {
         }
 
         Ok(())
+    }
+
+    async fn update_status(&self, status: MirrorPairStatus) -> Result<()> {
+        Self::update_remote_status(&self.status_update, self.remote_cluster_id.clone(), status)
+            .await
     }
 
     // send mirror home's offset to remote so it can synchronize
@@ -217,5 +260,22 @@ impl MirrorHomeHandler {
             .await?;
         debug!(append_flag, "leader appended");
         self.send_offsets_to_remote(sink).await
+    }
+
+    async fn update_remote_status(
+        status_update: &SharedMirrorStatusUpdate,
+        remote_id: String,
+        status: MirrorPairStatus,
+    ) -> Result<()> {
+        let now = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)?
+            .as_millis();
+
+        let new_status = MirrorStatus::new_by_spu(status, now as u64);
+        status_update
+            .send(MirrorStatRequest::new(remote_id, new_status))
+            .await;
+
+        Ok(())
     }
 }

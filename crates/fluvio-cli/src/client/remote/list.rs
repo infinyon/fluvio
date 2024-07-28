@@ -24,13 +24,19 @@ impl ListOpt {
         let list = admin.all::<MirrorSpec>().await?;
         let now = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?;
 
-        let outlist: Vec<(String, String, String)> = list
+        let outlist: Vec<(String, String, String, String, String)> = list
             .into_iter()
             .filter_map(|item| match item.spec.mirror_type {
                 MirrorType::Remote(r) => {
                     let status = item.status.clone();
                     let last_seen = item.status.last_seen(now);
-                    Some((r.id, status.to_string(), last_seen))
+                    Some((
+                        r.id,
+                        status.pairing_sc.to_string(),
+                        status.pairing_spu.to_string(),
+                        last_seen,
+                        status.pair_errors(),
+                    ))
                 }
                 _ => None,
             })
@@ -55,7 +61,7 @@ mod output {
     use fluvio_extension_common::output::TableOutputHandler;
     use fluvio_extension_common::t_println;
 
-    type ListVec = Vec<(String, String, String)>;
+    type ListVec = Vec<(String, String, String, String, String)>;
 
     #[derive(Serialize)]
     struct TableList(ListVec);
@@ -87,7 +93,7 @@ mod output {
     impl TableOutputHandler for TableList {
         /// table header implementation
         fn header(&self) -> Row {
-            Row::from(["REMOTE", "STATUS", "LAST SEEN"])
+            Row::from(["REMOTE", "SC STATUS", "SPU STATUS", "LAST SEEN", "ERRORS"])
         }
 
         /// return errors in string format
@@ -104,6 +110,8 @@ mod output {
                         Cell::new(&e.0).set_alignment(CellAlignment::Left),
                         Cell::new(&e.1).set_alignment(CellAlignment::Left),
                         Cell::new(&e.2).set_alignment(CellAlignment::Left),
+                        Cell::new(&e.3).set_alignment(CellAlignment::Left),
+                        Cell::new(&e.4).set_alignment(CellAlignment::Left),
                     ])
                 })
                 .collect()
