@@ -75,7 +75,6 @@ smdk_via_stdin() {
     
 
     # Verify if target exists in the parent folder
-    echo $(pwd)
     [ -d "../target" ]
     
     # Clean
