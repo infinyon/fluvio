@@ -137,6 +137,8 @@ pub struct CustomSpuSpec {
     pub private_endpoint: Endpoint,
     #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "Option::is_none"))]
     pub rack: Option<String>,
+    #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "Option::is_none"))]
+    pub public_endpoint_local: Option<Endpoint>,
 }
 
 impl CustomSpuSpec {
@@ -151,7 +153,7 @@ impl From<CustomSpuSpec> for SpuSpec {
             private_endpoint: spec.private_endpoint,
             rack: spec.rack,
             spu_type: SpuType::Custom,
-            public_endpoint_local: Default::default(),
+            public_endpoint_local: spec.public_endpoint_local,
         }
     }
 }
@@ -162,6 +164,7 @@ impl From<SpuSpec> for CustomSpuSpec {
             SpuType::Custom => Self {
                 id: spu.id,
                 public_endpoint: spu.public_endpoint,
+                public_endpoint_local: spu.public_endpoint_local,
                 private_endpoint: spu.private_endpoint,
                 rack: spu.rack,
             },

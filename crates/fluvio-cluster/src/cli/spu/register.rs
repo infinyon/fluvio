@@ -11,6 +11,7 @@ use anyhow::Result;
 
 use fluvio::Fluvio;
 use fluvio::metadata::customspu::CustomSpuSpec;
+use fluvio_controlplane_metadata::spu::Endpoint;
 use flv_util::socket_helpers::ServerAddress;
 
 #[derive(Debug, Parser)]
@@ -30,6 +31,10 @@ pub struct RegisterCustomSpuOpt {
     /// Public server::port
     #[arg(short = 'p', long = "public-server", value_name = "host:port")]
     public_server: String,
+
+    /// Public server::port
+    #[arg(short = 'l', long = "public-server-local", value_name = "host:port")]
+    public_server_local: Option<String>,
 
     /// Private server::port
     #[arg(short = 'v', long = "private-server", value_name = "host:port")]
@@ -51,6 +56,10 @@ impl RegisterCustomSpuOpt {
             CustomSpuSpec {
                 id: self.id,
                 public_endpoint: ServerAddress::try_from(self.public_server)?.into(),
+                public_endpoint_local: self
+                    .public_server_local
+                    .and_then(|l| ServerAddress::try_from(l).ok())
+                    .map(Endpoint::from),
                 private_endpoint: ServerAddress::try_from(self.private_server)?.into(),
                 rack: self.rack,
             },
