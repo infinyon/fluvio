@@ -429,7 +429,7 @@ mod tests {
         assert!(value.topics.is_empty());
         let sm = match value.smartmodules.first() {
             Some(wasm) => wasm,
-            _ => panic!("should have smartstreeam payload"),
+            _ => panic!("should have smartmodule payload"),
         };
         assert!(sm.params.lookback().is_none());
         let wasm = match &sm.wasm {
@@ -533,7 +533,7 @@ mod tests {
         assert!(value.topics.is_empty());
         let sm = match value.smartmodules.first() {
             Some(wasm) => wasm,
-            _ => panic!("should have smartstreeam payload"),
+            _ => panic!("should have smartmodule payload"),
         };
         assert_eq!(sm.params.lookback(), Some(&Lookback::last(1)));
         let wasm = match &sm.wasm {
@@ -571,7 +571,7 @@ mod tests {
         assert!(value.topics.is_empty());
         let sm = match value.smartmodules.first() {
             Some(wasm) => wasm,
-            _ => panic!("should have smartstreeam payload"),
+            _ => panic!("should have smartmodule payload"),
         };
         assert_eq!(sm.params.lookback(), Some(&Lookback::last(1)));
         let wasm = match &sm.wasm {

@@ -1,11 +1,12 @@
 use std::{collections::HashMap, path::Path};
 use std::io::{Error as IoError, ErrorKind as IoErrorKind};
-use fluvio_future::net::AsConnectionFd;
 
 use tracing::{debug, trace};
 use x509_parser::{certificate::X509Certificate, parse_x509_certificate};
 use async_trait::async_trait;
+use anyhow::{Context, Error};
 
+use fluvio_future::net::AsConnectionFd;
 use fluvio_future::{net::TcpStream, openssl::DefaultServerTlsStream};
 use fluvio_protocol::api::{RequestMessage, ResponseMessage};
 use flv_tls_proxy::authenticator::Authenticator;
@@ -16,7 +17,7 @@ use super::request::AuthRequest;
 struct ScopeBindings(HashMap<String, Vec<String>>);
 
 impl ScopeBindings {
-    pub fn load(scope_binding_file_path: &Path) -> Result<Self, IoError> {
+    pub fn load(scope_binding_file_path: &Path) -> Result<Self, Error> {
         let file = std::fs::read_to_string(scope_binding_file_path)?;
         let scope_bindings = Self(serde_json::from_str(&file)?);
         debug!("scope bindings loaded {:?}", scope_bindings);
@@ -76,40 +77,36 @@ impl X509Authenticator {
         Ok(response.success)
     }
 
-    fn principal_from_tls_stream(tls_stream: &DefaultServerTlsStream) -> Result<String, IoError> {
+    fn principal_from_tls_stream(tls_stream: &DefaultServerTlsStream) -> Result<String, Error> {
         trace!("tls_stream {:?}", tls_stream);
 
         let peer_certificate = tls_stream.peer_certificate();
 
         trace!("peer_certificate {:?}", peer_certificate);
 
-        let client_certificate = tls_stream.peer_certificate().ok_or(IoErrorKind::NotFound)?;
+        let client_certificate = tls_stream
+            .peer_certificate()
+            .ok_or(Error::msg("peer certificate not found"))?;
 
         trace!("client_certificate {:?}", tls_stream);
 
-        let principal = Self::principal_from_raw_certificate(
-            &client_certificate
-                .to_der()
-                .map_err(|err| err.into_io_error())?,
-        )?;
+        let principal = Self::principal_from_raw_certificate(&client_certificate.to_der()?)?;
 
         Ok(principal)
     }
 
-    pub fn principal_from_raw_certificate(certificate_bytes: &[u8]) -> Result<String, IoError> {
+    pub fn principal_from_raw_certificate(certificate_bytes: &[u8]) -> Result<String, Error> {
         parse_x509_certificate(certificate_bytes)
-            .map_err(|err| IoError::new(IoErrorKind::InvalidData, err))
+            .context("unable to parse x509 cert")
             .and_then(|(_, parsed_cert)| Self::common_name_from_parsed_certificate(parsed_cert))
     }
 
-    fn common_name_from_parsed_certificate(
-        certificate: X509Certificate,
-    ) -> Result<String, IoError> {
+    fn common_name_from_parsed_certificate(certificate: X509Certificate) -> Result<String, Error> {
         certificate
             .subject()
             .iter_common_name()
             .next()
-            .ok_or_else(|| IoErrorKind::NotFound.into())
+            .ok_or_else(|| Error::msg("CN not found"))
             .and_then(|cn_atv| {
                 cn_atv
                     .as_str()
@@ -118,7 +115,7 @@ impl X509Authenticator {
                         debug!("common_name from cert: {:?}", cn_string);
                         cn_string
                     })
-                    .map_err(|err| IoError::new(IoErrorKind::InvalidData, err))
+                    .context("Cert CN in incorrect format")
             })
     }
 }
@@ -130,7 +127,8 @@ impl Authenticator for X509Authenticator {
         incoming_tls_stream: &DefaultServerTlsStream,
         target_tcp_stream: &TcpStream,
     ) -> Result<bool, IoError> {
-        let principal = Self::principal_from_tls_stream(incoming_tls_stream)?;
+        let principal = Self::principal_from_tls_stream(incoming_tls_stream)
+            .map_err(|err| std::io::Error::new(std::io::ErrorKind::Other, err))?;
         let scopes = self.scope_bindings.get_scopes(&principal);
         let authorization_request = AuthRequest::new(principal, scopes);
         let success =

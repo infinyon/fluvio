@@ -17,7 +17,6 @@ use crate::Version;
 use super::ConsumerRecord;
 use super::Record;
 use super::Offset;
-use super::Size;
 
 const ATTR_SCHEMA_PRESENT: i16 = 0x10;
 const ATTR_COMPRESSION_CODEC_MASK: i16 = 0x07;
@@ -147,11 +146,6 @@ impl<R> Batch<R> {
         }
 
         self.last_offset_delta() as usize + 1
-    }
-    /// get last offset delta
-    #[deprecated(since = "0.9.2", note = "use last_offset_delta instead")]
-    pub fn get_last_offset_delta(&self) -> Size {
-        self.get_header().last_offset_delta as Size
     }
 
     pub fn last_offset_delta(&self) -> i32 {

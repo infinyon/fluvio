@@ -210,7 +210,7 @@ fn deploy_local(
     let metaconfig = ConnectorConfig::from_file(&config)
         .map_err(|e| anyhow!("Couldn't read config file {}: {e}", config.display()))?;
     let mut log_path = std::env::current_dir()?;
-    log_path.push(&metaconfig.name());
+    log_path.push(metaconfig.name());
     log_path.set_extension("log");
 
     let mut builder = Deployment::builder();
@@ -359,7 +359,7 @@ mod local_index {
 
     use anyhow::{anyhow, Result};
     use fluvio_connector_deployer::DeploymentResult;
-    use sysinfo::{SystemExt, Pid, PidExt, ProcessExt};
+    use sysinfo::Pid;
     use tracing::debug;
 
     const LOCAL_INDEX_FILE_NAME: &str = "fluvio_cdk_deploy_index.toml";

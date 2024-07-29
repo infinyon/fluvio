@@ -5,14 +5,14 @@ use std::sync::Arc;
 use std::task::{Context, Poll};
 use std::time::Duration;
 
-use async_lock::Mutex;
 use async_channel::Sender;
-use async_rwlock::RwLock;
+use async_lock::RwLock;
 use tracing::trace;
-
-use fluvio_future::sync::Condvar;
 use futures_util::future::{BoxFuture, Either, Shared};
 use futures_util::{FutureExt, ready};
+
+use fluvio_future::sync::Mutex;
+use fluvio_future::sync::Condvar;
 use fluvio_protocol::record::Batch;
 use fluvio_compression::Compression;
 use fluvio_protocol::record::Offset;

@@ -5,7 +5,7 @@ use std::{
 };
 
 use tracing::{warn, debug};
-use async_rwlock::RwLock;
+use async_lock::RwLock;
 
 use fluvio_protocol::record::ReplicaKey;
 use fluvio_types::{

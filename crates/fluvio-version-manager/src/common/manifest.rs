@@ -84,7 +84,13 @@ mod test {
     fn writes_manifest_as_json() {
         const WANT: &str = r#"{
   "channel": "stable",
-  "version": "0.8.0"
+  "version": "0.8.0",
+  "contents": [
+    {
+      "name": "fluvio",
+      "version": "0.11.4"
+    }
+  ]
 }"#;
         let tempdir = TempDir::new().unwrap();
         let version_manifest = VersionManifest::new(

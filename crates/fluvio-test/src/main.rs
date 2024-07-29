@@ -21,7 +21,7 @@ use fluvio_test_util::async_process;
 // This is important for `inventory` crate
 #[allow(unused_imports)]
 use fluvio_test::tests as _;
-use sysinfo::{System, SystemExt, get_current_pid, ProcessExt, Signal, Process, Pid};
+use sysinfo::{System, get_current_pid, Signal, Process, Pid};
 use tracing::debug;
 
 //const CI_FAIL_FLAG: &str = "/tmp/CI_FLUVIO_TEST_FAIL";

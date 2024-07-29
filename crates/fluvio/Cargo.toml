@@ -1,6 +1,6 @@
 [package]
 name = "fluvio"
-version = "0.22.4"
+version = "0.23.1"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -20,13 +20,13 @@ admin = ["fluvio-sc-schema/use_serde"]
 smartengine = ["fluvio-smartengine"]
 openssl = ["fluvio-future/openssl_tls"]
 rustls = ["fluvio-future/rust_tls"]
-unstable = []
 compress = ["fluvio-compression/compress", "fluvio-protocol/compress"]
+nightly = []
+unstable = []
 
 [dependencies]
 async-channel = { workspace = true }
 async-lock = { workspace = true }
-async-rwlock = { workspace = true }
 async-trait = { workspace = true }
 anyhow = { workspace = true }
 base64 = { workspace = true }
@@ -34,6 +34,7 @@ bytes = { workspace = true }
 cfg-if = { workspace = true }
 derive_builder = { workspace = true }
 event-listener = { workspace = true }
+futures-lite = { workspace = true }
 futures-util = { workspace = true }
 once_cell = { workspace = true }
 serde = { workspace = true, features = ['derive'] }

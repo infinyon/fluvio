@@ -44,6 +44,47 @@ smdk_via_stdin() {
 
 ### Using crates.io dependency for `fluvio-smartmodule`
 
+@test "Clean" {
+    LABEL=clean
+    SMDK_SM_TYPE=filter
+    PARAMS_FLAG=--no-params
+    SM_CRATE_PATH_FLAG=
+    SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+    SMDK_SM_PUBLIC=false
+    
+    cd $TEST_DIR
+    sed -i -e $'/members/a\\\n    "'$SM_PACKAGE_NAME'",' Cargo.toml
+
+    # Generate
+    run $SMDK_BIN generate \
+        $PARAMS_FLAG \
+        $SMDK_TEMPLATE_PATH_FLAG \
+        $SM_CRATE_PATH_FLAG \
+        $TESTING_GROUP_NAME_FLAG \
+        --sm-type $SMDK_SM_TYPE \
+        --sm-public $SMDK_SM_PUBLIC \
+        --silent \
+        $SM_PACKAGE_NAME
+    assert_success    
+
+    
+    # Build
+    cd $SM_PACKAGE_NAME
+    run $SMDK_BIN build
+    refute_output --partial "could not compile"
+    
+
+    # Verify if target exists in the parent folder
+    [ -d "../target" ]
+    
+    # Clean
+    run $SMDK_BIN clean
+    assert_success
+
+    # Verify if target was removed from the parent folder
+    [ ! -d "../target" ]    
+}
+
 @test "Package" {
     LABEL=package
     SMDK_SM_TYPE=filter

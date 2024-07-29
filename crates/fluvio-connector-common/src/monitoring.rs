@@ -1,10 +1,10 @@
 use std::{io::Error as IoError, sync::Arc};
 
-use async_net::unix::UnixListener;
 use futures_util::{AsyncWriteExt, StreamExt};
 
 use fluvio::metrics::ClientMetrics;
 use fluvio_future::task::spawn;
+use fluvio_future::net::unix::UnixListener;
 use tracing::{error, info, trace};
 use serde::Serialize;
 

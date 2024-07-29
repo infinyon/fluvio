@@ -114,9 +114,12 @@ const CLUSTER_LOOKUP_SEC: u64 = 5;
 /// This controller run on mirror remote.
 /// It's main responsbility is to synchronize mirror home from remote.
 /// Remote will always initiate connection to home.
+///
 /// The synchronization activites are trigger by 2 events.
+///
 /// 1. Leader offset change due to new records
 /// 2. Offset update event from home
+///
 /// Based on those events, controller will try update home with missing records.
 /// Home will send periodic update event even if it has fully caught up with events.
 pub(crate) struct MirrorRemoteToHomeController<S> {

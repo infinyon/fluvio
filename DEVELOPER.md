@@ -143,23 +143,7 @@ install Helm.
 
 #### Linker Pre-requisites
 
-- [LLVM v16](https://llvm.org)
 - [Zig](https://ziglang.org)
-
-**macOS**
-
-> [!NOTE]
-> You can skip LLVM if you are not building docker image.
-
-```bash
-$ brew install llvm@16
-$ ./actions/zig-install.sh
-$ export PATH="/opt/homebrew/opt/llvm@16/bin:$PATH"
-```
-
-**Ubuntu**:
-
-See https://apt.llvm.org for installing LLVM. LLVM up to 16 is confirmed to work.
 
 ```bash
 $ ./actions/zig-install.sh
@@ -586,7 +570,7 @@ $ RUST_LOG=fluvio=info flvd run sc --local
 
 ### Building and Running Fluvio Cluster from source code for running in Kubernete cluster
 
-The docker image requires first installing a cross compilation toolchain, along with other build dependencies mentioned such as `lld`.
+The docker image requires first installing a cross compilation toolchain, along with other build dependencies mentioned.
 
 **x86/64 (most computers)**
 

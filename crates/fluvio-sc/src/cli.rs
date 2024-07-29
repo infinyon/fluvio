@@ -10,11 +10,10 @@
 
 use std::path::Path;
 use std::process;
-use std::io::Error as IoError;
-use std::io::ErrorKind;
 use std::path::PathBuf;
 use std::convert::TryFrom;
 
+use anyhow::{anyhow, Result};
 use clap::Args;
 use tracing::info;
 use tracing::debug;
@@ -111,7 +110,7 @@ impl ScOpt {
     /// as sc configuration, 2nd part of tls configuration(proxy addr, tls config)
     /// 3rd part is path to read only metadata config
     #[allow(clippy::wrong_self_convention)]
-    fn as_sc_config(self) -> Result<(Config, Option<(String, TlsConfig)>), IoError> {
+    fn as_sc_config(self) -> Result<(Config, Option<(String, TlsConfig)>)> {
         let mut config = ScConfig::default();
 
         // apply our option
@@ -147,12 +146,10 @@ impl ScOpt {
         if tls.tls {
             let proxy_addr = config.public_endpoint.clone();
             debug!(proxy_addr, "tls proxy addr");
-            config.public_endpoint = tls.bind_non_tls_public.clone().ok_or_else(|| {
-                IoError::new(
-                    ErrorKind::NotFound,
-                    "non tls addr for public must be specified",
-                )
-            })?;
+            config.public_endpoint = tls
+                .bind_non_tls_public
+                .clone()
+                .ok_or_else(|| anyhow!("non tls addr for public must be specified"))?;
             info!("TLS UPDATING");
             let _ = tls
                 .secret_name
@@ -208,35 +205,32 @@ pub struct TlsConfig {
 }
 
 impl TlsConfig {
-    pub fn try_build_tls_acceptor(&self) -> Result<TlsAcceptor, IoError> {
+    pub fn try_build_tls_acceptor(&self) -> Result<TlsAcceptor> {
         let server_crt_path = self
             .server_cert
             .as_ref()
-            .ok_or_else(|| IoError::new(ErrorKind::NotFound, "missing server cert"))?;
+            .ok_or_else(|| anyhow!("missing server cert"))?;
         info!("using server crt: {}", server_crt_path);
         let server_key_path = self
             .server_key
             .as_ref()
-            .ok_or_else(|| IoError::new(ErrorKind::NotFound, "missing server key"))?;
+            .ok_or_else(|| anyhow!("missing server key"))?;
         info!("using server key: {}", server_key_path);
 
         let builder = (if self.enable_client_cert {
             let ca_path = self
                 .ca_cert
                 .as_ref()
-                .ok_or_else(|| IoError::new(ErrorKind::NotFound, "missing ca cert"))?;
+                .ok_or_else(|| anyhow!("missing ca cert"))?;
             info!("using client cert CA path: {}", ca_path);
-            TlsAcceptor::builder()
-                .map_err(|err| err.into_io_error())?
+            TlsAcceptor::builder()?
                 .with_ssl_verify_mode(SslVerifyMode::PEER)
-                .with_ca_from_pem_file(ca_path)
-                .map_err(|err| err.into_io_error())?
+                .with_ca_from_pem_file(ca_path)?
         } else {
             info!("using tls anonymous access");
-            TlsAcceptor::builder().map_err(|err| err.into_io_error())?
+            TlsAcceptor::builder()?
         })
-        .with_certifiate_and_key_from_pem_files(server_crt_path, server_key_path)
-        .map_err(|err| err.into_io_error())?;
+        .with_certifiate_and_key_from_pem_files(server_crt_path, server_key_path)?;
 
         Ok(builder.build())
     }

@@ -14,6 +14,7 @@ name = "fluvio_auth"
 path = "src/lib.rs"
 
 [dependencies]
+anyhow = { workspace = true }
 async-trait = { workspace = true }
 futures-util = { workspace = true  }
 serde = { workspace = true, features = ['derive'] }

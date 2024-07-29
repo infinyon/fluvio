@@ -1,4 +1,4 @@
-use k8_client::meta_client::MetadataClient as K8MetadataClient;
+use k8_client::meta_client::{ApplyOptions, MetadataClient as K8MetadataClient, PatchMergeType};
 
 use anyhow::{Result, anyhow};
 use futures_util::{stream::BoxStream, StreamExt};
@@ -312,6 +312,54 @@ impl<T: K8MetadataClient> MetadataClient<K8MetaItem> for T {
             Ok(changes)
         });
         mapped.boxed()
+    }
+
+    async fn patch_status<S>(
+        &self,
+        metadata: K8MetaItem,
+        status: S::Status,
+        namespace: &NameSpace,
+    ) -> Result<MetadataStoreObject<S, K8MetaItem>>
+    where
+        S: K8ExtendedSpec,
+    {
+        tracing::info!(
+            key = %metadata.name,
+            version = %metadata.resource_version,
+            "patch status begin",
+        );
+        tracing::info!(
+            "K8 Update Status: {} key: {} value: {:?}",
+            S::LABEL,
+            metadata.name,
+            status
+        );
+        tracing::info!("status update: {:#?}", status);
+
+        let k8_status: <S::K8Spec as K8Spec>::Status = S::convert_status_from_k8(status);
+        let patch = serde_json::json!({
+            "apiVersion": S::K8Spec::api_version(),
+            "kind": S::K8Spec::kind(),
+            "metadata": {
+                "name": metadata.name,
+                "namespace": metadata.namespace,
+            },
+            "status": k8_status
+        });
+        let k8_object = K8MetadataClient::patch_status(
+            self,
+            &metadata.as_input(),
+            &patch,
+            PatchMergeType::Apply(ApplyOptions {
+                force: true,
+                field_manager: Some(String::from("fluvio")),
+            }),
+        )
+        .await?;
+        let multi_namespace_context = matches!(namespace, NameSpace::All);
+
+        S::convert_from_k8(k8_object, multi_namespace_context)
+            .map_err(|e| anyhow!("{}, error  converting back: {e:#?}", S::LABEL))
     }
 }
 

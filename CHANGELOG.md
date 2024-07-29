@@ -2,7 +2,45 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
-## Platform Version 0.11.10 - UNRELEASED
+## Platform Version 0.11.11 - UNRELEASED
+
+## Platform Version 0.11.10 - 2024-07-22
+
+### Added
+
+* Generate command params ([#4026](https://github.com/infinyon/fluvio/issues/4026))
+* Add partition prd ([#4075](https://github.com/infinyon/fluvio/issues/4075))
+* Add update commands for public api requests ([#4076](https://github.com/infinyon/fluvio/issues/4076))
+* Add partitions ([#4065](https://github.com/infinyon/fluvio/issues/4065))
+* Add mirror remote ([#4097](https://github.com/infinyon/fluvio/issues/4097))
+
+### CI
+
+* `0.11.9` post-release ([#4060](https://github.com/infinyon/fluvio/issues/4060))
+* Update release checklist ([#4010](https://github.com/infinyon/fluvio/issues/4010))
+* Default to zigbuild for cross-compilation ([#4103](https://github.com/infinyon/fluvio/issues/4103))
+
+### Changed
+
+* Update to Rust `1.79.0` ([#4064](https://github.com/infinyon/fluvio/issues/4064))
+* Update `DEVELOPER.md` ([#4070](https://github.com/infinyon/fluvio/issues/4070))
+* Update bytes crate ([#4087](https://github.com/infinyon/fluvio/issues/4087))
+
+### Fixed
+
+* Provides context on fvm tests ([#4062](https://github.com/infinyon/fluvio/issues/4062))
+* Post-pone group ownership check on `generate` ([#4001](https://github.com/infinyon/fluvio/issues/4001))
+* Mirror apply description ([#4078](https://github.com/infinyon/fluvio/issues/4078))
+* Fix add partition not found ([#4080](https://github.com/infinyon/fluvio/issues/4080))
+* Spu connections on kubernetes ([#4083](https://github.com/infinyon/fluvio/issues/4083))
+* Delete topic partitions ([#4094](https://github.com/infinyon/fluvio/issues/4094))
+* Produce recognize new partitions ([#4090](https://github.com/infinyon/fluvio/issues/4090))
+* Load replica size ([#4104](https://github.com/infinyon/fluvio/issues/4104))
+
+### Other
+
+* Use `std::io::IsTerminal` over `atty` ([#4074](https://github.com/infinyon/fluvio/issues/4074))
+* Access local metadata without k8 flag ([#4092](https://github.com/infinyon/fluvio/issues/4092))
 
 ## Platform Version 0.11.9 - 2024-06-07
 

@@ -7,9 +7,9 @@ use std::hash::Hash;
 
 use tracing::trace;
 use tracing::{debug, error};
-use async_rwlock::RwLock;
-use async_rwlock::RwLockReadGuard;
-use async_rwlock::RwLockWriteGuard;
+use async_lock::RwLock;
+use async_lock::RwLockReadGuard;
+use async_lock::RwLockWriteGuard;
 
 use crate::core::{MetadataItem, Spec};
 
@@ -664,11 +664,11 @@ mod test_notify {
     use std::sync::atomic::{AtomicI64, AtomicBool};
     use std::sync::atomic::Ordering::SeqCst;
 
-    use async_std::task::JoinHandle;
     use tokio::select;
     use tracing::debug;
 
     use fluvio_future::task::spawn;
+    use fluvio_future::task::JoinHandle;
     use fluvio_future::timer::sleep;
 
     use crate::core::{Spec, MetadataItem};

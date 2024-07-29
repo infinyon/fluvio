@@ -66,6 +66,15 @@ pub trait MetadataClient<M: MetadataItem>: Send + Sync {
     ) -> BoxStream<'_, Result<Vec<LSUpdate<S, M>>>>
     where
         S: K8ExtendedSpec;
+
+    async fn patch_status<S>(
+        &self,
+        metadata: M,
+        status: S::Status,
+        namespace: &NameSpace,
+    ) -> Result<MetadataStoreObject<S, M>>
+    where
+        S: K8ExtendedSpec;
 }
 
 #[cfg(test)]
