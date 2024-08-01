@@ -7,6 +7,8 @@ use fluvio_extension_common::target::ClusterTarget;
 use fluvio_extension_common::{OutputFormat, Terminal};
 use fluvio_sc_schema::mirror::{MirrorSpec, MirrorType};
 
+use self::output::HomeStatusRow;
+
 use super::get_admin;
 
 #[derive(Debug, Parser)]
@@ -14,6 +16,7 @@ pub struct StatusOpt {
     #[clap(flatten)]
     output: OutputFormat,
 }
+
 impl StatusOpt {
     pub async fn execute<T: Terminal>(
         self,
@@ -24,19 +27,19 @@ impl StatusOpt {
         let list = admin.all::<MirrorSpec>().await?;
         let now = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?;
 
-        let outlist: Vec<(String, String, String, String, String, String)> = list
+        let outlist: Vec<HomeStatusRow> = list
             .into_iter()
             .filter_map(|item| {
                 match item.spec.mirror_type {
                     MirrorType::Home(home) => {
-                        Some((
-                            home.id.to_string(),                 // Source ID
-                            home.public_endpoint,                // Route
-                            item.status.pairing_sc.to_string(),  // SC Status
-                            item.status.pairing_spu.to_string(), // SPU Status
-                            item.status.last_seen(now),          // Last-Seen
-                            item.status.pair_errors(),           // Errors
-                        ))
+                        Some(HomeStatusRow {
+                            home: home.id.to_string(),                       // Source ID
+                            route: home.public_endpoint,                     // Route
+                            sc_status: item.status.pairing_sc.to_string(),   // SC Status
+                            spu_status: item.status.pairing_spu.to_string(), // SPU Status
+                            last_seen: item.status.last_seen(now),           // Last-Seen
+                            errors: item.status.pair_errors(),               // Errors
+                        })
                     }
                     _ => None,
                 }
@@ -53,7 +56,6 @@ mod output {
     //!
     use comfy_table::{Cell, Row};
     use comfy_table::CellAlignment;
-    use tracing::debug;
     use serde::Serialize;
     use anyhow::Result;
 
@@ -62,10 +64,18 @@ mod output {
     use fluvio_extension_common::output::TableOutputHandler;
     use fluvio_extension_common::t_println;
 
-    type ListVec = Vec<(String, String, String, String, String, String)>;
+    #[derive(Serialize)]
+    pub struct HomeStatusRow {
+        pub home: String,
+        pub route: String,
+        pub sc_status: String,
+        pub spu_status: String,
+        pub last_seen: String,
+        pub errors: String,
+    }
 
     #[derive(Serialize)]
-    struct TableList(ListVec);
+    struct TableList(Vec<HomeStatusRow>);
 
     // -----------------------------------
     // Format Output
@@ -73,11 +83,9 @@ mod output {
 
     pub fn format<O: Terminal>(
         out: std::sync::Arc<O>,
-        listvec: ListVec,
+        listvec: Vec<HomeStatusRow>,
         output_type: OutputType,
     ) -> Result<()> {
-        debug!("listvec: {:#?}", listvec);
-
         if !listvec.is_empty() {
             let rlist = TableList(listvec);
             out.render_list(&rlist, output_type)?;
@@ -118,12 +126,12 @@ mod output {
                 .iter()
                 .map(|e| {
                     Row::from([
-                        Cell::new(&e.0).set_alignment(CellAlignment::Left),
-                        Cell::new(&e.1).set_alignment(CellAlignment::Left),
-                        Cell::new(&e.2).set_alignment(CellAlignment::Left),
-                        Cell::new(&e.3).set_alignment(CellAlignment::Left),
-                        Cell::new(&e.4).set_alignment(CellAlignment::Left),
-                        Cell::new(&e.5).set_alignment(CellAlignment::Left),
+                        Cell::new(&e.home).set_alignment(CellAlignment::Left),
+                        Cell::new(&e.route).set_alignment(CellAlignment::Left),
+                        Cell::new(&e.sc_status).set_alignment(CellAlignment::Left),
+                        Cell::new(&e.spu_status).set_alignment(CellAlignment::Left),
+                        Cell::new(&e.last_seen).set_alignment(CellAlignment::Left),
+                        Cell::new(&e.errors).set_alignment(CellAlignment::Left),
                     ])
                 })
                 .collect()
