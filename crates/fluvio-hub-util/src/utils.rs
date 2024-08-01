@@ -84,7 +84,11 @@ pub fn cli_pkgname_to_filename(pkgname: &str) -> Result<String> {
 /// used by the cluster and the hub cli local download
 /// returns recommended name and data
 pub async fn get_package(pkgurl: &str, access: &HubAccess) -> Result<Vec<u8>> {
-    let actiontoken = access.get_download_token().await?;
+    let actiontoken = access.get_download_token().await.map_err(|err| {
+        tracing::debug!(?err, "action error");
+        err
+    })?;
+    tracing::trace!(tok = actiontoken, "have token");
     get_package_with_token(pkgurl, &actiontoken).await
 }
 
@@ -92,7 +96,7 @@ pub async fn get_package_with_token(pkgurl: &str, actiontoken: &str) -> Result<V
     let req = http::Request::get(pkgurl)
         .header("Authorization", actiontoken)
         .body("")
-        .map_err(|_| HubError::PackageDownload("authorization error".into()))?;
+        .map_err(|_| HubError::PackageDownload("request create error".into()))?;
 
     let resp = htclient::send(req)
         .await
