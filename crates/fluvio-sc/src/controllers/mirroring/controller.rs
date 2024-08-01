@@ -109,12 +109,12 @@ impl<C: MetadataItem> RemoteMirrorController<C> {
     ) -> Result<AsyncResponse<ObjectMirroringRequest>> {
         let versioned_socket = home_config.connect().await?;
         let (socket, config, versions) = versioned_socket.split();
-        info!("connecting to home: {}", home.public_endpoint);
+        info!(endpoint = home.public_endpoint, "connection to home");
 
         let request = MirrorConnect {
             remote_id: home.remote_id.clone(),
         };
-        debug!("sending connect request: {:#?}", request);
+        debug!(request = ?request, "sending connect request");
 
         let mut stream_socket =
             StreamSocket::new(config, MultiplexerSocket::shared(socket), versions.clone());
