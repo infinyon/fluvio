@@ -2,7 +2,25 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
-## Platform Version 0.11.11 - UNRELEASED
+## Platform Version 0.11.11 - 2024-08-05
+
+### Added
+
+* Allow setting local addr on custom spu ([#4122](https://github.com/infinyon/fluvio/issues/4122))
+* Sdf-hub support updates ([#4124](https://github.com/infinyon/fluvio/issues/4124))
+
+### CI
+
+* 0.11.10 post-release ([#4116](https://github.com/infinyon/fluvio/issues/4116))
+* Add smdk clean ([#4108](https://github.com/infinyon/fluvio/issues/4108))
+
+### Changed
+
+* Use patch status with k8s server side apply ([#4088](https://github.com/infinyon/fluvio/issues/4088))
+
+### Fixed
+
+* Enable tracing subscribe again ([#4121](https://github.com/infinyon/fluvio/issues/4121))
 
 ## Platform Version 0.11.10 - 2024-07-22
 
