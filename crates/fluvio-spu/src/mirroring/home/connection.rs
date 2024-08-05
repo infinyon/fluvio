@@ -91,7 +91,10 @@ impl MirrorHomeHandler {
                 "remote cluster not found: {}",
                 req_msg.request.remote_cluster_id
             );
-            return Err(anyhow!("remote cluster not found"));
+            return Err(anyhow!(
+                "remote cluster not found: {}",
+                req_msg.request.remote_cluster_id
+            ));
         }
 
         debug!("handling mirror request: {:#?}", req_msg);
