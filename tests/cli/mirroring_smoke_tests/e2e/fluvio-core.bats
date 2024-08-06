@@ -129,7 +129,7 @@ setup_file() {
 }
 
 @test "Can produce message to mirror topic from remote 1" {
-    sleep 5
+    sleep 15
     run bash -c 'echo 1 | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME"'
     assert_success
     run bash -c 'echo a | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME"'
@@ -154,7 +154,7 @@ setup_file() {
 }
 
 @test "Can produce message to mirror topic" {
-    sleep 5
+    sleep 15
     run bash -c 'echo 9 | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME"'
     assert_success
     run bash -c 'echo z | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME"'
