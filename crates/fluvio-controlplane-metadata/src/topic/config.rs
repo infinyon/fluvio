@@ -64,19 +64,34 @@ pub struct MetaConfig {
     serde(rename_all = "kebab-case")
 )]
 pub struct PartitionConfig {
-    #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "Option::is_none"))]
+    #[cfg_attr(
+        feature = "use_serde",
+        serde(skip_serializing_if = "Option::is_none", default)
+    )]
     pub count: Option<PartitionCount>,
 
-    #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "Option::is_none"))]
+    #[cfg_attr(
+        feature = "use_serde",
+        serde(skip_serializing_if = "Option::is_none", default)
+    )]
     pub max_size: Option<bytesize::ByteSize>,
 
-    #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "Option::is_none"))]
+    #[cfg_attr(
+        feature = "use_serde",
+        serde(skip_serializing_if = "Option::is_none", default)
+    )]
     pub replication: Option<ReplicationFactor>,
 
-    #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "Option::is_none"))]
+    #[cfg_attr(
+        feature = "use_serde",
+        serde(skip_serializing_if = "Option::is_none", default)
+    )]
     pub ignore_rack_assignment: Option<IgnoreRackAssignment>,
 
-    #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "Option::is_none"))]
+    #[cfg_attr(
+        feature = "use_serde",
+        serde(skip_serializing_if = "Option::is_none", default)
+    )]
     pub maps: Option<Vec<PartitionMap>>,
 }
 
@@ -89,11 +104,18 @@ pub struct PartitionConfig {
 pub struct RetentionConfig {
     #[cfg_attr(
         feature = "use_serde",
-        serde(skip_serializing_if = "Option::is_none", with = "humantime_serde")
+        serde(
+            skip_serializing_if = "Option::is_none",
+            with = "humantime_serde",
+            default
+        )
     )]
     pub time: Option<Duration>,
 
-    #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "Option::is_none"))]
+    #[cfg_attr(
+        feature = "use_serde",
+        serde(skip_serializing_if = "Option::is_none", default)
+    )]
     pub segment_size: Option<bytesize::ByteSize>,
 }
 
@@ -104,7 +126,7 @@ pub struct RetentionConfig {
     serde(rename_all = "kebab-case")
 )]
 pub struct CompressionConfig {
-    #[cfg_attr(feature = "use_serde", serde(rename = "type"))]
+    #[cfg_attr(feature = "use_serde", serde(rename = "type", default))]
     pub type_: CompressionAlgorithm,
 }
 
