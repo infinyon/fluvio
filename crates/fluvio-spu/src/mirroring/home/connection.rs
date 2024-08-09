@@ -199,14 +199,13 @@ impl MirrorHomeHandler {
                 "waiting for mirror request"
             );
 
-            self.update_status(MirrorPairStatus::Succesful).await?;
-
             select! {
                 _ = &mut timer => {
                     debug!("timer expired, sending reconciliation");
                     self.send_offsets_to_remote(&mut sink).await?;
                 },
                 remote_msg = api_stream.next() => {
+                    self.update_status(MirrorPairStatus::Succesful).await?;
                     if let Some(req_msg_res) = remote_msg {
                         let req_msg = req_msg_res?;
 
