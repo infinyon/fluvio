@@ -122,14 +122,24 @@ setup_file() {
 }
 
 @test "Can connect to the home cluster from remote 1" {
+    sleep 2
     run timeout 15s "$FLUVIO_BIN" home connect --file remote.json
 
     assert_output "connecting with \"$HOME_NAME\" cluster"
     assert_success
 }
 
+@test "Home status at remote 1 should show the home cluster connected" {
+    sleep 15
+    run timeout 15s "$FLUVIO_BIN" home status
+
+    assert_success
+    assert_line --partial --index 1 "Connected  Connected"
+    assert [ ${#lines[@]} -eq 2 ]
+}
+
 @test "Can produce message to mirror topic from remote 1" {
-    sleep 5
+    sleep 2
     run bash -c 'echo 1 | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME"'
     assert_success
     run bash -c 'echo a | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME"'
@@ -147,14 +157,24 @@ setup_file() {
 }
 
 @test "Can connect to the home cluster from remote 2" {
+    sleep 2
     run timeout 15s "$FLUVIO_BIN" home connect --file remote2.json
 
     assert_output "connecting with \"$HOME_NAME\" cluster"
     assert_success
 }
 
+@test "Home status at remote 2 should show the home cluster connected" {
+    sleep 15
+    run timeout 15s "$FLUVIO_BIN" home status
+
+    assert_success
+    assert_line --partial --index 1 "Connected  Connected"
+    assert [ ${#lines[@]} -eq 2 ]
+}
+
 @test "Can produce message to mirror topic" {
-    sleep 5
+    sleep 2
     run bash -c 'echo 9 | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME"'
     assert_success
     run bash -c 'echo z | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME"'
@@ -176,6 +196,16 @@ setup_file() {
     run timeout 15s "$FLUVIO_BIN" profile switch "$HOME_PROFILE"
     assert_output ""
     assert_success
+}
+
+@test "Remote list should show the remote clusters connected" {
+    sleep 2
+    run timeout 15s "$FLUVIO_BIN" remote list
+
+    assert_success
+    assert_line --partial --index 1 "Connected  Connected"
+    assert_line --partial --index 2 "Connected  Connected"
+    assert [ ${#lines[@]} -eq 3 ]
 }
 
 @test "Can consume message from mirror topic produced from remote 1 by partition or remote" {

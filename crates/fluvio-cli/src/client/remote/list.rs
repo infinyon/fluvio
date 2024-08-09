@@ -7,6 +7,8 @@ use fluvio_extension_common::target::ClusterTarget;
 use fluvio_extension_common::{OutputFormat, Terminal};
 use fluvio_sc_schema::mirror::{MirrorSpec, MirrorType};
 
+use self::output::RemoteStatusRow;
+
 use super::get_admin;
 
 #[derive(Debug, Parser)]
@@ -24,13 +26,18 @@ impl ListOpt {
         let list = admin.all::<MirrorSpec>().await?;
         let now = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?;
 
-        let outlist: Vec<(String, String, String)> = list
+        let outlist: Vec<RemoteStatusRow> = list
             .into_iter()
             .filter_map(|item| match item.spec.mirror_type {
                 MirrorType::Remote(r) => {
                     let status = item.status.clone();
-                    let last_seen = item.status.last_seen(now);
-                    Some((r.id, status.to_string(), last_seen))
+                    Some(RemoteStatusRow {
+                        remote: r.id,
+                        sc_status: status.pairing_sc.to_string(),
+                        spu_status: status.pairing_spu.to_string(),
+                        last_seen: item.status.last_seen(now),
+                        errors: status.pair_errors(),
+                    })
                 }
                 _ => None,
             })
@@ -46,7 +53,6 @@ mod output {
     //!
     use comfy_table::{Cell, Row};
     use comfy_table::CellAlignment;
-    use tracing::debug;
     use serde::Serialize;
     use anyhow::Result;
 
@@ -55,10 +61,17 @@ mod output {
     use fluvio_extension_common::output::TableOutputHandler;
     use fluvio_extension_common::t_println;
 
-    type ListVec = Vec<(String, String, String)>;
+    #[derive(Serialize)]
+    pub struct RemoteStatusRow {
+        pub remote: String,
+        pub sc_status: String,
+        pub spu_status: String,
+        pub last_seen: String,
+        pub errors: String,
+    }
 
     #[derive(Serialize)]
-    struct TableList(ListVec);
+    struct TableList(Vec<RemoteStatusRow>);
 
     // -----------------------------------
     // Format Output
@@ -66,11 +79,9 @@ mod output {
 
     pub fn format<O: Terminal>(
         out: std::sync::Arc<O>,
-        listvec: ListVec,
+        listvec: Vec<RemoteStatusRow>,
         output_type: OutputType,
     ) -> Result<()> {
-        debug!("listvec: {:#?}", listvec);
-
         if !listvec.is_empty() {
             let rlist = TableList(listvec);
             out.render_list(&rlist, output_type)?;
@@ -87,7 +98,7 @@ mod output {
     impl TableOutputHandler for TableList {
         /// table header implementation
         fn header(&self) -> Row {
-            Row::from(["REMOTE", "STATUS", "LAST SEEN"])
+            Row::from(["REMOTE", "SC STATUS", "SPU STATUS", "LAST SEEN", "ERRORS"])
         }
 
         /// return errors in string format
@@ -101,9 +112,11 @@ mod output {
                 .iter()
                 .map(|e| {
                     Row::from([
-                        Cell::new(&e.0).set_alignment(CellAlignment::Left),
-                        Cell::new(&e.1).set_alignment(CellAlignment::Left),
-                        Cell::new(&e.2).set_alignment(CellAlignment::Left),
+                        Cell::new(&e.remote).set_alignment(CellAlignment::Left),
+                        Cell::new(&e.sc_status).set_alignment(CellAlignment::Left),
+                        Cell::new(&e.spu_status).set_alignment(CellAlignment::Left),
+                        Cell::new(&e.last_seen).set_alignment(CellAlignment::Left),
+                        Cell::new(&e.errors).set_alignment(CellAlignment::Left),
                     ])
                 })
                 .collect()

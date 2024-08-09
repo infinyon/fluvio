@@ -8,8 +8,9 @@ use fluvio_protocol::{Encoder, Decoder};
     serde(rename_all = "camelCase")
 )]
 pub struct MirrorStatus {
-    pub pairing: MirrorPairStatus,
     pub connection_status: ConnectionStatus,
+    pub pairing_sc: MirrorPairStatus,
+    pub pairing_spu: MirrorPairStatus,
     pub connection_stat: ConnectionStat,
 }
 
@@ -20,9 +21,40 @@ impl MirrorStatus {
         last_seen: u64,
     ) -> Self {
         Self {
-            pairing,
+            pairing_sc: pairing,
+            pairing_spu: MirrorPairStatus::Waiting,
             connection_status,
             connection_stat: ConnectionStat { last_seen },
+        }
+    }
+
+    pub fn new_by_spu(pairing_spu: MirrorPairStatus, last_seen: u64) -> Self {
+        Self {
+            pairing_spu,
+            connection_stat: ConnectionStat { last_seen },
+            ..Default::default()
+        }
+    }
+
+    pub fn merge_from_sc(&mut self, other: Self) {
+        self.pairing_sc = other.pairing_sc;
+        self.connection_status = other.connection_status;
+        self.connection_stat = other.connection_stat;
+    }
+
+    pub fn merge_from_spu(&mut self, other: Self) {
+        self.pairing_spu = other.pairing_spu;
+        self.connection_stat = other.connection_stat;
+    }
+
+    pub fn pair_errors(&self) -> String {
+        match (self.pairing_sc.clone(), self.pairing_spu.clone()) {
+            (MirrorPairStatus::Failed(sc_err), MirrorPairStatus::Failed(spu_err)) => {
+                format!("SC: {} - SPU: {}", sc_err, spu_err)
+            }
+            (MirrorPairStatus::Failed(sc_err), _) => sc_err,
+            (_, MirrorPairStatus::Failed(spu_err)) => spu_err,
+            _ => "-".to_string(),
         }
     }
 }
@@ -36,9 +68,11 @@ pub enum MirrorPairStatus {
     #[fluvio(tag = 1)]
     Succesful,
     #[fluvio(tag = 2)]
-    Failed,
+    Failed(String),
     #[fluvio(tag = 3)]
     Disabled,
+    #[fluvio(tag = 4)]
+    Unauthorized,
 }
 
 #[derive(Encoder, Decoder, Debug, Clone, Eq, PartialEq, Default)]
@@ -81,27 +115,22 @@ impl MirrorStatus {
 
 impl std::fmt::Display for MirrorStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let status = match (self.pairing.clone(), self.connection_status.clone()) {
-            (MirrorPairStatus::Succesful, ConnectionStatus::Online) => "Online",
-            (MirrorPairStatus::Failed, ConnectionStatus::Online) => "Failed",
-            (MirrorPairStatus::Disabled, ConnectionStatus::Online) => "Disabled",
-            (MirrorPairStatus::Waiting, ConnectionStatus::Online) => "Waiting",
-            (MirrorPairStatus::Succesful, ConnectionStatus::Offline) => "Offline",
-            (MirrorPairStatus::Failed, ConnectionStatus::Offline) => "Failed",
-            (MirrorPairStatus::Disabled, ConnectionStatus::Offline) => "Disabled",
-            (MirrorPairStatus::Waiting, ConnectionStatus::Offline) => "Waiting",
-        };
-        write!(f, "{}", status)
+        write!(
+            f,
+            "{}:SPU:{}:SC:{}",
+            self.connection_status, self.pairing_spu, self.pairing_sc
+        )
     }
 }
 
 impl std::fmt::Display for MirrorPairStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let status = match self {
-            MirrorPairStatus::Succesful => "successful",
-            MirrorPairStatus::Disabled => "disabled",
-            MirrorPairStatus::Failed => "failed",
-            MirrorPairStatus::Waiting => "waiting",
+            MirrorPairStatus::Succesful => "Connected",
+            MirrorPairStatus::Disabled => "Disabled",
+            MirrorPairStatus::Failed(_) => "Failed", // the msg is showed with pair_errors
+            MirrorPairStatus::Waiting => "Waiting",
+            MirrorPairStatus::Unauthorized => "Unauthorized",
         };
         write!(f, "{}", status)
     }
@@ -124,7 +153,8 @@ mod test {
     #[test]
     fn test_last_seen() {
         let status = MirrorStatus {
-            pairing: MirrorPairStatus::Succesful,
+            pairing_sc: MirrorPairStatus::Succesful,
+            pairing_spu: MirrorPairStatus::Waiting,
             connection_status: ConnectionStatus::Online,
             connection_stat: ConnectionStat {
                 last_seen: 1713902927812,
@@ -136,7 +166,8 @@ mod test {
         assert_eq!(last_seen, "5s");
 
         let default_status = MirrorStatus {
-            pairing: MirrorPairStatus::Succesful,
+            pairing_sc: MirrorPairStatus::Succesful,
+            pairing_spu: MirrorPairStatus::Waiting,
             connection_status: ConnectionStatus::Online,
             connection_stat: ConnectionStat { last_seen: 0 },
         };

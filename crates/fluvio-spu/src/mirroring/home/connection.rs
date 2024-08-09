@@ -7,7 +7,7 @@ use tracing::{debug, error, instrument, warn};
 use anyhow::Result;
 
 use fluvio_auth::{AuthContext, InstanceAction};
-use fluvio_controlplane_metadata::mirror::MirrorType;
+use fluvio_controlplane_metadata::mirror::{MirrorPairStatus, MirrorType};
 use fluvio_controlplane_metadata::extended::ObjectType;
 use fluvio_future::timer::sleep;
 use fluvio_protocol::api::RequestMessage;
@@ -15,6 +15,7 @@ use fluvio_spu_schema::server::mirror::StartMirrorRequest;
 use futures_util::StreamExt;
 use fluvio_socket::{ExclusiveFlvSink, FluvioStream};
 
+use crate::control_plane::SharedMirrorStatusUpdate;
 use crate::core::DefaultSharedGlobalContext;
 use crate::mirroring::remote::api_key::MirrorRemoteApiEnum;
 use crate::mirroring::remote::remote_api::RemoteMirrorRequest;
@@ -52,6 +53,8 @@ pub(crate) struct MirrorHomeHandler {
     metrics: Arc<MirrorRequestMetrics>,
     leader: SharedFileLeaderState,
     ctx: DefaultSharedGlobalContext,
+    status_update: SharedMirrorStatusUpdate,
+    remote_cluster_id: String,
 }
 
 impl fmt::Debug for MirrorHomeHandler {
@@ -69,6 +72,7 @@ impl MirrorHomeHandler {
         sink: ExclusiveFlvSink,
         stream: FluvioStream,
     ) {
+        let mirror_status_update = auth_ctx.global_ctx.mirror_status_update_owned();
         // authorization check
         if let Ok(authorized) = auth_ctx
             .auth
@@ -108,7 +112,6 @@ impl MirrorHomeHandler {
         debug!("handling mirror request: {:#?}", req_msg);
         let remote_replica = req_msg.request.remote_replica;
         let remote_cluster_id = req_msg.request.remote_cluster_id;
-        let _access_key = req_msg.request.access_key;
 
         if let Some(leader) = auth_ctx
             .global_ctx
@@ -124,10 +127,22 @@ impl MirrorHomeHandler {
                 metrics: metrics.clone(),
                 leader,
                 ctx: auth_ctx.global_ctx.clone(),
+                status_update: mirror_status_update.clone(),
+                remote_cluster_id: remote_cluster_id.clone(),
             };
 
             if let Err(err) = handler.inner_respond(sink, stream).await {
                 error!("error handling mirror request: {:#?}", err);
+
+                if let Err(err) = mirror_status_update
+                    .send_status(
+                        remote_cluster_id.clone(),
+                        MirrorPairStatus::Failed(err.to_string()),
+                    )
+                    .await
+                {
+                    error!("error updating status: {}", err);
+                }
             }
         } else {
             warn!(
@@ -146,13 +161,15 @@ impl MirrorHomeHandler {
         // first send
         let mut api_stream = stream.api_stream::<RemoteMirrorRequest, MirrorRemoteApiEnum>();
 
-        // create timer
-        let mut timer = sleep(Duration::from_secs(MIRROR_RECONCILIATION_INTERVAL_SEC));
-
         // TODO: Add delete event on replica.
 
         // send initial offset state of home
         self.send_offsets_to_remote(&mut sink).await?;
+
+        // create timer
+        let mut timer = sleep(Duration::from_secs(MIRROR_RECONCILIATION_INTERVAL_SEC));
+
+        self.update_status(MirrorPairStatus::Succesful).await?;
 
         loop {
             debug!(
@@ -177,6 +194,7 @@ impl MirrorHomeHandler {
                          }
 
                     } else {
+                        self.update_status(MirrorPairStatus::Failed("closed connection".to_owned())).await?;
                         debug!("leader socket has terminated");
                         break;
                     }
@@ -187,6 +205,12 @@ impl MirrorHomeHandler {
         }
 
         Ok(())
+    }
+
+    async fn update_status(&self, status: MirrorPairStatus) -> Result<()> {
+        self.status_update
+            .send_status(self.remote_cluster_id.clone(), status)
+            .await
     }
 
     // send mirror home's offset to remote so it can synchronize
