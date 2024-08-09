@@ -12,6 +12,8 @@ use fluvio_types::SpuId;
 use fluvio_storage::ReplicaStorage;
 
 use crate::config::SpuConfig;
+use crate::control_plane::SharedMirrorStatusUpdate;
+use crate::control_plane::StatusMirrorMessageSink;
 use crate::kv::consumer::SharedConsumerOffsetStorages;
 use crate::replication::follower::FollowersState;
 use crate::replication::follower::SharedFollowersState;
@@ -45,6 +47,7 @@ pub struct GlobalContext<S> {
     followers_state: SharedFollowersState<S>,
     spu_followers: SharedSpuUpdates,
     status_update: SharedStatusUpdate,
+    mirror_status_update: SharedMirrorStatusUpdate,
     sm_engine: SmartEngine,
     leaders: Arc<LeaderConnections>,
     mirrors: SharedMirrorLocalStore,
@@ -78,6 +81,7 @@ where
             followers_state: FollowersState::new_shared(),
             spu_followers: FollowerNotifier::shared(),
             status_update: StatusMessageSink::shared(),
+            mirror_status_update: StatusMirrorMessageSink::shared(),
             sm_engine: SmartEngine::new(),
             leaders: LeaderConnections::shared(spus, replicas),
             mirrors: MirrorLocalStore::new_shared(),
@@ -111,7 +115,6 @@ where
         &self.mirrors
     }
 
-    #[allow(dead_code)]
     pub fn mirrors_localstore_owned(&self) -> SharedMirrorLocalStore {
         self.mirrors.clone()
     }
@@ -147,6 +150,15 @@ where
 
     pub fn status_update_owned(&self) -> SharedStatusUpdate {
         self.status_update.clone()
+    }
+
+    #[allow(unused)]
+    pub fn mirror_status_update(&self) -> &StatusMirrorMessageSink {
+        &self.mirror_status_update
+    }
+
+    pub fn mirror_status_update_owned(&self) -> SharedMirrorStatusUpdate {
+        self.mirror_status_update.clone()
     }
 
     /// notify all follower handlers with SPU changes

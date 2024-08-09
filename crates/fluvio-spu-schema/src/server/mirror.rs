@@ -11,7 +11,6 @@ use super::SpuServerApiKey;
 pub struct StartMirrorRequest {
     pub remote_replica: String,
     pub remote_cluster_id: String,
-    pub access_key: String,
 }
 
 impl Request for StartMirrorRequest {

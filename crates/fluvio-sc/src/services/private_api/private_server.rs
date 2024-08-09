@@ -13,6 +13,7 @@ use fluvio_controlplane::sc_api::api::InternalScRequest;
 use fluvio_controlplane::sc_api::register_spu::RegisterSpuResponse;
 use fluvio_controlplane::sc_api::remove::ReplicaRemovedRequest;
 use fluvio_controlplane::sc_api::update_lrs::UpdateLrsRequest;
+use fluvio_controlplane::sc_api::update_mirror::UpdateMirrorStatRequest;
 use fluvio_controlplane::spu_api::update_mirror::MirrorMsg;
 use fluvio_controlplane::spu_api::update_mirror::UpdateMirrorRequest;
 use fluvio_controlplane::spu_api::update_replica::UpdateReplicaRequest;
@@ -172,7 +173,10 @@ where
                             },
                             InternalScRequest::ReplicaRemovedRequest(msg) => {
                                 receive_replica_remove(&context,msg.request).await;
-                            }
+                            },
+                            InternalScRequest::UpdateMirrorStatRequest(msg) => {
+                                receive_mirror_update(&context, msg.request).await;
+                            },
                         }
                         // reset timer
                         health_check_timer = sleep(Duration::from_secs(HEALTH_DURATION));
@@ -286,6 +290,47 @@ where
 
     if let Some(action) = delete_action {
         ctx.partitions().send_action(action).await;
+    }
+}
+
+/// send mirror update to metadata stores
+#[instrument(skip(ctx, requests))]
+async fn receive_mirror_update<C>(ctx: &SharedContext<C>, requests: UpdateMirrorStatRequest)
+where
+    C: MetadataItem,
+{
+    let stats = requests.into_stats();
+    if stats.is_empty() {
+        trace!("no stats, just health check");
+        return;
+    }
+    debug!(?stats, "received mirror stats");
+
+    let mut actions = vec![];
+    let read_guard = ctx.mirrors().store().read().await;
+    for stat in stats.into_iter() {
+        if let Some(mirror) = read_guard.get(&stat.mirror_id) {
+            let mut current_status = mirror.inner().status().clone();
+            let key = stat.mirror_id.clone();
+            current_status.merge_from_spu(stat.status);
+
+            actions.push(WSAction::<MirrorSpec, C>::UpdateStatus((
+                key,
+                current_status,
+            )));
+        } else {
+            error!(
+                "trying to update replica: {}, that doesn't exist",
+                stat.mirror_id
+            );
+            return;
+        }
+    }
+
+    drop(read_guard);
+
+    for action in actions.into_iter() {
+        ctx.mirrors().send_action(action).await;
     }
 }
 

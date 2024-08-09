@@ -216,7 +216,12 @@ where
         }
 
         if let Some(request) = mirror_request {
-            MirrorHomeHandler::respond(request, &service_context, shared_sink, stream).await;
+            if let Err(err) =
+                MirrorHomeHandler::respond(request, &service_context, shared_sink, stream).await
+            {
+                shutdown.notify();
+                return Err(err);
+            }
         }
 
         shutdown.notify();

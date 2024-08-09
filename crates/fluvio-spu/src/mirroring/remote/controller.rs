@@ -1,14 +1,12 @@
 use std::{
     fmt,
     sync::{
+        atomic::{AtomicI64, AtomicU64, Ordering},
         Arc,
-        atomic::{AtomicU64, Ordering, AtomicI64},
     },
-    time::Duration,
+    time::{Duration, SystemTime},
 };
 
-use fluvio::config::TlsPolicy;
-use futures_util::StreamExt;
 use tokio::select;
 use tracing::{debug, error, warn, instrument};
 use anyhow::{anyhow, Result};
@@ -16,12 +14,14 @@ use adaptive_backoff::prelude::{
     ExponentialBackoffBuilder, BackoffBuilder, ExponentialBackoff, Backoff,
 };
 
+use fluvio::config::TlsPolicy;
+use fluvio_controlplane::sc_api::update_mirror::MirrorStatRequest;
+use futures_util::StreamExt;
 use fluvio_controlplane_metadata::{
-    mirror::{Home, MirrorType},
+    mirror::{Home, MirrorPairStatus, MirrorStatus, MirrorType},
     partition::RemotePartitionConfig,
 };
 use fluvio_storage::{ReplicaStorage, FileReplica};
-
 use fluvio_socket::{ClientConfig, FluvioSink, FluvioSocket};
 use fluvio_spu_schema::{Isolation, server::mirror::StartMirrorRequest};
 use fluvio_future::{net::DomainConnector, task::spawn, timer::sleep};
@@ -29,6 +29,7 @@ use fluvio_protocol::{record::Offset, api::RequestMessage};
 use fluvio_types::event::offsets::OffsetChangeListener;
 
 use crate::{
+    control_plane::SharedMirrorStatusUpdate,
     core::{mirror::SharedMirrorLocalStore, GlobalContext},
     replication::leader::SharedLeaderState,
 };
@@ -109,8 +110,6 @@ impl MirrorControllerState {
     }
 }
 
-const CLUSTER_LOOKUP_SEC: u64 = 5;
-
 /// This controller run on mirror remote.
 /// It's main responsbility is to synchronize mirror home from remote.
 /// Remote will always initiate connection to home.
@@ -127,6 +126,7 @@ pub(crate) struct MirrorRemoteToHomeController<S> {
     remote_config: RemotePartitionConfig,
     state: Arc<MirrorControllerState>,
     mirror_store: SharedMirrorLocalStore,
+    status_update: SharedMirrorStatusUpdate,
     max_bytes: u32,
     isolation: Isolation,
 }
@@ -169,6 +169,7 @@ where
             state: state.clone(),
             max_bytes,
             mirror_store: ctx.mirrors_localstore_owned(),
+            status_update: ctx.mirror_status_update_owned(),
         };
         spawn(controller.dispatch_loop());
         state
@@ -177,11 +178,9 @@ where
     #[instrument()]
     async fn dispatch_loop(self) {
         let mut offset_listener = self.leader.offset_listener(&self.isolation);
-
         let mut backoff = create_backoff();
 
         debug!("initial delay to wait for home cluster to be ready");
-        sleep(Duration::from_secs(CLUSTER_LOOKUP_SEC)).await;
 
         loop {
             // first find home cluster
@@ -189,20 +188,25 @@ where
                 self.state.metrics.increase_loop_count();
                 debug!(name = home.id, "found home cluster");
                 let home_socket = self.create_socket_to_home(&mut backoff, &home).await;
+
                 if let Err(err) = self
                     .sync_mirror_loop(&home, &mut offset_listener, home_socket, &mut backoff)
                     .await
                 {
+                    self.update_status(MirrorPairStatus::Failed(err.to_string()))
+                        .await
+                        .unwrap();
                     error!("error syncing mirror loop {}", err);
                     self.backoff_and_wait(&mut backoff).await;
                 }
             } else {
-                warn!(
-                    home = self.remote_config.home_cluster,
-                    "home cluster not found, waiting 1 second"
-                );
-
-                sleep(Duration::from_secs(CLUSTER_LOOKUP_SEC)).await;
+                self.update_status(MirrorPairStatus::Failed(
+                    "home cluster not found".to_owned(),
+                ))
+                .await
+                .unwrap();
+                warn!("home cluster not found, waiting...");
+                self.backoff_and_wait(&mut backoff).await;
             }
         }
     }
@@ -246,30 +250,32 @@ where
             }
 
             select! {
+                _ = leader_offset_listner.listen() => {
+                    debug!("leader offset has changed, home cluster needs to be updated");
+                    home_updated_needed = true;
+                }
 
-                    _ = leader_offset_listner.listen() => {
-                        debug!("leader offset has changed, home cluster needs to be updated");
-                        home_updated_needed = true;
+                msg = home_api_stream.next() => {
+                    debug!("received response from home");
+                    if let Some(req_msg_home) = msg {
+                        let home_msg = req_msg_home?;
+
+                        match home_msg {
+                            HomeMirrorRequest::UpdateHomeOffset(req)=> {
+                                home_updated_needed = self.update_from_home(req)?;
+                            }
+                         }
+                        backoff.reset();
+                        self.update_status(MirrorPairStatus::Succesful).await?;
+                    } else {
+                        warn!("spu socket to home has terminated");
+                        self.update_status(MirrorPairStatus::Failed("closed connection".to_owned()))
+                            .await?;
+                        self.backoff_and_wait(backoff).await;
+                        break;
                     }
 
-                    msg = home_api_stream.next() => {
-                        debug!("received response from home");
-                        if let Some(req_msg_home) = msg {
-                            let home_msg = req_msg_home?;
-
-                            match home_msg {
-                                HomeMirrorRequest::UpdateHomeOffset(req)=> {
-                                    home_updated_needed = self.update_from_home(req)?;
-                                }
-                             }
-
-                        } else {
-                            debug!("leader socket has terminated");
-                            self.backoff_and_wait(backoff).await;
-                            break;
-                        }
-
-                    }
+                }
             }
 
             self.state.metrics.increase_conn_count();
@@ -280,12 +286,26 @@ where
         Ok(())
     }
 
+    async fn update_status(&self, pair_status: MirrorPairStatus) -> Result<()> {
+        let now = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)?
+            .as_millis();
+
+        let status = MirrorStatus::new_by_spu(pair_status.clone(), now as u64);
+        self.status_update
+            .send(MirrorStatRequest::new(
+                self.remote_config.home_cluster.clone(),
+                status,
+            ))
+            .await;
+        Ok(())
+    }
+
     async fn send_initial_request(&self, home: &Home, home_sink: &mut FluvioSink) -> Result<()> {
         // always starts with mirrong request
         let start_mirror_request = RequestMessage::new_request(StartMirrorRequest {
             remote_cluster_id: home.remote_id.clone(),
             remote_replica: self.leader.id().to_string(),
-            ..Default::default()
         });
 
         debug!("sending start mirror request: {:#?}", start_mirror_request);
@@ -454,6 +474,9 @@ where
                             "error establishing tls with leader at: <{}> err: {}",
                             endpoint, err
                         );
+                        self.update_status(MirrorPairStatus::Failed(err.to_string()))
+                            .await
+                            .unwrap();
                         self.backoff_and_wait(backoff).await;
                         continue;
                     }
@@ -475,6 +498,9 @@ where
 
                 Err(err) => {
                     error!("error connecting to leader at: <{}> err: {}", endpoint, err);
+                    self.update_status(MirrorPairStatus::Failed(err.to_string()))
+                        .await
+                        .unwrap();
                     self.backoff_and_wait(backoff).await;
                 }
             }
@@ -492,8 +518,8 @@ where
 
 fn create_backoff() -> ExponentialBackoff {
     ExponentialBackoffBuilder::default()
-        .min(Duration::from_secs(1))
-        .max(Duration::from_secs(300))
+        .min(Duration::from_millis(200))
+        .max(Duration::from_secs(5))
         .build()
         .unwrap()
 }
