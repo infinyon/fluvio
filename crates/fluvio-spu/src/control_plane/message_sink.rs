@@ -8,14 +8,14 @@ use fluvio_controlplane::sc_api::update_lrs::LrsRequest;
 use fluvio_controlplane::sc_api::update_mirror::MirrorStatRequest;
 use fluvio_controlplane_metadata::mirror::{MirrorPairStatus, MirrorStatus};
 
-pub type SharedStatusUpdate = Arc<StatusMessageSink>;
+pub type SharedLrsStatusUpdate = Arc<StatusLrsMessageSink>;
 pub type SharedMirrorStatusUpdate = Arc<StatusMirrorMessageSink>;
 
 /// channel used to send message to sc
 #[derive(Debug)]
 pub struct MessageSink<R>(Mutex<HashSet<R>>);
 
-pub type StatusMessageSink = MessageSink<LrsRequest>;
+pub type StatusLrsMessageSink = MessageSink<LrsRequest>;
 pub type StatusMirrorMessageSink = MessageSink<MirrorStatRequest>;
 
 impl<R> MessageSink<R>

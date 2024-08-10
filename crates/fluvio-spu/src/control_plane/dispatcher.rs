@@ -22,7 +22,7 @@ use fluvio_storage::FileReplica;
 
 use crate::core::SharedGlobalContext;
 
-use super::message_sink::SharedStatusUpdate;
+use super::message_sink::SharedLrsStatusUpdate;
 use super::SharedMirrorStatusUpdate;
 
 // keep track of various internal state of dispatcher
@@ -39,7 +39,7 @@ struct DispatcherCounter {
 /// including registering and reconnect
 pub struct ScDispatcher<S> {
     ctx: SharedGlobalContext<S>,
-    status_update: SharedStatusUpdate,
+    status_update: SharedLrsStatusUpdate,
     mirror_status_update: SharedMirrorStatusUpdate,
     counter: DispatcherCounter,
 }

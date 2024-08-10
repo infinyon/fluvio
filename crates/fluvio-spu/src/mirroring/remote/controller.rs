@@ -4,7 +4,7 @@ use std::{
         atomic::{AtomicI64, AtomicU64, Ordering},
         Arc,
     },
-    time::{Duration, SystemTime},
+    time::Duration,
 };
 
 use tokio::select;
@@ -15,10 +15,9 @@ use adaptive_backoff::prelude::{
 };
 
 use fluvio::config::TlsPolicy;
-use fluvio_controlplane::sc_api::update_mirror::MirrorStatRequest;
 use futures_util::StreamExt;
 use fluvio_controlplane_metadata::{
-    mirror::{Home, MirrorPairStatus, MirrorStatus, MirrorType},
+    mirror::{Home, MirrorPairStatus, MirrorType},
     partition::RemotePartitionConfig,
 };
 use fluvio_storage::{ReplicaStorage, FileReplica};

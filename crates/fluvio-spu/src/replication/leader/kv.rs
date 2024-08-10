@@ -157,7 +157,7 @@ mod tests {
     use futures_util::StreamExt;
 
     use crate::{
-        config::ReplicationConfig, control_plane::StatusMessageSink,
+        config::ReplicationConfig, control_plane::StatusLrsMessageSink,
         storage::SharableReplicaStorage,
     };
 
@@ -340,7 +340,7 @@ mod tests {
         let replica_id = ReplicaKey::new("topic", PartitionId::default());
         let replication_config = ReplicationConfig::default();
         let replica = Replica::new(replica_id.clone(), 5000, vec![5000]);
-        let status_update = StatusMessageSink::shared();
+        let status_update = StatusLrsMessageSink::shared();
 
         let storage = SharableReplicaStorage::create(replica_id, config)
             .await

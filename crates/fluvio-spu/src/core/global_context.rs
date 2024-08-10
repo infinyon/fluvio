@@ -20,7 +20,7 @@ use crate::replication::follower::SharedFollowersState;
 use crate::replication::leader::{
     SharedReplicaLeadersState, ReplicaLeadersState, FollowerNotifier, SharedSpuUpdates,
 };
-use crate::control_plane::{StatusMessageSink, SharedStatusUpdate};
+use crate::control_plane::{StatusLrsMessageSink, SharedLrsStatusUpdate};
 use crate::core::metrics::SpuMetrics;
 use crate::smartengine::SmartEngine;
 
@@ -46,7 +46,7 @@ pub struct GlobalContext<S> {
     leaders_state: SharedReplicaLeadersState<S>,
     followers_state: SharedFollowersState<S>,
     spu_followers: SharedSpuUpdates,
-    status_update: SharedStatusUpdate,
+    lrs_status_update: SharedLrsStatusUpdate,
     mirror_status_update: SharedMirrorStatusUpdate,
     sm_engine: SmartEngine,
     leaders: Arc<LeaderConnections>,
@@ -80,7 +80,7 @@ where
             leaders_state: ReplicaLeadersState::new_shared(),
             followers_state: FollowersState::new_shared(),
             spu_followers: FollowerNotifier::shared(),
-            status_update: StatusMessageSink::shared(),
+            lrs_status_update: StatusLrsMessageSink::shared(),
             mirror_status_update: StatusMirrorMessageSink::shared(),
             sm_engine: SmartEngine::new(),
             leaders: LeaderConnections::shared(spus, replicas),
@@ -144,12 +144,12 @@ where
     }
 
     #[allow(unused)]
-    pub fn status_update(&self) -> &StatusMessageSink {
-        &self.status_update
+    pub fn status_update(&self) -> &StatusLrsMessageSink {
+        &self.lrs_status_update
     }
 
-    pub fn status_update_owned(&self) -> SharedStatusUpdate {
-        self.status_update.clone()
+    pub fn status_update_owned(&self) -> SharedLrsStatusUpdate {
+        self.lrs_status_update.clone()
     }
 
     #[allow(unused)]
@@ -299,7 +299,11 @@ mod file_replica {
                             // we are leader
                             if let Err(err) = self
                                 .leaders_state()
-                                .add_leader_replica(self, new_replica, self.status_update.clone())
+                                .add_leader_replica(
+                                    self,
+                                    new_replica,
+                                    self.lrs_status_update.clone(),
+                                )
                                 .await
                             {
                                 outputs.push(ReplicaChange::StorageError(err));
