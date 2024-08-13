@@ -1,13 +1,13 @@
-pub use std::sync::Arc;
+use std::sync::Arc;
 use std::time::SystemTime;
 
 use anyhow::Result;
 use clap::Parser;
+use serde::Serialize;
+
 use fluvio_extension_common::target::ClusterTarget;
 use fluvio_extension_common::{OutputFormat, Terminal};
 use fluvio_sc_schema::mirror::{MirrorSpec, MirrorType};
-
-use self::output::RemoteStatusRow;
 
 use super::get_admin;
 
@@ -16,6 +16,7 @@ pub struct ListOpt {
     #[clap(flatten)]
     output: OutputFormat,
 }
+
 impl ListOpt {
     pub async fn execute<T: Terminal>(
         self,
@@ -46,6 +47,15 @@ impl ListOpt {
     }
 }
 
+#[derive(Serialize)]
+struct RemoteStatusRow {
+    remote: String,
+    sc_status: String,
+    spu_status: String,
+    last_seen: String,
+    errors: String,
+}
+
 mod output {
 
     //!
@@ -61,14 +71,7 @@ mod output {
     use fluvio_extension_common::output::TableOutputHandler;
     use fluvio_extension_common::t_println;
 
-    #[derive(Serialize)]
-    pub struct RemoteStatusRow {
-        pub remote: String,
-        pub sc_status: String,
-        pub spu_status: String,
-        pub last_seen: String,
-        pub errors: String,
-    }
+    use super::RemoteStatusRow;
 
     #[derive(Serialize)]
     struct TableList(Vec<RemoteStatusRow>);

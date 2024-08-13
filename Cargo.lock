@@ -2922,6 +2922,7 @@ dependencies = [
 name = "fluvio-sc"
 version = "0.0.0"
 dependencies = [
+ "adaptive_backoff",
  "anyhow",
  "async-channel 1.9.0",
  "async-lock 3.4.0",

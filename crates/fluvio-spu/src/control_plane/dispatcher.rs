@@ -135,7 +135,7 @@ impl ScDispatcher<FileReplica> {
             select! {
 
                 _ = status_timer.next() =>  {
-                    self.send_status_back_to_sc(&mut sink).await?;
+                    self.send_lrs_status_back_to_sc(&mut sink).await?;
                     self.send_mirror_status_back_to_sc(&mut sink).await?;
                 },
 
@@ -188,7 +188,7 @@ impl ScDispatcher<FileReplica> {
 
     /// send status back to sc, if there is error return false
     #[instrument(skip(self))]
-    async fn send_status_back_to_sc(&mut self, sc_sink: &mut FluvioSink) -> Result<()> {
+    async fn send_lrs_status_back_to_sc(&mut self, sc_sink: &mut FluvioSink) -> Result<()> {
         let requests = self.status_update.remove_all().await;
 
         if requests.is_empty() {

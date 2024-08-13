@@ -47,13 +47,13 @@ impl MirrorStatus {
         self.connection_stat = other.connection_stat;
     }
 
-    pub fn pair_errors(&self) -> String {
-        match (self.pairing_sc.clone(), self.pairing_spu.clone()) {
-            (MirrorPairStatus::Failed(sc_err), MirrorPairStatus::Failed(spu_err)) => {
+    pub fn pair_errors(self) -> String {
+        match (self.pairing_sc, self.pairing_spu) {
+            (MirrorPairStatus::DetailFailure(sc_err), MirrorPairStatus::DetailFailure(spu_err)) => {
                 format!("SC: {} - SPU: {}", sc_err, spu_err)
             }
-            (MirrorPairStatus::Failed(sc_err), _) => sc_err,
-            (_, MirrorPairStatus::Failed(spu_err)) => spu_err,
+            (MirrorPairStatus::DetailFailure(sc_err), _) => sc_err,
+            (_, MirrorPairStatus::DetailFailure(spu_err)) => spu_err,
             _ => "-".to_string(),
         }
     }
@@ -68,11 +68,13 @@ pub enum MirrorPairStatus {
     #[fluvio(tag = 1)]
     Succesful,
     #[fluvio(tag = 2)]
-    Failed(String),
+    Failed,
     #[fluvio(tag = 3)]
     Disabled,
     #[fluvio(tag = 4)]
     Unauthorized,
+    #[fluvio(tag = 5)]
+    DetailFailure(String),
 }
 
 #[derive(Encoder, Decoder, Debug, Clone, Eq, PartialEq, Default)]
@@ -128,9 +130,10 @@ impl std::fmt::Display for MirrorPairStatus {
         let status = match self {
             MirrorPairStatus::Succesful => "Connected",
             MirrorPairStatus::Disabled => "Disabled",
-            MirrorPairStatus::Failed(_) => "Failed", // the msg is showed with pair_errors
+            MirrorPairStatus::Failed => "Failed",
             MirrorPairStatus::Waiting => "Waiting",
             MirrorPairStatus::Unauthorized => "Unauthorized",
+            MirrorPairStatus::DetailFailure(_) => "Failed", // the msg is showed with pair_errors
         };
         write!(f, "{}", status)
     }

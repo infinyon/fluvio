@@ -107,7 +107,7 @@ impl<AC: AuthContext, C: MetadataItem> RemoteFetchingFromHomeController<AC, C> {
                 let remote = self.get_remote_mirror().await;
                 if let Ok((_, status)) = remote {
                     if let Err(err) = self
-                        .update_status(MirrorPairStatus::Failed(err.to_string()), status)
+                        .update_status(MirrorPairStatus::DetailFailure(err.to_string()), status)
                         .await
                     {
                         error!("error updating status: {}", err);
@@ -118,11 +118,11 @@ impl<AC: AuthContext, C: MetadataItem> RemoteFetchingFromHomeController<AC, C> {
 
             select! {
                 _ = self.end_event.listen() => {
-                    debug!("connection has been terminated");
+                    info!("connection has been terminated");
                     let remote = self.get_remote_mirror().await;
                     if let Ok((_, status)) = remote {
                         if let Err(err) = self
-                            .update_status(MirrorPairStatus::Failed("connection closed".to_owned()), status)
+                            .update_status(MirrorPairStatus::DetailFailure("connection closed".to_owned()), status)
                             .await
                         {
                             error!("error updating status: {}", err);

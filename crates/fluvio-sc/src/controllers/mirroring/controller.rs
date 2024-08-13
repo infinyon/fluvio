@@ -2,6 +2,9 @@ use std::time::{Duration, SystemTime};
 
 use tracing::{debug, error, info, instrument};
 use anyhow::{anyhow, Result};
+use adaptive_backoff::prelude::{
+    ExponentialBackoffBuilder, BackoffBuilder, ExponentialBackoff, Backoff,
+};
 
 use fluvio::config::TlsPolicy;
 use fluvio_socket::{AsyncResponse, ClientConfig, MultiplexerSocket, StreamSocket};
@@ -22,7 +25,6 @@ use fluvio_controlplane_metadata::mirroring::{
 use crate::core::SharedContext;
 
 const MIRRORING_CONTROLLER_INTERVAL: u64 = 1;
-const MIRRORING_CONTROLLER_RETRY_INTERVAL: u64 = 10;
 
 // This is the main controller for the mirroring feature.
 // Remote Clusters will connect to the home clusters.
@@ -44,22 +46,26 @@ impl<C: MetadataItem> RemoteMirrorController<C> {
 
     #[instrument(skip(self), name = "MirroringControllerLoop")]
     async fn dispatch_loop(self) {
+        let mut backoff = create_backoff();
+
         loop {
-            if let Err(err) = self.inner_loop().await {
+            if let Err(err) = self.inner_loop(&mut backoff).await {
                 error!("error with inner loop: {:#?}", err);
                 if let Err(err) = self
-                    .update_status(MirrorPairStatus::Failed(err.to_string()))
+                    .update_status(MirrorPairStatus::DetailFailure(err.to_string()))
                     .await
                 {
                     error!("error updating status: {:#?}", err);
                 }
-                sleep(Duration::from_secs(MIRRORING_CONTROLLER_RETRY_INTERVAL)).await;
+
+                let wait = backoff.wait();
+                sleep(wait).await;
             }
         }
     }
 
     #[instrument(skip(self))]
-    async fn inner_loop(&self) -> Result<()> {
+    async fn inner_loop(&self, backoff: &mut ExponentialBackoff) -> Result<()> {
         loop {
             if let Some((home, _)) = self.get_mirror_home_cluster().await {
                 debug!("initializing listeners");
@@ -83,8 +89,9 @@ impl<C: MetadataItem> RemoteMirrorController<C> {
                                 self.sync_topic(&home, topic).await?;
                             }
 
-                            debug!("synced topics from home");
+                            info!("synced topics from home");
                             self.update_status(MirrorPairStatus::Succesful).await?;
+                            backoff.reset();
                         }
                         Err(err) => {
                             error!("received error: {:#?}", err);
@@ -273,6 +280,14 @@ impl<C: MetadataItem> RemoteMirrorController<C> {
         self.mirrors.update_status(home.id.clone(), status).await?;
         Ok(())
     }
+}
+
+fn create_backoff() -> ExponentialBackoff {
+    ExponentialBackoffBuilder::default()
+        .min(Duration::from_secs(1))
+        .max(Duration::from_secs(30))
+        .build()
+        .unwrap()
 }
 
 fn option_tlspolicy(home: &Home) -> Option<TlsPolicy> {

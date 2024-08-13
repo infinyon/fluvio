@@ -137,7 +137,7 @@ impl MirrorHomeHandler {
                 if let Err(err) = mirror_status_update
                     .send_status(
                         remote_cluster_id.clone(),
-                        MirrorPairStatus::Failed(err.to_string()),
+                        MirrorPairStatus::DetailFailure(err.to_string()),
                     )
                     .await
                 {
@@ -194,7 +194,7 @@ impl MirrorHomeHandler {
                          }
 
                     } else {
-                        self.update_status(MirrorPairStatus::Failed("closed connection".to_owned())).await?;
+                        self.update_status(MirrorPairStatus::DetailFailure("closed connection".to_owned())).await?;
                         debug!("leader socket has terminated");
                         break;
                     }

@@ -8,7 +8,7 @@ use std::{
 };
 
 use tokio::select;
-use tracing::{debug, error, warn, instrument};
+use tracing::{debug, error, info, instrument, warn};
 use anyhow::{anyhow, Result};
 use adaptive_backoff::prelude::{
     ExponentialBackoffBuilder, BackoffBuilder, ExponentialBackoff, Backoff,
@@ -195,7 +195,7 @@ where
                     .sync_mirror_loop(&home, &mut offset_listener, home_socket, &mut backoff)
                     .await
                 {
-                    self.update_status(MirrorPairStatus::Failed(err.to_string()))
+                    self.update_status(MirrorPairStatus::DetailFailure(err.to_string()))
                         .await
                         .unwrap();
                     error!("error syncing mirror loop {}", err);
@@ -249,7 +249,7 @@ where
 
             select! {
                 _ = leader_offset_listner.listen() => {
-                    debug!("leader offset has changed, home cluster needs to be updated");
+                    info!("leader offset has changed, home cluster needs to be updated");
                     home_updated_needed = true;
                 }
 
@@ -267,7 +267,7 @@ where
                         self.update_status(MirrorPairStatus::Succesful).await?;
                     } else {
                         warn!("spu socket to home has terminated");
-                        self.update_status(MirrorPairStatus::Failed("closed connection".to_owned()))
+                        self.update_status(MirrorPairStatus::DetailFailure("closed connection".to_owned()))
                             .await?;
                         self.backoff_and_wait(backoff).await;
                         break;
@@ -465,7 +465,7 @@ where
                             "error establishing tls with leader at: <{}> err: {}",
                             endpoint, err
                         );
-                        self.update_status(MirrorPairStatus::Failed(err.to_string()))
+                        self.update_status(MirrorPairStatus::DetailFailure(err.to_string()))
                             .await
                             .unwrap();
                         self.backoff_and_wait(backoff).await;
@@ -489,7 +489,7 @@ where
 
                 Err(err) => {
                     error!("error connecting to leader at: <{}> err: {}", endpoint, err);
-                    self.update_status(MirrorPairStatus::Failed(err.to_string()))
+                    self.update_status(MirrorPairStatus::DetailFailure(err.to_string()))
                         .await
                         .unwrap();
                     self.backoff_and_wait(backoff).await;
