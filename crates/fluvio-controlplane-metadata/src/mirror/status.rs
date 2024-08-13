@@ -73,7 +73,7 @@ pub enum MirrorPairStatus {
     Disabled,
     #[fluvio(tag = 4)]
     Unauthorized,
-    #[fluvio(tag = 5)]
+    #[fluvio(tag = 5, min_version = 17)]
     DetailFailure(String),
 }
 
