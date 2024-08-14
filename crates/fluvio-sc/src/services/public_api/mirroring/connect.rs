@@ -2,7 +2,7 @@ use std::{
     sync::Arc,
     time::{Duration, SystemTime},
 };
-use tracing::{debug, error, info, instrument, trace, warn};
+use tracing::{debug, error, info, instrument, warn};
 use anyhow::{Result, anyhow};
 
 use fluvio_auth::{AuthContext, InstanceAction};
@@ -14,7 +14,7 @@ use fluvio_future::{task::spawn, timer::sleep};
 use fluvio_protocol::api::{RequestHeader, ResponseMessage};
 use fluvio_sc_schema::{
     core::MetadataItem,
-    mirror::{ConnectionStatus, MirrorPairStatus, MirrorStatus, MirrorType},
+    mirror::{ConnectionStatus, MirrorPairStatus, MirrorSpec, MirrorStatus, MirrorType},
     spu::SpuSpec,
     store::ChangeListener,
     topic::{MirrorConfig, ReplicaSpec, TopicSpec},
@@ -59,38 +59,37 @@ impl<AC: AuthContext, C: MetadataItem> RemoteFetchingFromHomeController<AC, C> {
     async fn dispatch_loop(mut self) {
         use tokio::select;
 
-        // authorization check
-        if let Ok(authorized) = self
-            .auth_ctx
-            .auth
-            .allow_instance_action(
-                ObjectType::Mirror,
-                InstanceAction::Update,
-                &self.req.remote_id,
-            )
-            .await
-        {
-            if !authorized {
-                warn!("identity mismatch for remote_id: {}", self.req.remote_id);
-                return;
+        if let Ok((_, status)) = self.get_remote_mirror().await {
+            // authorization check
+            if let Ok(authorized) = self
+                .auth_ctx
+                .auth
+                .allow_instance_action(
+                    ObjectType::Mirror,
+                    InstanceAction::Update,
+                    &self.req.remote_id,
+                )
+                .await
+            {
+                if !authorized {
+                    if let Err(err) = self
+                        .update_status(MirrorPairStatus::Unauthorized, status)
+                        .await
+                    {
+                        error!("error updating status: {}", err);
+                    }
+                    warn!("identity mismatch for remote_id: {}", self.req.remote_id);
+                    return;
+                }
             }
+        } else {
+            // check if remote cluster exists
+            error!("remote cluster not found: {}", self.req.remote_id);
+            return;
         }
 
         let ctx = self.auth_ctx.global_ctx.clone();
 
-        // check if remote cluster exists
-        let mirrors = ctx.mirrors().store().value(&self.req.remote_id).await;
-        let remote = mirrors
-            .iter()
-            .find(|mirror| match &mirror.spec.mirror_type {
-                MirrorType::Remote(r) => r.id == self.req.remote_id,
-                _ => false,
-            });
-
-        if remote.is_none() {
-            warn!("remote cluster not found: {}", self.req.remote_id);
-            return;
-        }
         info!(
             name = self.req.remote_id,
             "received mirroring connect request"
@@ -100,19 +99,35 @@ impl<AC: AuthContext, C: MetadataItem> RemoteFetchingFromHomeController<AC, C> {
         let mut spus_listerner = ctx.spus().change_listener();
 
         loop {
-            if self
+            if let Err(err) = self
                 .sync_and_send_topics(&mut topics_listener, &mut spus_listerner)
                 .await
-                .is_err()
             {
-                self.end_event.notify();
+                error!("error syncing topics: {}", err);
+                let remote = self.get_remote_mirror().await;
+                if let Ok((_, status)) = remote {
+                    if let Err(err) = self
+                        .update_status(MirrorPairStatus::DetailFailure(err.to_string()), status)
+                        .await
+                    {
+                        error!("error updating status: {}", err);
+                    }
+                }
                 break;
             }
 
-            trace!("{}: waiting for changes", self.req.remote_id);
             select! {
                 _ = self.end_event.listen() => {
-                    debug!("connection has been terminated");
+                    info!("connection has been terminated");
+                    let remote = self.get_remote_mirror().await;
+                    if let Ok((_, status)) = remote {
+                        if let Err(err) = self
+                            .update_status(MirrorPairStatus::DetailFailure("connection closed".to_owned()), status)
+                            .await
+                        {
+                            error!("error updating status: {}", err);
+                        }
+                    }
                     break;
                 },
 
@@ -131,7 +146,28 @@ impl<AC: AuthContext, C: MetadataItem> RemoteFetchingFromHomeController<AC, C> {
         }
     }
 
-    #[instrument(skip(self, topics_listener))]
+    async fn get_remote_mirror(&self) -> Result<(MirrorSpec, MirrorStatus)> {
+        let ctx = self.auth_ctx.global_ctx.clone();
+        let mirrors = ctx.mirrors().store().value(&self.req.remote_id).await;
+        let remote = mirrors
+            .iter()
+            .find(|mirror| match &mirror.spec.mirror_type {
+                MirrorType::Remote(r) => r.id == (self.req.remote_id),
+                _ => false,
+            });
+
+        if let Some(remote) = remote {
+            return Ok((
+                remote.inner().spec().clone(),
+                remote.inner().status().clone(),
+            ));
+        }
+
+        warn!("remote cluster not found: {}", self.req.remote_id);
+        Err(anyhow!("remote cluster not found: {}", self.req.remote_id))
+    }
+
+    #[instrument(skip(self))]
     async fn sync_and_send_topics(
         &mut self,
         topics_listener: &mut ChangeListener<TopicSpec, C>,
@@ -189,12 +225,8 @@ impl<AC: AuthContext, C: MetadataItem> RemoteFetchingFromHomeController<AC, C> {
 
         match ctx.mirrors().store().value(&self.req.remote_id).await {
             Some(remote) => {
-                let now = SystemTime::now()
-                    .duration_since(SystemTime::UNIX_EPOCH)
-                    .unwrap()
-                    .as_millis();
-
                 let remote_name = remote.spec().to_string();
+                let status = remote.inner().status().clone();
                 let response = MirroringStatusResponse::new_ok(&remote_name, mirror_topics);
                 let resp_msg = ResponseMessage::from_header(&self.header, response);
 
@@ -204,40 +236,41 @@ impl<AC: AuthContext, C: MetadataItem> RemoteFetchingFromHomeController<AC, C> {
                     .send_response(&resp_msg, self.header.api_version())
                     .await
                 {
-                    let status = MirrorStatus::new(
-                        MirrorPairStatus::Failed,
-                        ConnectionStatus::Online,
-                        now as u64,
-                    );
-
-                    ctx.mirrors()
-                        .update_status(remote.key.clone(), status)
-                        .await?;
-                    error!(
-                        "error mirroring sending {}, correlation_id: {}, err: {}",
-                        self.req.remote_id,
-                        self.header.correlation_id(),
-                        err
-                    );
                     return Err(anyhow!("error sending response, err: {}", err));
                 }
 
                 // update status
-                let status = MirrorStatus::new(
-                    MirrorPairStatus::Succesful,
-                    ConnectionStatus::Online,
-                    now as u64,
-                );
-                ctx.mirrors()
-                    .update_status(remote.key.clone(), status)
+                self.update_status(MirrorPairStatus::Succesful, status)
                     .await?;
 
                 return Ok(());
             }
             None => {
-                error!("remote cluster not found: {}", self.req.remote_id);
                 return Err(anyhow!("remote cluster not found: {}", self.req.remote_id));
             }
         }
+    }
+
+    async fn update_status(
+        &self,
+        pair_status: MirrorPairStatus,
+        status: MirrorStatus,
+    ) -> Result<()> {
+        let now = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)?
+            .as_millis();
+
+        let new_status =
+            MirrorStatus::new(pair_status.clone(), ConnectionStatus::Online, now as u64);
+        let mut status = status.clone();
+        status.merge_from_sc(new_status);
+
+        self.auth_ctx
+            .global_ctx
+            .mirrors()
+            .update_status(self.req.remote_id.clone(), status)
+            .await?;
+
+        Ok(())
     }
 }

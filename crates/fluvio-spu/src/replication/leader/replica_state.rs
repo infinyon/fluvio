@@ -25,7 +25,7 @@ use fluvio_spu_schema::{Isolation, COMMON_VERSION};
 
 use crate::{
     config::ReplicationConfig,
-    control_plane::SharedStatusUpdate,
+    control_plane::SharedLrsStatusUpdate,
     core::GlobalContext,
     mirroring::remote::controller::{MirrorRemoteToHomeController, SharedMirrorControllerState},
     smartengine::{
@@ -51,7 +51,7 @@ pub struct LeaderReplicaState<S> {
     storage: SharableReplicaStorage<S>,
     config: ReplicationConfig,
     followers: Arc<RwLock<BTreeMap<SpuId, OffsetInfo>>>,
-    status_update: SharedStatusUpdate,
+    status_update: SharedLrsStatusUpdate,
     sm_ctx: Option<SharedSmartModuleContext>,
     consumer_offset_publishers: Arc<Mutex<Vec<WeakSharedOffsetPublisher>>>,
     mirror_controller_state: Option<SharedMirrorControllerState>,
@@ -114,7 +114,7 @@ where
     pub fn new(
         replica: Replica,
         config: ReplicationConfig,
-        status_update: SharedStatusUpdate,
+        status_update: SharedLrsStatusUpdate,
         inner: SharableReplicaStorage<S>,
     ) -> Uninit<Self> {
         debug!(?replica, "replica storage");
@@ -147,7 +147,7 @@ where
     pub async fn create<'a, C>(
         replica: Replica,
         config: &'a C,
-        status_update: SharedStatusUpdate,
+        status_update: SharedLrsStatusUpdate,
     ) -> Result<Uninit<LeaderReplicaState<S>>>
     where
         ReplicationConfig: From<&'a C>,
@@ -841,7 +841,7 @@ mod test_leader {
     use fluvio_protocol::fixture::create_raw_recordset;
 
     use crate::config::SpuConfig;
-    use crate::control_plane::StatusMessageSink;
+    use crate::control_plane::StatusLrsMessageSink;
 
     use super::*;
 
@@ -946,7 +946,7 @@ mod test_leader {
         let state: LeaderReplicaState<MockStorage> = LeaderReplicaState::create(
             Replica::new(replica, 5000, vec![5000]),
             &leader_config,
-            StatusMessageSink::shared(),
+            StatusLrsMessageSink::shared(),
         )
         .await
         .expect("state")
@@ -969,7 +969,7 @@ mod test_leader {
         let state: LeaderReplicaState<MockStorage> = LeaderReplicaState::create(
             Replica::new(replica, 5000, vec![5001, 5002]),
             &leader_config,
-            StatusMessageSink::shared(),
+            StatusLrsMessageSink::shared(),
         )
         .await
         .expect("state")
@@ -1065,7 +1065,7 @@ mod test_leader {
         let leader: LeaderReplicaState<MockStorage> = LeaderReplicaState::create(
             Replica::new(replica.clone(), 5000, vec![5000, 5001, 5002]),
             gctx.config(),
-            StatusMessageSink::shared(),
+            StatusLrsMessageSink::shared(),
         )
         .await
         .expect("state")

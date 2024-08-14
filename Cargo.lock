@@ -2315,7 +2315,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.23.1"
+version = "0.23.2"
 dependencies = [
  "anyhow",
  "async-channel 1.9.0",
@@ -2922,6 +2922,7 @@ dependencies = [
 name = "fluvio-sc"
 version = "0.0.0"
 dependencies = [
+ "adaptive_backoff",
  "anyhow",
  "async-channel 1.9.0",
  "async-lock 3.4.0",
@@ -2962,7 +2963,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-sc-schema"
-version = "0.24.2"
+version = "0.24.3"
 dependencies = [
  "anyhow",
  "fluvio-controlplane-metadata",
@@ -3116,7 +3117,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-spu-schema"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "bytes",
  "derive_builder",

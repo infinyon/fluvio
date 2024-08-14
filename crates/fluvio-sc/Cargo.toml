@@ -22,6 +22,7 @@ required-features = []
 default = []
 
 [dependencies]
+adaptive_backoff = { workspace = true }
 anyhow = { workspace = true }
 async-trait = { workspace = true }
 async-lock = { workspace = true }

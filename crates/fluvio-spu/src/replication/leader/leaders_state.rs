@@ -9,7 +9,7 @@ use anyhow::Result;
 use fluvio_controlplane_metadata::partition::{PartitionMirrorConfig, ReplicaKey};
 use fluvio_storage::{FileReplica, ReplicaStorage};
 
-use crate::{control_plane::SharedStatusUpdate, core::GlobalContext};
+use crate::{control_plane::SharedLrsStatusUpdate, core::GlobalContext};
 use crate::config::ReplicationConfig;
 use crate::replication::follower::FollowerReplicaState;
 
@@ -109,7 +109,7 @@ impl ReplicaLeadersState<FileReplica> {
         &self,
         ctx: &GlobalContext<FileReplica>,
         replica: Replica,
-        status_update: SharedStatusUpdate,
+        status_update: SharedLrsStatusUpdate,
     ) -> Result<LeaderReplicaState<FileReplica>> {
         let replica_id = replica.id.clone();
 
@@ -148,7 +148,7 @@ impl ReplicaLeadersState<FileReplica> {
         config: ReplicationConfig,
         follower: FollowerReplicaState<FileReplica>,
         replica: Replica,
-        status_update: SharedStatusUpdate,
+        status_update: SharedLrsStatusUpdate,
         ctx: &GlobalContext<FileReplica>,
     ) -> Result<LeaderReplicaState<FileReplica>> {
         let replica_id = replica.id.clone();

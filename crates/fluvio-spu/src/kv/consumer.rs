@@ -200,7 +200,7 @@ mod tests {
 
     use crate::{
         config::ReplicationConfig, storage::SharableReplicaStorage,
-        control_plane::StatusMessageSink,
+        control_plane::StatusLrsMessageSink,
     };
 
     use super::*;
@@ -257,7 +257,7 @@ mod tests {
         let replica_id = ReplicaKey::new("topic", PartitionId::default());
         let replication_config = ReplicationConfig::default();
         let replica = Replica::new(replica_id.clone(), 5000, vec![5000]);
-        let status_update = StatusMessageSink::shared();
+        let status_update = StatusLrsMessageSink::shared();
 
         let storage = SharableReplicaStorage::create(replica_id, config)
             .await
