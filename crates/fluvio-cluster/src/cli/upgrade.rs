@@ -1,10 +1,15 @@
 use clap::Parser;
 use fluvio_extension_common::installation::InstallationType;
+use fluvio_types::config_file::SaveLoadConfig;
 use semver::Version;
-use anyhow::{Result, bail};
+use anyhow::{anyhow, Result, bail};
 use tracing::debug;
 
-use crate::{cli::shutdown::ShutdownOpt, cli::get_installation_type};
+use crate::{
+    cli::{get_installation_type, shutdown::ShutdownOpt},
+    start::local::{DEFAULT_RUNNER_PATH, LOCAL_CONFIG_PATH},
+    LocalConfig,
+};
 
 use super::start::StartOpt;
 
@@ -31,7 +36,26 @@ impl UpgradeOpt {
             }
             InstallationType::Local | InstallationType::LocalK8 | InstallationType::ReadOnly => {
                 ShutdownOpt.process().await?;
-                self.start.process(platform_version, true).await?;
+
+                let path = LOCAL_CONFIG_PATH
+                    .as_ref()
+                    .ok_or(anyhow!("Local config path not set"))?;
+
+                let mut local_config = LocalConfig::load_from(path)
+                    .map_err(|err| anyhow!("Failed to load local config: {err}"))?
+                    .evolve();
+
+                let config = local_config
+                    .platform_version(platform_version.clone())
+                    .launcher(DEFAULT_RUNNER_PATH.clone())
+                    .build()?;
+
+                config.save_to(path)?;
+
+                println!(
+                    "Successfully upgraded Local Fluvio cluster to {}",
+                    platform_version,
+                );
             }
             InstallationType::Cloud => {
                 let profile = config.config().current_profile_name().unwrap_or("none");
