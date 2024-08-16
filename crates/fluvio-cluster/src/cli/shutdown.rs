@@ -94,6 +94,7 @@ impl ShutdownOpt {
                     "Removed spu monitoring socket: {SPU_MONITORING_UNIX_SOCKET}"
                 ));
             }
+            Err(io_err) if io_err.kind() == std::io::ErrorKind::NotFound => {}
             Err(err) => {
                 pb.println(format!(
                     "SPU monitoring socket  {SPU_MONITORING_UNIX_SOCKET}, can't be removed: {err}"
