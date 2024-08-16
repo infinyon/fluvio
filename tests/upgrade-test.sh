@@ -149,7 +149,7 @@ function validate_upgrade_cluster_to_prerelease() {
         echo "Target Version ${TARGET_VERSION}"
 
         FLUVIO_IMAGE_TAG_STRATEGY=version-git \
-        $FLUVIO_BIN_ABS_PATH cluster upgrade
+        $FLUVIO_BIN_ABS_PATH cluster upgrade --force
         echo "Wait for SPU to be upgraded. sleeping 1 minute"
 
     else
@@ -159,7 +159,7 @@ function validate_upgrade_cluster_to_prerelease() {
         # This should use the binary that the Makefile set
 
         echo "Using Fluvio binary located @ ${FLUVIO_BIN_ABS_PATH}"
-        $FLUVIO_BIN_ABS_PATH cluster upgrade --develop
+        $FLUVIO_BIN_ABS_PATH cluster upgrade --force --develop
     fi
     popd
 
