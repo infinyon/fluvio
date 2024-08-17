@@ -56,5 +56,5 @@ docker compose down
 > Remember to run this command in the same directory as the `docker-compose.yml`
 > file.
 
-[1]: https://www.fluvio.io/docs/architecture/overview/
-[2]: https://www.fluvio.io/cli/
+[1]: https://www.fluvio.io/docs/fluvio/concepts/architecture/overview/
+[2]: https://www.fluvio.io/docs/fluvio/cli/overview
