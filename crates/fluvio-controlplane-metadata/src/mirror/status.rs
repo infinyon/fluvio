@@ -9,7 +9,9 @@ use fluvio_protocol::{Encoder, Decoder};
 )]
 pub struct MirrorStatus {
     pub connection_status: ConnectionStatus,
+    #[cfg_attr(feature = "use_serde", serde(default))]
     pub pairing_sc: MirrorPairStatus,
+    #[cfg_attr(feature = "use_serde", serde(default))]
     pub pairing_spu: MirrorPairStatus,
     pub connection_stat: ConnectionStat,
 }

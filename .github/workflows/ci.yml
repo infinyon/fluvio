@@ -991,7 +991,7 @@ jobs:
         if: ${{ !success() }}
         uses: actions/upload-artifact@v4
         with:
-          name: k8_upgrade_${{ matrix.run }}_log
+          name: local_upgrade_${{ matrix.run }}_log
           path: diagnostics*.gz
           retention-days: 1
 
