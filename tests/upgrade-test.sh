@@ -35,6 +35,7 @@ readonly PRERELEASE_TOPIC=${PRERELEASE_TOPIC:-prerelease}
 readonly USE_LATEST=${USE_LATEST:-}
 readonly FLUVIO_BIN=$(${READLINK} -f ${FLUVIO_BIN:-"$(which fluvio)"})
 readonly FVM_BIN=$(${READLINK} -f ${FVM_BIN:-"~/.fvm/bin/fvm"})
+readonly FLUVIO_MODE=${FLUVIO_MODE:-"k8"}
 
 # Change to this script's directory 
 pushd "$(dirname "$(${READLINK} -f "$0")")" > /dev/null
@@ -75,7 +76,12 @@ function validate_cluster_stable() {
     ~/.fvm/bin/fvm switch stable
 
     echo "Installing stable fluvio cluster"
-    $STABLE_FLUVIO cluster start --k8
+    if [[ "$FLUVIO_MODE" == "local" ]]; then
+	$STABLE_FLUVIO cluster start --local
+    else
+	$STABLE_FLUVIO cluster start --k8
+    fi
+
     ci_check;
 
     # Baseline: CLI version and platform version are expected to be the same
@@ -90,6 +96,9 @@ function validate_cluster_stable() {
     $STABLE_FLUVIO topic create ${STABLE_TOPIC} 
     # $STABLE_FLUVIO topic create ${STABLE_TOPIC}-delete 
     ci_check;
+
+    echo "Create mirror"
+    $STABLE_FLUVIO remote register stable-remote
 
     # Validate consume on topic before produce
     # https://github.com/infinyon/fluvio/issues/1819
@@ -161,7 +170,13 @@ function validate_upgrade_cluster_to_prerelease() {
         echo "Using Fluvio binary located @ ${FLUVIO_BIN_ABS_PATH}"
         $FLUVIO_BIN_ABS_PATH cluster upgrade --force --develop
     fi
+    if [[ "$FLUVIO_MODE" == "local" ]]; then
+	echo "Resuming local cluster"
+	sleep 5
+	$FLUVIO_BIN_ABS_PATH cluster resume
+    fi
     popd
+
 
     # Validate that the development version output matches the expected version from installer output
     $FLUVIO_BIN_ABS_PATH version
