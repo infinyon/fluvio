@@ -10,7 +10,7 @@
   [![CI Status](https://github.com/infinyon/fluvio/workflows/CI/badge.svg)](https://github.com/infinyon/fluvio/actions/workflows/ci.yml)
   [![CD Status](https://github.com/infinyon/fluvio/workflows/CD_Dev/badge.svg)](https://github.com/infinyon/fluvio/actions/workflows/cd_dev.yaml)
   [![fluvio Crates.io version](https://img.shields.io/crates/v/fluvio?style=flat)](https://crates.io/crates/fluvio)
-  [![Fluvio Rust documentation](https://docs.rs/fluvio/badge.svg)](https://docs.rs/fluvio)
+  [![Fluvio client API documentation](https://docs.rs/fluvio/badge.svg)](https://docs.rs/fluvio)
   [![Fluvio dependency status](https://deps.rs/repo/github/infinyon/fluvio/status.svg)](https://deps.rs/repo/github/infinyon/fluvio)
   [![Fluvio Discord](https://img.shields.io/discord/695712741381636168.svg?logo=discord&style=flat)](https://discordapp.com/invite/bBG2dTz)
 
@@ -132,7 +132,7 @@ topic "echo-test" deleted
 - If you want to filter or transform records on the fly read more about [SmartModules][SmartModules].
 
 [Fluvio.io]: https://www.fluvio.io
-[Install Fluvio CLI]: https://www.fluvio.io/cli/
-[Connectors]: https://www.fluvio.io/connectors/
-[SmartModules]: https://www.fluvio.io/smartmodules/
-[Tutorials]: https://www.fluvio.io/docs/tutorials/cloud-setup/
+[Install Fluvio CLI]: https://www.fluvio.io/docs/fluvio/cli/overview
+[Connectors]: https://www.fluvio.io/docs/connectors/overview
+[SmartModules]: https://www.fluvio.io/docs/smartmodules/overview
+[Tutorials]: https://www.fluvio.io/docs/cloud/tutorials/

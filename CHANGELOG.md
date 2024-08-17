@@ -1028,7 +1028,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Check if the local cluster exists during installation ([#2041](https://github.com/infinyon/fluvio/issues/2041))
 
 > Note:
-> For existing CLI users, we recommend following [the instructions to re-install their CLI](https://www.fluvio.io/download/). This is a requirement in order to use Fluvio CLI Channels.
+> For existing CLI users, we recommend following [the instructions to re-install their CLI](https://www.fluvio.io/docs/fluvio/fvm/introduction). This is a requirement in order to use Fluvio CLI Channels.
 
 ## Platform Version 0.9.15 - 2021-12-10
 * Migrate Rust crates to edition 2021 ([#1798](https://github.com/infinyon/fluvio/issues/1798))

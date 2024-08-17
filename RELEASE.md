@@ -19,18 +19,10 @@ Create a [new issue](https://github.com/infinyon/fluvio/issues/new?template=rele
 Prior to releasing, the release manager should check the following:
 
 Review Fluvio website:
-1. Review the "Getting Started" docs.
-    - [ ] https://www.fluvio.io/docs/get-started/linux/
-    - [ ] https://www.fluvio.io/docs/get-started/mac/
-    - [ ] https://www.fluvio.io/docs/get-started/raspberry/
-    - [ ] https://www.fluvio.io/docs/get-started/cloud/
-2. Sample code is correct (API docs are correct) 
-    - [ ] https://www.fluvio.io/api/official/rust/examples/
-    - [ ] https://www.fluvio.io/api/official/python/examples/
-    - [ ] https://www.fluvio.io/api/official/node/examples/
-    - [ ] https://www.fluvio.io/api/official/java/examples/
-3. Review rest of doc to ensure they are up to date.
-    - [ ] https://www.fluvio.io/docs/
+1. Review the "Quickstart" docs.
+    - [ ] https://www.fluvio.io/docs/fluvio/quickstart
+2. Review docs for key changes to ensure they are up to date.
+    - [ ] https://www.fluvio.io
 
 Other dependent repos:
 - [ ] Update [`infinyon/fluvio-smartmodule-template`](https://github.com/infinyon/fluvio-smartmodule-template) if needed.
@@ -71,7 +63,7 @@ Release the connector for the new version of Fluvio in: https://github.com/infin
 If there is no major changes in the connector, then only patch or minor version should be updated.
 ## Post-release workflow
 
-This is a mostly **manual** workflow 
+This is a mostly **manual** workflow
 
 After performing the release, the release manager should do the following in order
 to prepare for the next release and announce the current release to the community:
@@ -81,7 +73,7 @@ to prepare for the next release and announce the current release to the communit
     - Update `VERSION` file for next release
       - [ ] Minor version bump the version in the `VERSION` file with `-dev-1`.  For example, if release was `0.10.1` then version should be bump to `0.10.2-dev-1`.
     - Update `CHANGELOG.md` file for next release
-      - [ ] Add Platform version section (matching value as `VERSION` file) with a release date of `UNRELEASED` to 
+      - [ ] Add Platform version section (matching value as `VERSION` file) with a release date of `UNRELEASED` to
       `CHANGELOG.md` at top of file (but under the `# Release Notes` header)
         - ```## Platform Version X.Y.Z - UNRELEASED```
       - [ ] For version just released, replace `UNRELEASED` date with current date (format as `YYYY-MM-dd`) in `CHANGELOG.md`.
@@ -114,7 +106,7 @@ In the event that the release automation fails, there is manual cleanup required
 
 ### Delete artifacts:
 - Docker Hub
-  - Delete the image tag corresponding to the release VERSION  
+  - Delete the image tag corresponding to the release VERSION
 - S3
   - Delete the version directory for `fluvio` and `fluvio-run` artifacts
   - s3://packages.fluvio.io/v1/packages/fluvio/fluvio/<VERSION>
@@ -127,7 +119,7 @@ In the event that the release automation fails, there is manual cleanup required
 - `fluvio install fluvio-package`
 - `fluvio package tag fluvio:x.y.z --tag=stable --force`
 - Remove last entry in fluvio-run meta.json
-  - s3://packages.fluvio.io/v1/packages/fluvio/fluvio-run/meta.json 
+  - s3://packages.fluvio.io/v1/packages/fluvio/fluvio-run/meta.json
   - This should be a regular release tag (x.y.z), not a dev tag (x.y.z+gitcommit)
   - Confirm that the installation script works
     - `curl -fsS https://hub.infinyon.cloud/install/install.sh | bash`
