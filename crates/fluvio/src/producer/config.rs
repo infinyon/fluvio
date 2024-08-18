@@ -51,7 +51,7 @@ fn default_delivery() -> DeliverySemantic {
     DeliverySemantic::default()
 }
 
-// This is needed only for bypass the partitioner property when debugging
+// This is needed only to bypass the partitioner property when debugging
 impl fmt::Debug for Box<dyn Partitioner + Send + Sync> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         Ok(())
