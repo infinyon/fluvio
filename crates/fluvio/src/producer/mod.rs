@@ -440,6 +440,14 @@ where
         })
     }
 
+    pub fn topic(&self) -> &str {
+        &self.inner.topic
+    }
+
+    pub fn config(&self) -> &TopicProducerConfig {
+        &self.inner.config
+    }
+
     /// Send all the queued records in the producer batches.
     ///
     /// # Example
