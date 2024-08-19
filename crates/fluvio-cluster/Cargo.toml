@@ -78,6 +78,7 @@ fluvio-controlplane-metadata = { workspace = true,  features = ["k8",] }
 fluvio-sc-schema = { workspace = true  }
 fluvio-types = { workspace = true  }
 fluvio-channel = { workspace = true  }
+fluvio-stream-dispatcher = { workspace = true, features = ["k8", "local"]}
 dialoguer.workspace = true
 
 [dev-dependencies]

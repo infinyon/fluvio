@@ -2557,6 +2557,7 @@ dependencies = [
  "fluvio-future",
  "fluvio-helm",
  "fluvio-sc-schema",
+ "fluvio-stream-dispatcher",
  "fluvio-types",
  "flv-util",
  "futures-channel",

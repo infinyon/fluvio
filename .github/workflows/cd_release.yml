@@ -187,7 +187,7 @@ jobs:
       - name: Install current stable Fluvio CLI and upgrade cluster
         run: |
           ~/.fvm/bin/fvm install stable
-          ~/.fluvio/bin/fluvio cluster upgrade
+          ~/.fluvio/bin/fluvio cluster upgrade --force
           ~/.fluvio/bin/fluvio version
 
       # TODO: Verify platform version
