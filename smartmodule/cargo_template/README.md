@@ -45,7 +45,7 @@ This filter will keep only records whose data contains the letter `z`.
 Make sure to follow the [Fluvio getting started] guide, then create a new
 topic to send data to.
 
-[Fluvio getting started]: https://www.fluvio.io/docs/getting-started/
+[Fluvio getting started]: https://www.fluvio.io/docs/fluvio/quickstart
 
 ```bash
 $ fluvio topic create smartmodule-test

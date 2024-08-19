@@ -96,9 +96,9 @@ Now that you have a cluster running you can try building data flows in different
 
 #### Check Fluvio Core Documentation
 Fluvio documentation will provide additional context on how to use the Fluvio clusters, CLI, clients, a development kits.
-- [Fluvio docs home](https://www.fluvio.io/docs/)
-- [Fluvio CLI docs home](https://www.fluvio.io/cli/)
-- [Fluvio Architecture](https://www.fluvio.io/docs/architecture/overview/)
+- [Fluvio docs home](https://www.fluvio.io)
+- [Fluvio CLI docs home](https://www.fluvio.io/docs/fluvio/cli/overview)
+- [Fluvio Architecture](https://www.fluvio.io/docs/fluvio/concepts/architecture/overview)
 
 #### Learn how to build custom connectors
 Fluvio can connect to practically any system that you can think of.
@@ -108,14 +108,14 @@ Fluvio can connect to practically any system that you can think of.
 Out of the box Fluvio has native http, webhook, mqtt, kafka inbound connectors. In terms of outbound connectors out of the box Fluvio supports SQL, DuckDB, Graphite, experimental builds of Redis, S3 etc.
 
 Using Connector Development Kit, we built our existing connectors in a matter of few days. Check out the docs and let us know if you need help building any connector.
-- [Connector docs](https://www.fluvio.io/connectors/)
-- [Connector Development Kit docs](https://www.fluvio.io/connectors/cdk/overview/)
+- [Connector docs](https://www.fluvio.io/docs/connectors/overview)
+- [Connector Development Kit (cdk) docs](https://www.fluvio.io/docs/connectors/cdk)
 
 #### Learn how to build custom smart modules
 Fluvio applies wasm based stream processing and data transformations. We call these reusable transformation functions smart modules. Reusable Smart modules are built using Smart Module Development Kit and can be distributed using InfinyOn Cloud hub.
 
-- [Smart Modules docs](https://www.fluvio.io/smartmodules/)
-- [Smart Modules Development Kit docs](https://www.fluvio.io/smartmodules/)
+- [Smart Modules docs](https://www.fluvio.io/docs/smartmodules/overview)
+- [Smart Modules Development Kit (smdk) docs](https://www.fluvio.io/docs/smartmodules/smdk)
 
 There are some limitations on the amount of polyglot development interface support. While bindings can be generated for wasm compatible languages, there are quirks in that approach. We have a better solution with Stateful Service Development Kit, which we are implementing using the web assembly component model. In the upcoming releases we will be able to natively support all wasm compatible programming languages.
 
@@ -127,7 +127,7 @@ InfinyOn Cloud is Fluvio on the cloud as a managed service. All new users get $3
 - [Check out experimental data flows on InfinyOn Labs Repo](https://github.com/infinyon/labs-projects)
 
 ### Clients
-- [Fluvio Client API docs home](https://www.fluvio.io/api/)
+- [Fluvio Client API docs home](https://www.fluvio.io/docs/fluvio/apis/overview)
 
 **Language Specifc API docs:**
 - [Rust API docs](https://docs.rs/fluvio/latest/fluvio/)
