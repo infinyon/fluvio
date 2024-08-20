@@ -1,4 +1,4 @@
-use std::fmt::{Debug, Display, Formatter};
+use std::fmt::{self, Debug, Display, Formatter};
 use std::str::FromStr;
 use std::time::Duration;
 
@@ -51,11 +51,18 @@ fn default_delivery() -> DeliverySemantic {
     DeliverySemantic::default()
 }
 
+// This is needed only to bypass the partitioner property when debugging
+impl fmt::Debug for Box<dyn Partitioner + Send + Sync> {
+    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        Ok(())
+    }
+}
+
 /// Options used to adjust the behavior of the Producer.
 /// Create this struct with [`TopicProducerConfigBuilder`].
 ///
 /// Create a producer with a custom config with [`crate::Fluvio::topic_producer_with_config()`].
-#[derive(Builder)]
+#[derive(Debug, Builder)]
 #[builder(pattern = "owned")]
 pub struct TopicProducerConfig {
     /// Maximum amount of bytes accumulated by the records before sending the batch.
@@ -100,6 +107,40 @@ pub struct TopicProducerConfig {
 
     #[builder(default)]
     pub(crate) smartmodules: Vec<SmartModuleInvocation>,
+}
+
+impl TopicProducerConfig {
+    pub fn linger(&self) -> Duration {
+        self.linger
+    }
+
+    pub fn batch_size(&self) -> usize {
+        self.batch_size
+    }
+
+    pub fn batch_queue_size(&self) -> usize {
+        self.batch_queue_size
+    }
+
+    pub fn compression(&self) -> Option<Compression> {
+        self.compression
+    }
+
+    pub fn timeout(&self) -> Duration {
+        self.timeout
+    }
+
+    pub fn isolation(&self) -> Isolation {
+        self.isolation
+    }
+
+    pub fn delivery_semantic(&self) -> DeliverySemantic {
+        self.delivery_semantic
+    }
+
+    pub fn smartmodules(&self) -> &Vec<SmartModuleInvocation> {
+        &self.smartmodules
+    }
 }
 
 impl Default for TopicProducerConfig {
