@@ -2440,6 +2440,7 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "async-channel 1.9.0",
+ "async-std",
  "async-trait",
  "bytesize",
  "clap",

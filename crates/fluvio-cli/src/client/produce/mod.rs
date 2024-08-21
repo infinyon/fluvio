@@ -11,17 +11,23 @@ mod cmd {
     #[cfg(feature = "producer-file-io")]
     use std::path::PathBuf;
 
+    use async_std::io::stdin;
     use async_trait::async_trait;
+    use fluvio_future::io::StreamExt;
+    use fluvio_sc_schema::message::MsgType;
+    use fluvio_sc_schema::topic::TopicSpec;
     #[cfg(feature = "producer-file-io")]
     use futures::future::join_all;
     use clap::Parser;
+    use tokio::select;
     use tracing::{error, warn};
     use humantime::parse_duration;
     use anyhow::Result;
 
     use fluvio::{
-        Compression, Fluvio, FluvioError, TopicProducerPool, TopicProducerConfigBuilder, RecordKey,
-        ProduceOutput, DeliverySemantic, SmartModuleContextData, Isolation, SmartModuleInvocation,
+        Compression, DeliverySemantic, Fluvio, FluvioAdmin, FluvioError, Isolation, ProduceOutput,
+        RecordKey, SmartModuleContextData, SmartModuleInvocation, TopicProducerConfigBuilder,
+        TopicProducerPool,
     };
     use fluvio_extension_common::Terminal;
     use fluvio_types::print_cli_ok;
@@ -243,16 +249,18 @@ mod cmd {
                     .await?,
             );
 
+            let admin = fluvio.admin().await;
+
             #[cfg(feature = "producer-file-io")]
             if self.raw {
                 self.process_raw_file(&producer).await?;
             } else {
-                self.produce_lines(producer.clone()).await?;
+                self.produce_lines(producer.clone(), &admin).await?;
             };
 
             #[cfg(not(feature = "producer-file-io"))]
             {
-                self.produce_lines(producer.clone()).await?;
+                self.produce_lines(producer.clone(), &admin).await?;
             }
 
             producer.flush().await?;
@@ -315,7 +323,11 @@ mod cmd {
             }
         }
 
-        async fn produce_lines(&self, producer: Arc<TopicProducerPool>) -> Result<()> {
+        async fn produce_lines(
+            &self,
+            producer: Arc<TopicProducerPool>,
+            admin: &FluvioAdmin,
+        ) -> Result<()> {
             #[cfg(feature = "producer-file-io")]
             if let Some(path) = &self.file {
                 let reader = BufReader::new(File::open(path)?);
@@ -340,7 +352,7 @@ mod cmd {
                     .collect::<Result<Vec<_>, _>>()?;
                 }
             } else {
-                self.producer_stdin(&producer).await?
+                self.producer_stdin(&producer, admin).await?
             }
 
             #[cfg(not(feature = "producer-file-io"))]
@@ -349,27 +361,55 @@ mod cmd {
             Ok(())
         }
 
-        async fn producer_stdin(&self, producer: &Arc<TopicProducerPool>) -> Result<()> {
-            let mut lines = BufReader::new(std::io::stdin()).lines();
+        async fn producer_stdin(
+            &self,
+            producer: &Arc<TopicProducerPool>,
+            admin: &FluvioAdmin,
+        ) -> Result<()> {
+            use async_std::io::prelude::*;
+            use async_std::io::BufReader;
+            let mut lines = BufReader::new(stdin()).lines();
+            let mut partition_stream = admin.watch::<TopicSpec>().await?;
+
             if self.interactive_mode() {
                 eprint!("> ");
             }
 
-            while let Some(Ok(line)) = lines.next() {
-                let produce_output = self.produce_line(producer, &line).await?;
+            loop {
+                select! {
+                    line = lines.next() => {
+                        if let Some(Ok(line)) = line {
+                            let produce_output = self.produce_line(producer, &line).await?;
 
-                if let Some(produce_output) = produce_output {
-                    if self.delivery_semantic != DeliverySemantic::AtMostOnce {
-                        // ensure it was properly sent
-                        produce_output.wait().await?;
+                            if let Some(produce_output) = produce_output {
+                                if self.delivery_semantic != DeliverySemantic::AtMostOnce {
+                                    // ensure it was properly sent
+                                    produce_output.wait().await?;
+                                }
+                            }
+
+                            if self.interactive_mode() {
+                                print_cli_ok!();
+                                eprint!("> ");
+                            }
+                        } else {
+                            // When stdin is closed, we break the loop
+                            break;
+                        }
+                    }
+                    stream = partition_stream.next() => {
+                        if let Some(stream) = stream {
+                            let stream = stream?;
+                            for change in stream.inner().changes {
+                                if change.header == MsgType::DELETE && change.content.name == self.topic {
+                                    return Err(CliError::TopicDeleted(self.topic.clone()).into());
+                                }
+                            }
+                        }
                     }
                 }
-
-                if self.interactive_mode() {
-                    print_cli_ok!();
-                    eprint!("> ");
-                }
             }
+
             Ok(())
         }
 
