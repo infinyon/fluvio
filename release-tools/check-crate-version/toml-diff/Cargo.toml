@@ -11,5 +11,4 @@ license = "Apache-2.0"
 toml = { workspace = true, features = ["display"] }
 
 [dev-dependencies]
-serde = { workspace = true }
 toml = { workspace = true, features = ["display", "parse"] }

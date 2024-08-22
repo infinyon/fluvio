@@ -27,6 +27,5 @@ fluvio-controlplane-metadata = { workspace = true  }
 fluvio-future = { workspace = true, features = ["net", "openssl_tls"] }
 fluvio-protocol = { workspace = true }
 fluvio-socket = { workspace = true }
-fluvio-types = { workspace = true  }
 flv-tls-proxy = { workspace = true }
 

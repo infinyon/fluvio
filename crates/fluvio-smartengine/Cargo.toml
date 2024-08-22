@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-smartengine"
-version = "0.8.0"
+version = "0.8.1"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -37,5 +37,4 @@ fluvio-protocol = { workspace = true, features = [
 fluvio-smartmodule = { workspace = true, default-features = false }
 
 [dev-dependencies]
-fluvio-types = { workspace = true }
 fluvio-future = { workspace = true, default-features = false, features = ["task"] }

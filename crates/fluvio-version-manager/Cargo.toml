@@ -22,7 +22,6 @@ comfy-table = { workspace = true }
 current_platform = { workspace = true }
 dialoguer = { workspace = true }
 dirs = { workspace = true }
-hex = { workspace = true }
 semver = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
