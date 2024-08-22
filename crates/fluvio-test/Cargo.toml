@@ -12,8 +12,6 @@ publish = false
 [dependencies]
 async-channel = { workspace = true }
 anyhow = { workspace = true }
-async-trait = { workspace = true }
-bytes = { workspace = true }
 futures-lite = { workspace = true }
 futures = { workspace = true }
 clap = { workspace = true, features = ["std", "derive"] }
@@ -25,19 +23,15 @@ md-5 = "0.10"
 nix = { workspace = true, features = ["process"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
-serde_yaml = { workspace = true }
 inventory = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
 comfy-table = { workspace = true }
 hdrhistogram = { workspace = true }
 crc = "3.0"
 fork = "0.2"
-crossbeam-channel = { workspace = true }
 sysinfo = { workspace = true }
 signal-hook = "0.3.13"
 indicatif = { workspace = true }
-async-std = { workspace = true, features = ["attributes"] }
-uuid = { workspace = true }
 
 tracing = { workspace = true }
 
@@ -52,7 +46,6 @@ fluvio-future = { workspace = true, features = [
     "fixture",
 ] }
 fluvio-command = { version = "0.2.0" }
-fluvio-cluster = { path = "../fluvio-cluster" }
 fluvio-cli = { path = "../fluvio-cli" }
 fluvio-controlplane-metadata = { workspace = true, features = ["k8"] }
 

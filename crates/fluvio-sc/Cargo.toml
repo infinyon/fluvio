@@ -26,22 +26,15 @@ adaptive_backoff = { workspace = true }
 anyhow = { workspace = true }
 async-trait = { workspace = true }
 async-lock = { workspace = true }
-async-channel = { workspace = true }
-base64 = { workspace = true }
-cfg-if = { workspace = true }
 clap = { workspace = true,features = ["std", "derive", "env"]}
-event-listener = { workspace = true }
 futures-util = { workspace = true }
 mimalloc = { workspace = true }
 once_cell = { workspace = true }
 rand = { workspace = true }
-regex = { workspace = true }
 semver = { workspace = true }
 serde = { workspace = true, features = ['derive'] }
 serde_json = { workspace = true }
-serde_yaml = { workspace = true }
 sysinfo = { workspace = true }
-thiserror = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
 tracing = { workspace = true }
 
@@ -71,5 +64,4 @@ flv-tls-proxy = { workspace = true }
 [dev-dependencies]
 rand = { workspace = true }
 fluvio-future = { workspace = true, features = ["fixture"] }
-flv-util = { workspace = true, features = ["fixture"] }
 fluvio-stream-model = { workspace = true, features = ["fixture"] }
