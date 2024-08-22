@@ -17,11 +17,9 @@ doc = false
 tracing = { workspace = true }
 anyhow = { workspace = true }
 clap = { workspace = true, features = ["std", "derive", "help", "usage", "error-context", "env", "wrap_help", "suggestions"], default-features = false }
-current_platform = { workspace = true }
 dirs = { workspace = true }
 enum-display = { workspace = true }
 toml = { workspace = true }
-tokio = { workspace = true }
 cargo-generate = { workspace = true }
 include_dir = { workspace = true }
 tempfile = { workspace = true }
@@ -30,11 +28,9 @@ lib-cargo-crate = "0.2.1"
 
 fluvio = { path = "../fluvio", default-features = false }
 fluvio-hub-util = { path = "../fluvio-hub-util" }
-fluvio-protocol = { path = "../fluvio-protocol", features=["record","api"] }
 fluvio-future = { workspace = true, features = ["subscriber"]}
 fluvio-smartengine = { path = "../fluvio-smartengine", features = ["transformation"] }
 fluvio-extension-common = { path = "../fluvio-extension-common", features = ["target"] }
 fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata", features = ["smartmodule"] }
-fluvio-sc-schema = { path = "../fluvio-sc-schema" }
 fluvio-cli-common = { path = "../fluvio-cli-common", features = ["file-records", "version-cmd", "serde", "smartmodule-test"] }
 cargo-builder = { path = "../cargo-builder"}

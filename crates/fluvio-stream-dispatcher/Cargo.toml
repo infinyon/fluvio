@@ -1,7 +1,7 @@
 [package]
 name = "fluvio-stream-dispatcher"
 edition = "2021"
-version = "0.13.4"
+version = "0.13.5"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Fluvio Event Stream access"
 repository = "https://github.com/infinyon/fluvio"
@@ -21,13 +21,11 @@ async-trait = { workspace = true }
 async-lock = { workspace = true }
 async-channel = { workspace = true }
 cfg-if = { workspace = true }
-event-listener = { workspace = true }
 futures-util = { workspace = true, features = ["alloc"] }
 once_cell = { workspace = true }
 serde = { workspace = true,  features = ['derive'] }
 serde_json = { workspace = true, optional = true }
 serde_yaml = { workspace = true, optional = true }
-thiserror = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
 tracing = { workspace = true }
 tempfile = { workspace = true }

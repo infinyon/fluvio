@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-extension-common"
-version = "0.14.1"
+version = "0.14.2"
 edition = "2021"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Fluvio extension common"
@@ -23,7 +23,6 @@ comfy-table = { workspace = true }
 serde = { workspace = true, features = ['derive'] }
 serde_json ={ workspace = true }
 serde_yaml = { workspace = true }
-futures-lite = { workspace = true }
 semver = { workspace = true, features = ["serde"] }
 thiserror = { workspace = true }
 tracing = { workspace = true }

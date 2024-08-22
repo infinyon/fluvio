@@ -10,18 +10,12 @@ publish = false
 
 
 [dependencies]
-bytes = { workspace = true }
 tracing = { workspace = true }
-futures-lite = { workspace = true }
 clap = { workspace = true , features = ["std", "derive", "help", "usage", "error-context"] }
 async-trait = { workspace = true }
-tokio = { workspace = true, features = ["macros"] }
 syn = { workspace = true }
 serde = { workspace = true }
-serde_json = { workspace = true }
 humantime = { workspace = true }
-quote =  { workspace = true }
-proc-macro2 = { workspace = true }
 inventory = { workspace = true }
 comfy-table = { workspace = true }
 once_cell = { workspace = true }
@@ -36,7 +30,6 @@ fluvio-types = { workspace = true }
 fluvio-future = { workspace = true, features = ["task", "timer", "subscriber", "fixture"] }
 fluvio-cluster = { path = "../fluvio-cluster" }
 fluvio-command = { workspace = true  }
-fluvio-controlplane-metadata = { workspace = true, features = ["k8"] }
 
 [lib]
 path = "lib.rs"

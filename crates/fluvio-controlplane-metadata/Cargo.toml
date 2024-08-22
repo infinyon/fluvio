@@ -17,8 +17,6 @@ use_serde = ["serde","semver/serde", "bytesize/serde", "humantime-serde", "serde
 k8 = ["use_serde", "fluvio-stream-model/k8"]
 
 [dependencies]
-async-trait = { workspace = true }
-
 thiserror = { workspace = true }
 base64 = { workspace = true }
 bytes = { workspace = true }
@@ -35,7 +33,6 @@ serde_yaml = { workspace = true, optional = true }
 derive_builder = { workspace = true }
 
 # External Fluvio dependencies
-fluvio-future = { workspace = true }
 flv-util = { workspace = true }
 
 fluvio-types = { workspace = true }
@@ -44,5 +41,4 @@ fluvio-protocol = { workspace = true, features = [ "record", "link", "api"] }
 
 
 [dev-dependencies]
-fluvio-future = { workspace = true, features = ["fixture"] }
 serde_json = { workspace = true }
