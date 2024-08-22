@@ -368,6 +368,7 @@ jobs:
             crate-version,
             crate-audit,
             crate-publish-check,
+            unused-dependencies
           ]
     env:
       RUST_BACKTRACE: full
@@ -418,6 +419,11 @@ jobs:
       - name: Crate version check
         if: matrix.check == 'crate-publish-check'
         run: ./release-tools/check-publish-crates.sh
+      - name: Check for unused dependencies
+        if: matrix.check == 'unused-dependencies'
+        run: |
+          cargo install cargo-machete
+          cargo machete --with-metadata
 
   # Run integration test. This always run on release mode
   check_integration:

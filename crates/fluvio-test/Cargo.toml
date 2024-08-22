@@ -56,3 +56,6 @@ fluvio-protocol = { workspace = true, features = ["api"] }
 
 # Fluvio test framework Options derive
 fluvio-test-case-derive = { path = "../fluvio-test-case-derive" }
+
+[package.metadata.cargo-machete]
+ignored = ["inventory", "nix"]

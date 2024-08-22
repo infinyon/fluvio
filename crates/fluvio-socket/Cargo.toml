@@ -57,3 +57,7 @@ fluvio-types = { workspace = true, features = ["events"] }
 
 [build-dependencies]
 built = "0.7.0"
+
+[package.metadata.cargo-machete]
+ignored = ["built"]
+

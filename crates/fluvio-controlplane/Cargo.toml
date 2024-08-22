@@ -19,3 +19,6 @@ tracing = { workspace = true }
 fluvio-types = { workspace = true  }
 fluvio-controlplane-metadata = { workspace = true  }
 fluvio-protocol = { workspace = true,  features = ["api"]}
+
+[package.metadata.cargo-machete]
+ignored = ["tracing"]

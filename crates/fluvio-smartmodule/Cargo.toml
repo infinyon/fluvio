@@ -33,3 +33,6 @@ fluvio-protocol = { workspace = true, features = ["link", "types"] }
 [dev-dependencies]
 criterion = { workspace = true }
 trybuild = { workspace = true }
+
+[package.metadata.cargo-machete]
+ignored = ["tracing"]
