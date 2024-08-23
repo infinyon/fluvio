@@ -16,7 +16,6 @@ path = "src/lib.rs"
 [dependencies]
 tracing = { workspace = true }
 async-trait = { workspace = true }
-tokio = { workspace = true, features = ["macros"] }
 anyhow = { workspace = true }
 
 # Fluvio dependencies

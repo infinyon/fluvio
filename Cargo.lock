@@ -826,7 +826,6 @@ dependencies = [
  "anyhow",
  "cargo_metadata",
  "derive_builder",
- "thiserror",
 ]
 
 [[package]]
@@ -958,7 +957,6 @@ dependencies = [
  "serde",
  "sysinfo",
  "tempfile",
- "thiserror",
  "toml 0.8.15",
  "tracing",
 ]
@@ -2322,8 +2320,6 @@ dependencies = [
  "async-lock 3.4.0",
  "async-std",
  "async-trait",
- "base64 0.22.1",
- "bytes",
  "cfg-if",
  "chrono",
  "derive_builder",
@@ -2340,13 +2336,11 @@ dependencies = [
  "fluvio-stream-dispatcher",
  "fluvio-types",
  "fluvio_ws_stream_wasm",
- "futures-lite 2.3.0",
  "futures-util",
  "once_cell",
  "pin-project",
  "semver 1.0.23",
  "serde",
- "serde_json",
  "siphasher",
  "thiserror",
  "tokio",
@@ -2365,7 +2359,6 @@ dependencies = [
  "fluvio-future",
  "fluvio-protocol",
  "fluvio-socket",
- "fluvio-types",
  "flv-tls-proxy",
  "futures-util",
  "serde",
@@ -2451,8 +2444,6 @@ dependencies = [
  "crossterm 0.27.0",
  "ctrlc",
  "current_platform",
- "dirs 5.0.1",
- "eyre",
  "flate2",
  "fluvio",
  "fluvio-auth",
@@ -2469,13 +2460,11 @@ dependencies = [
  "fluvio-sc-schema",
  "fluvio-smartengine",
  "fluvio-smartmodule",
- "fluvio-socket",
  "fluvio-spu-schema",
  "fluvio-types",
  "futures",
  "futures-util",
  "handlebars",
- "hex",
  "home",
  "humantime",
  "indicatif",
@@ -2488,13 +2477,10 @@ dependencies = [
  "serde_json",
  "serde_yaml 0.9.34+deprecated",
  "sha2",
- "static_assertions",
- "sysinfo",
  "thiserror",
  "tokio",
  "tracing",
  "tui",
- "url",
  "which 6.0.1",
 ]
 
@@ -2509,7 +2495,6 @@ dependencies = [
  "comfy-table",
  "current_platform",
  "fluvio",
- "fluvio-future",
  "fluvio-package-index",
  "fluvio-protocol",
  "fluvio-sc-schema",
@@ -2561,7 +2546,6 @@ dependencies = [
  "fluvio-stream-dispatcher",
  "fluvio-types",
  "flv-util",
- "futures-channel",
  "futures-util",
  "include_dir",
  "indicatif",
@@ -2685,13 +2669,11 @@ name = "fluvio-controlplane-metadata"
 version = "0.29.1"
 dependencies = [
  "anyhow",
- "async-trait",
  "base64 0.22.1",
  "bytes",
  "bytesize",
  "derive_builder",
  "flate2",
- "fluvio-future",
  "fluvio-protocol",
  "fluvio-stream-model",
  "fluvio-types",
@@ -2709,7 +2691,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-extension-common"
-version = "0.14.1"
+version = "0.14.2"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2717,7 +2699,6 @@ dependencies = [
  "comfy-table",
  "fluvio",
  "fluvio-package-index",
- "futures-lite 2.3.0",
  "semver 1.0.23",
  "serde",
  "serde_json",
@@ -2826,7 +2807,6 @@ dependencies = [
  "pathdiff",
  "pem",
  "rand",
- "rand_core",
  "semver 1.0.23",
  "serde",
  "serde_json",
@@ -2836,9 +2816,7 @@ dependencies = [
  "tar",
  "tempfile",
  "thiserror",
- "toml 0.8.15",
  "tracing",
- "tracing-subscriber",
  "ureq",
  "url",
  "wasmparser",
@@ -2916,8 +2894,6 @@ dependencies = [
  "semver 1.0.23",
  "serde_json",
  "thiserror",
- "tracing",
- "tracing-subscriber",
 ]
 
 [[package]]
@@ -2926,13 +2902,9 @@ version = "0.0.0"
 dependencies = [
  "adaptive_backoff",
  "anyhow",
- "async-channel 1.9.0",
  "async-lock 3.4.0",
  "async-trait",
- "base64 0.22.1",
- "cfg-if",
  "clap",
- "event-listener 5.3.1",
  "fluvio",
  "fluvio-auth",
  "fluvio-controlplane",
@@ -2946,19 +2918,15 @@ dependencies = [
  "fluvio-stream-model",
  "fluvio-types",
  "flv-tls-proxy",
- "flv-util",
  "futures-util",
  "k8-client",
  "mimalloc",
  "once_cell",
  "rand",
- "regex",
  "semver 1.0.23",
  "serde",
  "serde_json",
- "serde_yaml 0.9.34+deprecated",
  "sysinfo",
- "thiserror",
  "tokio",
  "tracing",
 ]
@@ -2973,7 +2941,6 @@ dependencies = [
  "fluvio-protocol",
  "fluvio-socket",
  "fluvio-stream-model",
- "fluvio-types",
  "paste",
  "serde",
  "serde_json",
@@ -2994,13 +2961,12 @@ dependencies = [
  "fluvio-types",
  "futures-util",
  "portpicker",
- "tokio",
  "tracing",
 ]
 
 [[package]]
 name = "fluvio-smartengine"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow",
  "cfg-if",
@@ -3008,7 +2974,6 @@ dependencies = [
  "fluvio-future",
  "fluvio-protocol",
  "fluvio-smartmodule",
- "fluvio-types",
  "humantime-serde",
  "serde",
  "serde_json",
@@ -3043,9 +3008,8 @@ dependencies = [
 
 [[package]]
 name = "fluvio-socket"
-version = "0.14.9"
+version = "0.14.10"
 dependencies = [
- "anyhow",
  "async-channel 1.9.0",
  "async-lock 3.4.0",
  "async-trait",
@@ -3083,7 +3047,6 @@ dependencies = [
  "chrono",
  "clap",
  "derive_builder",
- "event-listener 5.3.1",
  "flate2",
  "fluvio",
  "fluvio-auth",
@@ -3104,16 +3067,13 @@ dependencies = [
  "flv-util",
  "futures-util",
  "mimalloc",
- "nix 0.29.0",
  "once_cell",
  "portpicker",
- "regex",
  "serde",
  "serde_json",
  "sysinfo",
  "thiserror",
  "tokio",
- "toml 0.8.15",
  "tracing",
 ]
 
@@ -3149,7 +3109,6 @@ dependencies = [
  "bytes",
  "clap",
  "derive_builder",
- "fluvio-compression",
  "fluvio-controlplane",
  "fluvio-controlplane-metadata",
  "fluvio-future",
@@ -3170,14 +3129,13 @@ dependencies = [
 
 [[package]]
 name = "fluvio-stream-dispatcher"
-version = "0.13.4"
+version = "0.13.5"
 dependencies = [
  "anyhow",
  "async-channel 1.9.0",
  "async-lock 3.4.0",
  "async-trait",
  "cfg-if",
- "event-listener 5.3.1",
  "fluvio-future",
  "fluvio-stream-model",
  "fluvio-types",
@@ -3188,7 +3146,6 @@ dependencies = [
  "serde_json",
  "serde_yaml 0.9.34+deprecated",
  "tempfile",
- "thiserror",
  "tokio",
  "tracing",
 ]
@@ -3213,17 +3170,12 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "async-channel 1.9.0",
- "async-std",
- "async-trait",
- "bytes",
  "clap",
  "comfy-table",
  "crc",
- "crossbeam-channel",
  "fastrand 2.1.0",
  "fluvio",
  "fluvio-cli",
- "fluvio-cluster",
  "fluvio-command",
  "fluvio-controlplane-metadata",
  "fluvio-future",
@@ -3243,12 +3195,10 @@ dependencies = [
  "rand",
  "serde",
  "serde_json",
- "serde_yaml 0.9.34+deprecated",
  "signal-hook",
  "sysinfo",
  "tokio",
  "tracing",
- "uuid",
 ]
 
 [[package]]
@@ -3265,9 +3215,6 @@ dependencies = [
 name = "fluvio-test-derive"
 version = "0.0.0"
 dependencies = [
- "clap",
- "crossbeam-channel",
- "fluvio",
  "fluvio-future",
  "fluvio-test-util",
  "inflections",
@@ -3277,8 +3224,6 @@ dependencies = [
  "rand",
  "serde_json",
  "syn 2.0.71",
- "tokio",
- "tracing",
  "trybuild 1.0.42",
 ]
 
@@ -3288,28 +3233,21 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "async-trait",
- "bytes",
  "clap",
  "comfy-table",
  "dyn-clone",
  "fluvio",
  "fluvio-cluster",
  "fluvio-command",
- "fluvio-controlplane-metadata",
  "fluvio-future",
  "fluvio-types",
- "futures-lite 2.3.0",
  "hdrhistogram",
  "humantime",
  "inventory",
  "once_cell",
- "proc-macro2",
- "quote",
  "semver 1.0.23",
  "serde",
- "serde_json",
  "syn 2.0.71",
- "tokio",
  "tracing",
  "uuid",
 ]
@@ -3341,7 +3279,6 @@ dependencies = [
  "fluvio-future",
  "fluvio-hub-util",
  "fs_extra",
- "hex",
  "semver 1.0.23",
  "serde",
  "serde_json",
@@ -6892,7 +6829,6 @@ dependencies = [
  "cargo-builder",
  "cargo-generate",
  "clap",
- "current_platform",
  "dirs 5.0.1",
  "enum-display",
  "fluvio",
@@ -6901,13 +6837,10 @@ dependencies = [
  "fluvio-extension-common",
  "fluvio-future",
  "fluvio-hub-util",
- "fluvio-protocol",
- "fluvio-sc-schema",
  "fluvio-smartengine",
  "include_dir",
  "lib-cargo-crate",
  "tempfile",
- "tokio",
  "toml 0.8.15",
  "tracing",
 ]
@@ -7447,7 +7380,6 @@ dependencies = [
 name = "toml-diff"
 version = "0.0.0"
 dependencies = [
- "serde",
  "toml 0.8.15",
 ]
 

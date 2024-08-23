@@ -28,17 +28,13 @@ tracing = { workspace = true }
 bytes = { workspace = true }
 clap = { workspace = true, features = ["std", "derive", "env"]}
 thiserror = { workspace = true }
-nix = { workspace = true, features = ["uio"]}
-toml = { workspace = true }
 futures-util = { workspace = true, features = ["sink"] }
 async-trait = { workspace = true }
 serde = { workspace = true,  features = ['derive'] }
 serde_json = { workspace = true }
-regex = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
 async-channel = { workspace = true }
 async-lock = { workspace = true }
-event-listener = { workspace = true }
 async-io = { workspace = true }
 adaptive_backoff = { workspace = true }
 once_cell = { workspace = true }

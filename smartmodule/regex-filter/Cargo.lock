@@ -13,9 +13,15 @@ dependencies = [
 
 [[package]]
 name = "bytes"
-version = "1.6.0"
+version = "1.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "514de17de45fdb8dc022b1a7975556c53c86f9f0aa5f534b98977b171857c2c9"
+checksum = "8318a53db07bb3f8dca91a600466bdb3f2eaadeedfdbcf02e1accbad9271ba50"
+
+[[package]]
+name = "cfg-if"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "content_inspector"
@@ -53,17 +59,19 @@ dependencies = [
 
 [[package]]
 name = "fluvio-compression"
-version = "0.3.2"
+version = "0.3.3"
 dependencies = [
+ "bytes",
  "serde",
  "thiserror",
 ]
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.10.13"
+version = "0.11.0"
 dependencies = [
  "bytes",
+ "cfg-if",
  "content_inspector",
  "crc32c",
  "eyre",
@@ -89,7 +97,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartmodule"
-version = "0.7.3"
+version = "0.7.4"
 dependencies = [
  "eyre",
  "fluvio-protocol",
@@ -109,7 +117,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-types"
-version = "0.4.6"
+version = "0.5.0"
 dependencies = [
  "serde",
  "thiserror",

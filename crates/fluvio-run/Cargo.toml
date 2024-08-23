@@ -27,8 +27,6 @@ clap = { workspace = true, features = ["std", "derive", "help", "usage", "error-
 semver = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
-tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
 
 # regardless of TLS, sc and spu always use openssl_tls for now because we need cert API
 fluvio-future = { workspace = true, features = ["subscriber"] }
