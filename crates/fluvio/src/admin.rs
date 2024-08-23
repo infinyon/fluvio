@@ -135,7 +135,9 @@ impl FluvioAdmin {
                 metadata,
             })
         } else {
-            Err(anyhow!("WatchApi version not found"))
+            let platform_version = versions.platform_version();
+            let client_version = crate::VERSION.trim();
+            Err(anyhow!("Fluvio Client {client_version} and Cluster {platform_version} versions are not compatible. Please upgrade client to {platform_version}"))
         }
     }
 
