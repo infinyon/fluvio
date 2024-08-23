@@ -48,6 +48,5 @@ fluvio-sc-schema = { path = "../fluvio-sc-schema", optional = true }
 fluvio-smartmodule = { path = "../fluvio-smartmodule", optional = true, default-features = false }
 fluvio-smartengine = { path = "../fluvio-smartengine", optional = true, features = ["transformation"] }
 
-
 [package.metadata.cargo-machete]
 ignored = ["tuple_vec_map"]
