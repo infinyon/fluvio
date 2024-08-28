@@ -20,6 +20,7 @@ pub const HUB_API_CONN_LIST: &str = concatcp!(HUB_API_V, "/connector/list");
 pub const HUB_API_SDF: &str = concatcp!(HUB_API_V, "/sdf");
 pub const HUB_API_SDF_PKG: &str = concatcp!(HUB_API_V, "/sdf/pkg");
 pub const HUB_API_SDF_LIST: &str = concatcp!(HUB_API_V, "/sdf/list");
+pub const HUB_API_SDF_LIST_META: &str = concatcp!(HUB_API_V, "/sdf/list_with_meta");
 pub const HUB_API_SDF_PKG_PUB: &str = concatcp!(HUB_API_V, "/sdf/pkg/pub/pkg");
 pub const HUB_API_SDF_DATAFLOW_PUB: &str = concatcp!(HUB_API_V, "/sdf/pkg/pub/dataflow");
 
