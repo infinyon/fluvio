@@ -43,6 +43,12 @@ pub trait Download {
 
 #[async_trait]
 impl Download for Artifact {
+    #[cfg(target_arch = "wasm32")]
+    async fn download(&self, target_dir: PathBuf) -> Result<PathBuf> {
+        unimplemented!("The download support is not implemented for wasm32 architecture");
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
     #[instrument(skip(self, target_dir))]
     async fn download(&self, target_dir: PathBuf) -> Result<PathBuf> {
         tracing::info!(

@@ -1,26 +1,41 @@
 use std::path::{Path, PathBuf};
 
+#[cfg(not(target_arch = "wasm32"))]
 use anyhow::anyhow;
+
+#[cfg(not(target_arch = "wasm32"))]
+use tracing::info;
+
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha512};
 use http::StatusCode;
-use tracing::{debug, info};
+use tracing::debug;
 
+#[cfg(not(target_arch = "wasm32"))]
 use fluvio_future::task::run_block_on;
+
+#[cfg(not(target_arch = "wasm32"))]
+use fluvio_hub_protocol::infinyon_tok::read_infinyon_token_rem;
+
 use fluvio_hub_protocol::{Result, HubError};
 use fluvio_hub_protocol::infinyon_tok::read_infinyon_token;
-use fluvio_hub_protocol::infinyon_tok::read_infinyon_token_rem;
 use fluvio_hub_protocol::constants::{HUB_API_ACT, HUB_API_HUBID, HUB_REMOTE, CLI_CONFIG_HUB};
 use fluvio_types::defaults::CLI_CONFIG_PATH;
 
-use crate::keymgmt::Keypair;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::htclient;
+
+use crate::keymgmt::Keypair;
 use crate::htclient::ResponseExt;
+
+#[cfg(not(target_arch = "wasm32"))]
+const ACCESS_FILE_DEF: &str = "default"; // default profile name
+
+#[cfg(not(target_arch = "wasm32"))]
+const DEFAULT_CLOUD_REMOTE: &str = "https://infinyon.cloud";
 
 // in .fluvio/hub/hcurrent
 const ACCESS_FILE_PTR: &str = "hcurrent";
-const ACCESS_FILE_DEF: &str = "default"; // default profile name
-const DEFAULT_CLOUD_REMOTE: &str = "https://infinyon.cloud";
 
 pub const ACTION_LIST: &str = "list";
 pub const ACTION_LIST_WITH_META: &str = "lwm";
@@ -50,6 +65,7 @@ impl HubAccess {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn default_load(remote: &Option<String>) -> Result<Self> {
         let cfgpath = default_cfg_path()?;
         let profileopt = std::env::var(FLUVIO_HUB_PROFILE_ENV).ok();
@@ -188,6 +204,7 @@ impl HubAccess {
         Ok(())
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn load_path<P: AsRef<Path>>(
         base_path: P,
         profile_in: Option<String>,
@@ -307,11 +324,13 @@ pub fn default_cfg_path() -> Result<PathBuf> {
     Ok(hub_cfg_path)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[derive(Deserialize)]
 struct ReplyHubref {
     hub_remote: String,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn get_hubref() -> Option<String> {
     let Ok((_, fcremote)) = read_infinyon_token_rem() else {
         return None;

@@ -8,6 +8,8 @@ pub mod cmd;
 
 pub mod htclient;
 pub mod keymgmt;
+
+#[cfg(not(target_arch = "wasm32"))]
 pub mod fvm;
 
 use const_format::concatcp;
