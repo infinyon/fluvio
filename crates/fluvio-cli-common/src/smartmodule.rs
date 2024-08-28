@@ -148,7 +148,7 @@ impl BaseTestCmd {
         let output = chain.process(sm_input, &metrics)?;
 
         if self.verbose {
-            println!("{:?} records outputed", output.successes.len());
+            println!("{:?} records outputted", output.successes.len());
         }
         for output_record in output.successes {
             let output_value = if self.key_value {
