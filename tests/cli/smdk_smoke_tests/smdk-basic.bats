@@ -202,7 +202,7 @@ smdk_via_stdin() {
 
     # Test
     run $SMDK_BIN test --verbose --text 'a'
-    assert_output --partial "1 records outputed"
+    assert_output --partial "1 records outputted"
     assert_success
 }
 
@@ -242,7 +242,7 @@ smdk_via_stdin() {
 
     # Test
     run $SMDK_BIN test --verbose --text '2'
-    assert_output --partial "1 records outputed"
+    assert_output --partial "1 records outputted"
     assert_output --partial "4"
     assert_success
 }
@@ -283,14 +283,14 @@ smdk_via_stdin() {
 
     # Test with verbose
     run $SMDK_BIN test --verbose --text '["foo", "bar"]'
-    assert_output --partial "2 records outputed"
+    assert_output --partial "2 records outputted"
     assert_output --partial "foo"
     assert_output --partial "bar"
     assert_success
 
      # Test without verbose
     run $SMDK_BIN test  --text '["foo", "bar"]'
-    refute_output --partial "2 records outputed"
+    refute_output --partial "2 records outputted"
     assert_output --partial "foo"
     assert_output --partial "bar"
     assert_success
@@ -333,7 +333,7 @@ smdk_via_stdin() {
 
     # Test
     run $SMDK_BIN test --verbose --text '2'
-    assert_output --partial "1 records outputed"
+    assert_output --partial "1 records outputted"
     assert_output --partial "1"
     assert_success
 }
@@ -374,7 +374,7 @@ smdk_via_stdin() {
 
     # Test
     run smdk_via_stdin '2' --verbose
-    assert_output --partial "1 records outputed"
+    assert_output --partial "1 records outputted"
     assert_output --partial "2"
     assert_success
 }
@@ -417,7 +417,7 @@ smdk_via_stdin() {
 
     # Test
     run $SMDK_BIN test --verbose --text 'a' -e key=value
-    assert_output --partial "1 records outputed"
+    assert_output --partial "1 records outputted"
     assert_success
 }
 
@@ -599,7 +599,7 @@ smdk_via_stdin() {
 
     # Test
     run $SMDK_BIN test --verbose --text 'a'
-    assert_output --partial "1 records outputed"
+    assert_output --partial "1 records outputted"
     assert_success
 }
 
@@ -639,7 +639,7 @@ smdk_via_stdin() {
 
     # Test
     run $SMDK_BIN test  --verbose  --text '2'
-    assert_output --partial "1 records outputed"
+    assert_output --partial "1 records outputted"
     assert_output --partial "4"
     assert_success
 }
@@ -680,14 +680,14 @@ smdk_via_stdin() {
 
     # Test with verbose
     run smdk_via_stdin '["foo", "bar"]' --verbose
-    assert_output --partial "2 records outputed"
+    assert_output --partial "2 records outputted"
     assert_output --partial "foo"
     assert_output --partial "bar"
     assert_success
 
     # Test with without verbose
     run smdk_via_stdin '["foo", "bar"]'
-    refute_output --partial "2 records outputed"
+    refute_output --partial "2 records outputted"
     assert_output --partial "foo"
     assert_output --partial "bar"
     assert_success
@@ -729,7 +729,7 @@ smdk_via_stdin() {
 
     # Test
     run $SMDK_BIN test --verbose --text '2'
-    assert_output --partial "1 records outputed"
+    assert_output --partial "1 records outputted"
     assert_output --partial "1"
     assert_success
 }
@@ -770,7 +770,7 @@ smdk_via_stdin() {
 
     # Test
     run $SMDK_BIN test --verbose --text '2'
-    assert_output --partial "1 records outputed"
+    assert_output --partial "1 records outputted"
     assert_output --partial "2"
     assert_success
 }
@@ -813,7 +813,7 @@ smdk_via_stdin() {
 
     # Test
     run smdk_via_stdin 'a' -e key=value --verbose
-    assert_output --partial "1 records outputed"
+    assert_output --partial "1 records outputted"
     assert_success
 }
 
@@ -1064,7 +1064,7 @@ smdk_via_stdin() {
 
     # Test
     run $SMDK_BIN test --verbose --text '["Apple", "Banana", "Cranberry"]'
-    assert_output --partial "3 records outputed"
+    assert_output --partial "3 records outputted"
     assert_output --partial "\"Apple\"_$DATE_NOW_YEAR-$DATE_NOW_MONTH-$DATE_NOW_DAY"
     assert_output --partial "\"Banana\"_$DATE_NOW_YEAR-$DATE_NOW_MONTH-$DATE_NOW_DAY"
     assert_output --partial "\"Cranberry\"_$DATE_NOW_YEAR-$DATE_NOW_MONTH-$DATE_NOW_DAY"
