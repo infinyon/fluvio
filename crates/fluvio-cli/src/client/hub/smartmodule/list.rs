@@ -16,13 +16,16 @@ pub struct SmartModuleHubListOpts {
     #[clap(flatten)]
     output: OutputFormat,
 
+    #[arg(long, hide = true)]
+    system: bool,
+
     #[arg(long, hide_short_help = true)]
     remote: Option<String>,
 }
 
 impl SmartModuleHubListOpts {
     pub async fn process<O: Terminal + Debug + Send + Sync>(self, out: Arc<O>) -> Result<()> {
-        let pl = get_pkg_list(HUB_API_LIST_META, &self.remote).await?;
+        let pl = get_pkg_list(HUB_API_LIST_META, &self.remote, self.system).await?;
         output::smartmodules_response_to_output(out, pl.packages, self.output.format)?;
         Ok(())
     }

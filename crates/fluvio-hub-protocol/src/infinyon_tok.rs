@@ -105,8 +105,8 @@ mod infinyon_tok_tests {
     #[ignore]
     #[test]
     fn read_default() {
-        let token = read_infinyon_token();
-        assert!(token.is_ok());
-        println!("token: {}", token.unwrap());
+        let res_token = read_infinyon_token();
+        assert!(res_token.is_ok(), "{res_token:?}");
+        println!("token: {}", res_token.unwrap());
     }
 }
