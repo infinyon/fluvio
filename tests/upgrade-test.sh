@@ -174,6 +174,7 @@ function validate_upgrade_cluster_to_prerelease() {
 	echo "Resuming local cluster"
 	sleep 5
 	$FLUVIO_BIN_ABS_PATH cluster resume
+    sleep 5
     fi
     popd
 
