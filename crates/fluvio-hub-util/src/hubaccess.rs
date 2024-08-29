@@ -72,6 +72,11 @@ impl HubAccess {
         HubAccess::load_path(cfgpath, profileopt, remote)
     }
 
+    #[cfg(target_arch = "wasm32")]
+    pub fn default_load(_remote: &Option<String>) -> Result<Self> {
+        unimplemented!("Support for `HubAccess::default_load` is not available for `wasm32`");
+    }
+
     pub async fn create_hubid(&self, hubid: &str) -> Result<()> {
         let action_token = self.get_action_auth(ACTION_CREATE_HUBID).await?;
         let msg = MsgHubIdReq {
