@@ -69,25 +69,21 @@ pub async fn get(uri: impl AsRef<str>) -> Result<Response<Vec<u8>>> {
 #[cfg(target_arch = "wasm32")]
 pub async fn send<T>(request: Request<T>) -> Result<Response<Vec<u8>>>
 where
-    T: Into<Vec<u8>> + std::fmt::Debug,
+    T: Into<Vec<u8>> + std::fmt::Debug, reqwest::Request: TryFrom<http::Request<T>>,
 {
-    use url::Url;
-
-    let (parts, body) = request.into_parts();
-    let method = parts.method.to_owned();
-    let url = Url::parse(&parts.uri.to_string())?;
     let client = reqwest::Client::new();
-    let body: Vec<u8> = body.into();
-    let response = client
-        .request(method.into(), url)
-        .headers(parts.headers)
-        .body(body)
-        .send()
-        .await?;
+    let reqwest_req = reqwest::Request::try_from(request).map_err(|_| {
+        anyhow::anyhow!("Failed to build Request on conversion.")
+    })?;
+    let response = client.execute(reqwest_req).await.map_err(|err| {
+        anyhow::anyhow!("Failed to execute request: {:?}", err)
+    })?;
     let status = response.status();
     let bytes = response.bytes().await?;
     let bytes = bytes.to_vec();
-    let response = Response::builder().status(status).body(bytes)?;
+    let response = Response::builder().status(status).body(bytes).map_err(|_| {
+        anyhow::anyhow!("Failed to build Response on conversion.")
+    })?;
 
     Ok(response)
 }
