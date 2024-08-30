@@ -5,7 +5,7 @@ We are not considering the consumer group use case as part of this RFC
 
 ### Use Case 1
 Automatic offset commit for given consumer id and a default pattern of
-comitting the offset of the previous record on fetching of the next record in a stream.
+committing the offset of the previous record on fetching of the next record in a stream.
 
 ### Use Case 2
 Though offsets management is by default automatic. The Manual Offset api provides
@@ -31,7 +31,7 @@ async fn offset_example() -> Result<()> {
    let cfg = ConsumerConfigExtBuilder::new()
            .topic("mytopic")
            .partition(0) // optional, defaults to zero?
-           .offset_start(Offset::Beginnning)  // optional, defaults to (whatever was before)
+           .offset_start(Offset::Beginning)  // optional, defaults to (whatever was before)
            .offset_consumer("my-consumer")    // optional, if set consumer strategy defaults to ::Auto
            .offset_flush(3000)  // optional, defaults to ?
            .max_bytes(12300) // optional, here as an example of other settings
@@ -54,7 +54,7 @@ async fn offset_example() -> Result<()> {
 
 This api has the same behavior as the Automatic Offset API with the difference being
 that `offset_commit()` and `offset_flush()` calls are required. This allows for
-consumption patterns that may need take in more than one record before committing an offset as consumed.
+consumption patterns that may need to take in more than one record before committing an offset as consumed.
 
 ```rust
 use fluvio::consumer::ConsumerConfigBuilder;
@@ -99,7 +99,7 @@ Some cli options would need to be added non-default topic settings for consumers
 No change to topic user create interface.
 
 The consume command needs to accept a consumer option. The consumer is used by
-the offset management to store and retreive the offset. This maps to the `.offset_consumer(...)` builder call that
+the offset management to store and retrieve the offset. This maps to the `.offset_consumer(...)` builder call that
 provides a consumer id.
 
 Consumers are automatically created if they don't exist via `consume` CLI:
@@ -203,7 +203,7 @@ $ fluvio topic list --all
 SSDK has a more generalized offset management for managing its offset for state consumption. Implementation is available from that codebase for reference, but the generalization is recommended to be simplified for an in-fluvio implementation.
 
 ### Kafka
-Kafka manages offsets via explicit api, or implicit with respect to consumer groups. As a consumer group updates membership and load balancing, a consumer may receive offset assigments according to the offset management of the group. This occurs implictly unless the manual commit API is used.
+Kafka manages offsets via explicit api, or implicit with respect to consumer groups. As a consumer group updates membership and load balancing, a consumer may receive offset assignments according to the offset management of the group. This occurs implicitly unless the manual commit API is used.
 
 https://docs.confluent.io/platform/current/clients/consumer.html
 
@@ -218,7 +218,7 @@ Automatic offset consumption is also problematic as noted in the api docs:
 Note: Using automatic offset commits can also give you "at-least-once" delivery, but the requirement is that you must consume all data returned from each call to poll(Duration) before any subsequent calls, or before closing the consumer. If you fail to do either of these, it is possible for the committed offset to get ahead of the consumed position, which results in missing records. The advantage of using manual offset control is that you have direct control over when a record is considered "consumed."
 ```
 
-For a simpler fluvio interface, it is recommended to keep a simpler offset interface vs specific consumer ids, and defering consumer group balancing (and offset management) as a separate feature.
+For a simpler fluvio interface, it is recommended to keep a simpler offset interface vs specific consumer ids, and deferring consumer group balancing (and offset management) as a separate feature.
 
 In particular for a fluvio connector consume of an offset record would likely only after some external sink has returned with confirmation that data was committed. For a file system a confirmation might be a flush completion, or a database, a successful insert or upsert, S3 an object commit, etc. Only after the confirmation would a consumer want to commit an offset.
 
