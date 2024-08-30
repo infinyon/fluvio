@@ -74,7 +74,9 @@ impl HubAccess {
 
     #[cfg(target_arch = "wasm32")]
     pub fn default_load(_remote: &Option<String>) -> Result<Self> {
-        unimplemented!("Support for `HubAccess::default_load` is not available for `wasm32`");
+        Err(HubError::General(String::from(
+            "Support for `HubAccess::default_load` is not available for `wasm32`",
+        )))
     }
 
     pub async fn create_hubid(&self, hubid: &str) -> Result<()> {
