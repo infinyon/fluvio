@@ -164,7 +164,7 @@ impl HubAccess {
         let msg_action_token = serde_json::to_string(&mat)
             .map_err(|_e| HubError::HubAccess("Failed access setup".to_string()))?;
 
-        let mut builder = http::Request::get(&api_url);
+        let mut builder = http::Request::post(&api_url);
         if !authn_token.is_empty() {
             builder = builder.header("Authorization", &authn_token);
         }
