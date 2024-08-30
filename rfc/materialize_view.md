@@ -185,7 +185,7 @@ server-b   storage      4   2023-02-17 06:41:48.000Z
 ...
 ```
 
-Columnar topics are identifyed by the `COLUMNS` flag:
+Columnar topics are identified by the `COLUMNS` flag:
 
 ```
 $ fluvio topic list
@@ -222,10 +222,10 @@ output:
 - `window` - defines range (`from` until now) and refresh interval:
     - `from` - `python code` to compute `first day of month` - “2023-03-01T00:00:00.000Z” and convert to millisecond timestamp: 1679035308000.
     - `interval` - the time interval after which a new window is recomputed (humanized).
-- `groupBy` - groups records for for the operation specified in the “output”.
+- `groupBy` - groups records for the operation specified in the “output”.
 - `conditions` *(optional)* - allows for additional query refinement
     - common operations: `=`, `<` , `>`, `and`, `or`, `not`
-- `field` - represent the column to be displayed in the output
+- `field` - represents the column to be displayed in the output
     - use `operation` to perform a computation
         - apis: `sum`, `aggregate`, `min`, `max`, `count`
         - arithmetic operations: `+`, `-` , `*`, `/`
@@ -310,7 +310,7 @@ $ fluvio view -h
 
 ```
 
-In summary, to crete a materialized view, we need to:
+In summary, to create a materialized view, we need to:
 * Build a column definition schema
 * Create a columnar topic
 * Build a materialized view definition file
@@ -333,7 +333,7 @@ Let's create get started.
 
 ### 1. Create the View Providing the Data
 
-The view providing the data is a `pricing` view. We'll go through the same steps as above to crate this view.
+The view providing the data is a `pricing` view. We'll go through the same steps as above to create this view.
 
 #### Create `pricing` Columnar Topic
 
@@ -457,7 +457,7 @@ output:
     label: cost
 ```
 
-This view defines a new `derivedColumn` that evaluates `pricing.getPrice` with the metric and timestamp values from `metrics` topic and returns the reult in `cost`. The `cost` is used in the output to compute the the final result.
+This view defines a new `derivedColumn` that evaluates `pricing.getPrice` with the metric and timestamp values from `metrics` topic and returns the reult in `cost`. The `cost` is used in the output to compute the final result.
 
 *Definitions*
 
@@ -495,4 +495,4 @@ server-b   network      42.0  4.50
 
 In summary, to create a join, we need to:
 * Create a provider materialized view and expose an API
-* Create a consumer materialized view with derived columns that evaluates the provider API.
+* Create a consumer materialized view with derived columns that evaluate the provider API.
