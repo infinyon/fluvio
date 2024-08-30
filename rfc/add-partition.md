@@ -122,7 +122,7 @@ my-topic  1          5001            []        Online      69 B   1   1    1    
 ## Consume messages
 
 Fluvio consumers must to consume messages from a new partition when consuming a topic reading from all partition.
-Based on the previous example, if we start to the consumer command before the new partition is added, it must read all messsages, even from the new partition.
+Based on the previous example, if we start to the consumer command before the new partition is added, it must read all messages, even from the new partition.
 
 ```bash
 $ fluvio consume my-topic
@@ -136,4 +136,4 @@ D
 
 Adding a partition will not rebalance the data from the existing partitions. The rebalancing will happen naturally after the records age.
 
-The new data will be distribuited across all partitions, including the newly added partitions.
+The new data will be distributed across all partitions, including the newly added partitions.
