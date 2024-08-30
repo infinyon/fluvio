@@ -151,7 +151,7 @@ function validate_upgrade_cluster_to_prerelease() {
         ~/.fvm/bin/fvm install latest | tee /tmp/installer.output 
         # expectd output fvm current => 0.11.0-dev-1+hash (latest)
         DEV_VERSION=$(~/.fvm/bin/fvm current | awk '{print $1}')
-        TARGET_VERSION=${DEV_VERSION::-41}
+        TARGET_VERSION=${PRERELEASE:0:${#PRERELEASE}-41}
 
         echo "Installed CLI version ${DEV_VERSION}"
         echo "Upgrading cluster to ${DEV_VERSION}"
@@ -162,7 +162,7 @@ function validate_upgrade_cluster_to_prerelease() {
         echo "Wait for SPU to be upgraded. sleeping 1 minute"
 
     else
-        TARGET_VERSION=${PRERELEASE::-41}
+        TARGET_VERSION=${PRERELEASE:0:${#PRERELEASE}-41}
         echo "Test local image v${PRERELEASE}"
         echo "Target Version ${TARGET_VERSION}"
         # This should use the binary that the Makefile set
