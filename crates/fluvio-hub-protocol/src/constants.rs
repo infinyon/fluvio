@@ -9,7 +9,6 @@ pub const HUB_API_HUBID: &str = concatcp!(HUB_API_V, "/hubid");
 
 // sm specific api
 pub const HUB_API_SM: &str = concatcp!(HUB_API_V, "/pkg/pub");
-pub const HUB_API_LIST: &str = concatcp!(HUB_API_V, "/list");
 pub const HUB_API_LIST_META: &str = concatcp!(HUB_API_V, "/list_with_meta");
 
 // connector specific api

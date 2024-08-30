@@ -17,7 +17,11 @@ pub fn get_hub_access(remote: &Option<String>) -> Result<HubAccess> {
         .map_err(|_| anyhow!("missing access credentials, try 'fluvio cloud login'"))
 }
 
-pub async fn get_pkg_list(endpoint: &str, remote: &Option<String>) -> Result<PackageListMeta> {
+pub async fn get_pkg_list(
+    endpoint: &str,
+    remote: &Option<String>,
+    sysflag: bool,
+) -> Result<PackageListMeta> {
     use crate::htclient::ResponseExt;
 
     let access = get_hub_access(remote)?;
@@ -25,9 +29,13 @@ pub async fn get_pkg_list(endpoint: &str, remote: &Option<String>) -> Result<Pac
         .get_list_token()
         .await
         .map_err(|_| anyhow!("rejected access credentials, try 'fluvio cloud login'"))?;
-    let url = format!("{}/{endpoint}", &access.remote);
 
-    let req = http::Request::get(&url)
+    let mut uri = format!("{}/{endpoint}", &access.remote);
+    if sysflag {
+        uri = format!("{uri}?sys=1");
+    }
+
+    let req = http::Request::get(&uri)
         .header("Authorization", action_token)
         .body("")
         .map_err(|e| anyhow!("request format error {e}"))?;
