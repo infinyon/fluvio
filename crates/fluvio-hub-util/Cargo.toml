@@ -45,10 +45,16 @@ wasmparser = { workspace = true }
 current_platform = { workspace = true, optional = true }
 clap = { workspace = true, optional = true }
 comfy-table = { workspace = true, optional = true }
-ureq = { workspace = true }
 
 fluvio-future = { workspace = true, features = ["fixture", "task", "tls"] }
 fluvio-hub-protocol = { path = "../fluvio-hub-protocol" }
 fluvio-types = { workspace = true }
 fluvio-extension-common = { workspace = true,  optional = true }
 
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+ureq = { workspace = true }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+http = { workspace = true, features = ["std"] }
+getrandom = { workspace = true, features = ["js"] }
+reqwest = { workspace = true, features = ["json"] }
