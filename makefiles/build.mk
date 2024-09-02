@@ -48,6 +48,8 @@ ifeq (${CI},true)
 build_k8_image:
 else ifeq (${IMAGE_VERSION},true)
 build_k8_image:
+else ifeq (${FLUVIO_MODE},local)
+build_k8_image:
 else
 # When not in CI (i.e. development), build image before testing
 build_k8_image: fluvio_image
