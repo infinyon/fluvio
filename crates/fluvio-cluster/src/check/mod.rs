@@ -686,10 +686,11 @@ struct LocalClusterCheck;
 #[async_trait]
 impl ClusterCheck for LocalClusterCheck {
     async fn perform_check(&self, _pb: &ProgressRenderer) -> CheckResult {
+        sysinfo::set_open_files_limit(0);
         let mut sys = System::new();
-        sys.refresh_processes(); // Only load what we need.
+        sys.refresh_processes(sysinfo::ProcessesToUpdate::All); // Only load what we need.
         let proc_count = sys
-            .processes_by_exact_name("fluvio-run")
+            .processes_by_exact_name("fluvio-run".as_ref())
             .map(|x| println!("       found existing fluvio-run process. pid: {}", x.pid()))
             .count();
         if proc_count > 0 {

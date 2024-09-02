@@ -1,3 +1,4 @@
+use std::ffi::OsString;
 use std::path::Path;
 use std::process::Command;
 use std::fs::{remove_dir_all, remove_file};
@@ -149,16 +150,23 @@ impl ClusterUninstaller {
         pb.set_message("Uninstalling fluvio local components");
 
         let kill_proc = |name: &str, command_args: Option<&[String]>| {
+            sysinfo::set_open_files_limit(0);
             let mut sys = System::new();
-            sys.refresh_processes(); // Only load what we need.
-            for process in sys.processes_by_exact_name(name) {
+            sys.refresh_processes(sysinfo::ProcessesToUpdate::All); // Only load what we need.
+            for process in sys.processes_by_exact_name(name.as_ref()) {
                 if let Some(cmd_args) = command_args {
                     // First command is the executable so cut that out.
-                    let proc_cmds = &process.cmd();
+                    let proc_cmds = process.cmd();
                     if cmd_args.len() > proc_cmds.len() {
                         continue; // Ignore procs with less command_args than the target.
                     }
-                    if cmd_args.iter().ne(proc_cmds[..cmd_args.len()].iter()) {
+                    if cmd_args
+                        .iter()
+                        .map(OsString::from)
+                        .collect::<Vec<_>>()
+                        .iter()
+                        .ne(proc_cmds[..cmd_args.len()].iter())
+                    {
                         continue; // Ignore procs which don't match.
                     }
                 }
@@ -167,7 +175,7 @@ impl ClusterUninstaller {
                     debug!(
                         "Sysinto process.kill() returned false. pid: {}, name: {}: user: {:?}",
                         process.pid(),
-                        process.name(),
+                        process.name().to_str().unwrap_or("unknown"),
                         process.user_id(),
                     );
                 }

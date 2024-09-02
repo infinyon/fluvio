@@ -58,7 +58,7 @@ duct = { workspace = true, optional = true }
 comfy-table = { workspace = true, optional = true }
 flate2 = { workspace = true, optional = true }
 tar = { workspace = true ,  optional = true }
-sysinfo = { workspace = true, default-features = false }
+sysinfo = { workspace = true, default-features = false, features = ["system", "network", "disk"] }
 
 
 # External Fluvio dependencies

@@ -94,10 +94,9 @@ fn run_test(
     // println!("supported signals: {:?}", System::SUPPORTED_SIGNALS);
     let root_pid = get_current_pid().expect("Unable to get current pid");
     debug!(?root_pid, "current root pid");
+    sysinfo::set_open_files_limit(0);
     let mut sys = System::new();
-    if !sys.refresh_process(root_pid) {
-        panic!("Unable to refresh root");
-    }
+    sys.refresh_processes(sysinfo::ProcessesToUpdate::Some(&[root_pid]));
     let root_process = sys.process(root_pid).expect("Unable to get root process");
     let _child_pid = match fork::fork() {
         Ok(fork::Fork::Parent(child_pid)) => child_pid,
@@ -198,8 +197,9 @@ fn run_test(
 /// kill all children of the root processes
 fn kill_child_processes(root_process: &Process) {
     let root_pid = root_process.pid();
+    sysinfo::set_open_files_limit(0);
     let mut sys2 = System::new();
-    sys2.refresh_processes();
+    sys2.refresh_processes(sysinfo::ProcessesToUpdate::All);
     let g_id = root_process.group_id();
 
     let processes = sys2.processes();
@@ -220,7 +220,7 @@ fn kill_child_processes(root_process: &Process) {
 
     for (pid, process) in processes {
         if pid != &root_pid && process.group_id() == g_id && is_root(process, root_pid, processes) {
-            println!("killing child test pid {} name {}", pid, process.name());
+            println!("killing child test pid {} name {:?}", pid, process.name());
             process.kill();
         }
     }
@@ -295,8 +295,9 @@ fn create_spinning_indicator() -> Option<ProgressBar> {
 
 fn get_parent_pid() -> sysinfo::Pid {
     let pid = get_current_pid().expect("Unable to get current pid");
+    sysinfo::set_open_files_limit(0);
     let mut sys2 = System::new();
-    sys2.refresh_processes();
+    sys2.refresh_processes(sysinfo::ProcessesToUpdate::All);
     let current_process = sys2.process(pid).expect("Current process not found");
     current_process.parent().expect("Parent process not found")
 }

@@ -131,7 +131,7 @@ sha2 = { version = "0.10" }
 siphasher = "1.0.0"
 static_assertions = "1.1.0"
 syn = "2.0"
-sysinfo = { version = "0.30.13", default-features = false }
+sysinfo = { version = "0.31.4", default-features = false, features = ["system"] }
 tar = { version = "0.4.38", default-features = false }
 tempfile = "3.4.0"
 thiserror = "1.0.30"
