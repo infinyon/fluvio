@@ -70,6 +70,7 @@ pub fn main_loop(opt: ScOpt) {
 fn inspect_system() {
     use sysinfo::System;
 
+    sysinfo::set_open_files_limit(0);
     let mut sys = System::new_all();
     sys.refresh_all();
     info!(version = crate::VERSION, "Platform");

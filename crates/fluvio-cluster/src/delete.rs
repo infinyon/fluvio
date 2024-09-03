@@ -1,22 +1,17 @@
-use std::path::Path;
 use std::process::Command;
-use std::fs::{remove_dir_all, remove_file};
 
 use derive_builder::Builder;
 use k8_client::meta_client::MetadataClient;
 use tracing::{info, warn, debug, instrument};
-use sysinfo::System;
 
 use fluvio_command::CommandExt;
-use fluvio_types::defaults::SPU_MONITORING_UNIX_SOCKET;
 
 use crate::helm::HelmClient;
 use crate::charts::{APP_CHART_NAME, SYS_CHART_NAME};
 use crate::progress::ProgressBarFactory;
 use crate::render::ProgressRenderer;
-use crate::DEFAULT_NAMESPACE;
+use crate::{process, DEFAULT_NAMESPACE};
 use crate::error::UninstallError;
-use crate::start::local::{DEFAULT_DATA_DIR, LOCAL_CONFIG_PATH};
 use anyhow::Result;
 
 /// Uninstalls different flavors of fluvio
@@ -146,90 +141,17 @@ impl ClusterUninstaller {
 
     async fn uninstall_local(&self) -> Result<()> {
         let pb = self.pb_factory.create()?;
-        pb.set_message("Uninstalling fluvio local components");
-
-        let kill_proc = |name: &str, command_args: Option<&[String]>| {
-            let mut sys = System::new();
-            sys.refresh_processes(); // Only load what we need.
-            for process in sys.processes_by_exact_name(name) {
-                if let Some(cmd_args) = command_args {
-                    // First command is the executable so cut that out.
-                    let proc_cmds = &process.cmd();
-                    if cmd_args.len() > proc_cmds.len() {
-                        continue; // Ignore procs with less command_args than the target.
-                    }
-                    if cmd_args.iter().ne(proc_cmds[..cmd_args.len()].iter()) {
-                        continue; // Ignore procs which don't match.
-                    }
-                }
-                if !process.kill() {
-                    // This will fail if called on a proc running as root, so only log failure.
-                    debug!(
-                        "Sysinto process.kill() returned false. pid: {}, name: {}: user: {:?}",
-                        process.pid(),
-                        process.name(),
-                        process.user_id(),
-                    );
-                }
-            }
-        };
-        kill_proc("fluvio", Some(&["cluster".into(), "run".into()]));
-        kill_proc("fluvio", Some(&["run".into()]));
-        kill_proc("fluvio-run", None);
-
-        fn delete_fs<T: AsRef<Path>>(
-            path: Option<T>,
-            tag: &'static str,
-            is_file: bool,
-            pb: Option<&ProgressRenderer>,
-        ) {
-            match path {
-                Some(path) => {
-                    let path_ref = path.as_ref();
-                    match if is_file {
-                        remove_file(path_ref)
-                    } else {
-                        remove_dir_all(path_ref)
-                    } {
-                        Ok(_) => {
-                            debug!("Removed {}: {}", tag, path_ref.display());
-                            if let Some(pb) = pb {
-                                pb.println(format!("Removed {}", tag))
-                            }
-                        }
-                        Err(err) => {
-                            warn!("{} can't be removed: {}", tag, err);
-                            if let Some(pb) = pb {
-                                pb.println(format!("{tag}, can't be removed: {err}"))
-                            }
-                        }
-                    }
-                }
-                None => {
-                    warn!("Unable to find {}, cannot remove", tag);
-                }
-            }
-        }
+        process::kill_local_processes(&pb).await?;
 
         // delete fluvio file
         debug!("Removing fluvio directory");
-        delete_fs(DEFAULT_DATA_DIR.as_ref(), "data dir", false, None);
+        process::delete_data_dir();
 
         // delete local cluster config file
-        delete_fs(
-            LOCAL_CONFIG_PATH.as_ref(),
-            "local cluster config",
-            true,
-            None,
-        );
+        process::delete_local_config();
 
         // remove monitoring socket
-        delete_fs(
-            Some(SPU_MONITORING_UNIX_SOCKET),
-            "SPU monitoring socket",
-            true,
-            Some(&pb),
-        );
+        process::delete_spu_socket();
 
         pb.println("Uninstalled fluvio local components");
         pb.finish_and_clear();
