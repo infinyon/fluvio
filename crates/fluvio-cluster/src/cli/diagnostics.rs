@@ -17,6 +17,8 @@ use crate::cli::ClusterCliError;
 use crate::cli::start::default_log_directory;
 use crate::start::local::{DEFAULT_DATA_DIR as DEFAULT_LOCAL_DIR, DEFAULT_METADATA_SUB_DIR};
 
+const FLUVIO_PROCESS_NAME: &str = "fluvio";
+
 #[derive(Parser, Debug)]
 pub struct DiagnosticsOpt {
     #[arg(long)]
@@ -155,7 +157,7 @@ impl DiagnosticsOpt {
         // Filter for only Fluvio pods
         let pods = pods
             .split(' ')
-            .filter(|pod| pod.contains("fluvio"))
+            .filter(|pod| pod.contains(FLUVIO_PROCESS_NAME))
             .collect::<Vec<_>>();
 
         for &pod in &pods {
@@ -196,7 +198,7 @@ impl DiagnosticsOpt {
         // Filter for only Fluvio services
         let objects = objects
             .split(' ')
-            .filter(|obj| !filter_fluvio || obj.contains("fluvio"))
+            .filter(|obj| !filter_fluvio || obj.contains(FLUVIO_PROCESS_NAME))
             .map(|name| name.trim())
             .collect::<Vec<_>>();
 
@@ -456,7 +458,7 @@ impl ProcessInfo {
             let process_name = process.name().to_str();
 
             if let Some(process_name) = process_name {
-                if process_name.contains("fluvio") {
+                if process_name.contains(FLUVIO_PROCESS_NAME) {
                     processes.push(ProcessInfo {
                         pid: pid.as_u32(),
                         name: process_name.to_string(),
