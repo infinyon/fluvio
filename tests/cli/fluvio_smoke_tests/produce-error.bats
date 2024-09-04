@@ -57,3 +57,23 @@ teardown_file() {
     run bash -c 'echo abcdefgh | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME_2" --compression lz4'
     assert_failure
 }
+
+# Delete topic should stop producer and return error
+@test "Delete topic while producing" {
+    if [ "$FLUVIO_CLI_RELEASE_CHANNEL" == "stable" ]; then
+        skip "don't run on fluvio cli stable version"
+    fi
+    if [ "$FLUVIO_CLUSTER_RELEASE_CHANNEL" == "stable" ]; then
+        skip "don't run on cluster stable version"
+    fi
+
+    run bash -c '/usr/bin/expect <<-EOF
+    spawn "$FLUVIO_BIN" produce "$TOPIC_NAME"
+    expect "> "
+    exec "$FLUVIO_BIN" topic delete "$TOPIC_NAME"
+    expect "Topic \"$TOPIC_NAME\" was deleted"
+    exit
+    EOF'
+    assert_success
+    assert_output --partial "Topic \"$TOPIC_NAME\" was deleted"
+}

@@ -67,4 +67,6 @@ pub enum CliError {
     SmartModuleConfigBuilder(#[from] fluvio_smartengine::SmartModuleConfigBuilderError),
     #[error("Hub error: {0}")]
     HubError(String),
+    #[error("Topic \"{0}\" was deleted")]
+    TopicDeleted(String),
 }
