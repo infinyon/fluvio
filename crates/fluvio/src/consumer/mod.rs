@@ -480,13 +480,12 @@ where
 
                 let server_sender_clone2 = server_sender_clone.clone();
                 let update_stream = StreamExt::map(stream, move |item| {
-                    item.map(|response| {
+                    item.inspect(|response| {
                         if let Some(last_offset) = response.partition.next_offset_for_fetch() {
                             debug!(last_offset, stream_id, "received last offset from spu");
                             let _ = server_sender_clone
                                 .try_send(StreamToServer::UpdateOffset(last_offset));
                         }
-                        response
                     })
                     .map_err(|e| {
                         error!(?e, "error in stream");

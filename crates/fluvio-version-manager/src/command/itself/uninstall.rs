@@ -23,7 +23,7 @@ impl SelfUninstallOpt {
         if workdir_path.exists() {
             if self.yes
                 || Confirm::with_theme(&ColorfulTheme::default())
-                    .with_prompt(&format!(
+                    .with_prompt(format!(
                         "Are you sure you want to uninstall FVM from {}?",
                         workdir_path.display()
                     ))
