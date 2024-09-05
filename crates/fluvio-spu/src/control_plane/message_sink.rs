@@ -1,9 +1,9 @@
 use std::collections::HashSet;
 use std::sync::Arc;
 use std::time::SystemTime;
+use std::sync::Mutex;
 
 use anyhow::Result;
-use async_lock::Mutex;
 use fluvio_controlplane::sc_api::update_lrs::LrsRequest;
 use fluvio_controlplane::sc_api::update_mirror::MirrorStatRequest;
 use fluvio_controlplane_metadata::mirror::{MirrorPairStatus, MirrorStatus};
@@ -29,12 +29,12 @@ where
     /// send lrs request sc
     /// newer entry will overwrite previous if it has not been cleared
     pub async fn send(&self, request: R) {
-        let mut lock = self.0.lock().await;
+        let mut lock = self.0.lock().unwrap();
         lock.replace(request);
     }
 
     pub async fn remove_all(&self) -> Vec<R> {
-        let mut lock = self.0.lock().await;
+        let mut lock = self.0.lock().unwrap();
         lock.drain().collect()
     }
 }

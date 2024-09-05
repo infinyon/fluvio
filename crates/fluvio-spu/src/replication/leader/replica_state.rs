@@ -6,8 +6,8 @@ use std::{
 };
 use std::iter::FromIterator;
 use std::fmt;
+use std::sync::Mutex;
 
-use async_lock::Mutex;
 use fluvio_controlplane::{replica::Replica, sc_api::update_lrs::LrsRequest};
 use tracing::{debug, error, warn};
 use tracing::instrument;
@@ -415,7 +415,7 @@ where
     }
 
     pub async fn register_offset_publisher(&self, offset_publisher: &SharedOffsetPublisher) {
-        let mut publishers = self.consumer_offset_publishers.lock().await;
+        let mut publishers = self.consumer_offset_publishers.lock().unwrap();
 
         // Filter out any dead weak pointers every so often
         if publishers.len() % CLEANUP_FREQUENCY == 0 {
@@ -434,7 +434,7 @@ where
     }
 
     pub async fn signal_topic_deleted(&self) {
-        let offset_publishers = self.consumer_offset_publishers.lock().await;
+        let offset_publishers = self.consumer_offset_publishers.lock().unwrap();
 
         for publisher in offset_publishers.iter() {
             if let Some(p) = publisher.upgrade() {

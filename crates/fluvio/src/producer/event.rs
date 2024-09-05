@@ -1,19 +1,19 @@
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
-use async_lock::Mutex;
 use event_listener::Event;
 
 /// Handler of events that keep track of the number of occurrences
 /// of the event that needs to be handled
 pub(crate) struct EventHandler {
-    count: Mutex<usize>,
+    count: AtomicUsize,
     event: Event,
 }
 
 impl EventHandler {
     pub fn new() -> Self {
         Self {
-            count: Mutex::new(0),
+            count: AtomicUsize::new(0),
             event: Event::new(),
         }
     }
@@ -22,15 +22,13 @@ impl EventHandler {
     }
 
     pub async fn notify(&self) {
-        let mut count = self.count.lock().await;
-        *count += 1;
+        self.count.fetch_add(1, Ordering::Relaxed);
         self.event.notify(1);
     }
 
     async fn try_acquire_notification(&self) -> bool {
-        let mut count = self.count.lock().await;
-        if *count > 0 {
-            *count -= 1;
+        if self.count.load(Ordering::Relaxed) > 0 {
+            self.count.fetch_sub(1, Ordering::Relaxed);
             true
         } else {
             false

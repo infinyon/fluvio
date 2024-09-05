@@ -9,6 +9,7 @@ use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering::SeqCst;
 use std::sync::atomic::AtomicI32;
+use std::sync::Mutex;
 use std::time::Duration;
 use std::fmt;
 use std::future::Future;
@@ -16,8 +17,7 @@ use std::future::Future;
 use async_channel::bounded;
 use async_channel::Receiver;
 use async_channel::Sender;
-use async_lock::Mutex;
-use bytes::{Bytes};
+use bytes::Bytes;
 use event_listener::Event;
 use fluvio_future::net::ConnectionFd;
 use futures_util::stream::{Stream, StreamExt};
@@ -31,7 +31,7 @@ use futures_util::ready;
 use fluvio_protocol::api::Request;
 use fluvio_protocol::api::RequestHeader;
 use fluvio_protocol::api::RequestMessage;
-use fluvio_protocol::{Decoder};
+use fluvio_protocol::Decoder;
 
 use crate::SocketError;
 use crate::ExclusiveFlvSink;
@@ -51,7 +51,7 @@ enum SharedSender {
     Queue(Sender<Option<Bytes>>),
 }
 
-type Senders = Arc<Mutex<HashMap<i32, SharedSender>>>;
+type Senders = Arc<async_lock::Mutex<HashMap<i32, SharedSender>>>;
 
 /// Socket that can multiplex connections
 pub struct MultiplexerSocket {
@@ -92,7 +92,7 @@ impl MultiplexerSocket {
 
         let multiplexer = Self {
             correlation_id_counter: AtomicI32::new(1),
-            senders: Arc::new(Mutex::new(HashMap::new())),
+            senders: Arc::new(async_lock::Mutex::new(HashMap::new())),
             sink: ExclusiveFlvSink::new(sink),
             terminate: Arc::new(Event::new()),
             stale: stale.clone(),
@@ -186,7 +186,7 @@ impl MultiplexerSocket {
                 drop(senders);
 
                 match msg.try_lock() {
-                    Some(guard) => {
+                    Ok(guard) => {
 
                         if let Some(response_bytes) =  &*guard {
 
@@ -206,9 +206,9 @@ impl MultiplexerSocket {
                         }
 
                     },
-                    None => Err(IoError::new(
+                    Err(e) => Err(IoError::new(
                         ErrorKind::BrokenPipe,
-                        format!("locked failed: {correlation_id}, serial socket is in bad state")
+                        format!("locked failed: {correlation_id}, serial socket is in bad state, err: {e}"),
                     ).into())
                 }
             },
@@ -431,7 +431,7 @@ impl MultiPlexingResponseDispatcher {
                     let guard = self.senders.lock().await;
                     for sender in guard.values() {
                         match sender {
-                            SharedSender::Serial(msg) => msg.close().await,
+                            SharedSender::Serial(msg) => msg.close(),
                             SharedSender::Queue(stream_sender) => {
                                 stream_sender.close();
                             }
@@ -456,17 +456,17 @@ impl MultiPlexingResponseDispatcher {
                     trace!("found serial");
                     // this should always succeed since nobody should lock
                     match serial_sender.0.try_lock() {
-                        Some(mut guard) => {
+                        Ok(mut guard) => {
                             *guard = Some(msg);
                             drop(guard); // unlock
                             serial_sender.1.notify(1);
                             trace!("found serial");
                             Ok(())
                         }
-                        None => Err(IoError::new(
+                        Err(e) => Err(IoError::new(
                             ErrorKind::BrokenPipe,
                             format!(
-                                "failed locking, abandoning sending to socket: {correlation_id}"
+                                "failed locking, abandoning sending to socket: {correlation_id}, err: {e}"
                             ),
                         )
                         .into()),
@@ -507,7 +507,7 @@ impl MultiPlexingResponseDispatcher {
         let guard = self.senders.lock().await;
         for sender in guard.values() {
             match sender {
-                SharedSender::Serial(msg) => msg.close().await,
+                SharedSender::Serial(msg) => msg.close(),
                 SharedSender::Queue(stream_sender) => {
                     let _ = stream_sender.send(None).await;
                 }
@@ -519,8 +519,8 @@ impl MultiPlexingResponseDispatcher {
 }
 
 impl SharedMsg {
-    async fn close(&self) {
-        let mut guard = self.0.lock().await;
+    fn close(&self) {
+        let mut guard = self.0.lock().unwrap();
         *guard = None;
         drop(guard);
         self.1.notify(1);
