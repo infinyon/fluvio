@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fmt::Debug;
 
 use anyhow::Result;
@@ -21,7 +22,13 @@ pub struct BuildCmd {
 
 impl BuildCmd {
     pub(crate) fn process(self) -> Result<()> {
-        let opt = self.package.as_opt();
+        let mut opt = self.package.as_opt();
+        if target_not_specified() {
+            let tmap = Self::target_map();
+            if let Some(tgt) = tmap.get(&opt.target.as_str()) {
+                opt.target = tgt.to_string();
+            }
+        }
         let package_info = PackageInfo::from_options(&opt)?;
 
         build_connector(
@@ -32,4 +39,16 @@ impl BuildCmd {
             },
         )
     }
+
+    /// Map to most supported native target
+    fn target_map() -> HashMap<&'static str, &'static str> {
+        let mut map = HashMap::new();
+        map.insert("x86_64-unknown-linux-musl", "x86_64-unknown-linux-gnu");
+        map
+    }
+}
+
+fn target_not_specified() -> bool {
+    let args = std::env::args().collect::<Vec<String>>();
+    !args.iter().any(|arg| arg.contains("--target"))
 }
