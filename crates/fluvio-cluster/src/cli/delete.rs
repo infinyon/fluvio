@@ -37,7 +37,7 @@ impl DeleteOpt {
         };
 
         if !self.force {
-            let mut user_input: String = Input::with_theme(&ColorfulTheme::default()).with_prompt(&format!(
+            let mut user_input: String = Input::with_theme(&ColorfulTheme::default()).with_prompt(format!(
                 "WARNING: You are about to delete {cluster}/{endpoint}. This operation is irreversible \
                 and the data stored in your cluster will be permanently lost. \
                 \nPlease type the cluster name to confirm: {cluster} <enter> (to confirm) / or CTRL-C (to cancel)",
