@@ -34,6 +34,7 @@ impl TestCmd {
         let opt = self.package.as_opt();
         let package_info = PackageInfo::from_options(&opt)?;
         let build_options = BuildOpts {
+            cloud: false,
             release: opt.release,
             extra_arguments: self.extra_arguments,
         };

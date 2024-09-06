@@ -15,6 +15,7 @@ const AMBIGUOUS_TARGET_ERR_MSG: &str =
 
 const BUILD_CMD: &str = "build";
 const CLEAN_CMD: &str = "clean";
+const ZIGBUILD_CMD: &str = "zigbuild";
 
 #[derive(Default)]
 pub enum Profile {
@@ -28,6 +29,7 @@ pub enum CargoCommand {
     #[default]
     Build,
     Clean,
+    ZigBuild,
 }
 
 impl Display for Profile {
@@ -95,7 +97,6 @@ impl Cargo {
 
     fn make_cargo_cmd(&self) -> Result<Command> {
         let cwd = std::env::current_dir()?;
-
         let mut cargo = Command::new("cargo");
 
         cargo.output().map_err(Error::from)?;
@@ -112,6 +113,13 @@ impl Cargo {
             }
             CargoCommand::Clean => {
                 cargo.current_dir(&cwd).arg(CLEAN_CMD);
+            }
+            CargoCommand::ZigBuild => {
+                cargo
+                    .current_dir(&cwd)
+                    .arg(ZIGBUILD_CMD)
+                    .arg("--profile")
+                    .arg(&self.profile);
             }
         }
 
