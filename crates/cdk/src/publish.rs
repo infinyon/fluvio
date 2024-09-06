@@ -45,6 +45,11 @@ pub struct PublishCmd {
     #[arg(long, default_value = "false")]
     pub no_build: bool,
 
+    /// publish a build for running in the Infinyon Cloud environment
+    ///
+    #[arg(long, default_value_t = false)]
+    cloud: bool,
+
     /// do only the pack portion
     #[arg(long, hide_short_help = true)]
     pack: bool,
