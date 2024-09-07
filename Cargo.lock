@@ -2703,6 +2703,7 @@ dependencies = [
  "serde_json",
  "serde_yaml 0.9.34+deprecated",
  "thiserror",
+ "toml 0.8.15",
  "tracing",
 ]
 
