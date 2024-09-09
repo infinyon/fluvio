@@ -187,6 +187,16 @@ upgrade-test: build-cli build_k8_image
 	./tests/upgrade-test.sh
 endif
 
+ifeq (${CI},true)
+# In CI, we expect all artifacts to already be built and loaded for the script
+upgrade-test-local:
+	./tests/upgrade-test-local.sh
+else
+# When not in CI (i.e. development), build the cli before running test
+upgrade-test-local: build-cli
+	./tests/upgrade-test-local.sh
+endif
+
 # When running in development, might need to run `cargo clean` to ensure correct fluvio binary is used
 validate-release-stable:
 	./tests/fluvio-validate-release.sh $(VERSION) $(GIT_COMMIT)

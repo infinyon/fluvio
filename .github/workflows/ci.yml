@@ -980,7 +980,7 @@ jobs:
           TEST_DATA_BYTES: 10000
         run: |
           date
-          make FLUVIO_MODE=local FLUVIO_BIN=~/bin/fluvio upgrade-test
+          make FLUVIO_BIN=~/bin/fluvio upgrade-test-local
 
       - name: Run diagnostics
         if: ${{ !success() }}
