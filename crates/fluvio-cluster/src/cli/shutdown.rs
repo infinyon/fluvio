@@ -34,7 +34,7 @@ impl ShutdownOpt {
 
         match installation_type {
             InstallationType::Local | InstallationType::LocalK8 | InstallationType::ReadOnly => {
-                Self::shutdown_local(&installation_type, &pb).await?;
+                Self::shutdown_local(&installation_type, &pb)?;
             }
             InstallationType::Cloud => {
                 let profile = config.config().current_profile_name().unwrap_or("none");
@@ -48,11 +48,13 @@ impl ShutdownOpt {
         Ok(())
     }
 
-    async fn shutdown_local(
-        installation_type: &InstallationType,
-        pb: &ProgressRenderer,
-    ) -> Result<()> {
-        process::kill_local_processes(pb).await?;
+    fn shutdown_local(installation_type: &InstallationType, pb: &ProgressRenderer) -> Result<()> {
+        process::kill_local_processes(pb);
+
+        if let Err(err) = process::is_all_fluvio_process_shutdown() {
+            pb.println(format!("Error: {}", err));
+            return Err(err);
+        }
 
         if let InstallationType::LocalK8 = installation_type {
             let _ = Self::remove_custom_objects("spus", true);

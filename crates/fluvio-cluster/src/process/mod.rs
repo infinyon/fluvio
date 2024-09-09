@@ -6,48 +6,40 @@ use fluvio_types::defaults::SPU_MONITORING_UNIX_SOCKET;
 use sysinfo::System;
 use anyhow::Result;
 
-use tracing::{debug, warn};
+use tracing::{debug, error, warn};
 
 use crate::render::ProgressRenderer;
 use crate::start::local::{DEFAULT_DATA_DIR, LOCAL_CONFIG_PATH};
 
-pub async fn kill_local_processes(pb: &ProgressRenderer) -> Result<()> {
+pub fn kill_local_processes(pb: &ProgressRenderer) {
     pb.set_message("Uninstalling fluvio local components");
 
-    let kill_proc = |name: &str, command_args: Option<&[String]>| {
-        sysinfo::set_open_files_limit(0);
-        let mut sys = System::new();
-        sys.refresh_processes(sysinfo::ProcessesToUpdate::All); // Only load what we need.
-        for process in sys.processes_by_exact_name(name.as_ref()) {
-            if let Some(cmd_args) = command_args {
-                let proc_cmds = process.cmd();
-                if cmd_args.len() > proc_cmds.len() {
-                    continue; // Ignore procs with less command_args than the target.
-                }
-                if cmd_args
-                    .iter()
-                    .map(OsString::from)
-                    .collect::<Vec<_>>()
-                    .iter()
-                    .ne(proc_cmds[..cmd_args.len()].iter())
-                {
-                    continue; // Ignore procs which don't match.
-                }
-            }
-            if !process.kill() {
-                // This will fail if called on a proc running as root, so only log failure.
-                debug!(
-                    "Sysinto process.kill() returned false. pid: {}, name: {}: user: {:?}",
-                    process.pid(),
-                    process.name().to_str().unwrap_or("unknown"),
-                    process.user_id(),
-                );
-            }
-        }
-    };
-    kill_proc("fluvio", Some(&["cluster".into(), "run".into()]));
-    kill_proc("fluvio", Some(&["run".into()]));
-    kill_proc("fluvio-run", None);
+    sysinfo::set_open_files_limit(0);
+    let mut sys = System::new();
+    sys.refresh_processes(sysinfo::ProcessesToUpdate::All); // Only load what we need.
+
+    kill_proc(&mut sys, "fluvio", Some(&["cluster".into(), "run".into()]));
+    kill_proc(&mut sys, "fluvio", Some(&["run".into()]));
+    kill_proc(&mut sys, "fluvio-run", None);
+}
+
+#[allow(dead_code)]
+pub fn is_all_fluvio_process_shutdown() -> Result<()> {
+    sysinfo::set_open_files_limit(0);
+    let mut sys = System::new();
+    sys.refresh_processes(sysinfo::ProcessesToUpdate::All); // Only load what we need.
+    if !get_process_by_name(&mut sys, "fluvio", Some(&["cluster".into(), "run".into()])).is_empty()
+    {
+        return Err(anyhow::anyhow!(
+            "fluvio cluster run process should be shutdown"
+        ));
+    }
+    if !get_process_by_name(&mut sys, "fluvio", Some(&["run".into()])).is_empty() {
+        return Err(anyhow::anyhow!("fluvio run process should be shutdown"));
+    }
+    if !get_process_by_name(&mut sys, "fluvio-run", None).is_empty() {
+        return Err(anyhow::anyhow!("fluvio-run process should be shutdown"));
+    }
 
     Ok(())
 }
@@ -109,4 +101,51 @@ pub fn delete_local_config() {
 
 pub fn delete_data_dir() {
     delete_fs(DEFAULT_DATA_DIR.as_ref(), "data dir", false, None);
+}
+
+fn get_process_by_name<'a>(
+    sys: &'a mut System,
+    name: &'a str,
+    command_args: Option<&'a [String]>,
+) -> Vec<&'a sysinfo::Process> {
+    let mut processes = Vec::new();
+    for proc in sys.processes_by_exact_name(name.as_ref()) {
+        if let Some(cmd_args) = command_args {
+            let proc_cmds = proc.cmd();
+            if cmd_args.len() > proc_cmds.len() {
+                continue; // Ignore procs with less command_args than the target.
+            }
+            if cmd_args
+                .iter()
+                .map(OsString::from)
+                .collect::<Vec<_>>()
+                .iter()
+                .ne(proc_cmds[..cmd_args.len()].iter())
+            {
+                continue; // Ignore procs which don't match.
+            }
+        }
+        processes.push(proc);
+    }
+    processes
+}
+
+fn kill_proc(sys: &mut System, name: &str, command_args: Option<&[String]>) {
+    for process in get_process_by_name(sys, name, command_args) {
+        if !process.kill() {
+            // This will fail if called on a proc running as root, so only log failure.
+            error!(
+                "Sysinto process.kill() returned false. pid: {}, name: {}: user: {:?}",
+                process.pid(),
+                process.name().to_str().unwrap_or("unknown"),
+                process.user_id(),
+            );
+        } else {
+            debug!(
+                "Killed process: pid: {}, name: {}",
+                process.pid(),
+                process.name().to_str().unwrap_or("unknown"),
+            );
+        }
+    }
 }

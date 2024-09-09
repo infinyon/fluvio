@@ -141,7 +141,7 @@ impl ClusterUninstaller {
 
     async fn uninstall_local(&self) -> Result<()> {
         let pb = self.pb_factory.create()?;
-        process::kill_local_processes(&pb).await?;
+        process::kill_local_processes(&pb);
 
         // delete fluvio file
         debug!("Removing fluvio directory");
