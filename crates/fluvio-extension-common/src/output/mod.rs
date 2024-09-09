@@ -40,6 +40,7 @@ mod error {
 
     use serde_json::Error as SerdeJsonError;
     use serde_yaml::Error as SerdeYamlError;
+    use toml::ser::Error as SerdeTomlError;
 
     #[derive(thiserror::Error, Debug)]
     pub enum OutputError {
@@ -52,6 +53,11 @@ mod error {
         SerdeYamlError {
             #[from]
             source: SerdeYamlError,
+        },
+        #[error("Fluvio client error")]
+        SerdeTomlError {
+            #[from]
+            source: SerdeTomlError,
         },
     }
 }
@@ -94,6 +100,7 @@ mod output {
         table,
         yaml,
         json,
+        toml,
     }
 
     /// OutputType defaults to table formatting

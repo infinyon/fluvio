@@ -13,7 +13,7 @@ use crate::error::CliError;
 pub struct ExportOpt {
     profile_name: Option<String>,
     #[arg(
-        default_value_t = OutputType::json,
+        default_value_t = OutputType::toml,
         short = 'O',
         long = "output",
         value_name = "type",
@@ -27,8 +27,8 @@ impl ExportOpt {
     pub fn process<O: Terminal>(self, out: Arc<O>) -> Result<()> {
         let output_format = match self.output_format {
             OutputType::table => {
-                eprintln!("Table format is not supported, using JSON instead");
-                OutputType::json
+                eprintln!("Table format is not supported, using TOML instead");
+                OutputType::toml
             }
             _ => self.output_format,
         };
