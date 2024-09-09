@@ -64,6 +64,12 @@ pub struct FluvioAdmin {
     metadata: MetadataStores,
 }
 
+impl Drop for FluvioAdmin {
+    fn drop(&mut self) {
+        self.metadata.shutdown();
+    }
+}
+
 impl FluvioAdmin {
     pub(crate) fn new(socket: VersionedSerialSocket, metadata: MetadataStores) -> Self {
         Self { socket, metadata }

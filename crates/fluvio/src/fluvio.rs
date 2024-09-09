@@ -45,6 +45,12 @@ pub struct Fluvio {
     metric: Arc<ClientMetrics>,
 }
 
+impl Drop for Fluvio {
+    fn drop(&mut self) {
+        self.metadata.shutdown();
+    }
+}
+
 impl Fluvio {
     /// Creates a new Fluvio client using the current profile from `~/.fluvio/config`
     ///
