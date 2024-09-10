@@ -1,8 +1,10 @@
+use std::backtrace::Backtrace;
 use std::collections::{HashMap, hash_map::Entry};
 
 use serde::{Serialize, Deserialize};
 
 use fluvio_stream_model::core::MetadataItem;
+use tracing::info;
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct LocalMetadataItem {
@@ -102,7 +104,7 @@ cfg_if::cfg_if! {
 
         use anyhow::{Result, anyhow, Context};
         use async_channel::{Sender, Receiver, bounded};
-        use tokio::sync::RwLock;
+        use parking_lot::RwLock;
         use futures_util::{stream::BoxStream, StreamExt};
         use serde::{de::DeserializeOwned};
         use tracing::{warn, debug, trace};
@@ -214,7 +216,9 @@ cfg_if::cfg_if! {
                     id: key.to_string(),
                     ..Default::default()
                 };
+                info!("3.1 getting store");
                 let store = self.get_store::<S>().await?;
+                info!("3.2 got store");
                 let item = match store.try_retrieve_item::<S>(&metadata).await? {
                     Some(mut item) => {
                         item.set_spec(spec);
@@ -222,7 +226,10 @@ cfg_if::cfg_if! {
                     }
                     None => LocalStoreObject::new_with_context(key, spec, MetadataContext::new(metadata)),
                 };
-                store.apply(item).await
+                info!("3.3 applying");
+                let r = store.apply(item).await;
+                info!("3.4 applied");
+                r
             }
 
             async fn update_status<S>(
@@ -311,12 +318,13 @@ cfg_if::cfg_if! {
 
             async fn get_store<S: Spec + DeserializeOwned>(&self) -> Result<Arc<SpecStore>> {
                 let key = S::LABEL;
-                let read = self.stores.read().await;
+                let read = self.stores.read();
                 Ok(match read.get(key) {
                     Some(store) => store.clone(),
                     None => {
                         drop(read);
-                        let mut write = self.stores.write().await;
+                        let mut write = self.stores.write();
+                        println!("Custom backtrace: {}", Backtrace::force_capture());
                         let store = Arc::new(SpecStore::load::<S, _>(self.path.join(key)).await?);
                         write.insert(key, store.clone());
                         drop(write);
@@ -377,7 +385,6 @@ cfg_if::cfg_if! {
             async fn get_store_by_key(&self, key: &str) -> Result<Arc<SpecStore>> {
                 self.stores
                     .read()
-                    .await
                     .get(key)
                     .cloned()
                     .ok_or_else(|| anyhow!("store not found for key {key}"))
@@ -425,7 +432,7 @@ cfg_if::cfg_if! {
                     .version
                     .load(std::sync::atomic::Ordering::SeqCst)
                     .to_string();
-                let read = self.data.read().await;
+                let read = self.data.read();
                 let items: Vec<LocalStoreObject<S>> = read
                     .values()
                     .map(SpecPointer::downcast)
@@ -441,7 +448,7 @@ cfg_if::cfg_if! {
             where
                 S: Spec,
             {
-                let read = self.data.read().await;
+                let read = self.data.read();
                 read.get(metadata.uid())
                     .map(SpecPointer::downcast)
                     .transpose()
@@ -457,7 +464,7 @@ cfg_if::cfg_if! {
             }
 
             async fn delete_item(&self, metadata: &LocalMetadataItem) {
-                let mut write = self.data.write().await;
+                let mut write = self.data.write();
                 if let Some(removed) = write.remove(metadata.uid()) {
                     removed.delete();
                     drop(write);
@@ -470,7 +477,7 @@ cfg_if::cfg_if! {
                 S: Spec + Serialize,
             {
                 let id = value.ctx().item().uid().to_owned();
-                let mut write = self.data.write().await;
+                let mut write = self.data.write();
                 if let Some(prev) = write.get(&id) {
                     let prev_meta = prev.downcast_ref::<S>()?.ctx().item();
                     let prev_rev = prev_meta.revision;
@@ -524,7 +531,7 @@ cfg_if::cfg_if! {
             where
                 F: Fn(&mut LocalStoreObject<S>),
             {
-                if let Some(spec) = self.data.write().await.get_mut(key) {
+                if let Some(spec) = self.data.write().get_mut(key) {
                     let mut obj = spec.downcast::<S>()?;
                     func(&mut obj);
                     spec.set(obj);

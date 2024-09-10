@@ -3138,6 +3138,7 @@ dependencies = [
  "futures-util",
  "k8-client",
  "once_cell",
+ "parking_lot 0.12.3",
  "serde",
  "serde_json",
  "serde_yaml 0.9.34+deprecated",
