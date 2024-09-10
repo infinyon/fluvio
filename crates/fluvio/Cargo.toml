@@ -26,7 +26,6 @@ unstable = []
 
 [dependencies]
 async-channel = { workspace = true }
-async-lock = { workspace = true }
 async-trait = { workspace = true }
 anyhow = { workspace = true }
 cfg-if = { workspace = true }

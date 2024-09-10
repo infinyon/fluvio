@@ -4,8 +4,8 @@ use std::sync::Arc;
 
 use tracing::{trace, instrument};
 use futures_util::SinkExt;
-use async_lock::Mutex;
-use async_lock::MutexGuard;
+use tokio::sync::Mutex;
+use tokio::sync::MutexGuard;
 use tokio_util::compat::{Compat, FuturesAsyncWriteCompatExt};
 use tokio_util::codec::FramedWrite;
 

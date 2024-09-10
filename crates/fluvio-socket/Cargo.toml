@@ -21,7 +21,6 @@ cfg-if = { workspace = true }
 bytes = { workspace = true }
 once_cell = { workspace = true }
 futures-util = { features = ["sink", "io"], workspace = true }
-async-lock = { workspace = true }
 event-listener = { workspace = true }
 async-channel = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }

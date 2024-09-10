@@ -2317,7 +2317,6 @@ version = "0.23.2"
 dependencies = [
  "anyhow",
  "async-channel 1.9.0",
- "async-lock 3.4.0",
  "async-std",
  "async-trait",
  "cfg-if",
@@ -2904,7 +2903,6 @@ version = "0.0.0"
 dependencies = [
  "adaptive_backoff",
  "anyhow",
- "async-lock 3.4.0",
  "async-trait",
  "clap",
  "fluvio",
@@ -3013,7 +3011,6 @@ name = "fluvio-socket"
 version = "0.14.10"
 dependencies = [
  "async-channel 1.9.0",
- "async-lock 3.4.0",
  "async-trait",
  "built",
  "bytes",
@@ -3042,7 +3039,6 @@ dependencies = [
  "anyhow",
  "async-channel 1.9.0",
  "async-io 2.3.3",
- "async-lock 3.4.0",
  "async-trait",
  "bytes",
  "cfg-if",
@@ -3105,7 +3101,6 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "async-channel 1.9.0",
- "async-lock 3.4.0",
  "async-trait",
  "blocking",
  "bytes",
@@ -3135,7 +3130,6 @@ version = "0.13.5"
 dependencies = [
  "anyhow",
  "async-channel 1.9.0",
- "async-lock 3.4.0",
  "async-trait",
  "cfg-if",
  "fluvio-future",
@@ -3154,9 +3148,8 @@ dependencies = [
 
 [[package]]
 name = "fluvio-stream-model"
-version = "0.11.4"
+version = "0.11.5"
 dependencies = [
- "async-lock 3.4.0",
  "event-listener 5.3.1",
  "fluvio-future",
  "k8-types",

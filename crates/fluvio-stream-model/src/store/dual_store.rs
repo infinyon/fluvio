@@ -7,9 +7,9 @@ use std::hash::Hash;
 
 use tracing::trace;
 use tracing::{debug, error};
-use async_lock::RwLock;
-use async_lock::RwLockReadGuard;
-use async_lock::RwLockWriteGuard;
+use tokio::sync::RwLock;
+use tokio::sync::RwLockReadGuard;
+use tokio::sync::RwLockWriteGuard;
 
 use crate::core::{MetadataItem, Spec};
 

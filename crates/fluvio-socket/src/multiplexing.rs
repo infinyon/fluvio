@@ -16,8 +16,8 @@ use std::future::Future;
 use async_channel::bounded;
 use async_channel::Receiver;
 use async_channel::Sender;
-use async_lock::Mutex;
-use bytes::{Bytes};
+use tokio::sync::Mutex;
+use bytes::Bytes;
 use event_listener::Event;
 use fluvio_future::net::ConnectionFd;
 use futures_util::stream::{Stream, StreamExt};
@@ -31,7 +31,7 @@ use futures_util::ready;
 use fluvio_protocol::api::Request;
 use fluvio_protocol::api::RequestHeader;
 use fluvio_protocol::api::RequestMessage;
-use fluvio_protocol::{Decoder};
+use fluvio_protocol::Decoder;
 
 use crate::SocketError;
 use crate::ExclusiveFlvSink;
@@ -186,8 +186,7 @@ impl MultiplexerSocket {
                 drop(senders);
 
                 match msg.try_lock() {
-                    Some(guard) => {
-
+                    Ok(guard) => {
                         if let Some(response_bytes) =  &*guard {
 
                             debug!(correlation_id, len = response_bytes.len(),"receive serial message");
@@ -206,9 +205,9 @@ impl MultiplexerSocket {
                         }
 
                     },
-                    None => Err(IoError::new(
+                    Err(err) => Err(IoError::new(
                         ErrorKind::BrokenPipe,
-                        format!("locked failed: {correlation_id}, serial socket is in bad state")
+                        format!("locked failed: {correlation_id}, serial socket is in bad state, err: {err}"),
                     ).into())
                 }
             },
@@ -456,17 +455,17 @@ impl MultiPlexingResponseDispatcher {
                     trace!("found serial");
                     // this should always succeed since nobody should lock
                     match serial_sender.0.try_lock() {
-                        Some(mut guard) => {
+                        Ok(mut guard) => {
                             *guard = Some(msg);
                             drop(guard); // unlock
                             serial_sender.1.notify(1);
                             trace!("found serial");
                             Ok(())
                         }
-                        None => Err(IoError::new(
+                        Err(err) => Err(IoError::new(
                             ErrorKind::BrokenPipe,
                             format!(
-                                "failed locking, abandoning sending to socket: {correlation_id}"
+                                "failed locking, abandoning sending to socket: {correlation_id}, err: {err}"
                             ),
                         )
                         .into()),

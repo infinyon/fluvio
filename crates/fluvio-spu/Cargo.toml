@@ -34,7 +34,6 @@ serde = { workspace = true,  features = ['derive'] }
 serde_json = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
 async-channel = { workspace = true }
-async-lock = { workspace = true }
 async-io = { workspace = true }
 adaptive_backoff = { workspace = true }
 once_cell = { workspace = true }

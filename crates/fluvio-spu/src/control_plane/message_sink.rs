@@ -3,7 +3,7 @@ use std::sync::Arc;
 use std::time::SystemTime;
 
 use anyhow::Result;
-use async_lock::Mutex;
+use tokio::sync::Mutex;
 use fluvio_controlplane::sc_api::update_lrs::LrsRequest;
 use fluvio_controlplane::sc_api::update_mirror::MirrorStatRequest;
 use fluvio_controlplane_metadata::mirror::{MirrorPairStatus, MirrorStatus};

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use async_lock::RwLock;
+use tokio::sync::RwLock;
 use chrono::Utc;
 use fluvio_protocol::link::ErrorCode;
 use fluvio_smartmodule::Record;

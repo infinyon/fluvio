@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use async_lock::Mutex;
+use tokio::sync::Mutex;
 use event_listener::Event;
 
 /// Handler of events that keep track of the number of occurrences

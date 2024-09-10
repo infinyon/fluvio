@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use async_channel::Receiver;
-use async_lock::RwLock;
+use tokio::sync::RwLock;
 
 use fluvio_protocol::record::Offset;
 use fluvio_protocol::link::ErrorCode;

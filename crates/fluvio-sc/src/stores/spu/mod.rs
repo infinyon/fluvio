@@ -31,7 +31,7 @@ mod health_check {
     use std::{collections::HashMap, ops::Deref, sync::Arc};
 
     use tracing::{instrument, debug, info};
-    use async_lock::RwLock;
+    use tokio::sync::RwLock;
 
     use fluvio_types::{
         SpuId,

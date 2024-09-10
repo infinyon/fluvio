@@ -12,7 +12,7 @@ mod context {
 
     use fluvio_stream_dispatcher::metadata::local::LocalMetadataItem;
     use tracing::{debug, instrument};
-    use async_lock::RwLockReadGuard;
+    use tokio::sync::RwLockReadGuard;
     use once_cell::sync::Lazy;
 
     use crate::FluvioError;

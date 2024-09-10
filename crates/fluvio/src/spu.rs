@@ -5,7 +5,7 @@ use anyhow::Result;
 use fluvio_sc_schema::partition::PartitionSpec;
 use fluvio_sc_schema::topic::TopicSpec;
 use tracing::{debug, trace, instrument};
-use async_lock::Mutex;
+use tokio::sync::Mutex;
 use async_trait::async_trait;
 
 use fluvio_protocol::record::ReplicaKey;

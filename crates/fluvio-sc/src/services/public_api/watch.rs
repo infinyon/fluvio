@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
+use fluvio_sc_schema::store::MetadataChanges;
 use fluvio_stream_model::core::MetadataItem;
-use fluvio_stream_model::store::ChangeListener;
-use tracing::{debug, trace, error, instrument};
+use tracing::{debug, error, instrument, trace, warn};
 use anyhow::{anyhow, Result};
 
 use fluvio_sc_schema::{AdminSpec, TryEncodableFrom};
@@ -144,21 +144,32 @@ where
         let mut change_listener = self.store.change_listener();
 
         loop {
-            if !self.sync_and_send_changes(&mut change_listener).await {
-                self.end_event.notify();
-                break;
-            }
+            let changes = change_listener.sync_changes().await;
+            let end_event = self.end_event.clone();
 
             trace!("{}: waiting for changes", S::LABEL,);
-            select! {
 
-                _ = self.end_event.listen() => {
+            select! {
+                synced = self.sync_and_send_changes(changes) => {
+                    if !synced {
+                        warn!("watch: {}, sync has been terminated",S::LABEL);
+                        self.end_event.notify();
+                        break;
+                    }
+                },
+                _ = end_event.listen() => {
                     debug!("connection has been terminated");
                     break;
                 },
+            }
 
+            select! {
+                _ = end_event.listen() => {
+                    debug!("connection has been terminated");
+                    break;
+                },
                 _ = change_listener.listen() => {
-                    debug!("watch: {}, changes has been detected",S::LABEL);
+                    debug!("changes has been detected");
                 }
             }
         }
@@ -168,15 +179,9 @@ where
 
     /// sync with store and send out changes to send response
     /// if can't send, then signal end and return false
-    #[instrument(skip(self, listener))]
-    async fn sync_and_send_changes(&mut self, listener: &mut ChangeListener<S, C>) -> bool {
+    #[instrument(skip(self, changes))]
+    async fn sync_and_send_changes(&mut self, changes: MetadataChanges<S, C>) -> bool {
         use fluvio_controlplane_metadata::message::*;
-
-        if !listener.has_change() {
-            debug!("no changes, skipping");
-        }
-
-        let changes = listener.sync_changes().await;
 
         let epoch = changes.epoch;
         debug!(

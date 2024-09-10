@@ -5,7 +5,7 @@ use std::ops::{Deref, DerefMut};
 
 use fluvio_controlplane::replica::Replica;
 use tracing::{debug, warn, instrument};
-use async_lock::RwLock;
+use tokio::sync::RwLock;
 use anyhow::Result;
 
 use fluvio_protocol::record::{BatchRecords, ReplicaKey};

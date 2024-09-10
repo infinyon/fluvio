@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use tracing::instrument;
-use async_lock::RwLock;
+use tokio::sync::RwLock;
 use anyhow::Result;
 
 use fluvio_protocol::record::ReplicaKey;

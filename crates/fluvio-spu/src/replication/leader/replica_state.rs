@@ -7,11 +7,11 @@ use std::{
 use std::iter::FromIterator;
 use std::fmt;
 
-use async_lock::Mutex;
+use tokio::sync::Mutex;
 use fluvio_controlplane::{replica::Replica, sc_api::update_lrs::LrsRequest};
 use tracing::{debug, error, warn};
 use tracing::instrument;
-use async_lock::RwLock;
+use tokio::sync::RwLock;
 use anyhow::{Result, Context};
 
 use fluvio_protocol::record::{RecordSet, Offset, ReplicaKey, RawRecords, Batch};

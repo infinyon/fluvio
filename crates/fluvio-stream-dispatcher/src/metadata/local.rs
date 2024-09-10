@@ -102,7 +102,7 @@ cfg_if::cfg_if! {
 
         use anyhow::{Result, anyhow, Context};
         use async_channel::{Sender, Receiver, bounded};
-        use async_lock::{RwLock, RwLockUpgradableReadGuard};
+        use tokio::sync::RwLock;
         use futures_util::{stream::BoxStream, StreamExt};
         use serde::{de::DeserializeOwned};
         use tracing::{warn, debug, trace};
@@ -311,13 +311,15 @@ cfg_if::cfg_if! {
 
             async fn get_store<S: Spec + DeserializeOwned>(&self) -> Result<Arc<SpecStore>> {
                 let key = S::LABEL;
-                let read = self.stores.upgradable_read().await;
+                let read = self.stores.read().await;
                 Ok(match read.get(key) {
                     Some(store) => store.clone(),
                     None => {
-                        let mut write = RwLockUpgradableReadGuard::upgrade(read).await;
+                        drop(read);
+                        let mut write = self.stores.write().await;
                         let store = Arc::new(SpecStore::load::<S, _>(self.path.join(key)).await?);
                         write.insert(key, store.clone());
+                        drop(write);
                         store
                     }
                 })
@@ -585,7 +587,9 @@ cfg_if::cfg_if! {
 
             fn flush<S: Spec>(&self) -> Result<()> {
                 let storage: VersionedSpecStorage<S> = self.try_into()?;
-                serde_yaml::to_writer(std::fs::File::create(&self.path)?, &storage)?;
+                let file = std::fs::File::create(&self.path)?;
+                serde_yaml::to_writer(&file, &storage)?;
+                file.sync_all()?;
                 Ok(())
             }
 

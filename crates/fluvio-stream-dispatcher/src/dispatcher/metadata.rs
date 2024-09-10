@@ -9,6 +9,7 @@ use fluvio_stream_model::store::NameSpace;
 use futures_util::stream::StreamExt;
 use tracing::debug;
 use tracing::error;
+use tracing::info;
 use tracing::trace;
 use tracing::instrument;
 use serde::de::DeserializeOwned;
@@ -201,13 +202,18 @@ where
                 }
             }
             WSAction::UpdateSpec((key, spec)) => {
+                info!("1 updating spec, getting store: {:#?}", spec);
                 let read_guard = self.ctx.store().read().await;
+                info!("2 got store: {:#?}", read_guard);
                 if let Some(obj) = read_guard.get(&key) {
+                    info!("3 updating spec: {:#?}", obj.inner().ctx().item());
                     let meta = obj.inner().ctx().item().clone();
                     if let Err(err) = self.client.update_spec(meta, spec).await {
                         error!("error: {:#?}, update spec {:#?}", S::LABEL, err);
                     }
+                    info!("4 updated spec");
                 } else {
+                    info!("3 creating new key: {} ctx: {:#?}", key, spec);
                     // create new ctx
                     if let Err(err) = self
                         .client
@@ -216,6 +222,7 @@ where
                     {
                         error!("error: {:#?}, update spec by key {:#?}", S::LABEL, err);
                     }
+                    info!("4 created new ctx");
                 };
             }
             WSAction::UpdateStatus((key, status)) => {
