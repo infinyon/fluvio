@@ -181,6 +181,9 @@ ifeq (${CI},true)
 # In CI, we expect all artifacts to already be built and loaded for the script
 upgrade-test:
 	./tests/upgrade-test.sh
+else ifeq (${FLUVIO_MODE},local)
+upgrade-test: build-cli
+	./tests/upgrade-test.sh
 else
 # When not in CI (i.e. development), load the dev k8 image before running test
 upgrade-test: build-cli build_k8_image
