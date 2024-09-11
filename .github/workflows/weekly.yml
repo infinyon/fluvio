@@ -1,0 +1,54 @@
+name: Weekly tests
+
+permissions:
+  contents: read
+
+concurrency:
+  group: weekly-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  schedule:
+    - cron: "0 0 * * 1"
+  workflow_dispatch:
+
+jobs:
+  weekly_longevity:
+    name: Weekly Longevity test
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        rust-target: [x86_64-unknown-linux-musl]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Fluvio
+        uses: infinyon/fluvio/.github/actions/setup-fluvio@master
+        with:
+          version: latest
+      - name: Run Resume test
+        timeout-minutes: 60
+        run: |
+           FLUVIO_BIN=fluvio INTERACTIONS=100 make resume-test
+      - name: Run diagnostics
+        if: failure()
+        timeout-minutes: 5
+        run: fluvio cluster diagnostics
+      - name: Upload diagnostics
+        uses: actions/upload-artifact@v4
+        timeout-minutes: 5
+        if: failure()
+        with:
+          name: weekly-longevity.diag
+          path: diagnostics*.gz
+      - name: Slack Notification
+        uses: 8398a7/action-slack@v3
+        if: ${{ !success() }}
+        with:
+          status: ${{ job.status }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow,job
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          MATRIX_CONTEXT: ${{ toJson(matrix) }}
