@@ -52,11 +52,7 @@ function cleanup() {
 # If we're in CI, we want to slow down execution
 # to give CPU some time to rest, so we don't time out
 function ci_check() {
-    if [[ "$FLUVIO_MODE" == "local" ]]; then
-        sleep $CI_SLEEP
-    else
         :
-    fi
 }
 
 # This function is intended to be run second after the Stable-1 validation

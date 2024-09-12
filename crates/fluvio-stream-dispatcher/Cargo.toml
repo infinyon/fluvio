@@ -12,7 +12,7 @@ name = "fluvio_stream_dispatcher"
 path = "src/lib.rs"
 
 [features]
-local = ["fluvio-stream-model/use_serde", "fluvio-stream-model/k8", "serde_yaml"]
+local = ["fluvio-stream-model/use_serde", "fluvio-stream-model/k8", "serde_yaml", "parking_lot"]
 k8 = ["fluvio-stream-model/k8", "k8-client", "serde_json"]
 
 [dependencies]
@@ -26,6 +26,7 @@ once_cell = { workspace = true }
 serde = { workspace = true,  features = ['derive'] }
 serde_json = { workspace = true, optional = true }
 serde_yaml = { workspace = true, optional = true }
+parking_lot = { workspace = true, features = ["send_guard"], optional = true }
 tokio = { workspace = true, features = ["macros"] }
 tracing = { workspace = true }
 tempfile = { workspace = true }

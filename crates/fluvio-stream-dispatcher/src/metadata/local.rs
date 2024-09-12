@@ -102,7 +102,7 @@ cfg_if::cfg_if! {
 
         use anyhow::{Result, anyhow, Context};
         use async_channel::{Sender, Receiver, bounded};
-        use async_lock::{RwLock, RwLockUpgradableReadGuard};
+        use parking_lot::RwLock;
         use futures_util::{stream::BoxStream, StreamExt};
         use serde::{de::DeserializeOwned};
         use tracing::{warn, debug, trace};
@@ -133,7 +133,7 @@ cfg_if::cfg_if! {
             where
                 S: K8ExtendedSpec,
             {
-                let store = self.get_store::<S>().await?;
+                let store = self.get_store::<S>()?;
                 store.retrieve_items().await
             }
 
@@ -142,7 +142,7 @@ cfg_if::cfg_if! {
                 S: K8ExtendedSpec,
             {
                 trace!(?metadata, "delete item");
-                let store = self.get_store::<S>().await?;
+                let store = self.get_store::<S>()?;
                 if let Some(item) = store.try_retrieve_item::<S>(&metadata).await? {
                     if let Some(owner) = item.ctx().item().owner() {
                         self.unlink_parent::<S>(owner, item.ctx().item()).await?;
@@ -166,7 +166,7 @@ cfg_if::cfg_if! {
                 <S as Spec>::Owner: K8ExtendedSpec,
             {
                 trace!(?value, "apply");
-                let store = self.get_store::<S>().await?;
+                let store = self.get_store::<S>()?;
                 value.ctx_mut().item_mut().id = value.key().to_string();
                 if let Some(owner) = value.ctx().item().owner() {
                     self.link_parent::<S>(owner, value.ctx().item()).await?;
@@ -181,7 +181,7 @@ cfg_if::cfg_if! {
                 use std::str::FromStr;
 
                 trace!(?metadata, ?spec, "update spec");
-                let store = self.get_store::<S>().await?;
+                let store = self.get_store::<S>()?;
                 let item = match store.try_retrieve_item::<S>(&metadata).await? {
                     Some(mut item) => {
                         item.ctx_mut().set_item(metadata);
@@ -214,7 +214,7 @@ cfg_if::cfg_if! {
                     id: key.to_string(),
                     ..Default::default()
                 };
-                let store = self.get_store::<S>().await?;
+                let store = self.get_store::<S>()?;
                 let item = match store.try_retrieve_item::<S>(&metadata).await? {
                     Some(mut item) => {
                         item.set_spec(spec);
@@ -235,7 +235,7 @@ cfg_if::cfg_if! {
                 S: K8ExtendedSpec,
             {
                 trace!(?metadata, ?status, "update status");
-                let store = self.get_store::<S>().await?;
+                let store = self.get_store::<S>()?;
                 let mut item = store.retrieve_item::<S>(&metadata).await?;
                 item.ctx_mut().set_item(metadata.clone());
                 item.set_status(status);
@@ -252,12 +252,11 @@ cfg_if::cfg_if! {
                 S: K8ExtendedSpec,
             {
                 trace!(label = S::LABEL, ?resource_version, "watch stream");
-                futures_util::stream::once(self.get_store::<S>())
-                    .flat_map(move |store| match store {
-                        Ok(store) => store.watch_stream_since(resource_version.as_ref()),
-                        Err(err) => futures_util::stream::once(async { Result::<_>::Err(err) }).boxed(),
-                    })
-                    .boxed()
+                let store = self.get_store::<S>();
+                match store {
+                    Ok(store) => store.watch_stream_since(resource_version.as_ref()),
+                    Err(err) => futures_util::stream::once(async { Result::<_>::Err(err) }).boxed(),
+                }
             }
 
             async fn patch_status<S>(
@@ -270,7 +269,7 @@ cfg_if::cfg_if! {
                 S: K8ExtendedSpec,
             {
                 trace!(?metadata, ?status, "patch status");
-                let store = self.get_store::<S>().await?;
+                let store = self.get_store::<S>()?;
                 let mut item = store.retrieve_item::<S>(&metadata).await?;
                 item.ctx_mut().set_item(metadata.clone());
                 item.set_status(status);
@@ -309,15 +308,17 @@ cfg_if::cfg_if! {
                 Self { path, stores }
             }
 
-            async fn get_store<S: Spec + DeserializeOwned>(&self) -> Result<Arc<SpecStore>> {
+            fn get_store<S: Spec + DeserializeOwned>(&self) -> Result<Arc<SpecStore>> {
                 let key = S::LABEL;
-                let read = self.stores.upgradable_read().await;
+                let read = self.stores.read();
                 Ok(match read.get(key) {
                     Some(store) => store.clone(),
                     None => {
-                        let mut write = RwLockUpgradableReadGuard::upgrade(read).await;
-                        let store = Arc::new(SpecStore::load::<S, _>(self.path.join(key)).await?);
+                        drop(read);
+                        let mut write = self.stores.write();
+                        let store = Arc::new(SpecStore::load::<S, _>(self.path.join(key))?);
                         write.insert(key, store.clone());
+                        drop(write);
                         store
                     }
                 })
@@ -342,7 +343,7 @@ cfg_if::cfg_if! {
                 child: &LocalMetadataItem,
             ) -> Result<()> {
                 trace!(?parent, ?child, "link parent");
-                let parent_store = self.get_store::<S::Owner>().await?;
+                let parent_store = self.get_store::<S::Owner>()?;
                 parent_store
                     .mut_in_place::<S::Owner, _>(parent.uid(), |parent_obj| {
                         parent_obj
@@ -360,7 +361,7 @@ cfg_if::cfg_if! {
                 child: &LocalMetadataItem,
             ) -> Result<()> {
                 trace!(?parent, ?child, "link parent");
-                let parent_store = self.get_store::<S::Owner>().await?;
+                let parent_store = self.get_store::<S::Owner>()?;
                 parent_store
                     .mut_in_place::<S::Owner, _>(parent.uid(), |parent_obj| {
                         parent_obj
@@ -375,7 +376,6 @@ cfg_if::cfg_if! {
             async fn get_store_by_key(&self, key: &str) -> Result<Arc<SpecStore>> {
                 self.stores
                     .read()
-                    .await
                     .get(key)
                     .cloned()
                     .ok_or_else(|| anyhow!("store not found for key {key}"))
@@ -383,7 +383,7 @@ cfg_if::cfg_if! {
         }
 
         impl SpecStore {
-            async fn load<S: Spec, P: AsRef<Path>>(path: P) -> Result<Self> {
+            fn load<S: Spec, P: AsRef<Path>>(path: P) -> Result<Self> {
                 std::fs::create_dir_all(&path)?;
                 let version = Default::default();
                 let mut data: HashMap<String, SpecPointer> = Default::default();
@@ -423,7 +423,7 @@ cfg_if::cfg_if! {
                     .version
                     .load(std::sync::atomic::Ordering::SeqCst)
                     .to_string();
-                let read = self.data.read().await;
+                let read = self.data.read();
                 let items: Vec<LocalStoreObject<S>> = read
                     .values()
                     .map(SpecPointer::downcast)
@@ -439,7 +439,7 @@ cfg_if::cfg_if! {
             where
                 S: Spec,
             {
-                let read = self.data.read().await;
+                let read = self.data.read();
                 read.get(metadata.uid())
                     .map(SpecPointer::downcast)
                     .transpose()
@@ -455,10 +455,18 @@ cfg_if::cfg_if! {
             }
 
             async fn delete_item(&self, metadata: &LocalMetadataItem) {
-                let mut write = self.data.write().await;
-                if let Some(removed) = write.remove(metadata.uid()) {
-                    removed.delete();
-                    drop(write);
+                let removed = {
+                    let mut write = self.data.write();
+                    if let Some(removed) = write.remove(metadata.uid()) {
+                        removed.delete();
+                        drop(write);
+                        Some(removed)
+                    } else {
+                        None
+                    }
+                };
+
+                if let Some(removed) = removed {
                     self.send_update(SpecUpdate::Delete(removed)).await;
                 }
             }
@@ -468,20 +476,24 @@ cfg_if::cfg_if! {
                 S: Spec + Serialize,
             {
                 let id = value.ctx().item().uid().to_owned();
-                let mut write = self.data.write().await;
-                if let Some(prev) = write.get(&id) {
-                    let prev_meta = prev.downcast_ref::<S>()?.ctx().item();
-                    let prev_rev = prev_meta.revision;
-                    if prev_meta.is_newer(value.ctx().item()) {
-                        let new_rev = value.ctx().item().revision;
-                        anyhow::bail!("attempt to update by stale value: current version: {prev_rev}, proposed: {new_rev}");
-                    }
-                    value.ctx_mut().item_mut().revision = prev_rev + 1;
+                let pointer =
+                {
+                    let mut write = self.data.write();
+                    if let Some(prev) = write.get(&id) {
+                        let prev_meta = prev.downcast_ref::<S>()?.ctx().item();
+                        let prev_rev = prev_meta.revision;
+                        if prev_meta.is_newer(value.ctx().item()) {
+                            let new_rev = value.ctx().item().revision;
+                            anyhow::bail!("attempt to update by stale value: current version: {prev_rev}, proposed: {new_rev}");
+                        }
+                        value.ctx_mut().item_mut().revision = prev_rev + 1;
+                    };
+                    let pointer = SpecPointer::new(self.spec_file_name(&id), value);
+                    write.insert(id, pointer.clone());
+                    pointer.flush::<S>()?;
+                    drop(write);
+                    pointer
                 };
-                let pointer = SpecPointer::new(self.spec_file_name(&id), value);
-                write.insert(id, pointer.clone());
-                pointer.flush::<S>()?;
-                drop(write);
                 self.send_update(SpecUpdate::Mod(pointer)).await;
                 Ok(())
             }
@@ -522,7 +534,7 @@ cfg_if::cfg_if! {
             where
                 F: Fn(&mut LocalStoreObject<S>),
             {
-                if let Some(spec) = self.data.write().await.get_mut(key) {
+                if let Some(spec) = self.data.write().get_mut(key) {
                     let mut obj = spec.downcast::<S>()?;
                     func(&mut obj);
                     spec.set(obj);
