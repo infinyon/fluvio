@@ -597,9 +597,7 @@ cfg_if::cfg_if! {
 
             fn flush<S: Spec>(&self) -> Result<()> {
                 let storage: VersionedSpecStorage<S> = self.try_into()?;
-                let file = std::fs::File::create(&self.path)?;
-                serde_yaml::to_writer(&file, &storage)?;
-                file.sync_all()?;
+                serde_yaml::to_writer(std::fs::File::create(&self.path)?, &storage)?;
                 Ok(())
             }
 
