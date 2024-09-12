@@ -18,22 +18,22 @@ function check_fluvio_bin_path() {
 
     if [[ -n $FLUVIO_BIN ]]; then
         if [[ -n $DEBUG ]]; then
-            echo "# DEBUG: found: FLUVIO_BIN was defined" >&3
+            echo "# DEBUG: found: FLUVIO_BIN was defined"
         fi
         _set_fluvio_bin_path_then_exit "$FLUVIO_BIN";
     elif which fluvio; then
         if [[ -n $DEBUG ]]; then
-            echo "# DEBUG: found: fluvio in PATH" >&3
+            echo "# DEBUG: found: fluvio in PATH"
         fi
         _set_fluvio_bin_path_then_exit "$(which fluvio)";
     elif test -f "$(pwd)/fluvio"; then
         if [[ -n $DEBUG ]]; then
-            echo "# DEBUG: found: fluvio in current directory" >&3
+            echo "# DEBUG: found: fluvio in current directory"
         fi
         _set_fluvio_bin_path_then_exit "$(pwd)/fluvio";
     elif test -f "$HOME/.fluvio/bin/fluvio"; then
         if [[ -n $DEBUG ]]; then
-            echo "# DEBUG: found: fluvio in home directory" >&3
+            echo "# DEBUG: found: fluvio in home directory"
         fi
         _set_fluvio_bin_path_then_exit "$HOME/.fluvio/bin/fluvio";
     fi
@@ -43,7 +43,7 @@ function _set_fluvio_bin_path_then_exit() {
     FLUVIO_BIN=$1
     export FLUVIO_BIN
     if [[ -n $DEBUG ]]; then
-        echo "# DEBUG: Fluvio binary path: $FLUVIO_BIN" >&3
+        echo "# DEBUG: Fluvio binary path: $FLUVIO_BIN"
     fi
 
 }
@@ -61,12 +61,12 @@ function check_load_bats_libraries() {
     # If not there, try to clone it into place
 
     if ! test -d "$TEST_HELPER_DIR/bats-support"; then
-        echo "# Installing bats-support in $TEST_HELPER_DIR" >&3
+        echo "# Installing bats-support in $TEST_HELPER_DIR"
         git clone https://github.com/bats-core/bats-support "$TEST_HELPER_DIR/bats-support"
     fi
 
     if ! test -d "$TEST_HELPER_DIR/bats-assert"; then
-        echo "# Installing bats-assert in $TEST_HELPER_DIR" >&3
+        echo "# Installing bats-assert in $TEST_HELPER_DIR"
         git clone https://github.com/bats-core/bats-assert "$TEST_HELPER_DIR/bats-assert"
     fi
 }
@@ -76,7 +76,7 @@ function check_timeout_bin() {
         echo "# \`timeout\` not in PATH" >&3
 
         if [[ $(uname) == "Darwin" ]]; then
-            echo "# run \`brew install coreutils\` to install" >&3
+            echo "# run \`brew install coreutils\` to install"
         fi
 
         false
@@ -89,7 +89,7 @@ function wait_for_line_in_file() {
     MAX_SECONDS="${3:-30}" # 30 seconds default value
 
     echo "Waiting for file $FILE containing $LINE"
-  
+
     ELAPSED=0;
     until grep -q "$LINE" "$FILE"
     do
@@ -99,7 +99,7 @@ function wait_for_line_in_file() {
       then
         echo "timeout $MAX_SECONDS seconds elapsed"
         exit 1
-      fi  
+      fi
     done
     echo "Done waiting for file $FILE containing $LINE"
 }
