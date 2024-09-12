@@ -65,6 +65,20 @@ impl ExportOpt {
             return Err(CliError::ClusterNotFoundInConfig(cluster_name.to_owned()).into());
         };
 
-        Ok(out.render_serde(&profile_export, output_format.into())?)
+        if output_format == OutputType::toml {
+            use fluvio::config::{Config, Profile};
+
+            // add cluster to a new config export
+            let profile_name = cluster_name.clone();
+            let mut config_export = Config::new();
+
+            config_export.add_cluster(profile_export.to_owned(), cluster_name.clone());
+            let profile = Profile::new(cluster_name.clone());
+            config_export.add_profile(profile, profile_name.clone());
+            config_export.set_current_profile(&profile_name);
+            Ok(out.render_serde(&config_export, output_format.into())?)
+        } else {
+            Ok(out.render_serde(&profile_export, output_format.into())?)
+        }
     }
 }
