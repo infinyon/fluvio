@@ -27,7 +27,7 @@ env:
   CARGO_TERM_COLOR: always
   VERBOSE: ${{ github.events.input.verbose }}
   K3D_VERSION: v5.4.9
-  BATS_VERSION: 1.9.0
+  BATS_VERSION: 1.11.0
   MINIKUBE_VERSION: v1.30.1
   K8_VERSION: v1.26.3
   TLS_ARGS: --tls --domain fluvio.local --server-key ./tls/certs/server.key --server-cert ./tls/certs/server.crt --ca-cert ./tls/certs/ca.crt --client-cert ./tls/certs/client-root.crt --client-key ./tls/certs/client-root.key
@@ -1410,7 +1410,7 @@ jobs:
 
       - name: Start edge cluster remote 2
         timeout-minutes: 10
-        run: | 
+        run: |
           fluvio profile add local2 ${REMOTE_2_SC_PUB_ADDR} local
           fluvio cluster start --skip-profile-creation --skip-checks --spu 0 --sc-pub-addr ${REMOTE_2_SC_PUB_ADDR} --sc-priv-addr ${REMOTE_2_SC_PRIV_ADDR} --data-dir ${REMOTE_2_BASE_DIR}
           fluvio cluster spu register --id ${REMOTE_2_SPU_ID} -p ${REMOTE_2_SPU_PUB_ADDR} -v ${REMOTE_2_SPU_PRIV_ADDR}

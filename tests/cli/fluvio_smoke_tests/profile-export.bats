@@ -28,15 +28,20 @@ load "$TEST_HELPER_DIR"/bats-assert/load.bash
         skip "don't run on cluster stable version"
     fi
 
-    TMPFILE=$(mktemp -t fluvio_profile_test.XXXXXX)
-    debug_msg "Export current profile"
-    run timeout 15s "$FLUVIO_BIN" profile export > $TMPFILE
+    run timeout 15s "$FLUVIO_BIN" profile export
     debug_msg "status: $status"
     debug_msg "output: ${lines[@]}"
     assert_success
 
+    # rerun the export cmd because bats eats the output
+    export TMPFILE=$(mktemp -t fluvio_profile_test.XXXXXX)
+    debug_msg "Export current profile to $TMPFILE"
+    "$FLUVIO_BIN" profile export > $TMPFILE
     export FLV_PROFILE_PATH=$TMPFILE
     run timeout 15s "$FLUVIO_BIN" topic list
+    EXP_PROFILE=$(cat $TMPFILE)
+    debug_msg "# FLV_PROFILE_PATH: ${FLV_PROFILE_PATH}"
+    debug_msg "# exported profile:\n$(cat $TMPFILE)"
     assert_success
 }
 
