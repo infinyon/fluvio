@@ -20,6 +20,14 @@ load "$TEST_HELPER_DIR"/bats-assert/load.bash
 }
 
 @test "Export current profile for use with FLV_PROFILE_PATH" {
+    # the stable version of cli 0.11.11 or older does not support this type of profile export
+    if [ "$FLUVIO_CLI_RELEASE_CHANNEL" == "stable" ]; then
+        skip "don't run on fluvio cli stable version"
+    fi
+    if [ "$FLUVIO_CLUSTER_RELEASE_CHANNEL" == "stable" ]; then
+        skip "don't run on cluster stable version"
+    fi
+
     TMPFILE=$(mktemp -t fluvio_profile_test.XXXXXX)
     debug_msg "Export current profile"
     run timeout 15s "$FLUVIO_BIN" profile export > $TMPFILE
