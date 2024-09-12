@@ -35,3 +35,6 @@ bytesize-serde = "0.2.1"
 [dev-dependencies]
 tempfile = { workspace = true }
 pretty_assertions = "1.4.0"
+
+[package.metadata.cargo-machete]
+ignored = ["humantime_serde"]

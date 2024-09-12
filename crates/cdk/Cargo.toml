@@ -13,9 +13,6 @@ name = "cdk"
 path = "src/main.rs"
 doc = false
 
-[package.metadata.cargo-udeps.ignore]
-normal = ["fluvio"]
-
 [dependencies]
 anyhow = { workspace = true }
 cargo-builder = { path = "../cargo-builder"}
@@ -38,3 +35,7 @@ fluvio-connector-package = { workspace = true,  features = ["toml"]}
 fluvio-extension-common = { workspace = true }
 fluvio-future = { workspace = true, features = ["subscriber"]}
 fluvio-hub-util = { workspace = true, features = ["connector-cmds"] }
+
+
+[package.metadata.cargo-machete]
+ignored = ["fluvio"]

@@ -18,3 +18,5 @@ serde = { default-features = false, features = ["derive"], workspace = true }
 fluvio = { path = "../../crates/fluvio/", features = ["smartengine"]}
 fluvio-connector-common = { path = "../../crates/fluvio-connector-common/", features = ["derive"] }
 
+[package.metadata.cargo-machete]
+ignored = ["serde", "async_std"]
