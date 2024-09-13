@@ -414,7 +414,7 @@ jobs:
       - name: Audit crate licenses + advisories
         if: matrix.check == 'crate-audit'
         continue-on-error: true
-        uses: EmbarkStudios/cargo-deny-action@v1
+        uses: EmbarkStudios/cargo-deny-action@v2
       - name: Crate version check
         if: matrix.check == 'crate-publish-check'
         run: ./release-tools/check-publish-crates.sh
