@@ -184,9 +184,9 @@ jobs:
           echo "EXPECTED_VERSION: $EXPECTED_VERSION"
 
       - run: echo "VERSION=$EXPECTED_VERSION" | tee -a $GITHUB_ENV
-      - name: Install current stable Fluvio CLI and upgrade cluster
+      - name: Install current latest Fluvio CLI and upgrade cluster
         run: |
-          ~/.fvm/bin/fvm install stable
+          ~/.fvm/bin/fvm install latest
           ~/.fluvio/bin/fluvio cluster upgrade --force
           ~/.fluvio/bin/fluvio version
 
