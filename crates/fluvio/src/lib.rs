@@ -46,7 +46,7 @@ use tracing::instrument;
 
 /// The minimum VERSION of the Fluvio Platform that this client is compatible with.
 const MINIMUM_PLATFORM_VERSION: &str = "0.9.0";
-pub(crate) const VERSION: &str = include_str!("../../../VERSION");
+pub(crate) const VERSION: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/VERSION"));
 
 /// Creates a producer that sends records to the named topic
 ///
