@@ -38,6 +38,8 @@ If all systems are operational and no bugs are found in the pre-release, the fin
 **without the `pre-release` check**.
 - [ ] Verify that the [crates publish to crates.io](https://github.com/infinyon/fluvio/actions/workflows/publish_crates.yml) succeeds (Retry at least once if failure)
 - [ ] Announce new release in Discord
+- [ ] Update the [Fluvio docs](https://www.fluvio.io/) with the new release.
+- [ ] Publish a `This Week in Fluvio` post about the new release on the [Fluvio news](https://www.fluvio.io/news) page.
 - [ ] To close this issue, create a PR for post release updates and use `release_template.md`
   - Add form data `template=release_template.md` to the PR URL while creating in order to use template
   - e.g. https://github.com/infinyon/fluvio/compare/master...username:your-branch?expand=1&template=release_template.md
