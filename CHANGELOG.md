@@ -2,42 +2,44 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
-## Platform Version 0.11.12-dev - 2024-09-13
+## Platform Version 0.11.13-dev-1 - UNRELEASED
+
+## Platform Version 0.11.12 - 2024-09-13
 
 ### Added
 
-* Update mirror status when find errors on spu (#4120)
-* Upgrade cluster for local (#4138)
-* Provide `wasm32-unknown-unknown` support for `hub-util` (#4151)
-* Sysflag to list (#4156)
+* Update mirror status when find errors on spu ([#4120](https://github.com/infinyon/fluvio/pull/4120))
+* Upgrade cluster for local ([#4138](https://github.com/infinyon/fluvio/pull/4138))
+* Provide `wasm32-unknown-unknown` support for `hub-util` ([#4151](https://github.com/infinyon/fluvio/pull/4151))
+* Sysflag to list ([#4156](https://github.com/infinyon/fluvio/pull/4156))
 
 ### Fixed
 
-* Fluvio.io doc linkss from various README.md and other docs (#4141)
-* Better error when watch api versions are not compatible (#4149)
-* Disable local upgrade test until fix it (#4158)
-* Update sysinfo and fix fd leak on linux (#4163)
-* Cdk use preferred target for compatibility for default build target (#4168)
-* Implement profile export toml and make it default option (#4172)
-* Concurrency problems at local metadata store (#4175)
-* Profile export, full config, add cli test (#4179)
+* Fluvio.io doc links from various README.md and other docs ([#4141](https://github.com/infinyon/fluvio/pull/4141))
+* Better error when watch api versions are not compatible ([#4149](https://github.com/infinyon/fluvio/pull/4149))
+* Disable local upgrade test until fix it ([#4158](https://github.com/infinyon/fluvio/pull/4158))
+* Update sysinfo and fix fd leak on linux ([#4163](https://github.com/infinyon/fluvio/pull/4163))
+* Cdk use preferred target for compatibility for default build target ([#4168](https://github.com/infinyon/fluvio/pull/4168))
+* Implement profile export toml and make it default option ([#4172](https://github.com/infinyon/fluvio/pull/4172))
+* Concurrency problems at local metadata store ([#4175](https://github.com/infinyon/fluvio/pull/4175))
+* Profile export, full config, add cli test ([#4179](https://github.com/infinyon/fluvio/pull/4179))
 
 ### Changed
 
-* 0.11.11 post-release (#4130)
-* Add serde default to multiple connector configs (#4132)
-* Update wasmtime and wasi-common to 23.0.2 (#4135)
-* Clean up not used dependencies (#4146)
-* Add list with meta endpoint (#4152)
-* Fix typo (#4153)
-* Fix typos (#4157)
-* Update Rust `1.81` (#4167)
-* Add weekly ci (#4176)
+* 0.11.11 post-release ([#4130](https://github.com/infinyon/fluvio/pull/4130))
+* Add serde default to multiple connector configs ([#4132](https://github.com/infinyon/fluvio/pull/4132))
+* Update wasmtime and wasi-common to 23.0.2 ([#4135](https://github.com/infinyon/fluvio/pull/4135))
+* Clean up not used dependencies ([#4146](https://github.com/infinyon/fluvio/pull/4146))
+* Add list with meta endpoint ([#4152](https://github.com/infinyon/fluvio/pull/4152))
+* Fix typo ([#4153](https://github.com/infinyon/fluvio/pull/4153))
+* Fix typos ([#4157](https://github.com/infinyon/fluvio/pull/4157))
+* Update Rust `1.81` ([#4167](https://github.com/infinyon/fluvio/pull/4167))
+* Add weekly ci ([#4176](https://github.com/infinyon/fluvio/pull/4176))
 
 
 ### Remove
 
-* Unused import (#4139)
+* Unused import ([#4139](https://github.com/infinyon/fluvio/pull/4139))
 
 ## Platform Version 0.11.11 - 2024-08-05
 
