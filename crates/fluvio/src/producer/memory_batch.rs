@@ -44,14 +44,18 @@ impl MemoryBatch {
         let timestamp_delta = self.elapsed();
         record.get_mut_header().set_timestamp_delta(timestamp_delta);
 
-        let record_size = record.write_size(0);
+        let version = 0;
+        let record_size = record.write_size(version);
+        let est_comp_rec_size = (record_size as f32 * self.compression_coefficient()) as usize;
 
-        if self.estimated_size() + record_size > self.write_limit {
+        if self.estimated_size() + est_comp_rec_size > self.write_limit {
+            let est_size = self.estimated_size();
+            tracing::debug!(est_size, est_comp_rec_size, write_limit=self.write_limit, "Record size to large for batch");
             self.is_full = true;
             return None;
         }
 
-        if self.estimated_size() + record_size == self.write_limit {
+        if self.estimated_size() + est_comp_rec_size == self.write_limit {
             self.is_full = true;
         }
 
