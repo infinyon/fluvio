@@ -50,7 +50,12 @@ impl MemoryBatch {
 
         if self.estimated_size() + est_comp_rec_size > self.write_limit {
             let est_size = self.estimated_size();
-            tracing::debug!(est_size, est_comp_rec_size, write_limit=self.write_limit, "Record size to large for batch");
+            tracing::debug!(
+                est_size,
+                est_comp_rec_size,
+                write_limit = self.write_limit,
+                "Record size to large for batch"
+            );
             self.is_full = true;
             return None;
         }
