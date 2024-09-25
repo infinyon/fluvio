@@ -667,6 +667,8 @@ mod test {
         assert_eq!(value.len(), 3);
         assert_eq!(value[0], 0x64);
 
+        let hdr = record.get_header();
+        assert_eq!(hdr.attributes, 0i8);
         Ok(())
     }
 
