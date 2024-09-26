@@ -28,7 +28,6 @@ fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata/", defa
 fluvio-smartengine = { path = "../fluvio-smartengine", default-features = false, features = [
     "transformation",
 ] }
-fluvio-compression = { path = "../fluvio-compression" }
 fluvio-types = { path = "../fluvio-types" }
 bytesize-serde = "0.2.1"
 
