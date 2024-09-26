@@ -39,3 +39,6 @@ pub const DEF_HUB_PKG_META: &str = concatcp!(DEF_HUB_INIT_DIR, "/", HUB_PACKAGE_
 pub const SDF_PKG_KIND: &str = "sdf-kind";
 pub const SDF_PKG_KIND_DATAFLOW: &str = "dataflow";
 pub const SDF_PKG_KIND_PACKAGE: &str = "pkg";
+
+/// Package Meta's [`PkgTag`] reserved tag names
+pub const PKG_TAG_META_PUBLISHED_AT: &str = "inf::meta::published_at";
