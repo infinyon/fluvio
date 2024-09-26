@@ -14,7 +14,7 @@ events = ["event-listener"]
 event-listener = { workspace = true,  optional = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
-serde = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
 toml = { workspace = true, features = ["display", "preserve_order", "parse"] }
 
 [dev-dependencies]
