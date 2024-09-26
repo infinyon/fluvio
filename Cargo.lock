@@ -2655,7 +2655,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-compression"
-version = "0.3.3"
+version = "0.3.4"
 dependencies = [
  "bytes",
  "flate2",
@@ -2926,7 +2926,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.11.0"
+version = "0.11.1"
 dependencies = [
  "bytes",
  "cfg-if",
