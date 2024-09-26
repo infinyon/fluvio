@@ -177,7 +177,7 @@ fluvio-controlplane-metadata = { version = "0.29.0", default-features = false, p
 fluvio-extension-common = { path = "crates/fluvio-extension-common", default-features = false }
 fluvio-hub-util = { path = "crates/fluvio-hub-util" }
 fluvio-package-index = { version = "0.7.6", path = "crates/fluvio-package-index", default-features = false }
-fluvio-protocol = { version = "0.11.0", path = "crates/fluvio-protocol" }
+fluvio-protocol = { version = "0.12.0", path = "crates/fluvio-protocol" }
 fluvio-sc-schema = { version = "0.24.0", path = "crates/fluvio-sc-schema", default-features = false }
 fluvio-service = { path = "crates/fluvio-service" }
 fluvio-smartengine = {  version = "0.8.0", path = "crates/fluvio-smartengine", default-features = false }
@@ -187,7 +187,7 @@ fluvio-spu-schema = { version = "0.16.0", path = "crates/fluvio-spu-schema", def
 fluvio-storage = { path = "crates/fluvio-storage" }
 fluvio-stream-dispatcher = { version = "0.13.2", path = "crates/fluvio-stream-dispatcher" }
 fluvio-stream-model = { version = "0.11.3", path = "crates/fluvio-stream-model", default-features = false }
-fluvio-types = { version = "0.6.0", path = "crates/fluvio-types", default-features = false }
+fluvio-types = { version = "0.5.1", path = "crates/fluvio-types", default-features = false }
 fluvio-kv-storage = { path = "crates/fluvio-kv-storage", default-features = false }
 
 # Used to make eyre faster on debug builds
