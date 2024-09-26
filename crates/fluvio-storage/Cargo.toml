@@ -52,6 +52,7 @@ fluvio-protocol = { workspace = true }
 fluvio-controlplane-metadata = { workspace = true  }
 fluvio-controlplane = { workspace = true }
 fluvio-spu-schema = { workspace = true, features = [ "file"] }
+fluvio-compression = { workspace = true }
 
 [dev-dependencies]
 fluvio-future = { workspace = true, features = ["fixture"] }

@@ -7,14 +7,16 @@ use bytes::BytesMut;
 #[cfg(feature = "compress")]
 use snap::write::{IntoInnerError, FrameEncoder};
 
+use fluvio_types::compression::CompressionParseError;
+
 #[derive(thiserror::Error, Debug)]
 pub enum CompressionError {
     #[error(transparent)]
     IoError(#[from] std::io::Error),
+    #[error("Failed to parse compression type: {0}")]
+    ParseError(#[from] CompressionParseError),
     #[error("Unreachable error")]
     UnreachableError,
-    #[error("unknown compression format: {0}")]
-    UnknownCompressionFormat(String),
     #[error("error flushing Snap encoder: {0}")]
     #[cfg(feature = "compress")]
     SnapError(#[from] Box<IntoInnerError<FrameEncoder<Writer<BytesMut>>>>),

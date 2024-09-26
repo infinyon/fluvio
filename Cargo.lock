@@ -2659,6 +2659,7 @@ version = "0.3.4"
 dependencies = [
  "bytes",
  "flate2",
+ "fluvio-types",
  "lz4_flex",
  "serde",
  "snap",
@@ -3186,6 +3187,7 @@ dependencies = [
  "bytes",
  "clap",
  "derive_builder",
+ "fluvio-compression",
  "fluvio-controlplane",
  "fluvio-controlplane-metadata",
  "fluvio-future",
@@ -3332,7 +3334,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-types"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "event-listener 5.3.1",
  "fluvio-future",

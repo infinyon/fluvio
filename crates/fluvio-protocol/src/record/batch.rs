@@ -6,8 +6,7 @@ use fluvio_types::PartitionId;
 use tracing::trace;
 
 use fluvio_types::Timestamp;
-use fluvio_compression::Compression;
-use fluvio_compression::CompressionError;
+use fluvio_compression::{Compression, CompressionExt, CompressionError};
 
 use crate::bytes::Buf;
 use crate::bytes::BufMut;
@@ -461,7 +460,7 @@ pub struct BatchHeader {
 impl BatchHeader {
     fn get_compression(&self) -> Result<Compression, CompressionError> {
         let compression_bits = self.attributes & ATTR_COMPRESSION_CODEC_MASK;
-        Compression::try_from(compression_bits as i8)
+        Compression::try_from(compression_bits as i8).map_err(CompressionError::from)
     }
 
     pub fn set_compression(&mut self, compression: Compression) {

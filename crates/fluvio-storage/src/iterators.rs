@@ -5,9 +5,9 @@ use std::io::{Error as IoError, ErrorKind, Cursor};
 
 use nix::sys::uio::pread;
 
+use fluvio_compression::CompressionExt;
 use fluvio_protocol::types::Timestamp;
 use fluvio_protocol::{Decoder, Version};
-
 use fluvio_protocol::record::{Batch, Offset, BATCH_FILE_HEADER_SIZE, BATCH_HEADER_SIZE, Record};
 use fluvio_future::file_slice::AsyncFileSlice;
 

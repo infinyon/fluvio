@@ -1,7 +1,7 @@
 use std::io::{Error as IoError, ErrorKind};
 
 use fluvio_protocol::record::{Batch, RawRecords, Offset};
-use fluvio_compression::{Compression, CompressionError};
+use fluvio_compression::{Compression, CompressionExt, CompressionError};
 
 use super::batch::SmartModuleInputBatch;
 

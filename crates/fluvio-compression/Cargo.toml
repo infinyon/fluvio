@@ -28,6 +28,8 @@ serde = { workspace = true,  features = ['derive'] }
 thiserror = { workspace = true }
 bytes = { workspace = true }
 
+fluvio-types = { workspace = true }
+
 # Optional Dependencies
 flate2 = { workspace = true, optional = true }
 lz4_flex = { version = "0.11.1", default-features = false, features = ["safe-decode", "safe-encode", "frame"], optional = true }
