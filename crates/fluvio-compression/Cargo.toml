@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-compression"
-version = "0.3.3"
+version = "0.3.4"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -10,7 +10,7 @@ repository = "https://github.com/infinyon/fluvio"
 description = "Fluvio Compression library"
 
 [features]
-default = ["compress"]
+default = ["compress", "types"]
 compress = [
     "gzip",
     "lz4",
@@ -21,6 +21,7 @@ gzip = ["dep:flate2"]
 lz4 = ["dep:lz4_flex"]
 snap = ["dep:snap"]
 zstd = ["dep:zstd"]
+types = []
 
 [dependencies]
 serde = { workspace = true,  features = ['derive'] }
