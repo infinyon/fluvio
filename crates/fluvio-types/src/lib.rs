@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+pub mod compression;
 pub mod defaults;
 pub mod macros;
 pub mod partition;

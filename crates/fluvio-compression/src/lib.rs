@@ -136,3 +136,48 @@ impl Compression {
         }
     }
 }
+
+#[cfg(any(feature = "gzip", feature = "snap", feature = "lz4", feature = "zstd"))]
+impl From<fluvio_types::compression::Compression> for Compression {
+    fn from(fcc: fluvio_types::compression::Compression) -> Self {
+        use fluvio_types::compression::Compression as CompressionType;
+
+        match fcc {
+            CompressionType::None => Compression::None,
+            #[cfg(feature = "gzip")]
+            CompressionType::Gzip => Compression::Gzip,
+            #[cfg(feature = "snap")]
+            CompressionType::Snappy => Compression::Snappy,
+            #[cfg(feature = "lz4")]
+            CompressionType::Lz4 => Compression::Lz4,
+            #[cfg(feature = "zstd")]
+            CompressionType::Zstd => Compression::Zstd,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Compression;
+
+    #[test]
+    fn converts_from_fluvio_compression() {
+        use fluvio_types::compression::Compression as CompressionType;
+
+        assert_eq!(Compression::from(CompressionType::None), Compression::None);
+
+        #[cfg(feature = "gzip")]
+        assert_eq!(Compression::from(CompressionType::Gzip), Compression::Gzip);
+        #[cfg(feature = "snap")]
+        assert_eq!(
+            Compression::from(CompressionType::Snappy),
+            Compression::Snappy
+        );
+
+        #[cfg(feature = "lz4")]
+        assert_eq!(Compression::from(CompressionType::Lz4), Compression::Lz4);
+
+        #[cfg(feature = "zstd")]
+        assert_eq!(Compression::from(CompressionType::Zstd), Compression::Zstd);
+    }
+}
