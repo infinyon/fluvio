@@ -2714,7 +2714,6 @@ dependencies = [
  "anyhow",
  "bytesize",
  "bytesize-serde",
- "fluvio-compression",
  "fluvio-controlplane-metadata",
  "fluvio-smartengine",
  "fluvio-types",

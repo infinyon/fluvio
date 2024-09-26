@@ -64,4 +64,3 @@ impl CompressionExt for Compression {
         }
     }
 }
-
