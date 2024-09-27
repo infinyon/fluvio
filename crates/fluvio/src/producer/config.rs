@@ -3,12 +3,13 @@ use std::str::FromStr;
 use std::time::Duration;
 
 use derive_builder::Builder;
-use serde::{Serialize, Deserialize};
 
 use fluvio_future::retry::{ExponentialBackoff, FibonacciBackoff, FixedDelay};
 use fluvio_spu_schema::Isolation;
 use fluvio_spu_schema::server::smartmodule::SmartModuleInvocation;
+
 use fluvio_compression::Compression;
+use serde::{Serialize, Deserialize};
 
 use crate::producer::partitioning::{Partitioner, SiphashRoundRobinPartitioner};
 
