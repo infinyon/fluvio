@@ -15,8 +15,8 @@ pub use bytesize::ByteSize;
 
 pub use fluvio_controlplane_metadata::topic::config as topic_config;
 pub use fluvio_smartengine::transformation::TransformationStep;
-pub use fluvio_compression::Compression;
 pub use fluvio_types::PartitionId;
+pub use fluvio_types::compression::Compression;
 
 use crate::metadata::Direction;
 

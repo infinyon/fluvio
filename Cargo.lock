@@ -2388,7 +2388,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.23.2"
+version = "0.23.3"
 dependencies = [
  "anyhow",
  "async-channel 1.9.0",
@@ -2714,7 +2714,6 @@ dependencies = [
  "anyhow",
  "bytesize",
  "bytesize-serde",
- "fluvio-compression",
  "fluvio-controlplane-metadata",
  "fluvio-smartengine",
  "fluvio-types",
