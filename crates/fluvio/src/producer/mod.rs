@@ -566,33 +566,35 @@ fn determine_producer_compression_algo(
     config: Arc<TopicProducerConfig>,
     topic_spec: fluvio_sc_schema::topic::TopicSpec,
 ) -> Result<Compression> {
+    let compression = config.compression().map(Compression::from);
+
     let result = match topic_spec.get_compression_type() {
-        CompressionAlgorithm::Any => config.compression.unwrap_or_default(),
-        CompressionAlgorithm::Gzip => match config.compression {
+        CompressionAlgorithm::Any => compression.unwrap_or_default(),
+        CompressionAlgorithm::Gzip => match compression {
             Some(Compression::Gzip) | None => Compression::Gzip,
             Some(compression_config) => return Err(FluvioError::Producer(ProducerError::InvalidConfiguration(
                 format!("Compression in the producer ({compression_config}) does not match with topic level compression (gzip)" ),
             )).into()),
         },
-        CompressionAlgorithm::Snappy => match config.compression {
+        CompressionAlgorithm::Snappy => match compression {
             Some(Compression::Snappy) | None => Compression::Snappy,
             Some(compression_config) => return Err(FluvioError::Producer(ProducerError::InvalidConfiguration(
                 format!("Compression in the producer ({compression_config}) does not match with topic level compression (snappy)" ),
             )).into()),
         },
-        CompressionAlgorithm::Lz4 => match config.compression {
+        CompressionAlgorithm::Lz4 => match compression {
             Some(Compression::Lz4) | None => Compression::Lz4,
             Some(compression_config) => return Err(FluvioError::Producer(ProducerError::InvalidConfiguration(
                 format!("Compression in the producer ({compression_config}) does not match with topic level compression (lz4)"),
             )).into()),
         },
-        CompressionAlgorithm::Zstd => match config.compression {
+        CompressionAlgorithm::Zstd => match compression {
             Some(Compression::Zstd) | None => Compression::Zstd,
             Some(compression_config) => return Err(FluvioError::Producer(ProducerError::InvalidConfiguration(
                 format!("Compression in the producer ({compression_config}) does not match with topic level compression (zstd)" ),
             )).into()),
         },
-    CompressionAlgorithm::None => match config.compression {
+    CompressionAlgorithm::None => match compression {
             Some(Compression::None) | None => Compression::None,
             Some(compression_config) => return Err(FluvioError::Producer(ProducerError::InvalidConfiguration(
                 format!("Compression in the producer ({compression_config}) does not match with topic level compression (no compression)" )

@@ -19,7 +19,7 @@ pub async fn producer_from_config(config: &ConnectorConfig) -> Result<(Fluvio, T
 
         // Compression
         if let Some(compression) = &producer_params.compression {
-            config_builder = config_builder.compression(compression)
+            config_builder = config_builder.compression(compression.clone())
         };
 
         // Batch size
