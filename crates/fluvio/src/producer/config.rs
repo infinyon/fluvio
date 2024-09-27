@@ -122,7 +122,7 @@ impl TopicProducerConfig {
     }
 
     pub fn compression(&self) -> Option<Compression> {
-        self.compression.clone()
+        self.compression
     }
 
     pub fn timeout(&self) -> Duration {
