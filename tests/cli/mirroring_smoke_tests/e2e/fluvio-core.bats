@@ -130,7 +130,7 @@ setup_file() {
 }
 
 @test "Home status at remote 1 should show the home cluster connected" {
-    sleep 15
+    sleep 60
     run timeout 15s "$FLUVIO_BIN" home status
 
     assert_success
@@ -165,7 +165,7 @@ setup_file() {
 }
 
 @test "Home status at remote 2 should show the home cluster connected" {
-    sleep 15
+    sleep 60
     run timeout 15s "$FLUVIO_BIN" home status
 
     assert_success

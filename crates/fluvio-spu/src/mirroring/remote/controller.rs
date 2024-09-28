@@ -509,6 +509,7 @@ where
 
 fn create_backoff() -> ExponentialBackoff {
     ExponentialBackoffBuilder::default()
+        .factor(1.1)
         .min(Duration::from_secs(1))
         .max(Duration::from_secs(30))
         .build()
