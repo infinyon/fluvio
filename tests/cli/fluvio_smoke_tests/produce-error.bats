@@ -49,7 +49,7 @@ teardown_file() {
         skip "don't check output on stable version"
     fi
 
-    assert_output --partial "Try increasing the producer batch size"
+    assert_output --partial "the message is too large to send"
 }
 
 # This should fail due to wrong compression algorithm

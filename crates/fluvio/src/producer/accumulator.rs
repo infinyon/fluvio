@@ -7,13 +7,14 @@ use std::time::Duration;
 
 use async_channel::Sender;
 use async_lock::RwLock;
+use fluvio_protocol::Encoder;
 use tracing::trace;
 use futures_util::future::{BoxFuture, Either, Shared};
 use futures_util::{FutureExt, ready};
 
 use fluvio_future::sync::Mutex;
 use fluvio_future::sync::Condvar;
-use fluvio_protocol::record::Batch;
+use fluvio_protocol::record::{Batch, RawRecords};
 use fluvio_compression::Compression;
 use fluvio_protocol::record::Offset;
 use fluvio_protocol::link::ErrorCode;
@@ -134,7 +135,14 @@ impl RecordAccumulator {
             "Batch is full. Creating a new batch for partition"
         );
 
-        let mut batch = ProducerBatch::new(self.batch_size, self.compression);
+        let estimated_size = record.write_size(0)
+            + Batch::<RawRecords>::default().write_size(0)
+            + Vec::<RawRecords>::default().write_size(0);
+        let mut batch = if estimated_size > self.batch_size {
+            ProducerBatch::new(None, self.compression)
+        } else {
+            ProducerBatch::new(Some(self.batch_size), self.compression)
+        };
 
         match batch.push_record(record) {
             Some(push_record) => {
@@ -176,7 +184,7 @@ pub(crate) struct ProducerBatch {
     batch: MemoryBatch,
 }
 impl ProducerBatch {
-    fn new(write_limit: usize, compression: Compression) -> Self {
+    fn new(write_limit: Option<usize>, compression: Compression) -> Self {
         let (sender, receiver) = async_channel::bounded(1);
         let batch_metadata = Arc::new(BatchMetadata::new(receiver));
         let batch = MemoryBatch::new(write_limit, compression);
@@ -327,10 +335,12 @@ mod test {
 
         // Producer batch that can store three instances of Record::from(("key", "value"))
         let mut pb = ProducerBatch::new(
-            size * 3
-                + 1
-                + Batch::<RawRecords>::default().write_size(0)
-                + Vec::<RawRecords>::default().write_size(0),
+            Some(
+                size * 3
+                    + 1
+                    + Batch::<RawRecords>::default().write_size(0)
+                    + Vec::<RawRecords>::default().write_size(0),
+            ),
             Compression::None,
         );
 
@@ -350,9 +360,11 @@ mod test {
 
         // Producer batch that can store three instances of Record::from(("key", "value"))
         let mut pb = ProducerBatch::new(
-            size * 3
-                + Batch::<RawRecords>::default().write_size(0)
-                + Vec::<RawRecords>::default().write_size(0),
+            Some(
+                size * 3
+                    + Batch::<RawRecords>::default().write_size(0)
+                    + Vec::<RawRecords>::default().write_size(0),
+            ),
             Compression::None,
         );
 
