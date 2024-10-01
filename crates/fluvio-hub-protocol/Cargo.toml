@@ -10,6 +10,7 @@ publish = false
 
 [dependencies]
 cargo_toml = { workspace = true }
+chrono = { workspace = true }
 const_format = { workspace = true }
 dirs = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
