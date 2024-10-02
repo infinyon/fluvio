@@ -49,7 +49,7 @@ teardown_file() {
         skip "don't check output on stable version"
     fi
 
-    assert_output --partial "the message is too large to send"
+    assert_output --partial "the given record is larger than the max_request_size"
 }
 
 # This should fail due to wrong compression algorithm

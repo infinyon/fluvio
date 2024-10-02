@@ -100,9 +100,13 @@ mod cmd {
         #[arg(long, value_parser=parse_duration)]
         pub linger: Option<Duration>,
 
-        /// Max amount of bytes accumulated before sending
+        /// Max number of records to batch before sending
         #[arg(long)]
         pub batch_size: Option<usize>,
+
+        /// Max amount of bytes accumulated before sending
+        #[arg(long)]
+        pub max_request_size: Option<usize>,
 
         /// Isolation level that producer must respect.
         /// Supported values: read_committed (ReadCommitted) - wait for records to be committed before response,
@@ -208,6 +212,13 @@ mod cmd {
             // Batch size
             let config_builder = if let Some(batch_size) = self.batch_size {
                 config_builder.batch_size(batch_size)
+            } else {
+                config_builder
+            };
+
+            // Max request size
+            let config_builder = if let Some(max_request_size) = self.max_request_size {
+                config_builder.max_request_size(max_request_size)
             } else {
                 config_builder
             };
