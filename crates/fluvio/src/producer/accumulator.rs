@@ -7,7 +7,6 @@ use std::time::Duration;
 
 use async_channel::Sender;
 use async_lock::RwLock;
-use fluvio_protocol::Encoder;
 use tracing::trace;
 use futures_util::future::{BoxFuture, Either, Shared};
 use futures_util::{FutureExt, ready};
@@ -15,6 +14,7 @@ use futures_util::{FutureExt, ready};
 use fluvio_future::sync::Mutex;
 use fluvio_future::sync::Condvar;
 use fluvio_protocol::record::{Batch, RawRecords};
+use fluvio_protocol::Encoder;
 use fluvio_compression::Compression;
 use fluvio_protocol::record::Offset;
 use fluvio_protocol::link::ErrorCode;

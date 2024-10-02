@@ -37,8 +37,7 @@ teardown_file() {
         skip "don't run on cluster stable version"
     fi
     run bash -c "yes abcdefghijklmnopqrstuvwxyz |head -c 2500000 > $TOPIC_NAME-small.txt"
-    # run bash -c "yes abcdefghijklmnopqrstuvwxyz |head -c 5000000 > $TOPIC_NAME-med.txt"
-    run bash -c "yes abcdefghijklmnopqrstuvwxyz |head -c 4999989 > $TOPIC_NAME-med.txt"
+    run bash -c "yes abcdefghijklmnopqrstuvwxyz |head -c 5000000 > $TOPIC_NAME-med.txt"
     run bash -c "yes abcdefghijklmnopqrstuvwxyz |head -c 15000000 > $TOPIC_NAME-big.txt"
 
     debug_msg small 25

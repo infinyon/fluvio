@@ -132,7 +132,7 @@ impl ReplicaStorage for FileReplica {
         records: &mut RecordSet<R>,
         update_highwatermark: bool,
     ) -> Result<usize> {
-        let max_batch_size = self.option.max_batch_size.get() as usize;
+        let max_request_size = self.option.max_request_size.get() as usize;
         let max_segment_size = self.option.segment_max_bytes.get() as usize;
         let mut total_size = 0;
         // check if any of the records's batch exceed max length
@@ -146,8 +146,8 @@ impl ReplicaStorage for FileReplica {
                 .into());
             }
             total_size += batch_size;
-            if batch_size > max_batch_size {
-                return Err(StorageError::BatchTooBig(max_batch_size).into());
+            if batch_size > max_request_size {
+                return Err(StorageError::BatchTooBig(max_request_size).into());
             }
         }
 
