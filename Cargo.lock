@@ -2845,7 +2845,6 @@ name = "fluvio-hub-protocol"
 version = "0.0.0"
 dependencies = [
  "cargo_toml",
- "chrono",
  "const_format",
  "dirs 5.0.1",
  "fluvio-controlplane-metadata",
@@ -2866,6 +2865,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "cargo_toml",
+ "chrono",
  "clap",
  "comfy-table",
  "const_format",

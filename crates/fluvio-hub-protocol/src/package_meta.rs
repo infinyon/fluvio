@@ -1,6 +1,5 @@
 use std::default::Default;
 
-use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use tracing::{info, error};
 use url::Url;
@@ -11,7 +10,7 @@ use fluvio_controlplane_metadata::smartmodule::SmartModuleVisibility;
 use fluvio_controlplane_metadata::smartmodule as smpkg;
 
 use crate::{HubError, Result};
-use crate::constants::{HUB_PACKAGE_EXT, HUB_PACKAGE_VERSION, PKG_TAG_META_PUBLISHED_AT};
+use crate::constants::{HUB_PACKAGE_EXT, HUB_PACKAGE_VERSION};
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
 /// defines hub package metadata
@@ -195,23 +194,6 @@ impl PackageMeta {
         } else {
             None
         }
-    }
-
-    pub fn published_at(&self) -> Result<DateTime<Utc>> {
-        let published_at_pkg_tag = self
-            .tags
-            .as_ref()
-            .ok_or(HubError::General(String::from("No tags available")))?
-            .iter()
-            .find(|PkgTag { tag, .. }| tag == PKG_TAG_META_PUBLISHED_AT)
-            .ok_or(HubError::General(format!(
-                "Missing {PKG_TAG_META_PUBLISHED_AT} tag"
-            )))?;
-
-        let publisted_at = DateTime::parse_from_rfc2822(published_at_pkg_tag.value.as_str())
-            .map_err(|err| HubError::General(format!("Failed to parse publish date. {}", err)))?;
-
-        Ok(publisted_at.to_utc())
     }
 }
 
@@ -442,47 +424,4 @@ fn hub_packagemeta_tags() {
     assert!(atag.is_some());
     let atag = atag.unwrap();
     assert_eq!(atag.len(), 2);
-}
-
-#[test]
-fn inf_meta_published_at_success() {
-    let pm = PackageMeta {
-        group: "infinyon".into(),
-        name: "example".into(),
-        version: "0.0.1".into(),
-        manifest: ["module.wasm".into()].to_vec(),
-        tags: Some(vec![PkgTag {
-            tag: PKG_TAG_META_PUBLISHED_AT.to_string(),
-            value: "Tue, 22 Nov 2022 21:24:11 GMT".to_string(),
-        }]),
-        ..Default::default()
-    };
-    let published_at = pm.published_at();
-
-    assert!(published_at.is_ok());
-
-    let published_at = published_at.unwrap();
-    assert_eq!(published_at.to_string(), "2022-11-22 21:24:11 UTC");
-}
-
-#[test]
-fn inf_meta_published_at_missing_tag() {
-    let pm = PackageMeta {
-        group: "infinyon".into(),
-        name: "example".into(),
-        version: "0.0.1".into(),
-        manifest: ["module.wasm".into()].to_vec(),
-        tags: Some(vec![PkgTag {
-            tag: String::from("foo"),
-            value: String::from("bar"),
-        }]),
-        ..Default::default()
-    };
-    let published_at = pm.published_at();
-
-    assert!(published_at.is_err());
-    assert_eq!(
-        published_at.err().unwrap().to_string(),
-        format!("General Error: Missing inf::meta::published_at tag")
-    );
 }

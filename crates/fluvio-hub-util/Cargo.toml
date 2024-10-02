@@ -20,6 +20,7 @@ connector-cmds = [
 anyhow = { workspace = true }
 async-trait = { workspace = true }
 cargo_toml = { workspace = true }
+chrono = { workspace = true }
 const_format = { workspace = true }
 dirs = { workspace = true }
 ed25519-dalek = { version = "2.1", features = ["serde", "rand_core"] }
