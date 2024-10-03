@@ -1,8 +1,6 @@
 use std::sync::Arc;
 use std::fmt::Debug;
 
-use chrono::DateTime;
-use chrono::Utc;
 use clap::Parser;
 use anyhow::Result;
 
@@ -18,15 +16,15 @@ pub struct ConnectorHubListOpts {
     #[clap(flatten)]
     output: OutputFormat,
 
-    #[arg(long, hide = true)]
-    system: bool,
-
-    /// Show exact time instead of relative time for `Release` column
+    /// Show exact time instead of relative time for `Released` column
     #[arg(long, default_value = "false")]
     exact_time: bool,
 
     #[arg(long, hide_short_help = true)]
     remote: Option<String>,
+
+    #[arg(long, hide = true)]
+    system: bool,
 }
 
 impl ConnectorHubListOpts {
@@ -48,13 +46,12 @@ mod output {
     use anyhow::Result;
 
     use fluvio_extension_common::output::OutputType;
+    use fluvio_extension_common::time::format_duration;
     use fluvio_extension_common::Terminal;
     use fluvio_extension_common::output::TableOutputHandler;
     use fluvio_extension_common::t_println;
 
     use crate::{PackageMeta, PackageMetaExt};
-
-    use super::format_duration;
 
     #[derive(Serialize)]
     struct ListConnectors {
@@ -120,38 +117,4 @@ mod output {
                 .collect()
         }
     }
-}
-
-fn format_duration(date: DateTime<Utc>, exact: bool) -> String {
-    let duration = Utc::now().signed_duration_since(date);
-
-    if exact {
-        return date.format("%Y-%m-%d %H:%M:%S %Z").to_string();
-    }
-
-    if duration.num_weeks() >= 1 {
-        return date.format("%Y/%m/%d").to_string();
-    }
-
-    if duration.num_days() >= 2 {
-        return format!("{} days ago", duration.num_days());
-    }
-
-    if duration.num_days() == 1 {
-        return String::from("Yesterday");
-    }
-
-    if duration.num_hours() >= 1 {
-        return format!("{} hours ago", duration.num_hours());
-    }
-
-    if duration.num_minutes() >= 1 {
-        return format!("{} minutes ago", duration.num_minutes());
-    }
-
-    if duration.num_minutes() < 1 {
-        return String::from("Just now");
-    }
-
-    date.format("%Y/%m/%d").to_string()
 }

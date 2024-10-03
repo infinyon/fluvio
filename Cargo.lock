@@ -2769,6 +2769,7 @@ version = "0.14.2"
 dependencies = [
  "anyhow",
  "async-trait",
+ "chrono",
  "clap",
  "comfy-table",
  "fluvio",
