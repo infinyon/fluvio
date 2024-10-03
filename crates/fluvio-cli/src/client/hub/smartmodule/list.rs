@@ -49,12 +49,12 @@ mod output {
     //! Format SmartModules response based on output type
     use comfy_table::{Cell, Row};
     use comfy_table::CellAlignment;
-    use fluvio_extension_common::time::format_duration;
     use tracing::debug;
     use serde::Serialize;
     use anyhow::Result;
 
     use fluvio_extension_common::output::OutputType;
+    use fluvio_extension_common::time::TimeElapsedFormatter;
     use fluvio_extension_common::Terminal;
     use fluvio_extension_common::output::TableOutputHandler;
     use fluvio_extension_common::t_println;
@@ -116,7 +116,10 @@ mod output {
                         Cell::new(&e.visibility).set_alignment(CellAlignment::Left),
                         Cell::new(
                             e.published_at()
-                                .map(|date| format_duration(date, self.exact_time))
+                                .map(|date| {
+                                    TimeElapsedFormatter::default()
+                                        .time_since_str(date, self.exact_time)
+                                })
                                 .unwrap_or(String::from("N/A")),
                         ),
                     ])
