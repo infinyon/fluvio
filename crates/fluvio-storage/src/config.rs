@@ -225,6 +225,7 @@ pub struct SharedReplicaConfig {
     pub flush_write_count: SharedConfigU32Value,
     pub flush_idle_msec: SharedConfigU32Value,
     pub max_batch_size: SharedConfigU32Value,
+    pub max_request_size: SharedConfigU32Value,
     pub update_hw: bool, // if true, enable hw update
     pub retention_seconds: SharedConfigU32Value,
     pub max_partition_size: SharedConfigU64Value,
@@ -240,6 +241,7 @@ impl From<ReplicaConfig> for SharedReplicaConfig {
             flush_write_count: SharedConfigU32Value::new(config.flush_write_count),
             flush_idle_msec: SharedConfigU32Value::new(config.flush_idle_msec),
             max_batch_size: SharedConfigU32Value::new(config.max_batch_size),
+            max_request_size: SharedConfigU32Value::new(config.max_batch_size),
             update_hw: config.update_hw,
             retention_seconds: SharedConfigU32Value::new(config.retention_seconds),
             max_partition_size: SharedConfigU64Value::new(config.max_partition_size),

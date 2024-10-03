@@ -10,14 +10,14 @@ use super::*;
 
 pub struct MemoryBatch {
     compression: Compression,
-    write_limit: usize,
+    write_limit: Option<usize>,
     current_size_uncompressed: usize,
     is_full: bool,
     create_time: Timestamp,
     records: Vec<Record>,
 }
 impl MemoryBatch {
-    pub fn new(write_limit: usize, compression: Compression) -> Self {
+    pub fn new(write_limit: Option<usize>, compression: Compression) -> Self {
         let now = Utc::now().timestamp_millis();
         Self {
             compression,
@@ -46,12 +46,16 @@ impl MemoryBatch {
 
         let record_size = record.write_size(0);
 
-        if self.estimated_size() + record_size > self.write_limit {
-            self.is_full = true;
-            return None;
-        }
+        if let Some(write_limit) = self.write_limit {
+            if self.estimated_size() + record_size > write_limit {
+                self.is_full = true;
+                return None;
+            }
 
-        if self.estimated_size() + record_size == self.write_limit {
+            if self.estimated_size() + record_size == write_limit {
+                self.is_full = true;
+            }
+        } else {
             self.is_full = true;
         }
 
@@ -63,7 +67,11 @@ impl MemoryBatch {
     }
 
     pub fn is_full(&self) -> bool {
-        self.is_full || self.write_limit <= self.estimated_size()
+        if let Some(write_limit) = self.write_limit {
+            self.is_full || write_limit <= self.estimated_size()
+        } else {
+            self.is_full
+        }
     }
 
     pub fn elapsed(&self) -> Timestamp {
@@ -73,23 +81,7 @@ impl MemoryBatch {
     }
 
     fn estimated_size(&self) -> usize {
-        (self.current_size_uncompressed as f32 * self.compression_coefficient()) as usize
-            + Batch::<RawRecords>::default().write_size(0)
-    }
-
-    fn compression_coefficient(&self) -> f32 {
-        cfg_if::cfg_if! {
-            if #[cfg(feature = "compress")] {
-                match self.compression {
-                    Compression::None => 1.0,
-                    Compression::Gzip | Compression::Snappy | Compression::Lz4 | Compression::Zstd => {
-                        0.5
-                    }
-                }
-            } else {
-                1.0
-            }
-        }
+        self.current_size_uncompressed + Batch::<RawRecords>::default().write_size(0)
     }
 
     pub fn records_len(&self) -> usize {
@@ -151,9 +143,11 @@ mod test {
         let size = record.write_size(0);
 
         let mut mb = MemoryBatch::new(
-            size * 4
-                + Batch::<RawRecords>::default().write_size(0)
-                + Vec::<RawRecords>::default().write_size(0),
+            Some(
+                size * 4
+                    + Batch::<RawRecords>::default().write_size(0)
+                    + Vec::<RawRecords>::default().write_size(0),
+            ),
             Compression::None,
         );
 
@@ -204,7 +198,7 @@ mod test {
         let memory_batch_compression = Compression::Gzip;
 
         // This MemoryBatch write limit is minimal value to pass test
-        let mut memory_batch = MemoryBatch::new(180, memory_batch_compression);
+        let mut memory_batch = MemoryBatch::new(Some(360), memory_batch_compression);
 
         let mut offset = 0;
 

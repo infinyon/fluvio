@@ -17,6 +17,7 @@ const DEFAULT_LINGER_MS: u64 = 100;
 const DEFAULT_TIMEOUT_MS: u64 = 1500;
 const DEFAULT_BATCH_SIZE_BYTES: usize = 16_384;
 const DEFAULT_BATCH_QUEUE_SIZE: usize = 100;
+const DEFAULT_MAX_REQUEST_SIZE: usize = 1_048_576;
 
 const DEFAULT_RETRIES_TIMEOUT: Duration = Duration::from_secs(300);
 const DEFAULT_INITIAL_DELAY: Duration = Duration::from_millis(20);
@@ -25,6 +26,10 @@ const DEFAULT_MAX_RETRIES: usize = 4;
 
 fn default_batch_size() -> usize {
     DEFAULT_BATCH_SIZE_BYTES
+}
+
+fn default_max_request_size() -> usize {
+    DEFAULT_MAX_REQUEST_SIZE
 }
 
 fn default_batch_queue_size() -> usize {
@@ -68,6 +73,9 @@ pub struct TopicProducerConfig {
     /// Maximum amount of bytes accumulated by the records before sending the batch.
     #[builder(default = "default_batch_size()")]
     pub(crate) batch_size: usize,
+    /// Maximum amount of bytes that the server is allowed to process in a single request.
+    #[builder(default = "default_max_request_size()")]
+    pub(crate) max_request_size: usize,
     /// Maximum amount of batches waiting in the queue before sending to the SPU.
     #[builder(default = "default_batch_queue_size()")]
     pub(crate) batch_queue_size: usize,
@@ -118,6 +126,10 @@ impl TopicProducerConfig {
         self.batch_size
     }
 
+    pub fn max_request_size(&self) -> usize {
+        self.max_request_size
+    }
+
     pub fn batch_queue_size(&self) -> usize {
         self.batch_queue_size
     }
@@ -148,6 +160,7 @@ impl Default for TopicProducerConfig {
         Self {
             linger: default_linger_duration(),
             batch_size: default_batch_size(),
+            max_request_size: default_max_request_size(),
             batch_queue_size: default_batch_queue_size(),
             partitioner: default_partitioner(),
             compression: None,
