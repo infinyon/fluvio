@@ -18,7 +18,7 @@ installation = ["fluvio"]
 [dependencies]
 anyhow = { workspace = true }
 async-trait = { workspace = true }
-chrono = { workspace = true }
+chrono = { workspace = true, features = ["clock"] }
 clap = { workspace = true, features = ["std", "derive", "help", "usage", "error-context"], default-features = false }
 comfy-table = { workspace = true }
 serde = { workspace = true, features = ['derive'] }
