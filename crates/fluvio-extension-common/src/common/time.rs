@@ -57,7 +57,7 @@ impl TimeElapsedFormatter {
 mod tests {
     use chrono::{DateTime, Days, TimeZone, Timelike, Utc};
 
-    use crate::time::{TimeElapsedFormatter, EXACT_FORMAT, SIMPLE_DATE_FORMAT};
+    use crate::time::TimeElapsedFormatter;
 
     fn december_17_1989_10_30_00() -> DateTime<Utc> {
         Utc.with_ymd_and_hms(1989, 12, 17, 10, 30, 0)
@@ -77,7 +77,7 @@ mod tests {
             .expect("failed to set min");
         let formatted = make_fixed_time_elapsed_fmtr().time_since_str(date, true);
 
-        assert_eq!(formatted, date.format(EXACT_FORMAT).to_string());
+        assert_eq!(formatted, "1989-12-17 10:00:00 UTC");
     }
 
     #[test]
@@ -87,7 +87,7 @@ mod tests {
             .expect("failed to sub days");
         let formatted = make_fixed_time_elapsed_fmtr().time_since_str(date, false);
 
-        assert_eq!(formatted, date.format(SIMPLE_DATE_FORMAT).to_string());
+        assert_eq!(formatted, "1989/12/10");
     }
 
     #[test]
