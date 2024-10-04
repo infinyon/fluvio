@@ -18,6 +18,23 @@ impl TimeElapsedFormatter {
         Self { bot }
     }
 
+    /// Returns a string representation of the time elapsed between the-
+    /// `bot` (beginning of time) and the `date` provided.
+    ///
+    /// If `exact` is true, the exact date and time will be returned
+    /// instead of the free-form expression.
+    ///
+    /// Expressions supported are:
+    ///
+    /// - `Just now`
+    /// - `X minutes ago`
+    /// - `X hours ago`
+    /// - `Yesterday`
+    /// - `X days ago`
+    /// - `X weeks ago`
+    /// - `X months ago`
+    /// - `X years ago`
+    /// - `YYYY/MM/DD` (if the date is more 2 a years ago)
     pub fn time_since_str(&self, date: DateTime<Utc>, exact: bool) -> String {
         let duration = self.bot.signed_duration_since(date);
 
