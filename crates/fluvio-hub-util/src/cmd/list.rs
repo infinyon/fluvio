@@ -91,7 +91,7 @@ mod output {
     impl TableOutputHandler for ListConnectors {
         /// table header implementation
         fn header(&self) -> Row {
-            Row::from(["Connector", "Visibility", "Released"])
+            Row::from(["Connector", "Visibility", "Published"])
         }
 
         /// return errors in string format

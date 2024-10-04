@@ -98,7 +98,7 @@ mod output {
     impl TableOutputHandler for ListSmartModules {
         /// table header implementation
         fn header(&self) -> Row {
-            Row::from(["SmartModule", "Visibility", "Released"])
+            Row::from(["SmartModule", "Visibility", "Published"])
         }
 
         /// return errors in string format
