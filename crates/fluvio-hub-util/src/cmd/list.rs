@@ -16,7 +16,7 @@ pub struct ConnectorHubListOpts {
     #[clap(flatten)]
     output: OutputFormat,
 
-    /// Show exact time instead of relative time for `Released` column
+    /// Show exact time instead of relative time for `Published` column
     #[arg(long, default_value = "false")]
     exact_time: bool,
 
