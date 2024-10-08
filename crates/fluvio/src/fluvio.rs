@@ -7,7 +7,7 @@ use fluvio_sc_schema::topic::PartitionMap;
 use fluvio_sc_schema::topic::ReplicaSpec;
 use tracing::{debug, info};
 use tokio::sync::OnceCell;
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 
 use fluvio_sc_schema::objects::ObjectApiWatchRequest;
 use fluvio_types::PartitionId;
@@ -18,6 +18,7 @@ use fluvio_future::net::DomainConnector;
 use semver::Version;
 
 use crate::admin::FluvioAdmin;
+use crate::error::anyhow_version_error;
 use crate::producer::TopicProducerPool;
 use crate::spu::SpuPool;
 use crate::TopicProducer;
@@ -122,9 +123,8 @@ impl Fluvio {
                 metric: Arc::new(ClientMetrics::new()),
             })
         } else {
-            let platform_version = versions.platform_version();
-            let client_version = crate::VERSION.trim();
-            Err(anyhow!("Fluvio Client {client_version} and Cluster {platform_version} versions are not compatible. Please upgrade client to {platform_version}"))
+            let platform_version = versions.platform_version().to_string();
+            Err(anyhow_version_error(&platform_version))
         }
     }
 
