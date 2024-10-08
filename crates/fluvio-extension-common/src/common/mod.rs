@@ -3,6 +3,8 @@ use clap::Parser;
 mod hex_dump;
 pub use self::hex_dump::*;
 
+pub mod time;
+
 use crate::output::OutputType;
 
 #[derive(Debug, Parser, Default, Clone)]
