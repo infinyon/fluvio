@@ -154,15 +154,9 @@ pub mod target {
                         .into());
                     }
 
-                    let config_file = ConfigFile::load(None)?;
-                    let cluster = config_file
-                        .config()
-                        // NOTE: This will not fallback to current cluster like it did before
-                        // Current cluster will be used when no profile is given.
-                        .cluster_with_profile(&profile)
-                        .ok_or_else(|| {
-                            IoError::new(ErrorKind::Other, "Cluster not found for profile")
-                        })?;
+                    let cluster = FluvioConfig::load_with_profile(&profile)?.ok_or_else(|| {
+                        IoError::new(ErrorKind::Other, "Cluster not found for profile")
+                    })?;
                     Ok(cluster.clone())
                 }
                 (None, Some(cluster)) => {
