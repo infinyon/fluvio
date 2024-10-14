@@ -1,6 +1,15 @@
-# Enhancing Fluvio to Message Sizes
+# Enhancing Fluvio Message Sizes
 
 This RFC proposes modifications to Fluvio's handling of message sizes. 
+
+## Introduction
+
+`batch_size` producer config must not reject large records, just send them directly.
+
+Create a new `max_request_size` producer config that must reject large messages.
+I am using `max_request_size` because Kafka uses `max.request.size` but we can change it to other config name.
+
+Compression sizes should not be used for these producer configs.
 
 ## Proposed Enhancements
 
