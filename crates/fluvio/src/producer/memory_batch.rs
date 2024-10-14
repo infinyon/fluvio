@@ -10,18 +10,20 @@ use super::*;
 
 pub struct MemoryBatch {
     compression: Compression,
-    write_limit: Option<usize>,
+    batch_limit: usize,
+    write_limit: usize,
     current_size_uncompressed: usize,
     is_full: bool,
     create_time: Timestamp,
     records: Vec<Record>,
 }
 impl MemoryBatch {
-    pub fn new(write_limit: Option<usize>, compression: Compression) -> Self {
+    pub fn new(write_limit: usize, batch_limit: usize, compression: Compression) -> Self {
         let now = Utc::now().timestamp_millis();
         Self {
             compression,
             is_full: false,
+            batch_limit,
             write_limit,
             create_time: now,
             current_size_uncompressed: Vec::<RawRecords>::default().write_size(0),
@@ -35,7 +37,9 @@ impl MemoryBatch {
 
     /// Add a record to the batch.
     /// The value of `Offset` is relative to the `MemoryBatch` instance.
-    pub fn push_record(&mut self, mut record: Record) -> Option<Offset> {
+    pub fn push_record(&mut self, mut record: Record) -> Result<Option<Offset>, ProducerError> {
+        let is_the_first_record = self.records_len() == 0;
+
         let current_offset = self.offset() as i64;
         record
             .get_mut_header()
@@ -45,33 +49,36 @@ impl MemoryBatch {
         record.get_mut_header().set_timestamp_delta(timestamp_delta);
 
         let record_size = record.write_size(0);
+        let actual_batch_size = self.estimated_size() + record_size;
 
-        if let Some(write_limit) = self.write_limit {
-            if self.estimated_size() + record_size > write_limit {
-                self.is_full = true;
-                return None;
-            }
+        // Error if the record is too large
+        if actual_batch_size > self.write_limit {
+            self.is_full = true;
+            return Err(ProducerError::RecordTooLarge(actual_batch_size));
+        }
 
-            if self.estimated_size() + record_size == write_limit {
+        // is full, but is first record, add to the batch and then we will send it directly
+        // is full, but is not the first record, then finish the batch and let this record to be added to next batch
+        // is not full, then add record to batch
+        if is_the_first_record {
+            if actual_batch_size > self.batch_limit {
                 self.is_full = true;
             }
-        } else {
+        } else if actual_batch_size > self.batch_limit {
+            self.is_full = true;
+            return Ok(None);
+        } else if actual_batch_size == self.batch_limit {
             self.is_full = true;
         }
 
         self.current_size_uncompressed += record_size;
-
         self.records.push(record);
 
-        Some(current_offset)
+        Ok(Some(current_offset))
     }
 
     pub fn is_full(&self) -> bool {
-        if let Some(write_limit) = self.write_limit {
-            self.is_full || write_limit <= self.estimated_size()
-        } else {
-            self.is_full
-        }
+        self.is_full || self.estimated_size() > self.batch_limit
     }
 
     pub fn elapsed(&self) -> Timestamp {
@@ -143,21 +150,20 @@ mod test {
         let size = record.write_size(0);
 
         let mut mb = MemoryBatch::new(
-            Some(
-                size * 4
-                    + Batch::<RawRecords>::default().write_size(0)
-                    + Vec::<RawRecords>::default().write_size(0),
-            ),
+            size * 4
+                + Batch::<RawRecords>::default().write_size(0)
+                + Vec::<RawRecords>::default().write_size(0),
+            1_048_576,
             Compression::None,
         );
 
-        assert!(mb.push_record(record).is_some());
+        assert!(mb.push_record(record).unwrap().is_some());
         std::thread::sleep(std::time::Duration::from_millis(100));
         let record = Record::from(("key", "value"));
-        assert!(mb.push_record(record).is_some());
+        assert!(mb.push_record(record).unwrap().is_some());
         std::thread::sleep(std::time::Duration::from_millis(100));
         let record = Record::from(("key", "value"));
-        assert!(mb.push_record(record).is_some());
+        assert!(mb.push_record(record).unwrap().is_some());
 
         let batch: Batch<MemoryRecords> = mb.into();
         assert!(
@@ -198,7 +204,7 @@ mod test {
         let memory_batch_compression = Compression::Gzip;
 
         // This MemoryBatch write limit is minimal value to pass test
-        let mut memory_batch = MemoryBatch::new(Some(360), memory_batch_compression);
+        let mut memory_batch = MemoryBatch::new(360, 1_048_576, memory_batch_compression);
 
         let mut offset = 0;
 
@@ -208,6 +214,7 @@ mod test {
                     value: RecordData::from(record_data.clone()),
                     ..Default::default()
                 })
+                .unwrap()
                 .expect("Offset should exist");
         }
 

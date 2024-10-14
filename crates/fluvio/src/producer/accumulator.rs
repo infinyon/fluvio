@@ -13,8 +13,7 @@ use futures_util::{FutureExt, ready};
 
 use fluvio_future::sync::{Mutex, MutexGuard};
 use fluvio_future::sync::Condvar;
-use fluvio_protocol::record::{Batch, RawRecords};
-use fluvio_protocol::Encoder;
+use fluvio_protocol::record::Batch;
 use fluvio_compression::Compression;
 use fluvio_protocol::record::Offset;
 use fluvio_protocol::link::ErrorCode;
@@ -111,15 +110,21 @@ impl RecordAccumulator {
 
         // If the last batch is not full, push the record to it
         if let Some(batch) = batches.back_mut() {
-            if let Some(push_record) = batch.push_record(record.clone()) {
-                if batch.is_full() {
+            match batch.push_record(record.clone()) {
+                Ok(Some(push_record)) => {
+                    if batch.is_full() {
+                        batch_events.notify_batch_full().await;
+                    }
+                    return Ok(PushRecord::new(
+                        push_record.into_future_record_metadata(partition_id),
+                    ));
+                }
+                Ok(None) => {
                     batch_events.notify_batch_full().await;
                 }
-                return Ok(PushRecord::new(
-                    push_record.into_future_record_metadata(partition_id),
-                ));
-            } else {
-                batch_events.notify_batch_full().await;
+                Err(err) => {
+                    return Err(err);
+                }
             }
         }
 
@@ -127,7 +132,7 @@ impl RecordAccumulator {
 
         // Create and push a new batch if needed
         let push_record = self
-            .create_and_new_batch(batch_events, &mut batches, record)
+            .create_and_new_batch(batch_events, &mut batches, record, 1)
             .await?;
 
         Ok(PushRecord::new(
@@ -154,29 +159,25 @@ impl RecordAccumulator {
         }
         Ok(batches)
     }
-
     async fn create_and_new_batch(
         &self,
         batch_events: &BatchEvents,
         batches: &mut VecDeque<ProducerBatch>,
         record: Record,
+        attempts: usize,
     ) -> Result<PartialFutureRecordMetadata, ProducerError> {
-        let estimated_size = record.write_size(0)
-            + Batch::<RawRecords>::default().write_size(0)
-            + Vec::<RawRecords>::default().write_size(0);
-
-        if estimated_size > self.max_request_size {
-            return Err(ProducerError::RecordTooLarge(estimated_size));
+        if attempts > 2 {
+            // This should never happen, but if it does, we should stop the recursion
+            return Err(ProducerError::Internal(
+                "Attempts exceeded while creating a new batch".to_string(),
+            ));
         }
 
-        let mut batch = if estimated_size > self.batch_size {
-            ProducerBatch::new(None, self.compression)
-        } else {
-            ProducerBatch::new(Some(self.batch_size), self.compression)
-        };
+        let mut batch =
+            ProducerBatch::new(self.max_request_size, self.batch_size, self.compression);
 
-        match batch.push_record(record) {
-            Some(push_record) => {
+        match batch.push_record(record.clone()) {
+            Ok(Some(push_record)) => {
                 batch_events.notify_new_batch().await;
 
                 if batch.is_full() {
@@ -186,9 +187,26 @@ impl RecordAccumulator {
                 batches.push_back(batch);
                 Ok(push_record)
             }
-            None => Err(ProducerError::RecordTooLarge(self.batch_size)),
+            Ok(None) => {
+                if batch.is_full() {
+                    batch_events.notify_batch_full().await;
+                }
+
+                batches.push_back(batch);
+
+                // Box the future to avoid infinite size due to recursion
+                Box::pin(self.create_and_new_batch(
+                    batch_events,
+                    batches,
+                    record,
+                    attempts + 1,
+                ))
+                .await
+            }
+            Err(err) => Err(err),
         }
     }
+
     pub(crate) async fn batches(&self) -> HashMap<PartitionId, BatchHandler> {
         self.batches.read().await.clone()
     }
@@ -211,10 +229,10 @@ pub(crate) struct ProducerBatch {
     batch: MemoryBatch,
 }
 impl ProducerBatch {
-    fn new(write_limit: Option<usize>, compression: Compression) -> Self {
+    fn new(write_limit: usize, batch_limit: usize, compression: Compression) -> Self {
         let (sender, receiver) = async_channel::bounded(1);
         let batch_metadata = Arc::new(BatchMetadata::new(receiver));
-        let batch = MemoryBatch::new(write_limit, compression);
+        let batch = MemoryBatch::new(write_limit, batch_limit, compression);
 
         Self {
             notify: sender,
@@ -226,13 +244,17 @@ impl ProducerBatch {
     /// Add a record to the batch.
     /// Return ProducerError::BatchFull if record does not fit in the batch, so
     /// the RecordAccumulator can create more batches if needed.
-    fn push_record(&mut self, record: Record) -> Option<PartialFutureRecordMetadata> {
+    fn push_record(
+        &mut self,
+        record: Record,
+    ) -> Result<Option<PartialFutureRecordMetadata>, ProducerError> {
         match self.batch.push_record(record) {
-            None => None,
-            Some(relative_offset) => Some(PartialFutureRecordMetadata::new(
-                relative_offset,
+            Ok(Some(offset)) => Ok(Some(PartialFutureRecordMetadata::new(
+                offset,
                 self.batch_metadata.clone(),
-            )),
+            ))),
+            Ok(None) => Ok(None),
+            Err(err) => Err(err),
         }
     }
 
@@ -362,22 +384,21 @@ mod test {
 
         // Producer batch that can store three instances of Record::from(("key", "value"))
         let mut pb = ProducerBatch::new(
-            Some(
-                size * 3
-                    + 1
-                    + Batch::<RawRecords>::default().write_size(0)
-                    + Vec::<RawRecords>::default().write_size(0),
-            ),
+            1_048_576,
+            size * 3
+                + 1
+                + Batch::<RawRecords>::default().write_size(0)
+                + Vec::<RawRecords>::default().write_size(0),
             Compression::None,
         );
 
-        assert!(pb.push_record(record.clone()).is_some());
-        assert!(pb.push_record(record.clone()).is_some());
-        assert!(pb.push_record(record.clone()).is_some());
+        assert!(pb.push_record(record.clone()).unwrap().is_some());
+        assert!(pb.push_record(record.clone()).unwrap().is_some());
+        assert!(pb.push_record(record.clone()).unwrap().is_some());
 
         assert!(!pb.is_full());
 
-        assert!(pb.push_record(record).is_none());
+        assert!(pb.push_record(record).unwrap().is_none());
     }
 
     #[test]
@@ -387,21 +408,20 @@ mod test {
 
         // Producer batch that can store three instances of Record::from(("key", "value"))
         let mut pb = ProducerBatch::new(
-            Some(
-                size * 3
-                    + Batch::<RawRecords>::default().write_size(0)
-                    + Vec::<RawRecords>::default().write_size(0),
-            ),
+            1_048_576,
+            size * 3
+                + Batch::<RawRecords>::default().write_size(0)
+                + Vec::<RawRecords>::default().write_size(0),
             Compression::None,
         );
 
-        assert!(pb.push_record(record.clone()).is_some());
-        assert!(pb.push_record(record.clone()).is_some());
-        assert!(pb.push_record(record.clone()).is_some());
+        assert!(pb.push_record(record.clone()).unwrap().is_some());
+        assert!(pb.push_record(record.clone()).unwrap().is_some());
+        assert!(pb.push_record(record.clone()).unwrap().is_some());
 
         assert!(pb.is_full());
 
-        assert!(pb.push_record(record).is_none());
+        assert!(pb.push_record(record).unwrap().is_none());
     }
 
     #[fluvio_future::test]

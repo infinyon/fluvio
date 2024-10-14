@@ -41,16 +41,16 @@ teardown_file() {
     run bash -c "yes abcdefghijklmnopqrstuvwxyz |head -c 15000000 > $TOPIC_NAME-big.txt"
 
     debug_msg small 25
-    run bash -c 'timeout 65s "$FLUVIO_BIN" produce "$TOPIC_NAME" --batch-size 5000000 --file $TOPIC_NAME-small.txt --raw --compression gzip'
+    run bash -c 'timeout 65s "$FLUVIO_BIN" produce "$TOPIC_NAME" --batch-size 5000000 --max-request-size 100000000 --file $TOPIC_NAME-small.txt --raw --compression gzip'
     assert_success
 
     debug_msg med 50+1
-    run bash -c 'timeout 65s "$FLUVIO_BIN" produce "$TOPIC_NAME" --batch-size 5000000 --file $TOPIC_NAME-med.txt --raw --compression gzip'
+    run bash -c 'timeout 65s "$FLUVIO_BIN" produce "$TOPIC_NAME" --batch-size 5000000 --max-request-size 100000000 --file $TOPIC_NAME-med.txt --raw --compression gzip'
     assert_success
 
     # should create a single batch for this record 
     debug_msg big 150
-    run bash -c 'timeout 65s "$FLUVIO_BIN" produce "$TOPIC_NAME" --batch-size 5000000 --file $TOPIC_NAME-big.txt --raw --compression gzip'
+    run bash -c 'timeout 65s "$FLUVIO_BIN" produce "$TOPIC_NAME" --batch-size 5000000 --max-request-size 100000000 --file $TOPIC_NAME-big.txt --raw --compression gzip'
     assert_success
 }
 
@@ -71,8 +71,24 @@ teardown_file() {
 	run bash -c "yes abcdefghijklmnopqrstuvwxyz | head -c 49999$x > $TOPIC_NAME-loop.txt"
 
 	debug_msg small 25
-	run bash -c 'timeout 65s "$FLUVIO_BIN" produce "$TOPIC_NAME" --batch-size 5000000 --file $TOPIC_NAME-loop.txt --raw --compression gzip'
+	run bash -c 'timeout 65s "$FLUVIO_BIN" produce "$TOPIC_NAME" --batch-size 5000000 --max-request-size 100000000 --file $TOPIC_NAME-loop.txt --raw --compression gzip'
 	assert_success
     done
+}
+
+@test "Produce message larger then max request size" {
+    if [ "$FLUVIO_CLI_RELEASE_CHANNEL" == "stable" ]; then
+	skip "don't run on fluvio cli stable version"
+    fi
+    if [ "$FLUVIO_CLUSTER_RELEASE_CHANNEL" == "stable" ]; then
+	skip "don't run on cluster stable version"
+    fi
+    run bash -c "yes abcdefghijklmnopqrstuvwxyz |head -c 14999000 > $TOPIC_NAME.txt"
+    run bash -c 'timeout 65s "$FLUVIO_BIN" produce "$TOPIC_NAME" --batch-size 5000000 --max-request-size 15000000 --file $TOPIC_NAME.txt --raw --compression gzip'
+    assert_success
+
+    run bash -c "yes abcdefghijklmnopqrstuvwxyz |head -c 15000000 > $TOPIC_NAME.txt"
+    run bash -c 'timeout 65s "$FLUVIO_BIN" produce "$TOPIC_NAME" --batch-size 5000000 --max-request-size 15000000 --file $TOPIC_NAME.txt --raw --compression gzip'
+    assert_failure
 }
 
