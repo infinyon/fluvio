@@ -8,6 +8,23 @@ use fluvio_types::Timestamp;
 
 use super::*;
 
+pub enum MemoryBatchStatus {
+    Added(Offset),
+    NotAdded(Record),
+}
+
+impl MemoryBatchStatus {
+    #[allow(dead_code)]
+    fn added(&self) -> bool {
+        matches!(self, Self::Added(_))
+    }
+
+    #[allow(dead_code)]
+    fn not_added(&self) -> bool {
+        matches!(self, Self::NotAdded(_))
+    }
+}
+
 pub struct MemoryBatch {
     compression: Compression,
     batch_limit: usize,
@@ -37,7 +54,7 @@ impl MemoryBatch {
 
     /// Add a record to the batch.
     /// The value of `Offset` is relative to the `MemoryBatch` instance.
-    pub fn push_record(&mut self, mut record: Record) -> Result<Option<Offset>, ProducerError> {
+    pub fn push_record(&mut self, mut record: Record) -> Result<MemoryBatchStatus, ProducerError> {
         let is_the_first_record = self.records_len() == 0;
 
         let current_offset = self.offset() as i64;
@@ -66,7 +83,7 @@ impl MemoryBatch {
             }
         } else if actual_batch_size > self.batch_limit {
             self.is_full = true;
-            return Ok(None);
+            return Ok(MemoryBatchStatus::NotAdded(record));
         } else if actual_batch_size == self.batch_limit {
             self.is_full = true;
         }
@@ -74,11 +91,11 @@ impl MemoryBatch {
         self.current_size_uncompressed += record_size;
         self.records.push(record);
 
-        Ok(Some(current_offset))
+        Ok(MemoryBatchStatus::Added(current_offset))
     }
 
     pub fn is_full(&self) -> bool {
-        self.is_full || self.estimated_size() > self.batch_limit
+        self.is_full || self.estimated_size() >= self.batch_limit
     }
 
     pub fn elapsed(&self) -> Timestamp {
@@ -157,13 +174,13 @@ mod test {
             Compression::None,
         );
 
-        assert!(mb.push_record(record).unwrap().is_some());
+        assert!(mb.push_record(record).unwrap().added());
         std::thread::sleep(std::time::Duration::from_millis(100));
         let record = Record::from(("key", "value"));
-        assert!(mb.push_record(record).unwrap().is_some());
+        assert!(mb.push_record(record).unwrap().added());
         std::thread::sleep(std::time::Duration::from_millis(100));
         let record = Record::from(("key", "value"));
-        assert!(mb.push_record(record).unwrap().is_some());
+        assert!(mb.push_record(record).unwrap().added());
 
         let batch: Batch<MemoryRecords> = mb.into();
         assert!(
@@ -209,13 +226,18 @@ mod test {
         let mut offset = 0;
 
         for _ in 0..num_records {
-            offset = memory_batch
+            let status = memory_batch
                 .push_record(Record {
                     value: RecordData::from(record_data.clone()),
                     ..Default::default()
                 })
-                .unwrap()
                 .expect("Offset should exist");
+
+            if let MemoryBatchStatus::Added(o) = status {
+                offset = o;
+            } else {
+                panic!("this should not happen");
+            }
         }
 
         let memory_batch_records_len = memory_batch.records_len();

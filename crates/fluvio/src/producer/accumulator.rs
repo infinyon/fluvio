@@ -27,7 +27,7 @@ use crate::producer::ProducerError;
 use crate::error::Result;
 
 use super::event::EventHandler;
-use super::memory_batch::MemoryBatch;
+use super::memory_batch::{MemoryBatch, MemoryBatchStatus};
 
 const RECORD_ENQUEUE_TIMEOUT: Duration = Duration::from_secs(30);
 
@@ -110,8 +110,8 @@ impl RecordAccumulator {
 
         // If the last batch is not full, push the record to it
         if let Some(batch) = batches.back_mut() {
-            match batch.push_record(record.clone()) {
-                Ok(Some(push_record)) => {
+            match batch.push_record(record) {
+                Ok(ProduceBatchStatus::Added(push_record)) => {
                     if batch.is_full() {
                         batch_events.notify_batch_full().await;
                     }
@@ -119,8 +119,19 @@ impl RecordAccumulator {
                         push_record.into_future_record_metadata(partition_id),
                     ));
                 }
-                Ok(None) => {
-                    batch_events.notify_batch_full().await;
+                Ok(ProduceBatchStatus::NotAdded(record)) => {
+                    if batch.is_full() {
+                        batch_events.notify_batch_full().await;
+                    }
+
+                    // Create and push a new batch if needed
+                    let push_record = self
+                        .create_and_new_batch(batch_events, &mut batches, record, 1)
+                        .await?;
+
+                    return Ok(PushRecord::new(
+                        push_record.into_future_record_metadata(partition_id),
+                    ));
                 }
                 Err(err) => {
                     return Err(err);
@@ -159,6 +170,7 @@ impl RecordAccumulator {
         }
         Ok(batches)
     }
+
     async fn create_and_new_batch(
         &self,
         batch_events: &BatchEvents,
@@ -176,10 +188,9 @@ impl RecordAccumulator {
         let mut batch =
             ProducerBatch::new(self.max_request_size, self.batch_size, self.compression);
 
-        match batch.push_record(record.clone()) {
-            Ok(Some(push_record)) => {
+        match batch.push_record(record) {
+            Ok(ProduceBatchStatus::Added(push_record)) => {
                 batch_events.notify_new_batch().await;
-
                 if batch.is_full() {
                     batch_events.notify_batch_full().await;
                 }
@@ -187,21 +198,16 @@ impl RecordAccumulator {
                 batches.push_back(batch);
                 Ok(push_record)
             }
-            Ok(None) => {
+            Ok(ProduceBatchStatus::NotAdded(record)) => {
+                batch_events.notify_new_batch().await;
                 if batch.is_full() {
                     batch_events.notify_batch_full().await;
                 }
 
                 batches.push_back(batch);
-
                 // Box the future to avoid infinite size due to recursion
-                Box::pin(self.create_and_new_batch(
-                    batch_events,
-                    batches,
-                    record,
-                    attempts + 1,
-                ))
-                .await
+                Box::pin(self.create_and_new_batch(batch_events, batches, record, attempts + 1))
+                    .await
             }
             Err(err) => Err(err),
         }
@@ -220,6 +226,23 @@ impl PushRecord {
     fn new(future: FutureRecordMetadata) -> Self
 where {
         Self { future }
+    }
+}
+
+pub enum ProduceBatchStatus {
+    Added(PartialFutureRecordMetadata),
+    NotAdded(Record),
+}
+
+impl ProduceBatchStatus {
+    #[allow(dead_code)]
+    pub fn added(&self) -> bool {
+        matches!(self, ProduceBatchStatus::Added(_))
+    }
+
+    #[allow(dead_code)]
+    pub fn not_added(&self) -> bool {
+        matches!(self, ProduceBatchStatus::NotAdded(_))
     }
 }
 
@@ -244,16 +267,12 @@ impl ProducerBatch {
     /// Add a record to the batch.
     /// Return ProducerError::BatchFull if record does not fit in the batch, so
     /// the RecordAccumulator can create more batches if needed.
-    fn push_record(
-        &mut self,
-        record: Record,
-    ) -> Result<Option<PartialFutureRecordMetadata>, ProducerError> {
+    fn push_record(&mut self, record: Record) -> Result<ProduceBatchStatus, ProducerError> {
         match self.batch.push_record(record) {
-            Ok(Some(offset)) => Ok(Some(PartialFutureRecordMetadata::new(
-                offset,
-                self.batch_metadata.clone(),
-            ))),
-            Ok(None) => Ok(None),
+            Ok(MemoryBatchStatus::Added(offset)) => Ok(ProduceBatchStatus::Added(
+                PartialFutureRecordMetadata::new(offset, self.batch_metadata.clone()),
+            )),
+            Ok(MemoryBatchStatus::NotAdded(record)) => Ok(ProduceBatchStatus::NotAdded(record)),
             Err(err) => Err(err),
         }
     }
@@ -392,13 +411,13 @@ mod test {
             Compression::None,
         );
 
-        assert!(pb.push_record(record.clone()).unwrap().is_some());
-        assert!(pb.push_record(record.clone()).unwrap().is_some());
-        assert!(pb.push_record(record.clone()).unwrap().is_some());
+        assert!(pb.push_record(record.clone()).unwrap().added());
+        assert!(pb.push_record(record.clone()).unwrap().added());
+        assert!(pb.push_record(record.clone()).unwrap().added());
 
         assert!(!pb.is_full());
 
-        assert!(pb.push_record(record).unwrap().is_none());
+        assert!(pb.push_record(record).unwrap().not_added());
     }
 
     #[test]
@@ -415,13 +434,38 @@ mod test {
             Compression::None,
         );
 
-        assert!(pb.push_record(record.clone()).unwrap().is_some());
-        assert!(pb.push_record(record.clone()).unwrap().is_some());
-        assert!(pb.push_record(record.clone()).unwrap().is_some());
+        assert!(pb.push_record(record.clone()).unwrap().added());
+        assert!(pb.push_record(record.clone()).unwrap().added());
+        assert!(pb.push_record(record.clone()).unwrap().added());
 
         assert!(pb.is_full());
 
-        assert!(pb.push_record(record).unwrap().is_none());
+        assert!(pb.push_record(record).unwrap().not_added());
+    }
+
+    #[test]
+    fn test_producer_write_limit() {
+        let record = Record::from(("key", "value"));
+        let size = record.write_size(0);
+
+        // Producer batch that can store three instances of Record::from(("key", "value"))
+        let mut pb = ProducerBatch::new(
+            size * 3
+                + Batch::<RawRecords>::default().write_size(0)
+                + Vec::<RawRecords>::default().write_size(0),
+            size * 3
+                + Batch::<RawRecords>::default().write_size(0)
+                + Vec::<RawRecords>::default().write_size(0),
+            Compression::None,
+        );
+
+        assert!(pb.push_record(record.clone()).unwrap().added());
+        assert!(pb.push_record(record.clone()).unwrap().added());
+        assert!(pb.push_record(record.clone()).unwrap().added());
+
+        assert!(pb.is_full());
+
+        assert!(pb.push_record(record).is_err());
     }
 
     #[fluvio_future::test]
