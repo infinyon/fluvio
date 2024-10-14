@@ -413,6 +413,7 @@ where
 
         let record_accumulator = RecordAccumulator::new(
             config.batch_size,
+            config.max_request_size,
             config.batch_queue_size,
             partition_count,
             compression,

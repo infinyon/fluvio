@@ -190,7 +190,6 @@ where
         };
 
         let mut batch_notifiers = vec![];
-        let mut request_size = 0;
 
         for p_batch in batches_ready {
             let mut partition_request = DefaultPartitionRequest {
@@ -205,17 +204,10 @@ where
             let producer_metrics = self.metrics.producer_client();
             producer_metrics.add_records(raw_batch.records_len() as u64);
             producer_metrics.add_bytes(raw_batch.batch_len() as u64);
-            request_size += raw_batch.batch_len();
 
             partition_request.records.batches.push(raw_batch);
             batch_notifiers.push(notify);
             topic_request.partitions.push(partition_request);
-        }
-
-        if request_size > self.config.max_request_size as i32 {
-            return Err(FluvioError::Producer(ProducerError::RecordTooLarge(
-                request_size as usize,
-            )));
         }
 
         request.isolation = self.config.isolation;
