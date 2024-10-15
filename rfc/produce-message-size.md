@@ -15,7 +15,7 @@ Compression sizes should not be used for these producer configs.
 
 1. Handling Larger Messages than Batch Size
 
-If a single record exceeds the defined `batch_size`, Fluvio will process the record as a standalone request, ensuring that larger messages are not discarded or delayed. If the record does not exceed the `batch_size`, Fluvio will process the record as part of an already existing batch or create a new one if the batch is full.
+If a single record exceeds the defined `batch_size`, Fluvio will process the record in a new batch without the `batch_size` as limit, ensuring that larger messages are not discarded or delayed. If the record does not exceed the `batch_size`, Fluvio will process the record as part of an already existing batch or create a new one if the batch is full.
 
 2. Handling Larger Messages than the Max Request Size
 
@@ -38,13 +38,13 @@ printf 'This is a sample line. ' | awk -v b=500000 '{while(length($0) < b) $0 = 
 
 ### Batch Size
 
-`batch_size` will define the maximum size of a batch of records that can be sent by the producer. If a record exceeds this size, Fluvio will process the record as a standalone message.
+`batch_size` will define the maximum size of a batch of records that can be sent by the producer. If a record exceeds this size, Fluvio will process the record in a new batch without the `batch_size` as limit.
 
 ```bash
 fluvio produce large-data-topic --batch-size 16536 --file large-data-file.txt --raw
 ```
 
-There will not be any errors displayed, even if the message exceeds the batch size. But the record will be processed as a standalone message.
+There will not be any errors displayed, even if the message exceeds the batch size. But the record will be processed as a new batch.
 
 ### Max Request Size
 
