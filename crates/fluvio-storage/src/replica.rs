@@ -862,9 +862,9 @@ mod tests {
     }
 
     #[fluvio_future::test]
-    async fn test_replica_limit_batch() {
+    async fn test_replica_limit_request_size() {
         let mut option = base_option("test_batch_limit");
-        option.max_batch_size = 100;
+        option.max_request_size = 100;
         option.update_hw = false;
 
         let mut replica = create_replica("test", START_OFFSET, option).await;

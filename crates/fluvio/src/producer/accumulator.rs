@@ -229,21 +229,9 @@ where {
     }
 }
 
-pub enum ProduceBatchStatus {
+enum ProduceBatchStatus {
     Added(PartialFutureRecordMetadata),
     NotAdded(Record),
-}
-
-impl ProduceBatchStatus {
-    #[allow(dead_code)]
-    pub fn added(&self) -> bool {
-        matches!(self, ProduceBatchStatus::Added(_))
-    }
-
-    #[allow(dead_code)]
-    pub fn not_added(&self) -> bool {
-        matches!(self, ProduceBatchStatus::NotAdded(_))
-    }
 }
 
 pub(crate) struct ProducerBatch {
@@ -411,13 +399,25 @@ mod test {
             Compression::None,
         );
 
-        assert!(pb.push_record(record.clone()).unwrap().added());
-        assert!(pb.push_record(record.clone()).unwrap().added());
-        assert!(pb.push_record(record.clone()).unwrap().added());
+        assert!(matches!(
+            pb.push_record(record.clone()),
+            Ok(ProduceBatchStatus::Added(_))
+        ));
+        assert!(matches!(
+            pb.push_record(record.clone()),
+            Ok(ProduceBatchStatus::Added(_))
+        ));
+        assert!(matches!(
+            pb.push_record(record.clone()),
+            Ok(ProduceBatchStatus::Added(_))
+        ));
 
         assert!(!pb.is_full());
 
-        assert!(pb.push_record(record).unwrap().not_added());
+        assert!(matches!(
+            pb.push_record(record),
+            Ok(ProduceBatchStatus::NotAdded(_))
+        ));
     }
 
     #[test]
@@ -434,13 +434,25 @@ mod test {
             Compression::None,
         );
 
-        assert!(pb.push_record(record.clone()).unwrap().added());
-        assert!(pb.push_record(record.clone()).unwrap().added());
-        assert!(pb.push_record(record.clone()).unwrap().added());
+        assert!(matches!(
+            pb.push_record(record.clone()),
+            Ok(ProduceBatchStatus::Added(_))
+        ));
+        assert!(matches!(
+            pb.push_record(record.clone()),
+            Ok(ProduceBatchStatus::Added(_))
+        ));
+        assert!(matches!(
+            pb.push_record(record.clone()),
+            Ok(ProduceBatchStatus::Added(_))
+        ));
 
         assert!(pb.is_full());
 
-        assert!(pb.push_record(record).unwrap().not_added());
+        assert!(matches!(
+            pb.push_record(record),
+            Ok(ProduceBatchStatus::NotAdded(_))
+        ));
     }
 
     #[test]
@@ -459,9 +471,18 @@ mod test {
             Compression::None,
         );
 
-        assert!(pb.push_record(record.clone()).unwrap().added());
-        assert!(pb.push_record(record.clone()).unwrap().added());
-        assert!(pb.push_record(record.clone()).unwrap().added());
+        assert!(matches!(
+            pb.push_record(record.clone()),
+            Ok(ProduceBatchStatus::Added(_))
+        ));
+        assert!(matches!(
+            pb.push_record(record.clone()),
+            Ok(ProduceBatchStatus::Added(_))
+        ));
+        assert!(matches!(
+            pb.push_record(record.clone()),
+            Ok(ProduceBatchStatus::Added(_))
+        ));
 
         assert!(pb.is_full());
 

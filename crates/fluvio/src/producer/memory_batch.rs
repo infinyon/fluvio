@@ -13,18 +13,6 @@ pub enum MemoryBatchStatus {
     NotAdded(Record),
 }
 
-impl MemoryBatchStatus {
-    #[allow(dead_code)]
-    fn added(&self) -> bool {
-        matches!(self, Self::Added(_))
-    }
-
-    #[allow(dead_code)]
-    fn not_added(&self) -> bool {
-        matches!(self, Self::NotAdded(_))
-    }
-}
-
 pub struct MemoryBatch {
     compression: Compression,
     batch_limit: usize,
@@ -66,7 +54,7 @@ impl MemoryBatch {
         record.get_mut_header().set_timestamp_delta(timestamp_delta);
 
         let record_size = record.write_size(0);
-        let actual_batch_size = self.estimated_size() + record_size;
+        let actual_batch_size = self.raw_size() + record_size;
 
         // Error if the record is too large
         if actual_batch_size > self.write_limit {
@@ -95,7 +83,7 @@ impl MemoryBatch {
     }
 
     pub fn is_full(&self) -> bool {
-        self.is_full || self.estimated_size() >= self.batch_limit
+        self.is_full || self.raw_size() >= self.batch_limit
     }
 
     pub fn elapsed(&self) -> Timestamp {
@@ -104,7 +92,7 @@ impl MemoryBatch {
         std::cmp::max(0, now - self.create_time)
     }
 
-    fn estimated_size(&self) -> usize {
+    fn raw_size(&self) -> usize {
         self.current_size_uncompressed + Batch::<RawRecords>::default().write_size(0)
     }
 
@@ -174,13 +162,22 @@ mod test {
             Compression::None,
         );
 
-        assert!(mb.push_record(record).unwrap().added());
+        assert!(matches!(
+            mb.push_record(record.clone()),
+            Ok(MemoryBatchStatus::Added(_))
+        ));
         std::thread::sleep(std::time::Duration::from_millis(100));
         let record = Record::from(("key", "value"));
-        assert!(mb.push_record(record).unwrap().added());
+        assert!(matches!(
+            mb.push_record(record.clone()),
+            Ok(MemoryBatchStatus::Added(_))
+        ));
         std::thread::sleep(std::time::Duration::from_millis(100));
         let record = Record::from(("key", "value"));
-        assert!(mb.push_record(record).unwrap().added());
+        assert!(matches!(
+            mb.push_record(record.clone()),
+            Ok(MemoryBatchStatus::Added(_))
+        ));
 
         let batch: Batch<MemoryRecords> = mb.into();
         assert!(
@@ -211,6 +208,31 @@ mod test {
             "records_delta[2]: {}",
             records_delta[2]
         );
+    }
+
+    #[test]
+    fn test_is_the_first_record_from_batch_and_actual_batch_size_larger_then_batch_limit() {
+        let record = Record::from(("key", "value"));
+        let size = record.write_size(0);
+
+        let mut mb = MemoryBatch::new(
+            1_048_576,
+            size / 2
+                + Batch::<RawRecords>::default().write_size(0)
+                + Vec::<RawRecords>::default().write_size(0),
+            Compression::None,
+        );
+
+        assert!(matches!(
+            mb.push_record(record.clone()),
+            Ok(MemoryBatchStatus::Added(_))
+        ));
+        std::thread::sleep(std::time::Duration::from_millis(100));
+        let record = Record::from(("key", "value"));
+        assert!(matches!(
+            mb.push_record(record.clone()),
+            Ok(MemoryBatchStatus::NotAdded(_))
+        ));
     }
 
     #[test]
