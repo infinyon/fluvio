@@ -2,11 +2,13 @@
 // minimal login token read module that just exposes a
 // 'read_infinyon_token' function to read from the current login config
 //
+use std::collections::HashMap;
 use std::env;
 use std::fs;
 use std::path::Path;
 
 use serde::{Deserialize, Serialize};
+use serde_json;
 use tracing::debug;
 
 use fluvio_types::defaults::CLI_CONFIG_PATH;
@@ -27,13 +29,64 @@ pub enum InfinyonCredentialError {
     UnableToParseCredentials,
 }
 
-pub fn read_infinyon_token() -> Result<InfinyonToken, InfinyonCredentialError> {
-    // the ENV variable should point directly to the applicable profile
-    if let Ok(profilepath) = env::var(INFINYON_CONFIG_PATH_ENV) {
-        let cred = Credentials::load(Path::new(&profilepath))?;
-        debug!("{INFINYON_CONFIG_PATH_ENV} {profilepath} loaded");
-        return Ok(cred.token);
+// multi-org access token output
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CliAccessTokens {
+    pub remote: String,
+    pub user_access_token: String,
+    pub org_access_tokens: HashMap<String, String>,
+}
+
+pub fn read_access_tokens() -> Result<CliAccessTokens, InfinyonCredentialError> {
+    const LOGIN_BIN: &str = "fluvio-cloud-v4";
+
+    let mut cmd = std::process::Command::new(LOGIN_BIN);
+    cmd.arg("cli-access-tokens");
+    match cmd.output() {
+        Ok(output) => {
+            let cli_access_tokens: CliAccessTokens =
+                serde_json::from_slice(&output.stdout).unwrap();
+            tracing::trace!("cli access tokens: {:#?}", cli_access_tokens);
+            Ok(cli_access_tokens)
+        }
+        Err(e) => {
+            tracing::debug!("failed to execute v4: {}", e);
+            Err(InfinyonCredentialError::Read(
+                "failed to execute v4".to_owned(),
+            ))
+        }
     }
+}
+
+pub fn read_infinyon_token() -> Result<InfinyonToken, InfinyonCredentialError> {
+    match read_access_tokens() {
+        Ok(cli_access_tokens) => {
+            let tok = cli_access_tokens.get_current_org_token();
+            return Ok(tok);
+        }
+        Err(_e) => {
+            // fallback to old token logic
+        }
+    };
+    read_infinyon_token_v3()
+}
+
+impl CliAccessTokens {
+    pub fn get_current_org_token(&self) -> String {
+        let key = self.org_access_tokens.keys().next().unwrap_or_else(|| {
+            panic!("no org access token found, please login or switch to an org with 'fluvio cloud org switch'");
+        });
+        let tok = if let Some(tok) = self.org_access_tokens.get(key) {
+            tok.to_owned()
+        } else {
+            String::new()
+        };
+        tok
+    }
+}
+
+// depcreated, will be removed after multi-org is stable
+pub fn read_infinyon_token_v3() -> Result<InfinyonToken, InfinyonCredentialError> {
     let cfgpath = default_file_path();
     // this will read the indirection file to resolve the profile
     let cred = Credentials::try_load(cfgpath)?;
