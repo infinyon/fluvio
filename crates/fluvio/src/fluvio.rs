@@ -1,38 +1,31 @@
 use std::convert::TryFrom;
 use std::sync::Arc;
 
-use fluvio_sc_schema::partition::PartitionMirrorConfig;
-use fluvio_sc_schema::topic::MirrorConfig;
-use fluvio_sc_schema::topic::PartitionMap;
-use fluvio_sc_schema::topic::ReplicaSpec;
-use tracing::{debug, info};
+use anyhow::{Context, Result};
+use semver::Version;
 use tokio::sync::OnceCell;
-use anyhow::{anyhow, Result};
+use tracing::{debug, info};
 
+use fluvio_future::net::DomainConnector;
+use fluvio_sc_schema::partition::PartitionMirrorConfig;
+use fluvio_sc_schema::topic::{MirrorConfig, PartitionMap, ReplicaSpec};
 use fluvio_sc_schema::objects::ObjectApiWatchRequest;
 use fluvio_types::PartitionId;
 use fluvio_socket::{
     ClientConfig, Versions, VersionedSerialSocket, SharedMultiplexerSocket, MultiplexerSocket,
 };
-use fluvio_future::net::DomainConnector;
-use semver::Version;
 
 use crate::admin::FluvioAdmin;
-use crate::producer::TopicProducerPool;
-use crate::spu::SpuPool;
-use crate::TopicProducer;
-use crate::PartitionConsumer;
-
-use crate::FluvioError;
-use crate::FluvioConfig;
-use crate::consumer::{MultiplePartitionConsumer, PartitionSelectionStrategy};
+use crate::error::anyhow_version_error;
 use crate::consumer::{
-    ConsumerStream, MultiplePartitionConsumerStream, Record, ConsumerConfigExt, ConsumerOffset,
+    MultiplePartitionConsumer, PartitionSelectionStrategy, ConsumerStream,
+    MultiplePartitionConsumerStream, Record, ConsumerConfigExt, ConsumerOffset,
 };
 use crate::metrics::ClientMetrics;
-use crate::producer::TopicProducerConfig;
-use crate::spu::SpuSocketPool;
+use crate::producer::{TopicProducerPool, TopicProducerConfig};
 use crate::sync::MetadataStores;
+use crate::spu::{SpuPool, SpuSocketPool};
+use crate::{TopicProducer, PartitionConsumer, FluvioError, FluvioConfig};
 
 /// An interface for interacting with Fluvio streaming
 pub struct Fluvio {
@@ -89,6 +82,26 @@ impl Fluvio {
         Self::connect_with_connector(connector, config).await
     }
 
+    /// Creates a new Fluvio client with the given profile
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use fluvio::{Fluvio, FluvioError, FluvioConfig};
+    /// use fluvio::config::ConfigFile;
+    /// # async fn do_connect_with_profile_name() -> anyhow::Result<()> {
+    /// let fluvio = Fluvio::connect_with_profile("local").await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn connect_with_profile(profile: &str) -> Result<Self> {
+        let config = FluvioConfig::load_with_profile(profile)?.context(format!(
+            "Failed to load cluster config with profile `{profile}`"
+        ))?;
+        Self::connect_with_config(&config).await
+    }
+
+    /// Creates a new Fluvio client with the given connector and configuration
     pub async fn connect_with_connector(
         connector: DomainConnector,
         config: &FluvioConfig,
@@ -122,9 +135,8 @@ impl Fluvio {
                 metric: Arc::new(ClientMetrics::new()),
             })
         } else {
-            let platform_version = versions.platform_version();
-            let client_version = crate::VERSION.trim();
-            Err(anyhow!("Fluvio Client {client_version} and Cluster {platform_version} versions are not compatible. Please upgrade client to {platform_version}"))
+            let platform_version = versions.platform_version().to_string();
+            Err(anyhow_version_error(&platform_version))
         }
     }
 

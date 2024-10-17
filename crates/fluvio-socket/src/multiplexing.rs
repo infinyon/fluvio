@@ -17,21 +17,21 @@ use async_channel::bounded;
 use async_channel::Receiver;
 use async_channel::Sender;
 use async_lock::Mutex;
-use bytes::{Bytes};
+use bytes::Bytes;
 use event_listener::Event;
-use fluvio_future::net::ConnectionFd;
+use futures_util::ready;
 use futures_util::stream::{Stream, StreamExt};
 use pin_project::{pin_project, pinned_drop};
 use tokio::select;
 use tracing::{info, warn};
 use tracing::{debug, error, trace, instrument};
 
+use fluvio_future::net::ConnectionFd;
 use fluvio_future::timer::sleep;
-use futures_util::ready;
 use fluvio_protocol::api::Request;
 use fluvio_protocol::api::RequestHeader;
 use fluvio_protocol::api::RequestMessage;
-use fluvio_protocol::{Decoder};
+use fluvio_protocol::Decoder;
 
 use crate::SocketError;
 use crate::ExclusiveFlvSink;

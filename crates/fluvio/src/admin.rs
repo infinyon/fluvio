@@ -22,8 +22,9 @@ use fluvio_sc_schema::{AdminSpec, DeletableAdminSpec, CreatableAdminSpec, TryEnc
 use fluvio_socket::{ClientConfig, VersionedSerialSocket, SerialFrame, MultiplexerSocket};
 
 use crate::FluvioConfig;
-use crate::metadata::objects::{ListResponse, ListRequest};
 use crate::config::ConfigFile;
+use crate::error::anyhow_version_error;
+use crate::metadata::objects::{ListResponse, ListRequest};
 use crate::sync::MetadataStores;
 
 /// An interface for managing a Fluvio cluster
@@ -135,9 +136,8 @@ impl FluvioAdmin {
                 metadata,
             })
         } else {
-            let platform_version = versions.platform_version();
-            let client_version = crate::VERSION.trim();
-            Err(anyhow!("Fluvio Client {client_version} and Cluster {platform_version} versions are not compatible. Please upgrade client to {platform_version}"))
+            let platform_version = versions.platform_version().to_string();
+            Err(anyhow_version_error(&platform_version))
         }
     }
 

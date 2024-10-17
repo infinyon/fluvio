@@ -8,8 +8,14 @@ use fluvio_types::Timestamp;
 
 use super::*;
 
+pub enum MemoryBatchStatus {
+    Added(Offset),
+    NotAdded(Record),
+}
+
 pub struct MemoryBatch {
     compression: Compression,
+    batch_limit: usize,
     write_limit: usize,
     current_size_uncompressed: usize,
     is_full: bool,
@@ -17,11 +23,12 @@ pub struct MemoryBatch {
     records: Vec<Record>,
 }
 impl MemoryBatch {
-    pub fn new(write_limit: usize, compression: Compression) -> Self {
+    pub fn new(write_limit: usize, batch_limit: usize, compression: Compression) -> Self {
         let now = Utc::now().timestamp_millis();
         Self {
             compression,
             is_full: false,
+            batch_limit,
             write_limit,
             create_time: now,
             current_size_uncompressed: Vec::<RawRecords>::default().write_size(0),
@@ -35,7 +42,9 @@ impl MemoryBatch {
 
     /// Add a record to the batch.
     /// The value of `Offset` is relative to the `MemoryBatch` instance.
-    pub fn push_record(&mut self, mut record: Record) -> Option<Offset> {
+    pub fn push_record(&mut self, mut record: Record) -> Result<MemoryBatchStatus, ProducerError> {
+        let is_the_first_record = self.records_len() == 0;
+
         let current_offset = self.offset() as i64;
         record
             .get_mut_header()
@@ -45,25 +54,36 @@ impl MemoryBatch {
         record.get_mut_header().set_timestamp_delta(timestamp_delta);
 
         let record_size = record.write_size(0);
+        let actual_batch_size = self.raw_size() + record_size;
 
-        if self.estimated_size() + record_size > self.write_limit {
+        // Error if the record is too large
+        if actual_batch_size > self.write_limit {
             self.is_full = true;
-            return None;
+            return Err(ProducerError::RecordTooLarge(actual_batch_size));
         }
 
-        if self.estimated_size() + record_size == self.write_limit {
+        // is full, but is first record, add to the batch and then we will send it directly
+        // is full, but is not the first record, then finish the batch and let this record to be added to next batch
+        // is not full, then add record to batch
+        if is_the_first_record {
+            if actual_batch_size > self.batch_limit {
+                self.is_full = true;
+            }
+        } else if actual_batch_size > self.batch_limit {
+            self.is_full = true;
+            return Ok(MemoryBatchStatus::NotAdded(record));
+        } else if actual_batch_size == self.batch_limit {
             self.is_full = true;
         }
 
         self.current_size_uncompressed += record_size;
-
         self.records.push(record);
 
-        Some(current_offset)
+        Ok(MemoryBatchStatus::Added(current_offset))
     }
 
     pub fn is_full(&self) -> bool {
-        self.is_full || self.write_limit <= self.estimated_size()
+        self.is_full || self.raw_size() >= self.batch_limit
     }
 
     pub fn elapsed(&self) -> Timestamp {
@@ -72,24 +92,8 @@ impl MemoryBatch {
         std::cmp::max(0, now - self.create_time)
     }
 
-    fn estimated_size(&self) -> usize {
-        (self.current_size_uncompressed as f32 * self.compression_coefficient()) as usize
-            + Batch::<RawRecords>::default().write_size(0)
-    }
-
-    fn compression_coefficient(&self) -> f32 {
-        cfg_if::cfg_if! {
-            if #[cfg(feature = "compress")] {
-                match self.compression {
-                    Compression::None => 1.0,
-                    Compression::Gzip | Compression::Snappy | Compression::Lz4 | Compression::Zstd => {
-                        0.5
-                    }
-                }
-            } else {
-                1.0
-            }
-        }
+    fn raw_size(&self) -> usize {
+        self.current_size_uncompressed + Batch::<RawRecords>::default().write_size(0)
     }
 
     pub fn records_len(&self) -> usize {
@@ -154,16 +158,26 @@ mod test {
             size * 4
                 + Batch::<RawRecords>::default().write_size(0)
                 + Vec::<RawRecords>::default().write_size(0),
+            1_048_576,
             Compression::None,
         );
 
-        assert!(mb.push_record(record).is_some());
+        assert!(matches!(
+            mb.push_record(record.clone()),
+            Ok(MemoryBatchStatus::Added(_))
+        ));
         std::thread::sleep(std::time::Duration::from_millis(100));
         let record = Record::from(("key", "value"));
-        assert!(mb.push_record(record).is_some());
+        assert!(matches!(
+            mb.push_record(record.clone()),
+            Ok(MemoryBatchStatus::Added(_))
+        ));
         std::thread::sleep(std::time::Duration::from_millis(100));
         let record = Record::from(("key", "value"));
-        assert!(mb.push_record(record).is_some());
+        assert!(matches!(
+            mb.push_record(record.clone()),
+            Ok(MemoryBatchStatus::Added(_))
+        ));
 
         let batch: Batch<MemoryRecords> = mb.into();
         assert!(
@@ -197,6 +211,31 @@ mod test {
     }
 
     #[test]
+    fn test_is_the_first_record_from_batch_and_actual_batch_size_larger_then_batch_limit() {
+        let record = Record::from(("key", "value"));
+        let size = record.write_size(0);
+
+        let mut mb = MemoryBatch::new(
+            1_048_576,
+            size / 2
+                + Batch::<RawRecords>::default().write_size(0)
+                + Vec::<RawRecords>::default().write_size(0),
+            Compression::None,
+        );
+
+        assert!(matches!(
+            mb.push_record(record.clone()),
+            Ok(MemoryBatchStatus::Added(_))
+        ));
+        std::thread::sleep(std::time::Duration::from_millis(100));
+        let record = Record::from(("key", "value"));
+        assert!(matches!(
+            mb.push_record(record.clone()),
+            Ok(MemoryBatchStatus::NotAdded(_))
+        ));
+    }
+
+    #[test]
     fn test_convert_memory_batch_to_batch() {
         let num_records = 10;
 
@@ -204,17 +243,23 @@ mod test {
         let memory_batch_compression = Compression::Gzip;
 
         // This MemoryBatch write limit is minimal value to pass test
-        let mut memory_batch = MemoryBatch::new(180, memory_batch_compression);
+        let mut memory_batch = MemoryBatch::new(360, 1_048_576, memory_batch_compression);
 
         let mut offset = 0;
 
         for _ in 0..num_records {
-            offset = memory_batch
+            let status = memory_batch
                 .push_record(Record {
                     value: RecordData::from(record_data.clone()),
                     ..Default::default()
                 })
                 .expect("Offset should exist");
+
+            if let MemoryBatchStatus::Added(o) = status {
+                offset = o;
+            } else {
+                panic!("this should not happen");
+            }
         }
 
         let memory_batch_records_len = memory_batch.records_len();

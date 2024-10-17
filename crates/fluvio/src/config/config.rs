@@ -503,6 +503,12 @@ pub mod test {
 
         let cluster = config.current_cluster().expect("cluster should exist");
         assert_eq!(cluster.endpoint, "127.0.0.1:9003");
+        // access from profile
+        config
+            .cluster_with_profile("local")
+            .expect("cluster should exists");
+        // access from cluster
+        config.cluster("local").expect("cluster should exists");
     }
 
     #[test]

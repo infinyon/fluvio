@@ -2,7 +2,32 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
-## Platform Version 0.11.13-dev-1 - UNRELEASED
+## Platform Version 0.12.0 - 2024-10-09
+
+### Fixed
+
+* Update version mismatch error text ([#4204](https://github.com/infinyon/fluvio/issues/4204))
+
+### Added
+
+* Add fluvio docs at the release checklist ([#4188](https://github.com/infinyon/fluvio/issues/4188))
+
+### CI
+
+* 0.11.12 post-release ([#4187](https://github.com/infinyon/fluvio/issues/4187))
+* Build url params using `url::form_urlencoded` approach ([#4189](https://github.com/infinyon/fluvio/issues/4189))
+* `PkgTag` name for pkgs publish date ([#4198](https://github.com/infinyon/fluvio/issues/4198))
+* `published at` method for `PackageMeta` ([#4201](https://github.com/infinyon/fluvio/issues/4201))
+
+### Changed
+
+* Update wasmtime ([#4192](https://github.com/infinyon/fluvio/issues/4192))
+
+### Other
+
+* High level api for connecting with a specific profile/cluster ([#4207](https://github.com/infinyon/fluvio/issues/4207))
+* Compression type ([#4194](https://github.com/infinyon/fluvio/issues/4194))
+* Decrease exponential timeout of mirroring ([#4196](https://github.com/infinyon/fluvio/issues/4196))
 
 ## Platform Version 0.11.12 - 2024-09-13
 

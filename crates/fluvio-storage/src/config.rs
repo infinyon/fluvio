@@ -11,7 +11,8 @@ use serde::Deserialize;
 use fluvio_controlplane_metadata::topic::CleanupPolicy;
 use fluvio_types::defaults::{
     SPU_LOG_INDEX_MAX_BYTES, SPU_LOG_BASE_DIR, STORAGE_FLUSH_WRITE_COUNT, STORAGE_FLUSH_IDLE_MSEC,
-    STORAGE_MAX_BATCH_SIZE, STORAGE_RETENTION_SECONDS, SPU_PARTITION_MAX_BYTES,
+    STORAGE_MAX_BATCH_SIZE, STORAGE_MAX_REQUEST_SIZE, STORAGE_RETENTION_SECONDS,
+    SPU_PARTITION_MAX_BYTES,
 };
 use fluvio_types::defaults::SPU_LOG_INDEX_MAX_INTERVAL_BYTES;
 use fluvio_types::defaults::SPU_LOG_SEGMENT_MAX_BYTES;
@@ -44,6 +45,9 @@ pub struct ReplicaConfig {
     #[builder(default = "default_max_batch_size()")]
     #[serde(default = "default_max_batch_size")]
     pub max_batch_size: Size,
+    #[builder(default = "default_max_request_size()")]
+    #[serde(default = "default_max_request_size")]
+    pub max_request_size: Size,
     #[builder(default = "default_update_hw()")]
     #[serde(default = "default_update_hw")]
     pub update_hw: bool, // if true, enable hw update
@@ -120,6 +124,10 @@ const fn default_max_batch_size() -> Size {
     STORAGE_MAX_BATCH_SIZE
 }
 
+const fn default_max_request_size() -> Size {
+    STORAGE_MAX_REQUEST_SIZE
+}
+
 const fn default_retention_seconds() -> Size {
     STORAGE_RETENTION_SECONDS
 }
@@ -149,6 +157,7 @@ impl Default for ReplicaConfig {
             flush_write_count: default_flush_write_count(),
             flush_idle_msec: default_flush_idle_msec(),
             max_batch_size: default_max_batch_size(),
+            max_request_size: default_max_request_size(),
             retention_seconds: default_retention_seconds(),
             max_partition_size: default_max_partition_size(),
             update_hw: true,
@@ -225,6 +234,7 @@ pub struct SharedReplicaConfig {
     pub flush_write_count: SharedConfigU32Value,
     pub flush_idle_msec: SharedConfigU32Value,
     pub max_batch_size: SharedConfigU32Value,
+    pub max_request_size: SharedConfigU32Value,
     pub update_hw: bool, // if true, enable hw update
     pub retention_seconds: SharedConfigU32Value,
     pub max_partition_size: SharedConfigU64Value,
@@ -240,6 +250,7 @@ impl From<ReplicaConfig> for SharedReplicaConfig {
             flush_write_count: SharedConfigU32Value::new(config.flush_write_count),
             flush_idle_msec: SharedConfigU32Value::new(config.flush_idle_msec),
             max_batch_size: SharedConfigU32Value::new(config.max_batch_size),
+            max_request_size: SharedConfigU32Value::new(config.max_request_size),
             update_hw: config.update_hw,
             retention_seconds: SharedConfigU32Value::new(config.retention_seconds),
             max_partition_size: SharedConfigU64Value::new(config.max_partition_size),

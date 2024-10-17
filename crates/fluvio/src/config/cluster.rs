@@ -48,6 +48,14 @@ impl FluvioConfig {
         Ok(cluster_config.to_owned())
     }
 
+    /// get cluster config from profile
+    /// if profile is not found, return None
+    pub fn load_with_profile(profile_name: &str) -> Result<Option<Self>, FluvioError> {
+        let config_file = ConfigFile::load_default_or_new()?;
+        let cluster_config = config_file.config().cluster_with_profile(profile_name);
+        Ok(cluster_config.cloned())
+    }
+
     /// Create a new cluster configuration with no TLS.
     pub fn new(addr: impl Into<String>) -> Self {
         Self {

@@ -25,14 +25,29 @@ teardown_file() {
     run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME"
 }
 
-@test "Produce message with batch large" {
+@test "Produce message with max request size" {
+    if [ "$FLUVIO_CLI_RELEASE_CHANNEL" == "stable" ]; then
+        skip "don't run on fluvio cli stable version"
+    fi
+    if [ "$FLUVIO_CLUSTER_RELEASE_CHANNEL" == "stable" ]; then
+        skip "don't run on cluster stable version"
+    fi
+
     run bash -c "yes abcdefghijklmnopqrstuvwxyz |head -c 15000000 > $TOPIC_NAME.txt"
-    run bash -c 'timeout 65s "$FLUVIO_BIN" produce "$TOPIC_NAME" --batch-size 15000000 --file $TOPIC_NAME.txt --linger 30s'
+    run bash -c 'timeout 65s "$FLUVIO_BIN" produce "$TOPIC_NAME" --max-request-size 15000000 --file $TOPIC_NAME.txt --linger 30s'
+
     assert_success
 }
 
 # Consume message and compare message
 @test "Consume message" {
+    if [ "$FLUVIO_CLI_RELEASE_CHANNEL" == "stable" ]; then
+        skip "don't run on fluvio cli stable version"
+    fi
+    if [ "$FLUVIO_CLUSTER_RELEASE_CHANNEL" == "stable" ]; then
+        skip "don't run on cluster stable version"
+    fi
+
     run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d --maxbytes 16000000
     assert_output --partial "abcdefghijklmnopqrstuvwxyz"
     assert_success
