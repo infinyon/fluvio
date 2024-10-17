@@ -1012,3 +1012,24 @@ setup_file() {
     rm -rf $FLUVIO_HOME_DIR
     assert_success
 }
+
+@test "Supports Binary Target Overriding" {
+    run bash -c '$FVM_BIN self install'
+    assert_success
+
+    # Sets `fvm` in the PATH using the "env" file included in the installation
+    source ~/.fvm/env
+
+    # Attempts to install unsupported target triple
+    run bash -c '$FVM_BIN install 0.11.12 --target aarch64-unknown-linux-gnu'
+    assert_line --index 0 "Error: PackageSet "0.11.12" is not available for architecture: \"aarch64-unknown-linux-gnu\""
+    assert_success
+
+    # Removes FVM
+    run bash -c '$FVM_BIN self uninstall --yes'
+    assert_success
+
+    # Removes Fluvio
+    rm -rf $FLUVIO_HOME_DIR
+    assert_success
+}
