@@ -16,17 +16,21 @@ pub struct ConnectorHubListOpts {
     #[clap(flatten)]
     output: OutputFormat,
 
-    #[arg(long, hide = true)]
-    system: bool,
+    /// Show exact time instead of relative time for `Published` column
+    #[arg(long, default_value = "false")]
+    exact_time: bool,
 
     #[arg(long, hide_short_help = true)]
     remote: Option<String>,
+
+    #[arg(long, hide = true)]
+    system: bool,
 }
 
 impl ConnectorHubListOpts {
     pub async fn process<O: Terminal + Debug + Send + Sync>(self, out: Arc<O>) -> Result<()> {
         let pl = get_pkg_list(HUB_API_CONN_LIST, &self.remote, self.system).await?;
-        output::tableformat(out, pl.packages, self.output.format)?;
+        output::tableformat(out, pl.packages, self.output.format, self.exact_time)?;
         Ok(())
     }
 }
@@ -42,13 +46,18 @@ mod output {
     use anyhow::Result;
 
     use fluvio_extension_common::output::OutputType;
+    use fluvio_extension_common::time::TimeElapsedFormatter;
     use fluvio_extension_common::Terminal;
     use fluvio_extension_common::output::TableOutputHandler;
     use fluvio_extension_common::t_println;
-    use crate::PackageMeta;
+
+    use crate::{PackageMeta, PackageMetaExt};
 
     #[derive(Serialize)]
-    struct ListConnectors(Vec<PackageMeta>);
+    struct ListConnectors {
+        pkgs: Vec<PackageMeta>,
+        exact_time: bool,
+    }
 
     // -----------------------------------
     // Format Output
@@ -59,11 +68,15 @@ mod output {
         out: std::sync::Arc<O>,
         list_pkgs: Vec<PackageMeta>,
         output_type: OutputType,
+        exact_time: bool,
     ) -> Result<()> {
         debug!("connectors: {:#?}", list_pkgs);
 
         if !list_pkgs.is_empty() {
-            let connectors = ListConnectors(list_pkgs);
+            let connectors = ListConnectors {
+                pkgs: list_pkgs,
+                exact_time,
+            };
             out.render_list(&connectors, output_type)?;
             Ok(())
         } else {
@@ -78,7 +91,7 @@ mod output {
     impl TableOutputHandler for ListConnectors {
         /// table header implementation
         fn header(&self) -> Row {
-            Row::from(["CONNECTOR", "Visibility"])
+            Row::from(["Connector", "Visibility", "Published"])
         }
 
         /// return errors in string format
@@ -88,12 +101,20 @@ mod output {
 
         /// table content implementation
         fn content(&self) -> Vec<Row> {
-            self.0
+            self.pkgs
                 .iter()
                 .map(|e| {
                     Row::from([
                         Cell::new(e.pkg_name()).set_alignment(CellAlignment::Left),
                         Cell::new(&e.visibility).set_alignment(CellAlignment::Left),
+                        Cell::new(
+                            e.published_at()
+                                .map(|date| {
+                                    TimeElapsedFormatter::default()
+                                        .time_since_str(date, self.exact_time)
+                                })
+                                .unwrap_or(String::from("N/A")),
+                        ),
                     ])
                 })
                 .collect()
