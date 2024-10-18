@@ -1024,7 +1024,7 @@ setup_file() {
 
     # Attempts to install unsupported target triple
     run bash -c '$FVM_BIN install 0.11.12 --target aarch64-unknown-linux-gnu'
-    assert_line --index 0 "Error: PackageSet "0.11.12" is not available for architecture: \"aarch64-unknown-linux-gnu\""
+    assert_line --index 0 "Error: PackageSet \"0.11.12\" is not available for architecture: \"aarch64-unknown-linux-gnu\""
     assert_success
 
     # Removes FVM
