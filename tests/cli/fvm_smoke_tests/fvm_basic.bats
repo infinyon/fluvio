@@ -16,6 +16,8 @@ setup_file() {
     export INFINYON_HUB_REMOTE
     debug_msg "Using Hub Registry URL: $INFINYON_HUB_REMOTE"
 
+    export INFINYON_CI_CONTEXT="ci"
+
     # Retrieves the latest stable version from the GitHub API and removes the
     # `v` prefix from the tag name.
     STABLE_VERSION=$(curl "https://api.github.com/repos/infinyon/fluvio/releases/latest" | jq -r .tag_name | cut -c2-)
