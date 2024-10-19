@@ -16,6 +16,8 @@ setup_file() {
     export INFINYON_HUB_REMOTE
     debug_msg "Using Hub Registry URL: $INFINYON_HUB_REMOTE"
 
+    export INFINYON_CI_CONTEXT="ci"
+
     # Retrieves the latest stable version from the GitHub API and removes the
     # `v` prefix from the tag name.
     STABLE_VERSION=$(curl "https://api.github.com/repos/infinyon/fluvio/releases/latest" | jq -r .tag_name | cut -c2-)
@@ -1003,6 +1005,27 @@ setup_file() {
     # Ensure the checksums matches upstream FVM checksum for this architecture
     run bash -c "[[ "$FVM_UPDATE_CUSTOM_VERSION_SHA256" == "$NEXT_FVM_BIN_CHECKSUM" ]]"
     assert_success
+
+    # Removes FVM
+    run bash -c '$FVM_BIN self uninstall --yes'
+    assert_success
+
+    # Removes Fluvio
+    rm -rf $FLUVIO_HOME_DIR
+    assert_success
+}
+
+@test "Supports Binary Target Overriding" {
+    run bash -c '$FVM_BIN self install'
+    assert_success
+
+    # Sets `fvm` in the PATH using the "env" file included in the installation
+    source ~/.fvm/env
+
+    # Attempts to install unsupported target triple
+    run bash -c '$FVM_BIN install 0.11.12 --target aarch64-unknown-linux-gnu'
+    assert_line --index 0 "Error: PackageSet \"0.11.12\" is not available for architecture: \"aarch64-unknown-linux-gnu\""
+    assert_failure
 
     # Removes FVM
     run bash -c '$FVM_BIN self uninstall --yes'
