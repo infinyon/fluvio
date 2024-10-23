@@ -11,7 +11,9 @@ use fluvio_types::SpuId;
 use fluvio_types::{PartitionId, PartitionCount, ReplicationFactor, IgnoreRackAssignment};
 use fluvio_protocol::{Encoder, Decoder};
 
-use crate::partition::{PartitionMirrorConfig, RemotePartitionConfig, HomePartitionConfig};
+use crate::partition::{
+    HomeMirrorDirection, HomePartitionConfig, PartitionMirrorConfig, RemotePartitionConfig,
+};
 
 use super::deduplication::Deduplication;
 
@@ -678,6 +680,7 @@ impl HomeMirrorConfig {
                 .map(|remote_cluster| HomePartitionConfig {
                     remote_cluster,
                     remote_replica: { ReplicaKey::new(topic, 0_u32).to_string() },
+                    //      direction: HomeMirrorDirection::default()
                 })
                 .collect(),
         )

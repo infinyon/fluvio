@@ -163,6 +163,21 @@ impl std::fmt::Display for PartitionMirrorConfig {
     }
 }
 
+/// Direction for mirror
+#[derive(Decoder, Encoder, Default, Debug, Clone, Eq, PartialEq)]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase")
+)]
+pub enum HomeMirrorDirection {
+    #[default]
+    #[fluvio(tag = 0)]
+    EdgeToHome,
+    #[fluvio(tag = 1)]
+    HomeToEdge,
+}
+
 #[derive(Decoder, Encoder, Default, Debug, Clone, Eq, PartialEq)]
 #[cfg_attr(
     feature = "use_serde",
@@ -172,6 +187,7 @@ impl std::fmt::Display for PartitionMirrorConfig {
 pub struct HomePartitionConfig {
     pub remote_cluster: String,
     pub remote_replica: String,
+    //   pub direction: HomeMirrorDirection
 }
 
 impl std::fmt::Display for HomePartitionConfig {
