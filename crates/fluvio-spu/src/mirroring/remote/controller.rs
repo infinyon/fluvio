@@ -325,11 +325,17 @@ where
         match new_home_leo.cmp(&leader_leo) {
             std::cmp::Ordering::Greater => {
                 // home leo should never be greater than leader's leo
-                warn!(
-                    leader_leo,
-                    new_home_leo, "home has more records, this should not happen, this is error"
+                //warn!(
+                //    leader_leo,
+                //    new_home_leo, "home has more records, this should not happen, this is error"
+                //);
+                debug!(
+                    new_home_leo,
+                    leader_leo, "home has more records, need to refresh edge"
                 );
-                return Err(anyhow!("home's leo: {new_home_leo} > leader's leo: {leader_leo} this should not happen, this is error"));
+                self.state.metrics.update_home_leo(new_home_leo);
+                //return Err(anyhow!("home's leo: {new_home_leo} > leader's leo: {leader_leo} this should not happen, this is error"));
+                Ok(true)
             }
             std::cmp::Ordering::Less => {
                 debug!(

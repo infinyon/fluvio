@@ -114,6 +114,7 @@ async fn handle_produce_topic(
             }
         };
 
+        /*
         if let Some(mirror) = &leader_state.get_replica().mirror {
             if mirror.is_home_mirror() {
                 debug!(%replica_id, "Mirror replica is not supported for produce");
@@ -124,6 +125,7 @@ async fn handle_produce_topic(
                 continue;
             }
         }
+        */
 
         if let Err(err) = apply_smartmodules(
             &mut partition_request,

@@ -1,6 +1,8 @@
 #!/bin/bash
 # return type of cluster:  minikube,k3d,aws
 set -e
+echo "Getting cluster type"
+
 nodes=`kubectl get nodes -o=jsonpath='{.items[0].metadata.name}'`
 
 
