@@ -168,10 +168,12 @@ cfg_if::cfg_if! {
                 trace!(?value, "apply");
                 let store = self.get_store::<S>()?;
                 value.ctx_mut().item_mut().id = value.key().to_string();
-                if let Some(owner) = value.ctx().item().owner() {
-                    self.link_parent::<S>(owner, value.ctx().item()).await?;
+                let item = value.ctx().item().clone();
+                store.apply(value).await?;
+                if let Some(owner) = item.owner() {
+                    self.link_parent::<S>(owner, &item).await?;
                 }
-                store.apply(value).await
+                Ok(())
             }
 
             async fn update_spec<S>(&self, metadata: LocalMetadataItem, spec: S) -> Result<()>
@@ -290,7 +292,6 @@ cfg_if::cfg_if! {
         #[derive(Debug, Clone)]
         struct SpecPointer {
             inner: Arc<dyn Any + Send + Sync>,
-            revision: u64,
             store_revision: u64,
             path: PathBuf,
         }
@@ -344,14 +345,11 @@ cfg_if::cfg_if! {
             ) -> Result<()> {
                 trace!(?parent, ?child, "link parent");
                 let parent_store = self.get_store::<S::Owner>()?;
-                parent_store
-                    .mut_in_place::<S::Owner, _>(parent.uid(), |parent_obj| {
-                        parent_obj
-                            .ctx_mut()
-                            .item_mut()
-                            .put_child(S::LABEL, child.clone());
-                    })
-                    .await?;
+                let mut parent_obj = parent_store.retrieve_item::<S::Owner>(parent).await?;
+                let mut children_without_parent = child.clone();
+                children_without_parent.parent = None;
+                parent_obj.ctx_mut().item_mut().put_child(S::LABEL, children_without_parent);
+                parent_store.apply(parent_obj).await?;
                 Ok(())
             }
 
@@ -362,14 +360,11 @@ cfg_if::cfg_if! {
             ) -> Result<()> {
                 trace!(?parent, ?child, "link parent");
                 let parent_store = self.get_store::<S::Owner>()?;
-                parent_store
-                    .mut_in_place::<S::Owner, _>(parent.uid(), |parent_obj| {
-                        parent_obj
-                            .ctx_mut()
-                            .item_mut()
-                            .remove_child(S::LABEL, child);
-                    })
-                    .await?;
+                let mut parent_obj = parent_store.retrieve_item::<S::Owner>(parent).await?;
+                let mut children_without_parent = child.clone();
+                children_without_parent.parent = None;
+                parent_obj.ctx_mut().item_mut().remove_child(S::LABEL, &children_without_parent);
+                parent_store.apply(parent_obj).await?;
                 Ok(())
             }
 
@@ -530,21 +525,6 @@ cfg_if::cfg_if! {
                 self.path.join(format!("{name}.yaml"))
             }
 
-            async fn mut_in_place<S: Spec, F>(&self, key: &str, func: F) -> Result<()>
-            where
-                F: Fn(&mut LocalStoreObject<S>),
-            {
-                if let Some(spec) = self.data.write().get_mut(key) {
-                    let mut obj = spec.downcast::<S>()?;
-                    func(&mut obj);
-                    spec.set(obj);
-                    spec.flush::<S>()?;
-                    Ok(())
-                } else {
-                    anyhow::bail!("'{key}' not found");
-                }
-            }
-
             async fn send_update(&self, mut update: SpecUpdate) {
                 let store_revision = self
                     .version
@@ -559,14 +539,12 @@ cfg_if::cfg_if! {
 
         impl SpecPointer {
             fn new<S: Spec, P: AsRef<Path>>(path: P, obj: LocalStoreObject<S>) -> Self {
-                let revision = obj.ctx().item().revision;
                 let inner = Arc::new(obj);
                 let path = path.as_ref().to_path_buf();
                 let store_revision = Default::default();
                 Self {
                     inner,
                     path,
-                    revision,
                     store_revision,
                 }
             }
@@ -599,11 +577,6 @@ cfg_if::cfg_if! {
                 let storage: VersionedSpecStorage<S> = self.try_into()?;
                 serde_yaml::to_writer(std::fs::File::create(&self.path)?, &storage)?;
                 Ok(())
-            }
-
-            fn set<S: Spec>(&mut self, obj: LocalStoreObject<S>) {
-                self.revision = obj.ctx().item().revision;
-                self.inner = Arc::new(obj);
             }
         }
 
@@ -1327,12 +1300,12 @@ spec:
                     1
                 );
 
-                assert!(parent_meta
+                assert_eq!(parent_meta
                     .children()
                     .unwrap()
                     .get(TestSpec::LABEL)
                     .expect("test spec children")
-                    .contains(child.ctx().item()),);
+                    .first().unwrap().id, child.ctx().item().id);
 
                 meta_store
                     .delete_item::<TestSpec>(child.ctx().item().clone())
