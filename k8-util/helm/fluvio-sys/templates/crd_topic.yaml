@@ -76,10 +76,15 @@ spec:
                                 type: string
                               remoteReplica:
                                 type: string
+                              source:
+                                type: bool
+                              
                         remote:
                           type: object
                           required: ["homeCluster","homeSpus"]
                           properties:
+                            target:
+                              type: bool
                             homeCluster:
                               type: string
                             homeSpus:

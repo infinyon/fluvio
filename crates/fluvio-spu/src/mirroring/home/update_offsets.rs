@@ -6,7 +6,7 @@ use crate::replication::leader::ReplicaOffsetRequest;
 
 use super::api_key::MirrorHomeApiEnum;
 
-/// Update home's offset
+/// Update home's offset to edge
 pub(crate) type UpdateHomeOffsetRequest = ReplicaOffsetRequest;
 
 impl Request for UpdateHomeOffsetRequest {

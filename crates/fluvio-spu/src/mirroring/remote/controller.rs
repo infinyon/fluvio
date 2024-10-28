@@ -30,16 +30,19 @@ use fluvio_types::event::offsets::OffsetChangeListener;
 use crate::{
     control_plane::SharedMirrorStatusUpdate,
     core::{mirror::SharedMirrorLocalStore, GlobalContext},
-    replication::leader::SharedLeaderState,
+    mirroring::remote::update_offsets::UpdateEdgeOffsetRequest,
+    replication::leader::{FollowerNotifier, ReplicaOffsetRequest, SharedLeaderState},
 };
 use crate::mirroring::home::{
     home_api::HomeMirrorRequest, api_key::MirrorHomeApiEnum,
     update_offsets::UpdateHomeOffsetRequest,
 };
 
-use super::sync::FilePartitionSyncRequest;
+use super::sync::{DefaultRemotePartitionSyncRequest, RemoteFilePartitionSyncRequest};
 
 pub(crate) type SharedMirrorControllerState = Arc<MirrorControllerState>;
+
+const MIRROR_RECONCILIATION_INTERVAL_SEC: u64 = 60; // 1 min
 
 /// Metrics for mirror controller
 #[derive(Debug)]
@@ -109,7 +112,7 @@ impl MirrorControllerState {
     }
 }
 
-const CLUSTER_LOOKUP_SEC: u64 = 5;
+const CLUSTER_LOOKUP_DELAY_MS: u64 = 100;
 
 /// This controller run on mirror remote.
 /// It's main responsbility is to synchronize mirror home from remote.
@@ -130,6 +133,7 @@ pub(crate) struct MirrorRemoteToHomeController<S> {
     status_update: SharedMirrorStatusUpdate,
     max_bytes: u32,
     isolation: Isolation,
+    follower_notifier: Arc<FollowerNotifier>,
 }
 
 impl<S> fmt::Debug for MirrorRemoteToHomeController<S>
@@ -171,6 +175,7 @@ where
             max_bytes,
             mirror_store: ctx.mirrors_localstore_owned(),
             status_update: ctx.mirror_status_update_owned(),
+            follower_notifier: ctx.follower_notifier_owned(),
         };
         spawn(controller.dispatch_loop());
         state
@@ -181,8 +186,11 @@ where
         let mut offset_listener = self.leader.offset_listener(&self.isolation);
         let mut backoff = create_backoff();
 
-        debug!("initial delay to wait for home cluster to be ready");
-        sleep(Duration::from_secs(CLUSTER_LOOKUP_SEC)).await;
+        info!(
+            wait_ms = CLUSTER_LOOKUP_DELAY_MS,
+            "waiting for leader to be ready"
+        );
+        sleep(Duration::from_millis(CLUSTER_LOOKUP_DELAY_MS)).await;
 
         loop {
             // first find home cluster
@@ -190,8 +198,19 @@ where
                 self.state.metrics.increase_loop_count();
                 debug!(name = home.id, "found home cluster");
                 let home_socket = self.create_socket_to_home(&mut backoff, &home).await;
+                debug!("created socket to home");
 
-                if let Err(err) = self
+                if self.remote_config.target {
+                    if let Err(err) = self
+                        .sync_mirror_as_target(&home, home_socket, &mut backoff)
+                        .await
+                    {
+                        self.update_status(MirrorPairStatus::DetailFailure(err.to_string()))
+                            .await
+                            .unwrap();
+                        error!("error syncing mirror loop {}", err);
+                    }
+                } else if let Err(err) = self
                     .sync_mirror_loop(&home, &mut offset_listener, home_socket, &mut backoff)
                     .await
                 {
@@ -199,17 +218,15 @@ where
                         .await
                         .unwrap();
                     error!("error syncing mirror loop {}", err);
-                    self.backoff_and_wait(&mut backoff).await;
                 }
             } else {
-                warn!("home cluster not found, waiting...");
-                sleep(Duration::from_secs(CLUSTER_LOOKUP_SEC)).await;
+                warn!("home cluster not found");
+                self.backoff_and_wait(&mut backoff).await;
             }
         }
     }
 
-    #[instrument]
-    // main sync loop for each home connection
+    #[instrument(skip(home, leader_offset_listner, home_socket, tls, backoff))]
     async fn sync_mirror_loop(
         &self,
         home: &Home,
@@ -217,7 +234,7 @@ where
         (home_socket, tls): (FluvioSocket, bool),
         backoff: &mut ExponentialBackoff,
     ) -> Result<()> {
-        debug!(home_id = home.id, "start syncing mirror");
+        debug!(home_id = home.id, "start syncing mirror as source");
 
         let (mut home_sink, mut home_stream) = home_socket.split();
 
@@ -242,7 +259,8 @@ where
 
             // update home if flag is set and we know what home leo is
             if home_updated_needed && home_leo >= 0 {
-                self.update_home(&mut home_sink, home_leo).await?;
+                self.update_remote_as_source(&mut home_sink, home_leo)
+                    .await?;
                 self.update_status(MirrorPairStatus::Succesful).await?;
                 home_updated_needed = false;
             }
@@ -260,11 +278,13 @@ where
 
                         match home_msg {
                             HomeMirrorRequest::UpdateHomeOffset(req)=> {
-                                home_updated_needed = self.update_from_home(req)?;
+                                home_updated_needed = self.update_from_home_as_source(req)?;
+                            },
+                            HomeMirrorRequest::SyncRecords(sync_request)=> {
+                                return Err(anyhow!("received sync record request from home, this should not happen, since we are source"));
                             }
                          }
                         backoff.reset();
-                        self.update_status(MirrorPairStatus::Succesful).await?;
                     } else {
                         warn!("spu socket to home has terminated");
                         self.update_status(MirrorPairStatus::DetailFailure("closed connection".to_owned()))
@@ -279,7 +299,85 @@ where
             self.state.metrics.increase_conn_count();
         }
 
-        debug!("home has closed connection, terminating loop");
+        info!("home has closed connection, terminating loop");
+
+        Ok(())
+    }
+
+    #[instrument(skip(home, home_socket, tls, backoff))]
+    // sync loop when this is source
+    async fn sync_mirror_as_target(
+        &self,
+        home: &Home,
+        (home_socket, tls): (FluvioSocket, bool),
+        backoff: &mut ExponentialBackoff,
+    ) -> Result<()> {
+        info!(home_id = home.id, "start syncing mirror as target");
+
+        let (mut home_sink, mut home_stream) = home_socket.split();
+
+        if tls {
+            debug!("tls enabled, disabling zero copy sink");
+            home_sink.disable_zerocopy();
+        }
+
+        let mut home_api_stream = home_stream.api_stream::<HomeMirrorRequest, MirrorHomeApiEnum>();
+
+        self.send_initial_request(home, &mut home_sink).await?;
+
+        let mut paired: bool = false; // pairing status
+
+        self.send_offsets_to_home_as_target(&mut home_sink).await?;
+
+        // timer to update offsets to home
+        let mut reconc_timer = sleep(Duration::from_secs(MIRROR_RECONCILIATION_INTERVAL_SEC));
+
+        // home_updated_needed triggers warning, despite being used in loop
+        #[allow(unused)]
+        loop {
+            select! {
+                _ = &mut reconc_timer => {
+                    info!("timer expired, sending reconciliation");
+                    self.send_offsets_to_home_as_target(&mut home_sink).await?;
+                    reconc_timer = sleep(Duration::from_secs(MIRROR_RECONCILIATION_INTERVAL_SEC));
+                },
+
+                msg = home_api_stream.next() => {
+                    debug!("received response from home");
+                    if let Some(req_msg_home) = msg {
+                        let home_msg = req_msg_home?;
+
+                        match home_msg {
+                            HomeMirrorRequest::UpdateHomeOffset(req)=> {
+                                return Err(anyhow!("received home offset request from home, this should not happen, since we are target"));
+                            },
+                            HomeMirrorRequest::SyncRecords(sync_request)=> {
+                                if(!paired) {
+                                    info!("sync received for the first time, indicating paired");
+                                    self.update_status(MirrorPairStatus::Succesful).await?;
+                                    paired = true;
+                                }
+
+                                self.sync_record_from_home(sync_request.request.inner()).await?;
+                                self.send_offsets_to_home_as_target(&mut home_sink).await?;
+                            }
+                         }
+                        backoff.reset();
+                    } else {
+                        warn!("spu socket to home has terminated");
+                        self.update_status(MirrorPairStatus::DetailFailure("closed connection".to_owned()))
+                            .await?;
+                        self.backoff_and_wait(backoff).await;
+                        break;
+                    }
+
+                }
+            }
+
+            self.state.metrics.increase_conn_count();
+        }
+
+        info!("home has closed connection, terminating loop");
 
         Ok(())
     }
@@ -292,12 +390,14 @@ where
 
     async fn send_initial_request(&self, home: &Home, home_sink: &mut FluvioSink) -> Result<()> {
         // always starts with mirrong request
+        // this is equivalent to register request
+        // home should perform additional validation to ensure invalid edge request are rejected
         let start_mirror_request = RequestMessage::new_request(StartMirrorRequest {
             remote_cluster_id: home.remote_id.clone(),
             remote_replica: self.leader.id().to_string(),
         });
 
-        debug!("sending start mirror request: {:#?}", start_mirror_request);
+        info!(remote_id = home.remote_id, cluster = %self.leader.id(),"sending start mirror request");
 
         // send start mirror request
         home_sink
@@ -306,10 +406,12 @@ where
             .map_err(|err| err.into())
     }
 
-    /// received new offset from home, update controller's knowledge
-    /// it will return true if home needs to be updated
+    /// received new offset from home
     #[instrument(skip(req))]
-    fn update_from_home(&self, req: RequestMessage<UpdateHomeOffsetRequest>) -> Result<bool> {
+    fn update_from_home_as_source(
+        &self,
+        req: RequestMessage<UpdateHomeOffsetRequest>,
+    ) -> Result<bool> {
         let leader_leo = self.leader.leo();
         let old_home_leo = self.state.metrics.get_home_leo();
         let new_home_leo = req.request.leo;
@@ -324,12 +426,12 @@ where
         }
         match new_home_leo.cmp(&leader_leo) {
             std::cmp::Ordering::Greater => {
-                // home leo should never be greater than leader's leo
+                // home leo should never be greater than leader's leo if this is not mirror target
                 warn!(
                     leader_leo,
                     new_home_leo, "home has more records, this should not happen, this is error"
                 );
-                return Err(anyhow!("home's leo: {new_home_leo} > leader's leo: {leader_leo} this should not happen, this is error"));
+                return Err(anyhow!("home's leo: {new_home_leo} > leader's leo: {leader_leo} this should not happen since this is target, this is error"));
             }
             std::cmp::Ordering::Less => {
                 debug!(
@@ -346,21 +448,6 @@ where
                 );
                 Ok(false)
             }
-        }
-    }
-
-    #[instrument]
-    async fn update_home(&self, sink: &mut FluvioSink, home_leo: Offset) -> Result<()> {
-        debug!("updating home cluster");
-        if let Some(sync_request) = self.generate_home_sync(home_leo).await? {
-            debug!(?sync_request, "home sync");
-            let request = RequestMessage::new_request(sync_request)
-                .set_client_id(format!("leader: {}", self.leader.id()));
-            sink.encode_file_slices(&request, request.header.api_version())
-                .await?;
-            Ok(())
-        } else {
-            Ok(())
         }
     }
 
@@ -381,11 +468,26 @@ where
         }
     }
 
-    /// compute records necessary to fill in gap for mirror home
-    async fn generate_home_sync(
+    #[instrument]
+    async fn update_remote_as_source(&self, sink: &mut FluvioSink, home_leo: Offset) -> Result<()> {
+        debug!("updating home cluster");
+        if let Some(sync_request) = self.geneate_remote_record_as_source(home_leo).await? {
+            debug!(?sync_request, "home sync");
+            let request = RequestMessage::new_request(sync_request)
+                .set_client_id(format!("leader: {}", self.leader.id()));
+            sink.encode_file_slices(&request, request.header.api_version())
+                .await?;
+            Ok(())
+        } else {
+            Ok(())
+        }
+    }
+
+    /// remote is source, generate missing records to send to home
+    async fn geneate_remote_record_as_source(
         &self,
         home_leo: Offset,
-    ) -> Result<Option<FilePartitionSyncRequest>> {
+    ) -> Result<Option<RemoteFilePartitionSyncRequest>> {
         // leader off should be always greater than remote leo
         let leader_offset = self.leader.as_offset();
 
@@ -395,7 +497,7 @@ where
             return Ok(None);
         }
 
-        let mut partition_response = FilePartitionSyncRequest {
+        let mut partition_response = RemoteFilePartitionSyncRequest {
             leo: leader_offset.leo,
             hw: leader_offset.hw,
             ..Default::default()
@@ -407,6 +509,7 @@ where
                 .read_records(home_leo, self.max_bytes, self.isolation)
                 .await
             {
+                // leader offset is greater than home, we need to send records to home (default)
                 Ok(slice) => {
                     debug!(
                         hw = slice.end.hw,
@@ -425,7 +528,7 @@ where
                 }
             }
         } else {
-            //
+            // home has more records, then we sync copy records from home
             debug!(
                 hw = leader_offset.hw,
                 leo = leader_offset.leo,
@@ -436,6 +539,19 @@ where
                 "leader has more records than home, this should not happen"
             ))
         }
+    }
+
+    #[instrument(skip(self, req))]
+    async fn sync_record_from_home(
+        &self,
+        mut req: DefaultRemotePartitionSyncRequest,
+    ) -> Result<()> {
+        let append_flag = self
+            .leader
+            .append_record_set(&mut req.records, &self.follower_notifier)
+            .await?;
+        debug!(append_flag, "leader appended");
+        Ok(())
     }
 
     /// create socket to home, this will always succeed
@@ -504,6 +620,23 @@ where
         sleep(wait).await;
         debug!("resume from backing off");
         self.state.metrics.increase_conn_failure();
+    }
+
+    // as target, send offset to home so it can sync records
+    async fn send_offsets_to_home_as_target(&self, sink: &mut FluvioSink) -> Result<()> {
+        let offset_request = ReplicaOffsetRequest {
+            replica: self.leader.id().clone(),
+            leo: self.leader.leo(),
+            hw: self.leader.hw(),
+        };
+
+        debug!(?offset_request, "sending offset to home");
+        let req_msg: RequestMessage<UpdateEdgeOffsetRequest> =
+            RequestMessage::new_request(offset_request.into()).set_client_id("mirror home");
+
+        sink.send_request(&req_msg).await?;
+
+        Ok(())
     }
 }
 

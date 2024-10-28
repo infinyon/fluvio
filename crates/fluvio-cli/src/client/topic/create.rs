@@ -130,6 +130,10 @@ pub struct CreateTopicOpt {
     /// or inside the topic configuration file in YAML format.
     #[arg(short, long, value_name = "PATH", conflicts_with = "config-arg")]
     config: Option<PathBuf>,
+
+    /// signify that this topic can be mirror from home to edge
+    #[arg(long)]
+    home_to_remote: bool,
 }
 
 impl CreateTopicOpt {
@@ -163,7 +167,10 @@ impl CreateTopicOpt {
                 &topic_name,
             )?)
         } else if let Some(mirror_assign_file) = &self.mirror_apply {
-            let config = MirrorConfig::read_from_json_file(mirror_assign_file, &topic_name)?;
+            let mut config = MirrorConfig::read_from_json_file(mirror_assign_file, &topic_name)?;
+
+            config.set_home_to_remote(self.home_to_remote)?;
+
             let targets = match config {
                 MirrorConfig::Home(ref c) => c
                     .partitions()
@@ -197,9 +204,13 @@ impl CreateTopicOpt {
                 .into());
             }
 
+            println!("mirror config: {:#?}", config);
+
             ReplicaSpec::Mirror(config)
         } else if self.mirror {
-            let mirror_map = MirrorConfig::Home(HomeMirrorConfig::from(vec![]));
+            let mut home_mirror = HomeMirrorConfig::from(vec![]);
+            home_mirror.source = self.home_to_remote;
+            let mirror_map = MirrorConfig::Home(home_mirror);
             ReplicaSpec::Mirror(mirror_map)
         } else {
             ReplicaSpec::Computed(TopicReplicaParam {
@@ -208,6 +219,8 @@ impl CreateTopicOpt {
                 ignore_rack_assignment: self.ignore_rack_assignment,
             })
         };
+
+        println!("replica spec: {:#?}", replica_spec);
 
         let mut topic_spec: TopicSpec = replica_spec.into();
         if let Some(retention) = self.setting.retention_time {
@@ -342,14 +355,16 @@ mod load {
                 partitions[0],
                 HomePartitionConfig {
                     remote_cluster: "boat1".to_string(),
-                    remote_replica: "boats-0".to_string()
+                    remote_replica: "boats-0".to_string(),
+                    ..Default::default()
                 }
             );
             assert_eq!(
                 partitions[1],
                 HomePartitionConfig {
                     remote_cluster: "boat2".to_string(),
-                    remote_replica: "boats-0".to_string()
+                    remote_replica: "boats-0".to_string(),
+                    ..Default::default()
                 }
             );
         }

@@ -16,6 +16,8 @@ pub struct AddMirrorOpt {
     topic: String,
     /// Remote cluster to add
     remote: String,
+    /// if set, it will mirror from home to remote
+    home_to_remote: bool,
 }
 
 impl AddMirrorOpt {
@@ -24,6 +26,7 @@ impl AddMirrorOpt {
 
         let request = AddMirror {
             remote_cluster: self.remote.clone(),
+            home_to_mirror: self.home_to_remote,
         };
 
         let action = UpdateTopicAction::AddMirror(request);

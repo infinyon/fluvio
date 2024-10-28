@@ -418,7 +418,7 @@ impl MultiPlexingResponseDispatcher {
                             break;
                         },
                         None => {
-                            info!("inner stream has terminated ");
+                            debug!("inner stream has terminated ");
                             self.close().await;
                             break;
                         }
@@ -438,7 +438,7 @@ impl MultiPlexingResponseDispatcher {
                         }
                     }
 
-                    info!("multiplexer terminated");
+                    debug!("multiplexer terminated");
                     break;
 
                 }

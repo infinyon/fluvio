@@ -42,10 +42,14 @@ spec:
                           type: string
                         remoteCluster:
                           type: string
+                        source:
+                          type: bool
                     remote:
                       type: object
                       required: ["homeCluster","homeSpuKey","homeSpuEndpoint","homeSpu"]
                       properties:
+                        target:
+                          type: bool
                         homeCluster:
                           type: string
                         homeSpuKey:

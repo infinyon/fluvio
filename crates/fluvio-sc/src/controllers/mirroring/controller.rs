@@ -59,22 +59,26 @@ impl<C: MetadataItem> RemoteMirrorController<C> {
                 }
 
                 let wait = backoff.wait();
+                info!(wait = wait.as_millis(), "waiting(ms) before retry");
                 sleep(wait).await;
             }
         }
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip(self, backoff))]
     async fn inner_loop(&self, backoff: &mut ExponentialBackoff) -> Result<()> {
         loop {
             if let Some((home, _)) = self.get_mirror_home_cluster().await {
-                debug!("initializing listeners");
+                info!(home = %home.id,  "connected to home cluster");
                 let home_config = self.build_home_client(&home).await?;
                 let mut stream = self.request_stream(&home, home_config).await?;
+
+                info!("created request stream");
 
                 while let Some(response) = stream.next().await {
                     match response {
                         Ok(response) => {
+                            info!("received from home");
                             debug!("received response: {:#?}", response);
                             let request_topics_keys = response
                                 .topics
@@ -210,6 +214,16 @@ impl<C: MetadataItem> RemoteMirrorController<C> {
 
     // Sync the mirror topic
     async fn sync_topic(&self, home: &Home, topic: &MirroringSpecWrapper<TopicSpec>) -> Result<()> {
+        println!("syncing topic: {:#?}", topic);
+
+        let home_spec = match topic.spec.replicas() {
+            ReplicaSpec::Mirror(MirrorConfig::Home(h)) => h,
+            _ => {
+                return Err(anyhow!("topic {} should be home mirror ", topic.key));
+            }
+        };
+
+        info!(home_spec.source, "home is source");
         // Create a new replica spec for the topic
         let new_replica: ReplicaSpec =
             ReplicaSpec::Mirror(MirrorConfig::Remote(RemoteMirrorConfig {
@@ -222,6 +236,7 @@ impl<C: MetadataItem> RemoteMirrorController<C> {
                     1
                 ],
                 home_cluster: home.id.clone(),
+                target: home_spec.source,
             }));
 
         // Check if the topic already exists

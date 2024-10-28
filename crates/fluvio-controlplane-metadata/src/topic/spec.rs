@@ -11,7 +11,7 @@ use fluvio_types::SpuId;
 use fluvio_types::{PartitionId, PartitionCount, ReplicationFactor, IgnoreRackAssignment};
 use fluvio_protocol::{Encoder, Decoder};
 
-use crate::partition::{PartitionMirrorConfig, RemotePartitionConfig, HomePartitionConfig};
+use crate::partition::{HomePartitionConfig, PartitionMirrorConfig, RemotePartitionConfig};
 
 use super::deduplication::Deduplication;
 
@@ -275,7 +275,22 @@ impl ReplicaSpec {
         match self {
             Self::Computed(_) => "computed",
             Self::Assigned(_) => "assigned",
-            Self::Mirror(_) => "mirror",
+            Self::Mirror(mirror) => match mirror {
+                MirrorConfig::Remote(remote_config) => {
+                    if remote_config.target {
+                        "mirror(target)"
+                    } else {
+                        "mirror"
+                    }
+                }
+                MirrorConfig::Home(home_config) => {
+                    if home_config.source {
+                        "mirror(source)"
+                    } else {
+                        "mirror"
+                    }
+                }
+            },
         }
     }
 
@@ -645,6 +660,19 @@ impl MirrorConfig {
         }
     }
 
+    /// Set home to remote replication
+    pub fn set_home_to_remote(&mut self, home_to_remote: bool) -> Result<()> {
+        match self {
+            Self::Remote(_) => Err(anyhow!(
+                "remote mirror config cannot be set to home to remote"
+            )),
+            Self::Home(home) => {
+                home.set_home_to_remote(home_to_remote);
+                Ok(())
+            }
+        }
+    }
+
     /// Validate partition map for assigned topics
     pub fn validate(&self) -> anyhow::Result<()> {
         Ok(())
@@ -657,14 +685,19 @@ impl MirrorConfig {
     derive(serde::Serialize, serde::Deserialize),
     serde(rename_all = "camelCase")
 )]
-pub struct HomeMirrorConfig(
+pub struct HomeMirrorConfig {
     #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "Vec::is_empty"))]
-    Vec<HomePartitionConfig>,
-);
+    pub partitions: Vec<HomePartitionConfig>,
+    #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "crate::is_false"))]
+    pub source: bool, // source of mirror
+}
 
 impl From<Vec<HomePartitionConfig>> for HomeMirrorConfig {
     fn from(partitions: Vec<HomePartitionConfig>) -> Self {
-        Self(partitions)
+        Self {
+            partitions,
+            source: false,
+        }
     }
 }
 
@@ -672,19 +705,21 @@ impl HomeMirrorConfig {
     /// generate home config from simple mirror cluster list
     /// this uses home topic to generate remote replicas
     pub fn from_simple(topic: &str, remote_clusters: Vec<String>) -> Self {
-        Self(
-            remote_clusters
+        Self {
+            partitions: remote_clusters
                 .into_iter()
                 .map(|remote_cluster| HomePartitionConfig {
                     remote_cluster,
                     remote_replica: { ReplicaKey::new(topic, 0_u32).to_string() },
+                    ..Default::default()
                 })
                 .collect(),
-        )
+            source: false,
+        }
     }
 
     pub fn partition_count(&self) -> PartitionCount {
-        self.0.len() as PartitionCount
+        self.partitions.len() as PartitionCount
     }
 
     pub fn replication_factor(&self) -> Option<ReplicationFactor> {
@@ -692,12 +727,12 @@ impl HomeMirrorConfig {
     }
 
     pub fn partitions(&self) -> &Vec<HomePartitionConfig> {
-        &self.0
+        &self.partitions
     }
 
     pub fn as_partition_maps(&self) -> PartitionMaps {
         let mut maps = vec![];
-        for (partition_id, home_partition) in self.0.iter().enumerate() {
+        for (partition_id, home_partition) in self.partitions.iter().enumerate() {
             maps.push(PartitionMap {
                 id: partition_id as u32,
                 mirror: Some(PartitionMirrorConfig::Home(home_partition.clone())),
@@ -714,7 +749,15 @@ impl HomeMirrorConfig {
 
     /// Add partition to home mirror config
     pub fn add_partition(&mut self, partition: HomePartitionConfig) {
-        self.0.push(partition);
+        self.partitions.push(partition);
+    }
+
+    /// set home to remote replication
+    pub fn set_home_to_remote(&mut self, home_to_remote: bool) {
+        self.source = home_to_remote;
+        self.partitions.iter_mut().for_each(|partition| {
+            partition.source = home_to_remote;
+        });
     }
 }
 
@@ -735,8 +778,11 @@ pub struct HomeMirrorPartition {
     serde(rename_all = "camelCase")
 )]
 pub struct RemoteMirrorConfig {
+    // source of mirror
     pub home_cluster: String,
     pub home_spus: Vec<SpuMirrorConfig>,
+    #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "crate::is_false"))]
+    pub target: bool,
 }
 
 #[derive(Decoder, Encoder, Default, Debug, Clone, Eq, PartialEq)]
@@ -774,6 +820,7 @@ impl RemoteMirrorConfig {
                     home_spu_id: home_spu.id,
                     home_cluster: self.home_cluster.clone(),
                     home_spu_endpoint: home_spu.endpoint.clone(),
+                    target: self.target,
                 })),
                 ..Default::default()
             });
@@ -1144,6 +1191,7 @@ mod mirror_test {
                     mirror: Some(PartitionMirrorConfig::Home(HomePartitionConfig {
                         remote_replica: "boats-0".to_string(),
                         remote_cluster: "boat1".to_owned(),
+                        ..Default::default()
                     })),
                     ..Default::default()
                 },
@@ -1152,6 +1200,7 @@ mod mirror_test {
                     mirror: Some(PartitionMirrorConfig::Home(HomePartitionConfig {
                         remote_replica: "boats-0".to_string(),
                         remote_cluster: "boat2".to_string(),
+                        ..Default::default()
                     })),
                     replicas: vec![],
                 },

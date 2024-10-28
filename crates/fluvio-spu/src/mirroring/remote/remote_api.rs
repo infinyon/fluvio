@@ -8,16 +8,19 @@ use fluvio_protocol::Decoder;
 use fluvio_protocol::api::{RequestMessage, ApiMessage, RequestHeader};
 
 use super::api_key::MirrorRemoteApiEnum;
-use super::sync::DefaultPartitionSyncRequest;
+use super::sync::DefaultRemotePartitionSyncRequest;
+use super::update_offsets::UpdateEdgeOffsetRequest;
 
+/// Requests from remote to home
 #[derive(Debug)]
 pub enum RemoteMirrorRequest {
-    SyncRecords(RequestMessage<DefaultPartitionSyncRequest>),
+    SyncRecords(RequestMessage<DefaultRemotePartitionSyncRequest>),
+    UpdateEdgeOffset(RequestMessage<UpdateEdgeOffsetRequest>),
 }
 
 impl Default for RemoteMirrorRequest {
     fn default() -> Self {
-        Self::SyncRecords(RequestMessage::<DefaultPartitionSyncRequest>::default())
+        Self::SyncRecords(RequestMessage::<DefaultRemotePartitionSyncRequest>::default())
     }
 }
 
@@ -33,9 +36,12 @@ impl ApiMessage for RemoteMirrorRequest {
         trace!("decoding with header: {:#?}", header);
         let version = header.api_version();
         match header.api_key().try_into()? {
+            MirrorRemoteApiEnum::UpdateEdgeOffset => Ok(Self::UpdateEdgeOffset(
+                RequestMessage::new(header, UpdateEdgeOffsetRequest::decode_from(src, version)?),
+            )),
             MirrorRemoteApiEnum::SyncRecords => Ok(Self::SyncRecords(RequestMessage::new(
                 header,
-                DefaultPartitionSyncRequest::decode_from(src, version)?,
+                DefaultRemotePartitionSyncRequest::decode_from(src, version)?,
             ))),
         }
     }

@@ -18,8 +18,8 @@ use crate::mirroring::COMMON_MIRROR_VERSION;
 
 use super::api_key::MirrorRemoteApiEnum;
 
-pub type FilePartitionSyncRequest = MirrorPartitionSyncRequest<FileRecordSet>;
-pub type DefaultPartitionSyncRequest = MirrorPartitionSyncRequest<RecordSet<RawRecords>>;
+pub type RemoteFilePartitionSyncRequest = MirrorPartitionSyncRequest<FileRecordSet>;
+pub type DefaultRemotePartitionSyncRequest = MirrorPartitionSyncRequest<RecordSet<RawRecords>>;
 
 #[derive(Encoder, Decoder, Default, Debug)]
 pub struct MirrorPartitionSyncRequest<R>
@@ -55,7 +55,7 @@ where
 #[derive(Default, Encoder, Decoder, Debug)]
 pub struct MirrorPartitionSyncResponse {}
 
-impl FileWrite for FilePartitionSyncRequest {
+impl FileWrite for RemoteFilePartitionSyncRequest {
     fn file_encode(
         &self,
         src: &mut BytesMut,

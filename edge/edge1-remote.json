@@ -1,0 +1,8 @@
+{
+  "topics": [],
+  "home": {
+    "id": "home",
+    "remoteId": "edge1",
+    "publicEndpoint": "127.0.0.1:9003"
+  }
+}
