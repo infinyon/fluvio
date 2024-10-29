@@ -11,7 +11,7 @@ use fluvio_types::SpuId;
 
 use crate::{
     core::DefaultSharedGlobalContext,
-    replication::follower::sync::{FileSyncRequest},
+    replication::follower::sync::FileSyncRequest,
 };
 
 use super::LeaderPeerApiEnum;
