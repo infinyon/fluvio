@@ -19,7 +19,7 @@ pub type DefaultTopicLocalStore = TopicLocalStore<u32>;
 
 #[async_trait]
 pub trait TopicMd<C: MetadataItem> {
-    async fn partitions_from_replicas(
+    async fn create_new_partitions(
         &self,
         partition_store: &PartitionLocalStore<C>,
     ) -> Vec<PartitionMetadata<C>>;
@@ -30,32 +30,32 @@ impl<C: MetadataItem> TopicMd<C> for TopicMetadata<C>
 where
     C: MetadataItem + Send + Sync,
 {
-    /// get partitions from replica map
-    async fn partitions_from_replicas(
+    /// create new partitions from the replica map if it doesn't exists
+    async fn create_new_partitions(
         &self,
         partition_store: &PartitionLocalStore<C>,
     ) -> Vec<PartitionMetadata<C>> {
         let mut partitions = vec![];
         let replica_map = &self.status.replica_map;
         trace!(?replica_map, "creating new partitions for topic");
+        let store = partition_store.read().await;
         for (idx, replicas) in replica_map.iter() {
             let mirror = self.status.mirror_map.get(idx);
 
             let replica_key = ReplicaKey::new(self.key(), *idx);
 
             let partition_spec = PartitionSpec::from_replicas(replicas.clone(), &self.spec, mirror);
-            let store = partition_store.read().await;
-            let partition = store.get(&replica_key);
-            if let Some(p) = partition {
-                partitions.push(p.inner().clone());
-            } else {
+            if !store.contains_key(&replica_key) {
                 debug!(?replica_key, ?partition_spec, "creating new partition");
                 partitions.push(
                     MetadataStoreObject::with_spec(replica_key, partition_spec)
                         .with_context(self.ctx.create_child()),
                 )
+            } else {
+                debug!(?replica_key, "partition already exists");
             }
         }
+        drop(store);
         partitions
     }
 }
@@ -250,12 +250,10 @@ mod test {
         let topic = MetadataStoreObject::<TopicSpec, u32>::new(key, spec, status);
         let partition_store = DefaultPartitionStore::bulk_new(vec![partition_stored]);
 
-        let partitions = topic.partitions_from_replicas(&partition_store).await;
+        let partitions = topic.create_new_partitions(&partition_store).await;
 
-        assert_eq!(partitions.len(), 2);
-        assert_eq!(partitions[0].key, ReplicaKey::new("topic-1", 0_u32));
-        assert_eq!(partitions[0].spec.leader, 0);
-        assert_eq!(partitions[1].key, ReplicaKey::new("topic-1", 1_u32));
-        assert_eq!(partitions[1].spec.leader, 1);
+        assert_eq!(partitions.len(), 1);
+        assert_eq!(partitions[0].key, ReplicaKey::new("topic-1", 1_u32));
+        assert_eq!(partitions[0].spec.leader, 1);
     }
 }
