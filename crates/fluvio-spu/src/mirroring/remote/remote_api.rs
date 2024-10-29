@@ -4,18 +4,15 @@ use std::convert::TryInto;
 use tracing::trace;
 
 use fluvio_protocol::bytes::Buf;
-use fluvio_protocol::{Encoder, Decoder};
+use fluvio_protocol::Decoder;
 use fluvio_protocol::api::{RequestMessage, ApiMessage, RequestHeader};
 
 use super::api_key::MirrorRemoteApiEnum;
 use super::sync::DefaultPartitionSyncRequest;
 
-#[derive(Debug, Encoder)]
+#[derive(Debug)]
 pub enum RemoteMirrorRequest {
-    #[fluvio(tag = 0)]
     SyncRecords(RequestMessage<DefaultPartitionSyncRequest>),
-    //   #[fluvio(tag = 1)]
-    //   RejectedOffsetRequest(RequestMessage<RejectOffsetRequest>),
 }
 
 impl Default for RemoteMirrorRequest {

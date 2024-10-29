@@ -9,10 +9,7 @@ use fluvio_socket::{FluvioSink, SocketError, FluvioStream};
 use fluvio_protocol::api::RequestMessage;
 use fluvio_types::SpuId;
 
-use crate::{
-    core::DefaultSharedGlobalContext,
-    replication::follower::sync::{FileSyncRequest},
-};
+use crate::{core::DefaultSharedGlobalContext, replication::follower::sync::FileSyncRequest};
 
 use super::LeaderPeerApiEnum;
 use super::LeaderPeerRequest;

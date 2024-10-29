@@ -8,7 +8,7 @@ use std::fmt;
 use tracing::trace;
 
 use fluvio_protocol::bytes::Buf;
-use fluvio_protocol::{Encoder, Decoder};
+use fluvio_protocol::Decoder;
 use fluvio_protocol::api::ApiMessage;
 use fluvio_protocol::api::api_decode;
 use fluvio_protocol::api::RequestHeader;
@@ -29,30 +29,18 @@ use super::mirror::StartMirrorRequest;
 
 #[allow(clippy::large_enum_variant)]
 /// Request to Spu Server
-#[derive(Debug, Encoder)]
+#[derive(Debug)]
 pub enum SpuServerRequest {
-    /// list of versions supported
-    #[fluvio(tag = 0)]
     ApiVersionsRequest(RequestMessage<ApiVersionsRequest>),
 
-    // Kafka compatible requests
-    #[fluvio(tag = 1)]
     ProduceRequest(RequestMessage<DefaultProduceRequest>),
-    #[fluvio(tag = 2)]
     FileFetchRequest(RequestMessage<FileFetchRequest>),
-    #[fluvio(tag = 3)]
     FetchOffsetsRequest(RequestMessage<FetchOffsetsRequest>),
-    #[fluvio(tag = 4)]
     FileStreamFetchRequest(RequestMessage<FileStreamFetchRequest>),
-    #[fluvio(tag = 5)]
     UpdateOffsetsRequest(RequestMessage<UpdateOffsetsRequest>),
-    #[fluvio(tag = 6)]
     UpdateConsumerOffsetRequest(RequestMessage<UpdateConsumerOffsetRequest>),
-    #[fluvio(tag = 7)]
     DeleteConsumerOffsetRequest(RequestMessage<DeleteConsumerOffsetRequest>),
-    #[fluvio(tag = 8)]
     FetchConsumerOffsetsRequest(RequestMessage<FetchConsumerOffsetsRequest>),
-    #[fluvio(tag = 9)]
     StartMirrorRequest(RequestMessage<StartMirrorRequest>),
 }
 

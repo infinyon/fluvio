@@ -4,18 +4,16 @@ use std::convert::TryInto;
 use tracing::trace;
 
 use fluvio_protocol::bytes::Buf;
-use fluvio_protocol::{Encoder, Decoder};
+use fluvio_protocol::Decoder;
 use fluvio_protocol::api::{RequestMessage, ApiMessage, RequestHeader};
 
 use super::api_key::FollowerPeerApiEnum;
 use super::sync::DefaultSyncRequest;
 use super::reject_request::RejectOffsetRequest;
 
-#[derive(Debug, Encoder)]
+#[derive(Debug)]
 pub enum FollowerPeerRequest {
-    #[fluvio(tag = 0)]
     SyncRecords(RequestMessage<DefaultSyncRequest>),
-    #[fluvio(tag = 1)]
     RejectedOffsetRequest(RequestMessage<RejectOffsetRequest>),
 }
 
