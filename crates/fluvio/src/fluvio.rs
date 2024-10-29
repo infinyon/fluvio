@@ -452,7 +452,7 @@ impl Fluvio {
     /// # }
     /// ```
     pub async fn admin(&self) -> FluvioAdmin {
-        let socket = self.create_serial_client().await;
+        let socket = self.create_serial_client();
         let metadata = self.metadata.clone();
         FluvioAdmin::new(socket, metadata)
     }
@@ -468,7 +468,7 @@ impl Fluvio {
     }
 
     /// create serial connection
-    async fn create_serial_client(&self) -> VersionedSerialSocket {
+    fn create_serial_client(&self) -> VersionedSerialSocket {
         VersionedSerialSocket::new(
             self.socket.clone(),
             self.config.clone(),

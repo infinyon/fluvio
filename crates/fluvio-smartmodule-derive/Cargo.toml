@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-smartmodule-derive"
-version = "0.6.3"
+version = "0.6.4"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
