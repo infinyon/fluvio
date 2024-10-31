@@ -4,6 +4,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## Platform Version 0.13.0 - Unreleased
 
+## Platform Version 0.12.1 - 2024-10-31
+
+### Added
+
+* Produce message size rfc ([#4202](https://github.com/infinyon/fluvio/issues/4202))
+
+### CI
+
+* Override installed binaries target ([#4215](https://github.com/infinyon/fluvio/issues/4215))
+* Postrelease 0.12.0 ([#4211](https://github.com/infinyon/fluvio/issues/4211))
+* Prerelease 0.12.1-dev-1 ([#4225](https://github.com/infinyon/fluvio/issues/4225))
+
+### Changed
+
+* Update Rust to v1.82 ([#4214](https://github.com/infinyon/fluvio/issues/4214))
+
+### Fixed
+
+* Fix record size larger than batch size ([#4195](https://github.com/infinyon/fluvio/issues/4195))
+* Link_parent more realible and delete topic partitions ([#4219](https://github.com/infinyon/fluvio/issues/4219))
+
+
 ## Platform Version 0.12.0 - 2024-10-09
 
 ### Fixed
