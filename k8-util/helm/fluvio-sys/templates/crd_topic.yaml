@@ -71,14 +71,14 @@ spec:
                           anyOf:
                             - properties:
                                 type: array
-                              items:
-                                type: object
-                                required: ["remoteCluster","remoteReplica"]
-                                properties:
-                                  remoteCluster:
-                                    type: string
-                                  remoteReplica:
-                                    type: string
+                                items:
+                                  type: object
+                                  required: ["remoteCluster","remoteReplica"]
+                                  properties:
+                                    remoteCluster:
+                                      type: string
+                                    remoteReplica:
+                                      type: string
                             - properties:
                                 source:
                                   type: bool
