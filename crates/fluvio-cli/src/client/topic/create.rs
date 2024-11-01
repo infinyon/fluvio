@@ -220,6 +220,8 @@ impl CreateTopicOpt {
             topic_spec.set_compression_type(compression_type);
         }
 
+        topic_spec.set_system(self.setting.system);
+
         if self.setting.segment_size.is_some() || self.setting.max_partition_size.is_some() {
             let mut storage = TopicStorageConfig::default();
 
@@ -268,6 +270,11 @@ pub struct TopicConfigOpt {
     /// Ex: `2048`, '2 Ki', '10 MiB', `1 GB`
     #[arg(long, value_name = "bytes")]
     max_partition_size: Option<bytesize::ByteSize>,
+
+    /// Flag to create a system topic
+    /// System topics are for internal operations
+    #[arg(long, short = 's', hide = true)]
+    system: bool,
 }
 
 /// module to load partitions maps from file
