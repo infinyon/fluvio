@@ -1,7 +1,5 @@
 #![allow(clippy::assign_op_pattern)]
 
-use anyhow::Result;
-
 use fluvio_types::SpuId;
 use fluvio_protocol::{link::ErrorCode, Decoder, Encoder};
 
@@ -170,20 +168,20 @@ impl PartitionMirrorConfig {
     }
 
     /// check whether this mirror should accept traffic
-    pub fn accept_traffic(&self) -> Result<(), ErrorCode> {
+    pub fn accept_traffic(&self) -> Option<ErrorCode> {
         match self {
             Self::Remote(r) => {
                 if r.target {
-                    Ok(())
+                    Some(ErrorCode::MirrorProduceFromRemoteNotAllowed)
                 } else {
-                    Err(ErrorCode::MirrorProduceFromRemoteNotAllowed)
+                    None
                 }
             }
             Self::Home(h) => {
                 if h.source {
-                    Ok(())
+                    None
                 } else {
-                    Err(ErrorCode::MirrorProduceFromHome)
+                    Some(ErrorCode::MirrorProduceFromHome)
                 }
             }
         }

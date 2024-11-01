@@ -115,7 +115,7 @@ async fn handle_produce_topic(
         };
 
         if let Some(mirror) = &leader_state.get_replica().mirror {
-            if let Err(err) = mirror.accept_traffic() {
+            if let Some(err) = mirror.accept_traffic() {
                 debug!(%replica_id, "Mirror replica is not supported for produce");
                 topic_result
                     .partitions
