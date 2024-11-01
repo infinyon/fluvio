@@ -689,6 +689,7 @@ pub struct HomeMirrorConfig {
     #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "Vec::is_empty"))]
     pub partitions: Vec<HomePartitionConfig>,
     #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "crate::is_false"))]
+    #[fluvio(min_version = 18)]
     pub source: bool, // source of mirror
 }
 
@@ -782,6 +783,7 @@ pub struct RemoteMirrorConfig {
     pub home_cluster: String,
     pub home_spus: Vec<SpuMirrorConfig>,
     #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "crate::is_false"))]
+    #[fluvio(min_version = 18)]
     pub target: bool,
 }
 
