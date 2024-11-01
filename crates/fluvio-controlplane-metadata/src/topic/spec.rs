@@ -1,4 +1,4 @@
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 
 use anyhow::{anyhow, Result};
 
@@ -10,6 +10,7 @@ use fluvio_types::defaults::{
 use fluvio_types::SpuId;
 use fluvio_types::{PartitionId, PartitionCount, ReplicationFactor, IgnoreRackAssignment};
 use fluvio_protocol::{Encoder, Decoder};
+use serde::{Deserialize, Deserializer};
 
 use crate::partition::{HomePartitionConfig, PartitionMirrorConfig, RemotePartitionConfig};
 
@@ -284,7 +285,7 @@ impl ReplicaSpec {
                     }
                 }
                 MirrorConfig::Home(home_config) => {
-                    if home_config.source {
+                    if home_config.0.source {
                         "mirror(source)"
                     } else {
                         "mirror"
@@ -679,26 +680,37 @@ impl MirrorConfig {
     }
 }
 
-#[derive(Decoder, Encoder, Default, Debug, Clone, Eq, PartialEq)]
+type Partitions = Vec<HomePartitionConfig>;
+
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Deserialize),
+    serde(rename_all = "camelCase", untagged)
+)]
+enum MultiHome {
+    V1(Partitions),
+    V2(HomeMirrorInner),
+}
+
+#[derive(Encoder, Decoder, Default, Debug, Clone, Eq, PartialEq)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
     serde(rename_all = "camelCase")
 )]
-pub struct HomeMirrorConfig {
-    #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "Vec::is_empty"))]
-    pub partitions: Vec<HomePartitionConfig>,
-    #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "crate::is_false"))]
-    #[fluvio(min_version = 18)]
-    pub source: bool, // source of mirror
+pub struct HomeMirrorConfig(#[serde(deserialize_with = "from_home_v1")] HomeMirrorInner);
+
+impl Deref for HomeMirrorConfig {
+    type Target = HomeMirrorInner;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
 
-impl From<Vec<HomePartitionConfig>> for HomeMirrorConfig {
-    fn from(partitions: Vec<HomePartitionConfig>) -> Self {
-        Self {
-            partitions,
-            source: false,
-        }
+impl DerefMut for HomeMirrorConfig {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
@@ -706,7 +718,7 @@ impl HomeMirrorConfig {
     /// generate home config from simple mirror cluster list
     /// this uses home topic to generate remote replicas
     pub fn from_simple(topic: &str, remote_clusters: Vec<String>) -> Self {
-        Self {
+        Self(HomeMirrorInner {
             partitions: remote_clusters
                 .into_iter()
                 .map(|remote_cluster| HomePartitionConfig {
@@ -716,9 +728,87 @@ impl HomeMirrorConfig {
                 })
                 .collect(),
             source: false,
+        })
+    }
+}
+
+fn from_home_v1<'de, D>(deserializer: D) -> Result<HomeMirrorInner, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let home: MultiHome = Deserialize::deserialize(deserializer)?;
+    match home {
+        MultiHome::V1(v1) => Ok(HomeMirrorInner {
+            partitions: v1,
+            source: false,
+        }),
+        MultiHome::V2(v2) => Ok(v2),
+    }
+}
+
+#[derive(Default, Debug, Clone, Eq, PartialEq)]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase")
+)]
+pub struct HomeMirrorInner {
+    #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "Vec::is_empty"))]
+    pub partitions: Vec<HomePartitionConfig>,
+    #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "crate::is_false"))]
+    pub source: bool, // source of mirror
+}
+
+impl Encoder for HomeMirrorInner {
+    fn write_size(&self, version: i16) -> usize {
+        if version < 18 {
+            self.partitions.write_size(version)
+        } else {
+            self.partitions.write_size(version) + self.source.write_size(version)
         }
     }
 
+    fn encode<T>(
+        &self,
+        dest: &mut T,
+        version: fluvio_protocol::Version,
+    ) -> std::result::Result<(), std::io::Error>
+    where
+        T: bytes::BufMut,
+    {
+        if version < 18 {
+            self.partitions.encode(dest, version)?;
+        } else {
+            self.partitions.encode(dest, version)?;
+            self.source.encode(dest, version)?;
+        }
+        Ok(())
+    }
+}
+
+impl Decoder for HomeMirrorInner {
+    fn decode<T>(&mut self, src: &mut T, version: i16) -> std::result::Result<(), std::io::Error>
+    where
+        T: bytes::Buf,
+    {
+        self.partitions.decode(src, version)?;
+        if version >= 18 {
+            self.source.decode(src, version)?;
+        }
+        Ok(())
+    }
+}
+
+impl From<Vec<HomePartitionConfig>> for HomeMirrorConfig {
+    fn from(partitions: Vec<HomePartitionConfig>) -> Self {
+        Self(HomeMirrorInner {
+            partitions,
+            source: false,
+        })
+    }
+}
+
+impl HomeMirrorInner {
     pub fn partition_count(&self) -> PartitionCount {
         self.partitions.len() as PartitionCount
     }

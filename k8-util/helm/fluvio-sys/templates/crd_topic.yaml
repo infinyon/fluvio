@@ -67,17 +67,31 @@ spec:
                         - required: ["remote"]
                       properties:
                         home:
-                          type: array
-                          items:
-                            type: object
-                            required: ["remoteCluster","remoteReplica"]
-                            properties:
-                              remoteCluster:
-                                type: string
-                              remoteReplica:
-                                type: string
-                              source:
-                                type: bool
+                          type: object
+                          anyOf:
+                            - properties:
+                                type: array
+                              items:
+                                type: object
+                                required: ["remoteCluster","remoteReplica"]
+                                properties:
+                                  remoteCluster:
+                                    type: string
+                                  remoteReplica:
+                                    type: string
+                            - properties:
+                                source:
+                                  type: bool
+                                partitions:
+                                  type: array
+                                  items:
+                                    type: object
+                                    required: ["remoteCluster","remoteReplica"]
+                                    properties:
+                                      remoteCluster:
+                                        type: string
+                                      remoteReplica:
+                                        type: string                            
                               
                         remote:
                           type: object
