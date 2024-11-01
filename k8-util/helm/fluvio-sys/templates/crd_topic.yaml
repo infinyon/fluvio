@@ -68,37 +68,28 @@ spec:
                       properties:
                         home:
                           type: object
-                          anyOf:
-                            - properties:
-                                type: array
-                                items:
-                                  type: object
-                                  required: ["remoteCluster","remoteReplica"]
-                                  properties:
-                                    remoteCluster:
-                                      type: string
-                                    remoteReplica:
-                                      type: string
-                            - properties:
-                                source:
-                                  type: bool
-                                partitions:
-                                  type: array
-                                  items:
-                                    type: object
-                                    required: ["remoteCluster","remoteReplica"]
-                                    properties:
-                                      remoteCluster:
-                                        type: string
-                                      remoteReplica:
-                                        type: string                            
+                          properties:
+                            source:
+                              type: boolean
+                            partitions:
+                              type: array
+                              items:
+                                type: object
+                                required: ["remoteCluster","remoteReplica"]
+                                properties:
+                                  remoteCluster:
+                                    type: string
+                                  remoteReplica:
+                                    type: string  
+                                  source:
+                                    type: boolean                          
                               
                         remote:
                           type: object
                           required: ["homeCluster","homeSpus"]
                           properties:
                             target:
-                              type: bool
+                              type: boolean
                             homeCluster:
                               type: string
                             homeSpus:
