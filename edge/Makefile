@@ -6,7 +6,8 @@ EDGE_CLUSTER_ADDR = 127.0.0.1:9203
 
 setup-home:
 	$(FLV) remote register edge1
-	$(FLV) topic create test  --mirror-apply mirror.json --home-to-remote
+	$(FLV) topic create edge-cmd-request  --mirror-apply mirror.json --home-to-remote
+	$(FLV) topic create edge-cmd-reply  --mirror-apply mirror.json
 
 export-home:
 	$(FLV) remote export edge1  --file  edge/edge1-remote.json

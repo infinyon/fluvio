@@ -759,7 +759,7 @@ where
 pub struct HomeMirrorInner {
     #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "Vec::is_empty"))]
     pub partitions: Vec<HomePartitionConfig>,
-    #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "crate::is_false"))]
+    #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "crate::is_false",default))]
     pub source: bool, // source of mirror
 }
 
