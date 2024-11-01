@@ -103,6 +103,7 @@ where
                 io_error
             })?;
         let service_context = SpuAuthServiceContext::new(context.global_ctx.clone(), auth_context);
+
         let mut mirror_request: Option<RequestMessage<StartMirrorRequest>> = None;
         let shutdown = StickyEvent::shared();
         let (sink, mut stream) = socket.split();

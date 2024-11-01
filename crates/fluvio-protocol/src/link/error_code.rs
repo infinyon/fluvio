@@ -220,6 +220,9 @@ pub enum ErrorCode {
     #[fluvio(tag = 11005)]
     #[error("the mirror is invalid")]
     MirrorInvalidType,
+    #[fluvio(tag = 11006)]
+    #[error("produce from remote target is not allowed")]
+    MirrorProduceFromRemoteNotAllowed,
 
     // Specs
     #[fluvio(tag = 12001)]

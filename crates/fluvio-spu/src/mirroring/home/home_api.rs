@@ -7,6 +7,8 @@ use fluvio_protocol::bytes::Buf;
 use fluvio_protocol::Decoder;
 use fluvio_protocol::api::{RequestMessage, ApiMessage, RequestHeader};
 
+use crate::mirroring::home::sync::DefaultHomePartitionSyncRequest;
+
 use super::api_key::MirrorHomeApiEnum;
 use super::update_offsets::UpdateHomeOffsetRequest;
 
@@ -14,6 +16,7 @@ use super::update_offsets::UpdateHomeOffsetRequest;
 #[derive(Debug)]
 pub enum HomeMirrorRequest {
     UpdateHomeOffset(RequestMessage<UpdateHomeOffsetRequest>),
+    SyncRecords(RequestMessage<DefaultHomePartitionSyncRequest>),
 }
 
 impl Default for HomeMirrorRequest {
@@ -37,6 +40,10 @@ impl ApiMessage for HomeMirrorRequest {
             MirrorHomeApiEnum::UpdateHomeOffset => Ok(Self::UpdateHomeOffset(RequestMessage::new(
                 header,
                 UpdateHomeOffsetRequest::decode_from(src, version)?,
+            ))),
+            MirrorHomeApiEnum::SyncRecords => Ok(Self::SyncRecords(RequestMessage::new(
+                header,
+                DefaultHomePartitionSyncRequest::decode_from(src, version)?,
             ))),
         }
     }

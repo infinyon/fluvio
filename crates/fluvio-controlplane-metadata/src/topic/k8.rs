@@ -61,11 +61,13 @@ mod test_spec {
                 vec![
                     HomePartitionConfig {
                         remote_cluster: "boat1".to_string(),
-                        remote_replica: "boats-0".to_string()
+                        remote_replica: "boats-0".to_string(),
+                        ..Default::default()
                     },
                     HomePartitionConfig {
                         remote_cluster: "boat2".to_string(),
-                        remote_replica: "boats-0".to_string()
+                        remote_replica: "boats-0".to_string(),
+                        ..Default::default()
                     }
                 ]
                 .into()

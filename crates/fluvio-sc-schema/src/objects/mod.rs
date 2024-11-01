@@ -15,7 +15,7 @@ pub use list::*;
 pub use watch::*;
 pub use metadata::*;
 
-pub(crate) const COMMON_VERSION: i16 = 17; // from now, we use a single version for all objects
+pub(crate) const COMMON_VERSION: i16 = 18; // from now, we use a single version for all objects
 pub(crate) const DYN_OBJ: i16 = 11; // version indicate dynamic object
 
 #[cfg(test)]

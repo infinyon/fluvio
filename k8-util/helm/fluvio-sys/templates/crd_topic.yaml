@@ -67,19 +67,29 @@ spec:
                         - required: ["remote"]
                       properties:
                         home:
-                          type: array
-                          items:
-                            type: object
-                            required: ["remoteCluster","remoteReplica"]
-                            properties:
-                              remoteCluster:
-                                type: string
-                              remoteReplica:
-                                type: string
+                          type: object
+                          properties:
+                            source:
+                              type: boolean
+                            partitions:
+                              type: array
+                              items:
+                                type: object
+                                required: ["remoteCluster","remoteReplica"]
+                                properties:
+                                  remoteCluster:
+                                    type: string
+                                  remoteReplica:
+                                    type: string  
+                                  source:
+                                    type: boolean                          
+                              
                         remote:
                           type: object
                           required: ["homeCluster","homeSpus"]
                           properties:
+                            target:
+                              type: boolean
                             homeCluster:
                               type: string
                             homeSpus:

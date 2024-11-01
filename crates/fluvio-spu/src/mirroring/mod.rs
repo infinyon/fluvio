@@ -4,4 +4,4 @@ pub(crate) mod home;
 #[cfg(test)]
 mod test;
 
-const COMMON_MIRROR_VERSION: i16 = 0;
+const COMMON_MIRROR_VERSION: i16 = 1;

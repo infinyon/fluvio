@@ -82,17 +82,18 @@ where
     }
 
     /// find replica with mirror target that matches remote cluster and sourcre replica
-    pub async fn find_mirror_home_leader(
+    /// also return if it is source or target
+    pub(crate) async fn find_mirror_home_leader(
         &self,
         remote_cluster: &str,
         home_replica: &str,
-    ) -> Option<SharedLeaderState<S>> {
+    ) -> Option<(SharedLeaderState<S>, bool)> {
         let read = self.read().await;
         for (_replica_key, state) in read.iter() {
             let replica_config = state.get_replica();
             if let Some(PartitionMirrorConfig::Home(home)) = &replica_config.mirror {
                 if home.remote_cluster == remote_cluster && home.remote_replica == home_replica {
-                    return Some(state.clone());
+                    return Some((state.clone(), home.source));
                 }
             }
         }

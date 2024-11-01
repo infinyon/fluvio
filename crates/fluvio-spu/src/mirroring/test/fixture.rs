@@ -20,16 +20,16 @@ use crate::config::SpuConfig;
 use crate::core::{DefaultSharedGlobalContext, GlobalContext};
 use crate::replication::leader::LeaderReplicaState;
 
-pub(crate) fn default_topic() -> String {
-    "temp".to_owned()
+pub(crate) fn default_topic() -> &'static str {
+    "topic1"
 }
 
-pub(crate) fn default_host() -> String {
-    "127.0.0.1".to_owned()
+pub(crate) fn default_host() -> &'static str {
+    "127.0.0.1"
 }
 
-pub(crate) fn default_base_spu_key() -> String {
-    "temp-0".to_owned()
+pub(crate) fn default_replica() -> &'static str {
+    "topic1-0"
 }
 
 // find unused port in local host
@@ -38,15 +38,19 @@ pub(crate) fn local_port() -> String {
     format!("127.0.0.1:{port}")
 }
 
-fn default_home_port() -> String {
-    "localhost:30000".to_owned()
+fn default_home_port() -> &'static str {
+    "localhost:30000"
 }
 
-fn default_home_cluster() -> String {
-    "my-home".to_owned()
+pub(crate) fn default_home_cluster() -> &'static str {
+    "my-home"
 }
 
-pub(crate) fn default_remote_topic() -> String {
+pub(crate) fn default_remote_cluster() -> &'static str {
+    "edge1"
+}
+
+pub(crate) fn default_remote_topic() -> &'static str {
     default_topic()
 }
 
@@ -58,23 +62,27 @@ pub(crate) struct ReplicaConfig {
     base_port: u16,
     #[builder(default = "0")]
     followers: u16,
-    #[builder(default = "default_topic()")]
+    #[builder(default = "default_topic().to_owned()", setter(into))]
     topic: String,
     #[builder(default = "5001")]
     base_spu_id: SpuId,
-    #[builder(default = "default_base_spu_key()")]
+    #[builder(default = "default_replica().to_owned()", setter(into))]
     base_spu_key: String,
-    #[builder(default = "default_host()")]
+    #[builder(default = "default_host().to_owned()")]
     host: String,
-    #[builder(default = "default_home_port()")]
+    #[builder(default = "default_home_port().to_owned()")]
     home_port: String,
-    #[builder(default = "default_home_cluster()")]
+    #[builder(default = "default_home_cluster().to_owned()", setter(into))]
     home_cluster: String,
+    #[builder(default = "default_remote_cluster().to_owned()", setter(into))]
+    remote_cluster: String,
     /// if set then this is mirror home and we create multiple home partitions
     #[builder(default)]
     remote_clusters: Vec<String>,
-    #[builder(default = "default_remote_topic()")]
+    #[builder(default = "default_remote_topic().to_owned()", setter(into))]
     remote_topic: String,
+    #[builder(default)]
+    home_to_remote: bool,
 }
 
 impl ReplicaConfig {
@@ -135,6 +143,7 @@ impl ReplicaConfig {
             home_spu_key: self.base_spu_key.clone(),
             home_spu_id: self.base_spu_id,
             home_spu_endpoint: self.home_port.clone(),
+            target: self.home_to_remote,
         }));
         replica
     }
@@ -145,6 +154,7 @@ impl ReplicaConfig {
         replica.mirror = Some(PartitionMirrorConfig::Home(HomePartitionConfig {
             remote_cluster: remote_cluster_name.to_string(),
             remote_replica: ReplicaKey::new(self.remote_topic.clone(), 0u32).to_string(),
+            source: self.home_to_remote,
         }));
 
         replica
@@ -193,7 +203,7 @@ impl ReplicaConfig {
 
     /// creates mirror remote ctx and returns remote replica
     pub(crate) async fn init_mirror_remote(
-        &self,
+        self,
     ) -> (DefaultSharedGlobalContext, LeaderReplicaState<FileReplica>) {
         let replica = self.remote_replica();
 
@@ -204,9 +214,9 @@ impl ReplicaConfig {
             name: self.home_cluster.to_owned(),
             spec: MirrorSpec {
                 mirror_type: MirrorType::Home(Home {
-                    id: self.home_cluster.clone(),
-                    remote_id: self.home_cluster.clone(),
-                    public_endpoint: self.home_port.clone(),
+                    id: self.home_cluster,
+                    remote_id: self.remote_cluster,
+                    public_endpoint: self.home_port,
                     client_tls: None,
                 }),
             },

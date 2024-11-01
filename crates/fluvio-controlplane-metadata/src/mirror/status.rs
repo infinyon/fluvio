@@ -1,4 +1,3 @@
-use std::time::Duration;
 use fluvio_protocol::{Encoder, Decoder};
 
 #[derive(Encoder, Decoder, Default, Debug, Clone, Eq, PartialEq)]
@@ -101,7 +100,7 @@ pub struct ConnectionStat {
 
 impl MirrorStatus {
     #[cfg(feature = "use_serde")]
-    pub fn last_seen(&self, since: Duration) -> String {
+    pub fn last_seen(&self, since: std::time::Duration) -> String {
         use humantime_serde::re::humantime;
 
         let since_sec = since.as_secs();
@@ -153,6 +152,8 @@ impl std::fmt::Display for ConnectionStatus {
 
 #[cfg(test)]
 mod test {
+    use std::time::Duration;
+
     use super::*;
 
     #[test]

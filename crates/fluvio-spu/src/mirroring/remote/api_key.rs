@@ -6,4 +6,5 @@ use fluvio_protocol::{Encoder, Decoder};
 pub enum MirrorRemoteApiEnum {
     #[default]
     SyncRecords = 0,
+    UpdateEdgeOffset = 1,
 }

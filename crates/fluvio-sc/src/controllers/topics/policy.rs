@@ -298,6 +298,7 @@ impl<C: MetadataItem> TopicNextState<C> {
                                             home_spu_key: spu.key.clone(),
                                             home_cluster: src.home_cluster.clone(),
                                             home_spu_endpoint: spu.endpoint.clone(),
+                                            target: src.target,
                                         }),
                                     );
                                 }

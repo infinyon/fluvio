@@ -1,7 +1,5 @@
 use std::time::Duration;
 
-use fluvio_controlplane::sc_api::update_mirror::UpdateMirrorStatRequest;
-use fluvio_controlplane::spu_api::update_mirror::UpdateMirrorRequest;
 use tracing::{info, trace, error, debug, warn, instrument};
 use tokio::select;
 use futures_util::stream::StreamExt;
@@ -19,6 +17,8 @@ use fluvio_future::timer::sleep;
 use fluvio_protocol::api::RequestMessage;
 use fluvio_socket::{FluvioSocket, FluvioSink};
 use fluvio_storage::FileReplica;
+use fluvio_controlplane::sc_api::update_mirror::UpdateMirrorStatRequest;
+use fluvio_controlplane::spu_api::update_mirror::UpdateMirrorRequest;
 
 use crate::core::SharedGlobalContext;
 

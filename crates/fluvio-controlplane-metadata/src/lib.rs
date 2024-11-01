@@ -14,6 +14,11 @@ pub mod store {
     pub use fluvio_stream_model::store::*;
 }
 
+#[cfg(feature = "use_serde")]
+pub(crate) fn is_false(b: &bool) -> bool {
+    !b
+}
+
 #[cfg(feature = "k8")]
 pub use fluvio_stream_model::k8_types;
 
