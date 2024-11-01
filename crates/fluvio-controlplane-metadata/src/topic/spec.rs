@@ -736,6 +736,7 @@ fn from_home_v1<'de, D>(deserializer: D) -> Result<HomeMirrorInner, D::Error>
 where
     D: Deserializer<'de>,
 {
+    /* 
     let home: MultiHome = Deserialize::deserialize(deserializer)?;
     match home {
         MultiHome::V1(v1) => Ok(HomeMirrorInner {
@@ -744,6 +745,9 @@ where
         }),
         MultiHome::V2(v2) => Ok(v2),
     }
+    */
+    let home: HomeMirrorInner = Deserialize::deserialize(deserializer)?;
+    Ok(home)
 }
 
 #[derive(Default, Debug, Clone, Eq, PartialEq)]
