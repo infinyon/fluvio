@@ -1,0 +1,208 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: topics.fluvio.infinyon.com
+spec:
+  group: fluvio.infinyon.com
+  scope: Namespaced
+  names:
+    kind: Topic
+    plural: topics
+    singular: topic
+  versions: 
+    - name: v2
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          required: ["spec"]
+          properties:
+            status:
+              type: object
+              x-kubernetes-preserve-unknown-fields: true
+            spec:
+              type: object
+              properties:
+                replicas:
+                  type: object
+                  oneOf:
+                    - required: ["computed"]
+                    - required: ["assigned"]
+                    - required: ["mirror"]
+                  properties:
+                    computed:
+                      type: object
+                      properties:
+                        partitions:
+                          type: integer
+                          minimum: 1
+                          maximum: 5000
+                        replicationFactor:
+                          type: integer
+                          minimum: 1
+                          maximum: 5000
+                        ignoreRackAssignment:
+                          type: boolean
+                    assigned:
+                      type: array
+                      items:
+                        type: object
+                        required:
+                          - id
+                          - replicas
+                        properties:
+                          id:
+                            type: integer
+                            minimum: 0
+                          replicas:
+                            type: array
+                            items:
+                              type: integer
+                              minimum: 0
+                    mirror:
+                      type: object
+                      oneOf:
+                        - required: ["home"]
+                        - required: ["remote"]
+                      properties:
+                        home:
+                          type: object
+                          anyOf:
+                            - properties:
+                                type: array
+                                items:
+                                  type: object
+                                  required: ["remoteCluster","remoteReplica"]
+                                  properties:
+                                    remoteCluster:
+                                      type: string
+                                    remoteReplica:
+                                      type: string
+                            - properties:
+                                source:
+                                  type: bool
+                                partitions:
+                                  type: array
+                                  items:
+                                    type: object
+                                    required: ["remoteCluster","remoteReplica"]
+                                    properties:
+                                      remoteCluster:
+                                        type: string
+                                      remoteReplica:
+                                        type: string                            
+                              
+                        remote:
+                          type: object
+                          required: ["homeCluster","homeSpus"]
+                          properties:
+                            target:
+                              type: bool
+                            homeCluster:
+                              type: string
+                            homeSpus:
+                              type: array
+                              items:
+                                type: object
+                                required: ["id","key","endpoint"]
+                                properties:
+                                  id:
+                                    type: integer
+                                    minimum: 0
+                                  key:
+                                    type: string
+                                  endpoint:
+                                    type: string
+                cleanupPolicy:
+                  type: object
+                  properties:
+                    segment:
+                      type: object
+                      properties:
+                        timeInSeconds:
+                          type: integer
+                          minimum: 10
+                compressionType:
+                  type: string
+                  enum:
+                    - Any
+                    - Gzip
+                    - Snappy
+                    - Lz4
+                    - Zstd
+                storage:
+                  type: object
+                  properties:
+                    segmentSize:
+                      type: integer
+                      minimum: 1024               
+                    maxPartitionSize:
+                      type: integer
+                      minimum: 2048
+                deduplication:
+                  type: object
+                  nullable: true  
+                  properties:
+                    filter: 
+                      type: object
+                      nullable: false   
+                      properties:
+                        transform:
+                          type: object
+                          properties:
+                            uses:
+                              type: string
+                              nullable: false  
+                            with:
+                              type: object
+                              x-kubernetes-preserve-unknown-fields: true
+                    bounds: 
+                      type: object
+                      nullable: false   
+                      properties:
+                        count:
+                          type: integer
+                          minimum: 0
+                        age:
+                          type: string
+                          nullable: true
+                system:
+                  type: boolean
+      subresources:
+          status: {}
+      additionalPrinterColumns:
+          - name: Partitions
+            type: integer
+            description: Partition count
+            jsonPath: .spec.replica.managed.partitions
+          - name: Replications
+            type: integer
+            description: Replication Count
+            jsonPath: .spec.replica.managed.replicationFactor
+          - name: Retention(secs)
+            type: integer
+            description: Retention hours
+            jsonPath: .spec.cleanupPolicy.segment.timeInSeconds
+          - name: Status
+            type: string
+            description: Topic Status
+            jsonPath: .status.resolution
+          - name: Segment Size
+            type: integer
+            description: Segment Size
+            jsonPath: .spec.storage.segmentSize
+          - name: Max Partition Size
+            type: integer
+            description: Max Partition Size
+            jsonPath: .spec.storage.maxPartitionSize
+          - name: Deduplication Filter
+            type: string
+            description: Deduplication
+            jsonPath: .spec.deduplication.filter.transform.uses
+  conversion:
+    # None conversion assumes the same schema for all versions and only sets the apiVersion
+    # field of custom resources to the proper value
+    strategy: None
+                   
+
