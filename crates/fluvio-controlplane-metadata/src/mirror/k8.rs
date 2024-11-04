@@ -35,7 +35,7 @@ mod test_v1_spec {
     type K8RemoteSpec = K8Obj<MirrorSpec>;
 
     #[test]
-    fn read_k8_mirror_json() {
+    fn read_k8_mirror_json_v1() {
         let reader: BufReader<File> =
             BufReader::new(File::open("tests/k8_mirror_v1.json").expect("spec"));
         let cluster: K8RemoteSpec = serde_json::from_reader(reader).expect("failed to parse topic");

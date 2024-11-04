@@ -42,6 +42,8 @@ spec:
                           type: string
                         remoteCluster:
                           type: string
+                        source:
+                          type: boolean
                     remote:
                       type: object
                       required: ["homeCluster","homeSpuKey","homeSpuEndpoint","homeSpu"]
@@ -55,6 +57,8 @@ spec:
                         homeSpuId:
                           type: integer
                           minimum: 0
+                        target:
+                          type: boolean
                 cleanupPolicy:
                   type: object
                   properties:

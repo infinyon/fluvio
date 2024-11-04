@@ -50,7 +50,33 @@ mod test_spec {
     }
 
     #[test]
-    fn read_k8_topic_partition_mirror_json() {
+    fn read_k8_topic_partition_mirror_json_v1() {
+        let reader: BufReader<File> =
+            BufReader::new(File::open("tests/k8_topic_mirror_down_v1.json").expect("spec"));
+        let topic: K8TopicSpec = serde_json::from_reader(reader).expect("failed to parse topic");
+        assert_eq!(topic.metadata.name, "downstream-topic");
+        assert_eq!(
+            topic.spec.replicas().to_owned(),
+            ReplicaSpec::Mirror(MirrorConfig::Home(
+                vec![
+                    HomePartitionConfig {
+                        remote_cluster: "boat1".to_string(),
+                        remote_replica: "boats-0".to_string(),
+                        ..Default::default()
+                    },
+                    HomePartitionConfig {
+                        remote_cluster: "boat2".to_string(),
+                        remote_replica: "boats-0".to_string(),
+                        ..Default::default()
+                    }
+                ]
+                .into()
+            ))
+        );
+    }
+
+    #[test]
+    fn read_k8_topic_partition_mirror_json_v2() {
         let reader: BufReader<File> =
             BufReader::new(File::open("tests/k8_topic_mirror_down_v2.json").expect("spec"));
         let topic: K8TopicSpec = serde_json::from_reader(reader).expect("failed to parse topic");
@@ -61,11 +87,13 @@ mod test_spec {
                 vec![
                     HomePartitionConfig {
                         remote_cluster: "boat1".to_string(),
-                        remote_replica: "boats-0".to_string()
+                        remote_replica: "boats-0".to_string(),
+                        ..Default::default()
                     },
                     HomePartitionConfig {
                         remote_cluster: "boat2".to_string(),
-                        remote_replica: "boats-0".to_string()
+                        remote_replica: "boats-0".to_string(),
+                        ..Default::default()
                     }
                 ]
                 .into()

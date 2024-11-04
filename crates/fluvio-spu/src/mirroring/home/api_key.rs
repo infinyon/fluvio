@@ -6,4 +6,5 @@ use fluvio_protocol::{Encoder, Decoder};
 pub enum MirrorHomeApiEnum {
     #[default]
     UpdateHomeOffset = 0,
+    SyncRecords = 1,
 }

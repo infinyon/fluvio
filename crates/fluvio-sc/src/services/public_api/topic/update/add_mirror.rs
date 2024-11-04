@@ -104,6 +104,7 @@ pub async fn handle_add_mirror<AC: AuthContext, C: MetadataItem>(
                 let new_home_partition_config = HomePartitionConfig {
                     remote_cluster: request.remote_cluster,
                     remote_replica: { ReplicaKey::new(topic.key(), 0_u32).to_string() },
+                    source: home_config.source,
                 };
                 new_home_config.add_partition(new_home_partition_config);
                 spec.set_replicas(ReplicaSpec::Mirror(MirrorConfig::Home(new_home_config)));

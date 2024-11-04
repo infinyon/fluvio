@@ -50,7 +50,8 @@ mod test_spec {
             mirror,
             PartitionMirrorConfig::Home(HomePartitionConfig {
                 remote_cluster: "boat1".to_string(),
-                remote_replica: "boats-0".to_string()
+                remote_replica: "boats-0".to_string(),
+                ..Default::default()
             })
         );
     }

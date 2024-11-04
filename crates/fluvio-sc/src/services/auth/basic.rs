@@ -324,8 +324,8 @@ mod test {
         default_role.insert(
             ObjectType::Mirror,
             vec![
-                ActionUrn::new(Action::Read, Some("edge1".to_string())),
-                ActionUrn::new(Action::Read, Some("edge2".to_string())),
+                ActionUrn::new(Action::Read, Some("remote1".to_string())),
+                ActionUrn::new(Action::Read, Some("remote2".to_string())),
             ],
         );
 
