@@ -143,6 +143,10 @@ where
         &self.spu_followers
     }
 
+    pub fn follower_notifier_owned(&self) -> Arc<FollowerNotifier> {
+        self.spu_followers.clone()
+    }
+
     #[allow(unused)]
     pub fn status_update(&self) -> &StatusLrsMessageSink {
         &self.lrs_status_update

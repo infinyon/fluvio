@@ -67,15 +67,23 @@ spec:
                         - required: ["remote"]
                       properties:
                         home:
-                          type: array
-                          items:
-                            type: object
-                            required: ["remoteCluster","remoteReplica"]
-                            properties:
-                              remoteCluster:
-                                type: string
-                              remoteReplica:
-                                type: string
+                          x-kubernetes-preserve-unknown-fields: true
+                          type: object
+                          properties:
+                            partitions:
+                              type: array
+                              items:
+                                type: object
+                                required: ["remoteCluster", "remoteReplica"]
+                                properties:
+                                  remoteCluster:
+                                    type: string
+                                  remoteReplica:
+                                    type: string
+                                  source:
+                                    type: boolean
+                              source:
+                                type: boolean
                         remote:
                           type: object
                           required: ["homeCluster","homeSpus"]
@@ -95,6 +103,9 @@ spec:
                                     type: string
                                   endpoint:
                                     type: string
+                            target:
+                              type: boolean
+
                 cleanupPolicy:
                   type: object
                   properties:
@@ -186,4 +197,3 @@ spec:
     # field of custom resources to the proper value
     strategy: None
                    
-

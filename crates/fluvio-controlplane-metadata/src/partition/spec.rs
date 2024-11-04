@@ -1,11 +1,7 @@
 #![allow(clippy::assign_op_pattern)]
 
-//!
-//! # Partition Spec
-//!
-//!
 use fluvio_types::SpuId;
-use fluvio_protocol::{Encoder, Decoder};
+use fluvio_protocol::{link::ErrorCode, Decoder, Encoder};
 
 use crate::topic::{CleanupPolicy, CompressionAlgorithm, Deduplication, TopicSpec, TopicStorageConfig};
 
@@ -82,7 +78,24 @@ impl PartitionSpec {
 
     pub fn mirror_string(&self) -> String {
         if let Some(mirror) = &self.mirror {
-            mirror.external_cluster()
+            let external = mirror.external_cluster();
+            match mirror {
+                PartitionMirrorConfig::Remote(remote) => {
+                    if remote.target {
+                        format!("{}(to-home)", external)
+                    } else {
+                        format!("{}(from-home)", external)
+                    }
+                }
+
+                PartitionMirrorConfig::Home(home) => {
+                    if home.source {
+                        format!("{}(from-remote)", external)
+                    } else {
+                        format!("{}(to-remote)", external)
+                    }
+                }
+            }
         } else {
             "".to_owned()
         }
@@ -149,8 +162,29 @@ impl PartitionMirrorConfig {
         }
     }
 
+    #[deprecated(since = "0.29.1")]
     pub fn is_home_mirror(&self) -> bool {
         matches!(self, Self::Home(_))
+    }
+
+    /// check whether this mirror should accept traffic
+    pub fn accept_traffic(&self) -> Option<ErrorCode> {
+        match self {
+            Self::Remote(r) => {
+                if r.target {
+                    Some(ErrorCode::MirrorProduceFromRemoteNotAllowed)
+                } else {
+                    None
+                }
+            }
+            Self::Home(h) => {
+                if h.source {
+                    None
+                } else {
+                    Some(ErrorCode::MirrorProduceFromHome)
+                }
+            }
+        }
     }
 }
 
@@ -172,6 +206,12 @@ impl std::fmt::Display for PartitionMirrorConfig {
 pub struct HomePartitionConfig {
     pub remote_cluster: String,
     pub remote_replica: String,
+    // if this is set, home will be mirror instead of
+    #[cfg_attr(
+        feature = "use_serde",
+        serde(default, skip_serializing_if = "crate::is_false")
+    )]
+    pub source: bool,
 }
 
 impl std::fmt::Display for HomePartitionConfig {
@@ -192,6 +232,11 @@ pub struct RemotePartitionConfig {
     #[cfg_attr(feature = "use_serde", serde(default))]
     pub home_spu_id: SpuId,
     pub home_spu_endpoint: String,
+    #[cfg_attr(
+        feature = "use_serde",
+        serde(default, skip_serializing_if = "crate::is_false")
+    )]
+    pub target: bool,
 }
 
 impl std::fmt::Display for RemotePartitionConfig {

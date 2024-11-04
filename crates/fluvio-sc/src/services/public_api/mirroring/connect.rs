@@ -167,7 +167,7 @@ impl<AC: AuthContext, C: MetadataItem> RemoteFetchingFromHomeController<AC, C> {
         Err(anyhow!("remote cluster not found: {}", self.req.remote_id))
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip(self, topics_listener, spus_listener))]
     async fn sync_and_send_topics(
         &mut self,
         topics_listener: &mut ChangeListener<TopicSpec, C>,
