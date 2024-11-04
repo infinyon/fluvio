@@ -41,7 +41,7 @@ With the profile set, you are now able to perform Fluvio Client operations
 like listing topics:
 
 ```bash
-fluvio topics list
+fluvio topic list
 ```
 
 ## Teardown
