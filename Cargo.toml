@@ -147,7 +147,7 @@ url = "2.5"
 uuid = { version = "1.1", features = ["serde", "v4"] }
 wasm-bindgen-test = "0.3.24"
 wasi-common = { version = "26.0.0" }
-wasmtime = { version = "26.0.0" }
+wasmtime = { version = "26.0.1" }
 wasmparser = "0.212.0"
 which = "6.0.1"
 x509-parser = "0.16.0"
