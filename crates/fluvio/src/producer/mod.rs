@@ -1,3 +1,11 @@
+//! The Fluvio Producer module allows applications to send messages to topics in the Fluvio cluster.
+//!
+//! # Overview
+//!
+//! This module provides the necessary structures and functions to produce messages to a Fluvio topic.
+//! It includes the `TopicProducerPool` struct, which manages the production of messages
+//! to specific topics and partitions, respectively.
+//!
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -47,6 +55,7 @@ pub use self::output::ProduceOutput;
 use self::partition_producer::PartitionProducer;
 pub use self::record::{FutureRecordMetadata, RecordMetadata};
 
+/// Pool of producers for a given topic. There is a producer per partition
 pub type TopicProducerPool = TopicProducer<SpuSocketPool>;
 
 /// Pool of producers for a given topic. There is a producer per partition
