@@ -67,7 +67,7 @@ pub enum MirrorPairStatus {
     #[fluvio(tag = 0)]
     Waiting,
     #[fluvio(tag = 1)]
-    Succesful,
+    Successful,
     #[fluvio(tag = 2)]
     Failed,
     #[fluvio(tag = 3)]
@@ -129,7 +129,7 @@ impl std::fmt::Display for MirrorStatus {
 impl std::fmt::Display for MirrorPairStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let status = match self {
-            MirrorPairStatus::Succesful => "Connected",
+            MirrorPairStatus::Successful => "Connected",
             MirrorPairStatus::Disabled => "Disabled",
             MirrorPairStatus::Failed => "Failed",
             MirrorPairStatus::Waiting => "Waiting",
@@ -159,7 +159,7 @@ mod test {
     #[test]
     fn test_last_seen() {
         let status = MirrorStatus {
-            pairing_sc: MirrorPairStatus::Succesful,
+            pairing_sc: MirrorPairStatus::Successful,
             pairing_spu: MirrorPairStatus::Waiting,
             connection_status: ConnectionStatus::Online,
             connection_stat: ConnectionStat {
@@ -172,7 +172,7 @@ mod test {
         assert_eq!(last_seen, "5s");
 
         let default_status = MirrorStatus {
-            pairing_sc: MirrorPairStatus::Succesful,
+            pairing_sc: MirrorPairStatus::Successful,
             pairing_spu: MirrorPairStatus::Waiting,
             connection_status: ConnectionStatus::Online,
             connection_stat: ConnectionStat { last_seen: 0 },

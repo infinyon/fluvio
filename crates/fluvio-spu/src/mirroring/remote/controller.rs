@@ -255,7 +255,7 @@ where
             if home_updated_needed && home_leo >= 0 {
                 self.update_remote_as_source(&mut home_sink, home_leo)
                     .await?;
-                self.update_status(MirrorPairStatus::Succesful).await?;
+                self.update_status(MirrorPairStatus::Successful).await?;
                 home_updated_needed = false;
             }
 
@@ -278,7 +278,7 @@ where
                                 return Err(anyhow!("received sync record request from home, this should not happen, since we are source"));
                             }
                          }
-                        self.update_status(MirrorPairStatus::Succesful).await?;
+                        self.update_status(MirrorPairStatus::Successful).await?;
                         backoff.reset();
                     } else {
                         warn!("spu socket to home has terminated");
@@ -349,7 +349,7 @@ where
                             HomeMirrorRequest::SyncRecords(sync_request)=> {
                                 if(!paired) {
                                     info!("sync received for the first time, indicating paired");
-                                    self.update_status(MirrorPairStatus::Succesful).await?;
+                                    self.update_status(MirrorPairStatus::Successful).await?;
                                     paired = true;
                                 }
 

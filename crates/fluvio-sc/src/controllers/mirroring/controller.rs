@@ -94,7 +94,7 @@ impl<C: MetadataItem> RemoteMirrorController<C> {
                             }
 
                             info!("synced topics from home");
-                            self.update_status(MirrorPairStatus::Succesful).await?;
+                            self.update_status(MirrorPairStatus::Successful).await?;
                             backoff.reset();
                         }
                         Err(err) => {

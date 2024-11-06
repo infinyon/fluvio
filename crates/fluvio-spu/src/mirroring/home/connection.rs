@@ -198,7 +198,7 @@ impl MirrorHomeHandler {
         // create timer
         let mut timer = sleep(Duration::from_secs(MIRROR_RECONCILIATION_INTERVAL_SEC));
 
-        self.update_status(MirrorPairStatus::Succesful).await?;
+        self.update_status(MirrorPairStatus::Successful).await?;
 
         loop {
             debug!(
