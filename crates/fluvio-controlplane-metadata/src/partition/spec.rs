@@ -211,6 +211,7 @@ pub struct HomePartitionConfig {
         feature = "use_serde",
         serde(default, skip_serializing_if = "crate::is_false")
     )]
+    #[fluvio(min_version = 18)]
     pub source: bool,
 }
 
@@ -236,6 +237,7 @@ pub struct RemotePartitionConfig {
         feature = "use_serde",
         serde(default, skip_serializing_if = "crate::is_false")
     )]
+    #[fluvio(min_version = 18)]
     pub target: bool,
 }
 
