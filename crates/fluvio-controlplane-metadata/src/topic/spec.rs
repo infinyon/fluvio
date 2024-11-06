@@ -790,7 +790,7 @@ cfg_if::cfg_if! {
     }
 }
 
-#[derive(Default, Debug, Clone, Eq, PartialEq)]
+#[derive(Default, Debug, Clone, Eq, PartialEq, Decoder, Encoder)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -803,47 +803,8 @@ pub struct HomeMirrorInner {
         feature = "use_serde",
         serde(skip_serializing_if = "crate::is_false", default)
     )]
+    #[fluvio(min_version = 18)]
     pub source: bool, // source of mirror
-}
-
-impl Encoder for HomeMirrorInner {
-    fn write_size(&self, version: i16) -> usize {
-        if version < 18 {
-            self.partitions.write_size(version)
-        } else {
-            self.partitions.write_size(version) + self.source.write_size(version)
-        }
-    }
-
-    fn encode<T>(
-        &self,
-        dest: &mut T,
-        version: fluvio_protocol::Version,
-    ) -> std::result::Result<(), std::io::Error>
-    where
-        T: bytes::BufMut,
-    {
-        if version < 18 {
-            self.partitions.encode(dest, version)?;
-        } else {
-            self.partitions.encode(dest, version)?;
-            self.source.encode(dest, version)?;
-        }
-        Ok(())
-    }
-}
-
-impl Decoder for HomeMirrorInner {
-    fn decode<T>(&mut self, src: &mut T, version: i16) -> std::result::Result<(), std::io::Error>
-    where
-        T: bytes::Buf,
-    {
-        self.partitions.decode(src, version)?;
-        if version >= 18 {
-            self.source.decode(src, version)?;
-        }
-        Ok(())
-    }
 }
 
 impl From<Vec<HomePartitionConfig>> for HomeMirrorConfig {
