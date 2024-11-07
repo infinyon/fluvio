@@ -24,7 +24,7 @@ mod cmd {
         ProduceOutput, DeliverySemantic, SmartModuleContextData, Isolation, SmartModuleInvocation,
     };
     use fluvio_extension_common::Terminal;
-    use fluvio_types::print_cli_ok;
+    use fluvio_types::{print_cli_ok, PartitionId};
 
     #[cfg(feature = "producer-file-io")]
     use fluvio_cli_common::user_input::{UserInputRecords, UserInputType};
@@ -171,6 +171,10 @@ mod cmd {
         /// E.g. fluvio produce topic-name --transforms-line='{"uses":"infinyon/jolt@0.1.0","with":{"spec":"[{\"operation\":\"default\",\"spec\":{\"source\":\"test\"}}]"}}'
         #[arg(long, conflicts_with_all = &["smartmodule_group", "transforms"], alias = "transform")]
         pub transforms_line: Vec<String>,
+
+        /// Partition id
+        #[arg(short = 'p', long, value_name = "integer")]
+        pub partition: Option<PartitionId>,
     }
 
     fn validate_key_separator(separator: &str) -> std::result::Result<String, String> {
@@ -242,6 +246,12 @@ mod cmd {
 
             let config_builder =
                 config_builder.smartmodules(self.smartmodule_invocations(initial_param)?);
+
+            let config_builder = if let Some(partition) = self.partition {
+                config_builder.set_specific_partitioner(partition)
+            } else {
+                config_builder
+            };
 
             let config = config_builder
                 .delivery_semantic(self.delivery_semantic)
