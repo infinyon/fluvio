@@ -81,11 +81,11 @@ setup_file() {
 @test "List topics" {
     run bash -c 'timeout 15s "$FLUVIO_BIN" topic list | grep "$TOPIC_NAME"'
     assert_success
-    assert_line --partial --index 0 "$TOPIC_NAME  from-remote"
+    assert_line --partial --index 0 "$TOPIC_NAME  to-remote"
 }
 
 @test "List partitions" {
     run bash -c 'timeout 15s "$FLUVIO_BIN" partition list | grep "$TOPIC_NAME"'
     assert_success
-    assert_line --partial --index 0 "$TOPIC_NAME  0          5001    $REMOTE_NAME(from-remote)"
+    assert_line --partial --index 0 "$TOPIC_NAME  0          5001    $REMOTE_NAME(to-remote)"
 }

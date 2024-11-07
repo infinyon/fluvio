@@ -285,9 +285,9 @@ impl ReplicaSpec {
                 }
                 MirrorConfig::Home(home_config) => {
                     if home_config.0.source {
-                        "from-remote"
-                    } else {
                         "to-remote"
+                    } else {
+                        "from-remote"
                     }
                 }
             },
