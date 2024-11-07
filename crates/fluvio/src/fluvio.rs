@@ -358,6 +358,18 @@ impl Fluvio {
                         None
                     })
                 }
+                ReplicaSpec::Mirror(MirrorConfig::Remote(remote_mirror_config)) => {
+                    let partitions_maps =
+                        Vec::<PartitionMap>::from(remote_mirror_config.as_partition_maps());
+                    partitions_maps.iter().find_map(|p| {
+                        if let Some(PartitionMirrorConfig::Remote(remote)) = &p.mirror {
+                            if remote.home_cluster == *mirror {
+                                return Some(p.id);
+                            }
+                        }
+                        None
+                    })
+                }
                 _ => None,
             }
         } else {
