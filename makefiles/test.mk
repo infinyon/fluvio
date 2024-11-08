@@ -214,6 +214,9 @@ longevity-test: build-test
 	$(TEST_BIN) longevity --expect-timeout -- $(VERBOSE_FLAG) --runtime-seconds=60
 endif
 
+cli-backward-compatibility-test:
+	./tests/cli/cli-backward-compatibility.bash
+
 cli-platform-cross-version-test:
 	bats -t ./tests/cli/cli-platform-cross-version.bats
 

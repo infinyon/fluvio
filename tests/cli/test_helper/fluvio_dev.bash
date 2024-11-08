@@ -74,5 +74,5 @@ function setup_fluvio_cli() {
     CLI_VERSION=${1:-latest}
     echo "Installing CLI @ VERSION: $CLI_VERSION" >&3
     curl -fsS https://hub.infinyon.cloud/install/install.sh?ctx=ci | VERSION=$CLI_VERSION bash
-    $FLUVIO_BIN version >&3
+    $HOME/.fvm/versions/$CLI_VERSION/fluvio version >&3
 }
