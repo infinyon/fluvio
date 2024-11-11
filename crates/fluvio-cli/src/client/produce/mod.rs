@@ -12,19 +12,21 @@ mod cmd {
     use std::path::PathBuf;
 
     use async_trait::async_trait;
+    use fluvio_sc_schema::partition::PartitionMirrorConfig;
+    use fluvio_sc_schema::topic::{MirrorConfig, PartitionMap, ReplicaSpec, TopicSpec};
     #[cfg(feature = "producer-file-io")]
     use futures::future::join_all;
     use clap::Parser;
     use tracing::{error, warn};
     use humantime::parse_duration;
-    use anyhow::Result;
+    use anyhow::{bail, Result};
 
     use fluvio::{
         Compression, Fluvio, FluvioError, TopicProducerPool, TopicProducerConfigBuilder, RecordKey,
         ProduceOutput, DeliverySemantic, SmartModuleContextData, Isolation, SmartModuleInvocation,
     };
     use fluvio_extension_common::Terminal;
-    use fluvio_types::print_cli_ok;
+    use fluvio_types::{print_cli_ok, PartitionId};
 
     #[cfg(feature = "producer-file-io")]
     use fluvio_cli_common::user_input::{UserInputRecords, UserInputType};
@@ -171,6 +173,14 @@ mod cmd {
         /// E.g. fluvio produce topic-name --transforms-line='{"uses":"infinyon/jolt@0.1.0","with":{"spec":"[{\"operation\":\"default\",\"spec\":{\"source\":\"test\"}}]"}}'
         #[arg(long, conflicts_with_all = &["smartmodule_group", "transforms"], alias = "transform")]
         pub transforms_line: Vec<String>,
+
+        /// Partition id
+        #[arg(short = 'p', long, value_name = "integer", conflicts_with = "mirror")]
+        pub partition: Option<PartitionId>,
+
+        /// Remote cluster to consume from
+        #[arg(short = 'm', long, conflicts_with = "partition")]
+        pub mirror: Option<String>,
     }
 
     fn validate_key_separator(separator: &str) -> std::result::Result<String, String> {
@@ -242,6 +252,52 @@ mod cmd {
 
             let config_builder =
                 config_builder.smartmodules(self.smartmodule_invocations(initial_param)?);
+
+            let config_builder = if let Some(mirror) = &self.mirror {
+                let admin = fluvio.admin().await;
+                let topics = admin.all::<TopicSpec>().await?;
+                let partition = topics.into_iter().find_map(|t| match t.spec.replicas() {
+                    ReplicaSpec::Mirror(MirrorConfig::Home(home_mirror_config)) => {
+                        let partitions_maps =
+                            Vec::<PartitionMap>::from(home_mirror_config.as_partition_maps());
+                        partitions_maps.iter().find_map(|p| {
+                            if let Some(PartitionMirrorConfig::Home(remote)) = &p.mirror {
+                                if remote.remote_cluster == *mirror && remote.source {
+                                    return Some(p.id);
+                                }
+                            }
+                            None
+                        })
+                    }
+                    ReplicaSpec::Mirror(MirrorConfig::Remote(remote_mirror_config)) => {
+                        let partitions_maps =
+                            Vec::<PartitionMap>::from(remote_mirror_config.as_partition_maps());
+                        partitions_maps.iter().find_map(|p| {
+                            if let Some(PartitionMirrorConfig::Remote(remote)) = &p.mirror {
+                                if remote.home_cluster == *mirror && remote.target {
+                                    return Some(p.id);
+                                }
+                            }
+                            None
+                        })
+                    }
+                    _ => None,
+                });
+
+                if let Some(partition) = partition {
+                    config_builder.set_specific_partitioner(partition)
+                } else {
+                    bail!("No partition found for mirror '{}'", mirror);
+                }
+            } else {
+                config_builder
+            };
+
+            let config_builder = if let Some(partition) = self.partition {
+                config_builder.set_specific_partitioner(partition)
+            } else {
+                config_builder
+            };
 
             let config = config_builder
                 .delivery_semantic(self.delivery_semantic)

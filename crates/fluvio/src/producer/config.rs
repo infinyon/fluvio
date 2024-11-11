@@ -9,9 +9,12 @@ use fluvio_spu_schema::Isolation;
 use fluvio_spu_schema::server::smartmodule::SmartModuleInvocation;
 
 use fluvio_compression::Compression;
+use fluvio_types::PartitionId;
 use serde::{Serialize, Deserialize};
 
 use crate::producer::partitioning::{Partitioner, SiphashRoundRobinPartitioner};
+
+use super::partitioning::SpecificPartitioner;
 
 const DEFAULT_LINGER_MS: u64 = 100;
 const DEFAULT_TIMEOUT_MS: u64 = 1500;
@@ -115,6 +118,12 @@ pub struct TopicProducerConfig {
 
     #[builder(default)]
     pub(crate) smartmodules: Vec<SmartModuleInvocation>,
+}
+
+impl TopicProducerConfigBuilder {
+    pub fn set_specific_partitioner(self, partition_id: PartitionId) -> Self {
+        self.partitioner(Box::new(SpecificPartitioner::new(partition_id)))
+    }
 }
 
 impl TopicProducerConfig {

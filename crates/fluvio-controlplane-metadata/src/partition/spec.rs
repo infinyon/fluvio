@@ -82,17 +82,17 @@ impl PartitionSpec {
             match mirror {
                 PartitionMirrorConfig::Remote(remote) => {
                     if remote.target {
-                        format!("{}(to-home)", external)
-                    } else {
                         format!("{}(from-home)", external)
+                    } else {
+                        format!("{}(to-home)", external)
                     }
                 }
 
                 PartitionMirrorConfig::Home(home) => {
                     if home.source {
-                        format!("{}(from-remote)", external)
-                    } else {
                         format!("{}(to-remote)", external)
+                    } else {
+                        format!("{}(from-remote)", external)
                     }
                 }
             }

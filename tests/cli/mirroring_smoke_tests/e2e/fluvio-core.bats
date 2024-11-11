@@ -122,11 +122,11 @@ setup_file() {
 @test "Can produce message to reverse mirror topic from home" {
     run bash -c 'echo 3 | timeout 15s "$FLUVIO_BIN" produce "$REVERSE_TOPIC_NAME"'
     assert_success
-    run bash -c 'echo c | timeout 15s "$FLUVIO_BIN" produce "$REVERSE_TOPIC_NAME"'
+    run bash -c 'echo c | timeout 15s "$FLUVIO_BIN" produce -p 0 "$REVERSE_TOPIC_NAME"'
     assert_success
-    run bash -c 'echo 4 | timeout 15s "$FLUVIO_BIN" produce "$REVERSE_TOPIC_NAME"'
+    run bash -c 'echo 4 | timeout 15s "$FLUVIO_BIN" produce -m "$REMOTE_NAME" "$REVERSE_TOPIC_NAME"'
     assert_success
-    run bash -c 'echo d | timeout 15s "$FLUVIO_BIN" produce "$REVERSE_TOPIC_NAME"'
+    run bash -c 'echo d | timeout 15s "$FLUVIO_BIN" produce -m "$REMOTE_NAME" "$REVERSE_TOPIC_NAME"'
     assert_success
 }
 
@@ -186,6 +186,10 @@ setup_file() {
     run timeout 15s "$FLUVIO_BIN" consume "$REVERSE_TOPIC_NAME" -p 0 -B -d
     assert_output 3$'\n'c$'\n'4$'\n'd
     assert_success
+
+    run timeout 15s "$FLUVIO_BIN" consume "$REVERSE_TOPIC_NAME" --mirror "$REMOTE_NAME" -B -d
+    assert_output 3$'\n'c$'\n'4$'\n'd
+    assert_success
 }
 
 @test "Can switch back to home cluster" {
@@ -195,18 +199,16 @@ setup_file() {
 }
 
 
-#TODO: we don't have a way to produce directly for a partition, 
-# when we have it, we should create a test to produce to a partition 1 than should be consumed by remote 2
-# @test "Can produce message to reverse mirror topic from home again" {
-#     run bash -c 'echo 5 | timeout 15s "$FLUVIO_BIN" produce -p 1 "$REVERSE_TOPIC_NAME"'
-#     assert_success
-#     run bash -c 'echo e | timeout 15s "$FLUVIO_BIN" produce -p 1 "$REVERSE_TOPIC_NAME"'
-#     assert_success
-#     run bash -c 'echo 6 | timeout 15s "$FLUVIO_BIN" produce -p 1 "$REVERSE_TOPIC_NAME"'
-#     assert_success
-#     run bash -c 'echo f | timeout 15s "$FLUVIO_BIN" produce -p 1 "$REVERSE_TOPIC_NAME"'
-#     assert_success
-# }
+@test "Can produce message to reverse mirror topic from home again" {
+    run bash -c 'echo 5 | timeout 15s "$FLUVIO_BIN" produce -p 1 "$REVERSE_TOPIC_NAME"'
+    assert_success
+    run bash -c 'echo e | timeout 15s "$FLUVIO_BIN" produce -p 1 "$REVERSE_TOPIC_NAME"'
+    assert_success
+    run bash -c 'echo 6 | timeout 15s "$FLUVIO_BIN" produce -m "$REMOTE_NAME_2" "$REVERSE_TOPIC_NAME"'
+    assert_success
+    run bash -c 'echo f | timeout 15s "$FLUVIO_BIN" produce -m "$REMOTE_NAME_2" "$REVERSE_TOPIC_NAME"'
+    assert_success
+}
 
 @test "Can switch to remote cluster 2" {
     run timeout 15s "$FLUVIO_BIN" profile switch "$REMOTE_PROFILE_2"
@@ -250,14 +252,16 @@ setup_file() {
     assert_failure
 }
 
-#TODO: we don't have a way to produce directly for a partition, 
-# when we have it, we should create a test to produce to a partition 1 than should be consumed by remote 2
-# @test "Can consume message from reverse mirror topic from remote 2" {
-#     sleep 5
-#     run timeout 15s "$FLUVIO_BIN" consume "$REVERSE_TOPIC_NAME" -p 0 -B -d
-#     assert_output 5$'\n'e$'\n'6$'\n'f
-#     assert_success
-# }
+@test "Can consume message from reverse mirror topic from remote 2" {
+    sleep 5
+    run timeout 15s "$FLUVIO_BIN" consume "$REVERSE_TOPIC_NAME" -p 0 -B -d
+    assert_output 5$'\n'e$'\n'6$'\n'f
+    assert_success
+
+    run timeout 15s "$FLUVIO_BIN" consume "$REVERSE_TOPIC_NAME" --mirror "$REMOTE_NAME_2" -B -d
+    assert_output 5$'\n'e$'\n'6$'\n'f
+    assert_success
+}
 
 @test "Can't delete mirror topic from remote 2" {
     run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME"
@@ -286,6 +290,14 @@ setup_file() {
     sleep 5
     run timeout 15s "$FLUVIO_BIN" consume "$REVERSE_TOPIC_NAME" -p 0 -B -d
     assert_output 3$'\n'c$'\n'4$'\n'd
+    assert_success
+	
+    run timeout 15s "$FLUVIO_BIN" consume "$REVERSE_TOPIC_NAME" -p 1 -B -d
+    assert_output 5$'\n'e$'\n'6$'\n'f
+    assert_success
+
+    run timeout 15s "$FLUVIO_BIN" consume "$REVERSE_TOPIC_NAME" --mirror "$HOME" -B -d
+    assert_output 3$'\n'c$'\n'4$'\n'd$'\n'5$'\n'e$'\n'6$'\n'f
     assert_success
 }
 

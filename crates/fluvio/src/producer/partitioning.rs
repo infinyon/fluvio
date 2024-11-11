@@ -81,6 +81,28 @@ fn partition_siphash(key: &[u8], partition_count: PartitionCount) -> PartitionId
     }
 }
 
+/// A [`Partitioner`] which assigns all records to a specific partition
+pub(crate) struct SpecificPartitioner {
+    partition_id: PartitionId,
+}
+
+impl SpecificPartitioner {
+    pub fn new(partition_id: PartitionId) -> Self {
+        Self { partition_id }
+    }
+}
+
+impl Partitioner for SpecificPartitioner {
+    fn partition(
+        &self,
+        _config: &PartitionerConfig,
+        _maybe_key: Option<&[u8]>,
+        _value: &[u8],
+    ) -> PartitionId {
+        self.partition_id
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
