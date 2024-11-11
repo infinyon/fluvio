@@ -108,6 +108,7 @@ where
 
 impl Request for ObjectApiListRequest {
     const API_KEY: u16 = AdminPublicApiKey::List as u16;
+    const MIN_API_VERSION: i16 = 15;
     const DEFAULT_API_VERSION: i16 = COMMON_VERSION;
     type Response = ObjectApiListResponse;
 }
