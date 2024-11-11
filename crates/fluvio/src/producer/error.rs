@@ -9,8 +9,8 @@ use crate::producer::PartitionId;
 #[derive(thiserror::Error, Debug, Clone)]
 #[non_exhaustive]
 pub enum ProducerError {
-    #[error("the given record is larger than the max_request_size ({0} bytes)")]
-    RecordTooLarge(usize),
+    #[error("record size ({0} bytes), exceeded maximum request size ({0} bytes)")]
+    RecordTooLarge(usize, usize),
     #[error("failed to send record metadata: {0}")]
     SendRecordMetadata(#[from] async_channel::SendError<RecordMetadata>),
     #[error("failed to get record metadata")]
