@@ -80,6 +80,24 @@ teardown_file() {
     assert_success
 }
 
+# List topics
+@test "List topics" {
+    run timeout 15s "$FLUVIO_CLIENT_BIN" topic list
+
+    assert_success
+    assert_line --partial --index 1 "$TOPIC_NAME"
+    assert [ ${#lines[@]} -eq 2 ]
+}
+
+# List partitions
+@test "List partitions" {
+    run timeout 15s "$FLUVIO_CLIENT_BIN" partition list
+
+    assert_success
+    assert_line --partial --index 1 "$TOPIC_NAME"
+    assert [ ${#lines[@]} -eq 2 ]
+}
+
 # Consume message and compare message
 # Warning: Adding anything extra to the `debug_msg` skews the message comparison
 @test "Consume message" {
