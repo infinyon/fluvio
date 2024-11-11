@@ -1429,6 +1429,55 @@ jobs:
         timeout-minutes: 5
         run: cat /tmp/flv_sc.log
 
+  cli_backward_compatibility:
+    runs-on: ${{ matrix.os }}
+    env:
+      FLUVIO_BIN: "~/bin/fluvio"
+    needs:
+      - build_image
+      - config
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        rust-target: [x86_64-unknown-linux-musl]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup BATS
+        uses: mig4/setup-bats@v1
+        with:
+          bats-version: ${{ env.BATS_VERSION }}
+
+      # Download artifacts from development build
+      - name: Download artifact - fluvio
+        uses: actions/download-artifact@v4
+        with:
+          name: fluvio-${{ matrix.rust-target }}
+          path: ~/bin
+
+      - name: Download artifact - fluvio-run
+        uses: actions/download-artifact@v4
+        with:
+          name: fluvio-run-${{ matrix.rust-target }}
+          path: ~/.fluvio/extensions
+
+      - name: Set up Fluvio Binaries
+        run: |
+          chmod +x ~/bin/fluvio ~/.fluvio/extensions/fluvio-run
+          echo "~/bin" >> $GITHUB_PATH
+          FLUVIO_BIN=~/bin/fluvio
+          echo "FLUVIO_BIN=${FLUVIO_BIN}" >> $GITHUB_ENV
+
+      - name: Print version
+        run: fluvio version
+
+      - name: Run backward compatibility tests
+        timeout-minutes: 10
+        run: make cli-backward-compatibility-test
+
+      - name: Print SC logs
+        if: ${{ !success() }}
+        timeout-minutes: 5
+        run: cat /tmp/flv_sc.log
 
   # Runs tests on `tests/cli/partition_test`
   partition_test:
