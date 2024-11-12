@@ -54,7 +54,7 @@ EOF
     assert_success
     assert_output --partial "Connector runs with process id"
 
-    wait_for_line_in_file "succesfully created" $LOG_PATH 30
+    wait_for_line_in_file "successfully created" $LOG_PATH 30
     wait_for_line_in_file "monitoring started" $LOG_PATH 30
 
     echo 1:1 | "$FLUVIO_BIN" produce $TOPIC_NAME --key-separator ":"
@@ -106,7 +106,7 @@ EOF
     assert_success
     assert_output --partial "Connector runs with process id"
 
-    wait_for_line_in_file "succesfully created" $LOG_PATH 30
+    wait_for_line_in_file "successfully created" $LOG_PATH 30
     wait_for_line_in_file "monitoring started" $LOG_PATH 30
 
     echo 1:1 | "$FLUVIO_BIN" produce $TOPIC_NAME --key-separator ":"
@@ -157,7 +157,7 @@ EOF
     assert_success
     assert_output --partial "Connector runs with process id"
 
-    wait_for_line_in_file "succesfully created" $LOG_PATH 30
+    wait_for_line_in_file "successfully created" $LOG_PATH 30
     wait_for_line_in_file "monitoring started" $LOG_PATH 30
 
     echo 3:3 | "$FLUVIO_BIN" produce $TOPIC_NAME --key-separator ":"
@@ -229,7 +229,7 @@ EOF
     assert_success
     assert_output --partial "Connector runs with process id"
 
-    wait_for_line_in_file "succesfully created" $LOG_PATH 30
+    wait_for_line_in_file "successfully created" $LOG_PATH 30
     wait_for_line_in_file "monitoring started" $LOG_PATH 30
 
     echo 1:1 | "$FLUVIO_BIN" produce $TOPIC_NAME --key-separator ":"

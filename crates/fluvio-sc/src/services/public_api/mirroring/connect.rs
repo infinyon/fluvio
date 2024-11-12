@@ -240,7 +240,7 @@ impl<AC: AuthContext, C: MetadataItem> RemoteFetchingFromHomeController<AC, C> {
                 }
 
                 // update status
-                self.update_status(MirrorPairStatus::Succesful, status)
+                self.update_status(MirrorPairStatus::Successful, status)
                     .await?;
 
                 return Ok(());

@@ -59,7 +59,7 @@ pub async fn ensure_topic_exists(config: &config::ConnectorConfig) -> Result<()>
             )
             .await
         {
-            Ok(_) => info!(topic, "succesfully created"),
+            Ok(_) => info!(topic, "successfully created"),
             Err(err) => {
                 error!("unable to create topic {topic}: {err}");
                 return Err(err);
