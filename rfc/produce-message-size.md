@@ -57,7 +57,7 @@ fluvio produce large-data-topic --max-request-size 16384 --file large-data-file.
 Will be displayed the following error:
 
 ```bash
-the given record is larger than the max_request_size (16384 bytes).
+record size (xyz bytes), exceeded maximum request size (1048576 bytes)
 ```
 
 ### Compression
