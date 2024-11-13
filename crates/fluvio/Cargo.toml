@@ -1,6 +1,6 @@
 [package]
 name = "fluvio"
-version = "0.25.0"
+version = "0.24.0"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
