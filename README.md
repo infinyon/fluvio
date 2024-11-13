@@ -12,6 +12,7 @@
   [![Fluvio Rust documentation](https://docs.rs/fluvio/badge.svg)](https://docs.rs/fluvio)
   [![Fluvio dependency status](https://deps.rs/repo/github/infinyon/fluvio/status.svg)](https://deps.rs/repo/github/infinyon/fluvio)
   [![Fluvio Discord](https://img.shields.io/discord/695712741381636168.svg?logo=discord&style=flat)](https://discordapp.com/invite/bBG2dTz)
+  [![Gurubase](https://img.shields.io/badge/Gurubase-Ask%20Fluvio%20Guru-006BFF)](https://gurubase.io/g/fluvio)
 
   <br>
 
