@@ -53,7 +53,6 @@ function setup_fluvio_cluster() {
     CLUSTER_VERSION=${1:-latest}
 
     echo "# Installing cluster @ VERSION: $CLUSTER_VERSION" >&3
-    $FLUVIO_BIN version >&3
     curl -fsS https://hub.infinyon.cloud/install/install.sh?ctx=ci | VERSION=$CLUSTER_VERSION bash
     echo "# Starting cluster @ VERSION: $CLUSTER_VERSION" >&3
 
