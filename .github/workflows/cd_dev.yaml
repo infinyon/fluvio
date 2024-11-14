@@ -227,8 +227,6 @@ jobs:
     needs: setup
     #if: false
     runs-on: ${{ matrix.os }}
-    env:
-      FLUVIO_BIN: ~/.fluvio/bin/fluvio
     strategy:
       fail-fast: false
       matrix:
@@ -244,18 +242,9 @@ jobs:
         uses: mig4/setup-bats@v1
         with:
           bats-version: 1.2.1
-      - name: Setup bin path
-        run:  echo "~/.fluvio/bin" >> $GITHUB_PATH
-      - name: Setup Fluvio
-        uses: infinyon/fluvio/.github/actions/setup-fluvio@master
-        with:
-          version: ${{ matrix.cluster_version }}
-      - name: Start Fluvio Cluster
-        timeout-minutes: 10
-        run: fluvio cluster start --local
       - name: CLI ${{ matrix.cli_version }} x Cluster ${{ matrix.cluster_version }}
         run: |
-          make FLUVIO_BIN=~/.fluvio/bin/fluvio SKIP_SETUP=true CLI_VERSION=${{ matrix.cli_version }} CLUSTER_VERSION=${{ matrix.cluster_version }} cli-platform-cross-version-test
+          make CLI_VERSION=${{ matrix.cli_version }} CLUSTER_VERSION=${{ matrix.cluster_version }} cli-platform-cross-version-test
       - name: Run diagnostics
         if: ${{ !success() }}
         timeout-minutes: 5
