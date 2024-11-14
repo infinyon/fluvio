@@ -2,7 +2,25 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
-## Platform Version 0.13.0-dev-1 - Unreleased
+## Platform Version 0.13.1-dev-1 - UNRELEASED
+
+## Platform Version 0.13.0 - 2024-11-14
+
+### Added
+
+* Support producing to specific partition ([#4241](https://github.com/infinyon/fluvio/issues/4241))
+* Support producing by mirror ([#4243](https://github.com/infinyon/fluvio/issues/4243))
+
+### Fixed
+
+* Compatibility issues with old versions ([#4247](https://github.com/infinyon/fluvio/issues/4247))
+* List API compatibility issues with old versions ([#4248](https://github.com/infinyon/fluvio/issues/4248))
+
+### Changed
+
+* Show actual record size when throw maximum request size error ([#4251](https://github.com/infinyon/fluvio/issues/4251))
+* Typo successful ([#4238](https://github.com/infinyon/fluvio/issues/4238))
+
 
 ## Platform Version 0.12.1 - 2024-10-31
 
