@@ -30,7 +30,7 @@ for version in $versions; do
     # Install old version of the CLI
     curl -fsS https://hub.infinyon.cloud/install/install.sh?ctx=ci | VERSION=$version bash
     # Run the tests
-    CLI_VERSION=$version SKIP_SETUP=true CI=false make cli-platform-cross-version-test
+    CLI_VERSION=$version SKIP_SETUP=true make cli-platform-cross-version-test
 
     # Check if we have reached the version we want to stop at
     if [[ $version == $BACKWARD_SINCE_VERSION ]]; then

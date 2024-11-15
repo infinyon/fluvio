@@ -33,21 +33,12 @@ setup_file() {
     SKIP_SETUP="${SKIP_SETUP:-}"
     SKIP_CLEANUP="${SKIP_CLEANUP:-}"
 
-    # If the CI env var isn't set (like when running locally)
-    if [[ -z "$CI" ]];
-    then
-        echo "# Deleting cluster" >&3
-        "$FLUVIO_BIN" cluster delete --force
-    else
-        echo "# [CI MODE] Skipping initial cleanup" >&3
-    fi;
-
     # By default, set up the cluster and cli before running test
     # set SKIP_SETUP to skip
     if [[ -z "$SKIP_SETUP" ]];
     then
-        setup_fluvio_cluster "$CLUSTER_VERSION";
-        setup_fluvio_cli "$CLI_VERSION";
+        setup_fluvio_cluster "$CLUSTER_VERSION"
+        setup_fluvio_cli "$CLI_VERSION"
     else
         echo "# Skipping setup" >&3
     fi;
@@ -60,7 +51,7 @@ teardown_file() {
     if [[ -z "$SKIP_CLEANUP" ]];
     then
         echo "# Deleting cluster" >&3
-        "$FLUVIO_BIN" cluster delete --force
+        "$FLUVIO_CLIENT_BIN" cluster delete --force
     else
         echo "# Skipping cleanup" >&3
     fi
