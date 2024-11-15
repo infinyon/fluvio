@@ -51,15 +51,17 @@ function random_string() {
 # Give version as arg to control what version you download and install
 function setup_fluvio_cluster() {
     CLUSTER_VERSION=${1:-latest}
+    # not using $FLUVIO_BIN to not conflict with the env var set in the makefile
+    NEW_FLUVIO_BIN=$HOME/.fvm/versions/$CLUSTER_VERSION/fluvio
 
     echo "# Installing cluster @ VERSION: $CLUSTER_VERSION" >&3
-    curl -fsS https://hub.infinyon.cloud/install/install.sh?ctx=ci | VERSION=$CLUSTER_VERSION bash
+    curl -fsS https://hub.infinyon.cloud/install/install.sh?ctx=ci | VERSION=$CLUSTER_VERSION bash >&3
     echo "# Starting cluster @ VERSION: $CLUSTER_VERSION" >&3
 
     if [ "$CLUSTER_VERSION" = "latest" ]; then
-        $FLUVIO_BIN cluster start --image-version latest
+        $NEW_FLUVIO_BIN cluster start --image-version latest
     else
-        $FLUVIO_BIN cluster start
+        $NEW_FLUVIO_BIN cluster start
     fi
 }
 
@@ -72,6 +74,6 @@ function setup_fluvio_cluster() {
 function setup_fluvio_cli() {
     CLI_VERSION=${1:-latest}
     echo "Installing CLI @ VERSION: $CLI_VERSION" >&3
-    curl -fsS https://hub.infinyon.cloud/install/install.sh?ctx=ci | VERSION=$CLI_VERSION bash
+    curl -fsS https://hub.infinyon.cloud/install/install.sh?ctx=ci | VERSION=$CLI_VERSION bash >&3
     $HOME/.fvm/versions/$CLI_VERSION/fluvio version >&3
 }
