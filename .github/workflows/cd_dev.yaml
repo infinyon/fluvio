@@ -241,21 +241,10 @@ jobs:
       - name: Setup BATS
         uses: mig4/setup-bats@v1
         with:
-          bats-version: 1.2.1
+          bats-version: 1.11.0
       - name: CLI ${{ matrix.cli_version }} x Cluster ${{ matrix.cluster_version }}
         run: |
           make CLI_VERSION=${{ matrix.cli_version }} CLUSTER_VERSION=${{ matrix.cluster_version }} cli-platform-cross-version-test
-      - name: Run diagnostics
-        if: ${{ !success() }}
-        timeout-minutes: 5
-        run: fluvio cluster diagnostics
-      - name: Upload diagnostics
-        uses: actions/upload-artifact@v4
-        timeout-minutes: 5
-        if: ${{ !success() }}
-        with:
-          name: cli-platform-cross-version-test
-          path: diagnostics*.gz
       - name: Slack Notification
         uses: 8398a7/action-slack@v3
         if: ${{ !success() }}
