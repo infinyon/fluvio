@@ -145,24 +145,27 @@ InfinyOn Cloud is Fluvio on the cloud as a managed service. All new users get $3
 If you'd like to contribute to the project, please read our
 [Contributing guide](CONTRIBUTING.md).
 
-### Contributors are awesome
-<a href="https://github.com/infinyon/fluvio/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=infinyon/fluvio" />
-</a>
-
-Made with [contrib.rocks](https://contrib.rocks).
-
 ## Community
 
 Many fluvio users and developers have made projects to share with the community.
 Here a a few listed below:
 
 ### Projects Using Fluvio
+- [Swiftide Project](https://github.com/bosun-ai/swiftide): a Rust native library for building LLM applications
 - [Real Time Stock Charts](https://github.com/KeptCodes/stock-charts): See how Fluvio is used to update real time stock charts
+
+### Community Connectors
+- [Qdrant Connector](https://qdrant.tech/documentation/data-management/fluvio/)
 - [Google Sheets Connector](https://github.com/fluvio-connectors/sheets-connector): Send data from Fluvio to Google Sheets
 - [Elastic Connector](https://github.com/fluvio-connectors/elastic-connector): Send data from Fluvio to Elastic Search
 - [Hello World Fluvio Connector](https://github.com/infinyon/connector-hello-source): Sample Fluvio connector template to build your own connector
 
+### Contributors are awesome
+<a href="https://github.com/infinyon/fluvio/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=infinyon/fluvio" />
+</a>
+
+Made with [contrib.rocks](https://contrib.rocks).
 
 ## License
 
