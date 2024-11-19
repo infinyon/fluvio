@@ -12,7 +12,6 @@
   [![Fluvio Rust documentation](https://docs.rs/fluvio/badge.svg)](https://docs.rs/fluvio)
   [![Fluvio dependency status](https://deps.rs/repo/github/infinyon/fluvio/status.svg)](https://deps.rs/repo/github/infinyon/fluvio)
   [![Fluvio Discord](https://img.shields.io/discord/695712741381636168.svg?logo=discord&style=flat)](https://discordapp.com/invite/bBG2dTz)
-  [![Gurubase](https://img.shields.io/badge/Gurubase-Ask%20Fluvio%20Guru-006BFF)](https://gurubase.io/g/fluvio)
 
   <br>
 
@@ -159,7 +158,10 @@ Here a a few listed below:
 - [Qdrant Connector](https://qdrant.tech/documentation/data-management/fluvio/)
 - [Google Sheets Connector](https://github.com/fluvio-connectors/sheets-connector): Send data from Fluvio to Google Sheets
 - [Elastic Connector](https://github.com/fluvio-connectors/elastic-connector): Send data from Fluvio to Elastic Search
+
+## Community Development Resources
 - [Hello World Fluvio Connector](https://github.com/infinyon/connector-hello-source): Sample Fluvio connector template to build your own connector
+- [Gurubase](https://gurubase.io/g/fluvio): Third-party AI/LLM Docs query
 
 ### Contributors are awesome
 <a href="https://github.com/infinyon/fluvio/graphs/contributors">
