@@ -41,7 +41,7 @@ impl ConsumerConfigBuilder {
     }
 }
 
-#[derive(Debug, Default, Copy, Clone)]
+#[derive(Debug, Default, Copy, Clone, PartialEq)]
 pub enum OffsetManagementStrategy {
     /// Offsets are not saved
     #[default]
@@ -54,6 +54,7 @@ pub enum OffsetManagementStrategy {
 }
 
 #[derive(Debug, Builder, Clone)]
+#[builder(build_fn(private, name = "build_impl"))]
 pub struct ConsumerConfigExt {
     #[builder(setter(into))]
     pub topic: String,
@@ -124,6 +125,23 @@ impl ConsumerConfigExt {
 }
 
 impl ConsumerConfigExtBuilder {
+    pub fn build(&self) -> Result<ConsumerConfigExt> {
+        let config = self.build_impl().map_err(|e| {
+            FluvioError::ConsumerConfig(format!("Missing required config option: {e}"))
+        })?;
+
+        if config.offset_strategy != OffsetManagementStrategy::None
+            && config.offset_consumer.is_none()
+        {
+            return Err((FluvioError::ConsumerConfig(
+                "Consumer id is required when using offset strategy".to_owned(),
+            ))
+            .into());
+        }
+
+        Ok(config)
+    }
+
     pub fn partition(&mut self, value: PartitionId) -> &mut Self {
         self.partition.get_or_insert(Vec::new()).push(value);
         self
