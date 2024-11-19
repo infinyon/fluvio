@@ -2372,7 +2372,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.24.0"
+version = "0.24.1"
 dependencies = [
  "anyhow",
  "async-channel 1.9.0",

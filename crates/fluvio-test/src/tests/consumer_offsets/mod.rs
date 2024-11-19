@@ -309,13 +309,13 @@ fn manual_startegy_config(
     if partitions == 1 {
         builder.partition(0);
     }
-    Ok(builder
+    builder
         .topic(topic.to_string())
         .disable_continuous(true)
         .offset_consumer(consumer_id.to_string())
         .offset_strategy(fluvio::consumer::OffsetManagementStrategy::Manual)
         .offset_start(Offset::beginning())
-        .build()?)
+        .build()
 }
 
 fn auto_startegy_config(
@@ -327,14 +327,13 @@ fn auto_startegy_config(
     if partitions == 1 {
         builder.partition(0);
     }
-    Ok(builder
+    builder
         .topic(topic.to_string())
-        //.partition(0)
         .disable_continuous(true)
         .offset_consumer(consumer_id.to_string())
         .offset_strategy(fluvio::consumer::OffsetManagementStrategy::Auto)
         .offset_start(Offset::beginning())
-        .build()?)
+        .build()
 }
 
 fn now() -> u64 {
