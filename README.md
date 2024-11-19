@@ -152,6 +152,18 @@ If you'd like to contribute to the project, please read our
 
 Made with [contrib.rocks](https://contrib.rocks).
 
+## Community
+
+Many fluvio users and developers have made projects to share with the community.
+Here a a few listed below:
+
+### Projects Using Fluvio
+- [Real Time Stock Charts](https://github.com/KeptCodes/stock-charts): See how Fluvio is used to update real time stock charts
+- [Google Sheets Connector](https://github.com/fluvio-connectors/sheets-connector): Send data from Fluvio to Google Sheets
+- [Elastic Connector](https://github.com/fluvio-connectors/elastic-connector): Send data from Fluvio to Elastic Search
+- [Hello World Fluvio Connector](https://github.com/infinyon/connector-hello-source): Sample Fluvio connector template to build your own connector
+
+
 ## License
 
 This project is licensed under the [Apache license](LICENSE).
