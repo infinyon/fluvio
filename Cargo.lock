@@ -2656,7 +2656,9 @@ name = "fluvio-connector-common"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "async-channel 1.9.0",
  "async-trait",
+ "ctrlc",
  "fluvio",
  "fluvio-connector-derive",
  "fluvio-connector-package",

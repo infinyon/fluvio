@@ -45,6 +45,7 @@ fn generate_sink(func: &ConnectorFn) -> TokenStream {
     quote! {
 
         fn main() -> ::fluvio_connector_common::Result<()> {
+            let stop_signal = ::fluvio_connector_common::consumer::init_ctrlc()?;
             #init_and_parse_config
 
             ::fluvio_connector_common::future::run_block_on(async {
@@ -53,6 +54,7 @@ fn generate_sink(func: &ConnectorFn) -> TokenStream {
                 let metrics = ::std::sync::Arc::new(::fluvio_connector_common::monitoring::ConnectorMetrics::new(fluvio.metrics()));
                 ::fluvio_connector_common::monitoring::init_monitoring(metrics);
 
+                let mut stream = stream.take_until(stop_signal.recv());
                 #user_fn(user_config, stream).await
             })?;
 
