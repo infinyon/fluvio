@@ -5,7 +5,7 @@ edition = "2021"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 repository = "https://github.com/infinyon/fluvio"
-description = "Fluvio SmartConnector procedural macro"
+description = "Fluvio Connector procedural macro"
 
 [lib]
 proc-macro = true

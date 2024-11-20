@@ -17,7 +17,7 @@ use enum_display::EnumDisplay;
 static CONNECTOR_TEMPLATE: Dir<'static> =
     include_dir!("$CARGO_MANIFEST_DIR/../../connector/cargo_template");
 
-/// Generate new SmartConnector project
+/// Generate new Connector project
 #[derive(Debug, Parser)]
 pub struct GenerateCmd {
     /// Connector Name
@@ -31,7 +31,7 @@ pub struct GenerateCmd {
     #[arg(long, value_name = "DESCRIPTION")]
     conn_description: Option<String>,
 
-    /// Local path to generate the SmartConnector project.
+    /// Local path to generate the Connector project.
     /// Default to directory with project name, created in current directory
     #[arg(long, env = "CDK_DESTINATION", value_name = "PATH")]
     destination: Option<PathBuf>,

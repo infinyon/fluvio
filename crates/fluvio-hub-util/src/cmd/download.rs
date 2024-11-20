@@ -11,11 +11,11 @@ use crate::{cli_pkgname_to_filename, cli_conn_pkgname_to_url, get_package};
 
 use super::get_hub_access;
 
-/// Download SmartConnector to the local folder
+/// Download Connector to the local folder
 #[derive(Debug, Parser)]
 #[command(arg_required_else_help = true)]
 pub struct ConnectorHubDownloadOpts {
-    /// SmartConnector name: e.g. infinyon/http-sink@vX.Y.Z
+    /// Connector name: e.g. infinyon/http-sink@vX.Y.Z
     #[arg(value_name = "name", required = true)]
     package_name: String,
 
