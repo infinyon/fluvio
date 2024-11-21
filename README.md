@@ -15,99 +15,184 @@
 
   <br>
 
-  [![An animated visual of fluvio distributed streaming runtime](.github/assets/fluvio-event-streaming.gif)](https://fluvio.io)
+  [![An animated visual of fluvio distributed streaming runtime](.github/assets/infinyon-fluvio-sdf.gif)](https://fluvio.io)
 
   <br>
   <br>
 </div>
 
-Fluvio is a lightweight high-performance distributed data streaming system written in Rust and Web Assembly.
+Fluvio is a lean and mean distributed data streaming engine written in Rust. Combined with Stateful DataFlow a distributed stream processing framework based on web assembly component model, Fluvio provides a unified composable distributed streaming and stream processing paradigm for developers. This system is the foundation of InfinyOn Cloud.
 
-## Quick Start - Get started with Fluvio in 2 minutes or less!
+## Quick Start - Get started with Fluvio and Stateful DataFlow in 5 minutes or less on your system!
 
 ### Step 1. Download Fluvio Version Manager:
 
-On your terminal run
+Fluvio is installed via the **Fluvio Version Manager**, shortened to `fvm`.
+
+To install `fvm`, run the following command:
 
 ```bash
 curl -fsS https://hub.infinyon.cloud/install/install.sh | bash
 ```
+As part of the initial setup, `fvm` will also install the Fluvio CLI available in the stable channel as of the moment of installation.
 
-Follow the instructions and copy/paste the path to the `bin` directory to your startup script file.
+Fluvio is stored in `$HOME/.fluvio`, with the executable binaries stored in `$HOME/.fluvio/bin`.
 
-Fluvio version manager will give you the ability to download different versions of Fluvio:
-- Including our read-only edge cluster with built-in compression, caching, and mirroring to never lose data even with extended downtimes.
-- Or our Developer Preview of Stateful Streaming which we are building using the web assembly component model to support all web assembly compatible languages.
+> For the best compatibliity on Windows, InfinyOn recommends WSL2
 
-### Step 2. Start local cluster:
+### Step 2. Start a cluster:
 
-The following command will start a local cluster by default:
+Start cluster on you local machine with the following command:
 
 ```bash
 fluvio cluster start
 ```
 
-### Step 3. Create Topic:
+### Step 3. Install SDF CLI
 
-The following command will create a topic called hello-fluvio:
-
-```bash
-fluvio topic create hello-fluvio
-```
-
-### Step 4. Produce to Topic, Consume From Topic:
-
-Produce data to your topic. Run the command first and then type some messages:
+Stateful dataflows are managed via `sdf cli` that we install it using `fvm`.
 
 ```bash
-fluvio produce hello-fluvio
-> hello fluvio
-Ok!
-> test message
-Ok!
+fvm install sdf-beta3
 ```
 
-Consume data from the topic, Run the following command in a different terminal:
+### Step 4. Create the Dataflow file
+
+Create a dataflow file in the directory `split-sentence` directory:
 
 ```bash
-fluvio consume hello-fluvio -B -d
+mkdir -p split-sentence-inline
+cd split-sentence-inline
 ```
 
-Just like that! You have a local cluster running.
+Create the `dataflow.yaml` and add the following content:
 
-## Using Pre-Build Fluvio Versions
+```yaml
+apiVersion: 0.5.0
 
-You may want to prefer other Fluvio versions than the latest stable release. You can do so by specifying the version in the `VERSION` environment variable.
+meta:
+  name: split-sentence-inline
+  version: 0.1.0
+  namespace: example
 
-**Install Latest Release (as of `master` branch)**
+config:
+  converter: raw
+
+topics:
+  sentence:
+    schema:
+      value:
+        type: string
+        converter: raw
+  words:
+    schema:
+      value:
+        type: string
+        converter: raw
+
+services:
+  sentence-words:
+    sources:
+      - type: topic
+        id: sentence
+
+    transforms:
+      - operator: flat-map
+        run: |
+          fn sentence_to_words(sentence: String) -> Result<Vec<String>> {
+            Ok(sentence.split_whitespace().map(String::from).collect())
+          }
+      - operator: map
+        run: |
+          pub fn augment_count(word: String) -> Result<String> {
+            Ok(format!("{}({})", word, word.chars().count()))
+          }
+
+    sinks:
+      - type: topic
+        id: words
+```
+
+### Step 5. Run the DataFlow
+
+Use sdf command line tool to run the dataflow:
 
 ```bash
-$ curl -fsS https://hub.infinyon.cloud/install/install.sh | VERSION=latest bash
+sdf run --ui
 ```
+> The --ui flag serves the graphical representation of the dataflow on SDF Studio.
 
-**Install Specific Version**
+### Step 6. Test the DataFlow
 
+Produce sentences to in `sentence` topic:
 ```bash
-$ curl -fsS https://hub.infinyon.cloud/install/install.sh | VERSION=x.y.z bash
+fluvio produce sentence
+```
+Input some text, for example:
+```bash
+Hello world
+Hi there
+```
+Consume from `words` to retrieve the result:
+```bash
+fluvio consume words -Bd
+```
+See the results, for example:
+```bash
+Hello(1)
+world(1)
+Hi(1)
+there(1)
 ```
 
-## Next Steps
-Now that you have a cluster running you can try building data flows in different paradigms.
+### Step 6. Inspect State
+
+The dataflow collects runtime metrics that you can inspect in the runtime terminal.
+
+Check the sentence-to-words counters:
+```bash
+show state sentence-words/sentence-to-words/metrics
+```
+See results, for example:
+```bash
+ Key    Window  succeeded  failed
+ stats  *       2          0
+ ```
+ Check the augment-count counters:
+ ```bash
+ show state sentence-words/augment-count/metrics
+ ```
+ See results, for example:
+ ```bash
+ Key    Window  succeeded  failed
+ stats  *       4          0
+ ```
+Congratulations! You've successfully built and run a composable dataflow!
+
+More examples of Stateful DataFlow are on GitHub - https://github.com/infinyon/stateful-dataflows-examples/.
 
 #### Check Fluvio Core Documentation
 Fluvio documentation will provide additional context on how to use the Fluvio clusters, CLI, clients, a development kits.
-- [Fluvio docs home](https://www.fluvio.io)
+- [Fluvio overview](https://www.fluvio.io/docs/fluvio/overview)
 - [Fluvio CLI docs home](https://www.fluvio.io/docs/fluvio/cli/overview)
 - [Fluvio Architecture](https://www.fluvio.io/docs/fluvio/concepts/architecture/overview)
+
+#### Check Stateful DataFlow Documentation
+Stateful DataFlow designed to handle complex data processing workflows, allowing for customization and scalability through various programming languages and system primitives.
+
+- [SDF overview](https://www.fluvio.io/sdf/)
+- [SDF Architecture](https://www.fluvio.io/sdf/concepts/architecture)
 
 #### Learn how to build custom connectors
 Fluvio can connect to practically any system that you can think of.
 - For first party systems, fluvio clients can integrate with the edge system or application to source data.
 - For third party systems fluvio connectors connect at the protocol level and collects data into fluvio topics.
 
-Out of the box Fluvio has native http, webhook, mqtt, kafka inbound connectors. In terms of outbound connectors out of the box Fluvio supports SQL, DuckDB, Graphite, experimental builds of Redis, S3 etc.
+Out of the box Fluvio has native http, webhook, mqtt, kafka inbound connectors. In terms of outbound connectors out of the box Fluvio supports http, SQL, kafka, and experimental builds of DuckDB, Redis, S3, Graphite etc.
 
-Using Connector Development Kit, we built our existing connectors in a matter of few days. Check out the docs and let us know if you need help building any connector.
+Using Connector Development Kit, its intuitive to build connectors to any system fast.
+
+Check out the docs and let us know if you need help building any connector.
 - [Connector docs](https://www.fluvio.io/docs/connectors/overview)
 - [Connector Development Kit (cdk) docs](https://www.fluvio.io/docs/connectors/cdk)
 
@@ -117,12 +202,8 @@ Fluvio applies wasm based stream processing and data transformations. We call th
 - [Smart Modules docs](https://www.fluvio.io/docs/smartmodules/overview)
 - [Smart Modules Development Kit (smdk) docs](https://www.fluvio.io/docs/smartmodules/smdk)
 
-There are some limitations on the amount of polyglot development interface support. While bindings can be generated for wasm compatible languages, there are quirks in that approach. We have a better solution with Stateful Service Development Kit, which we are implementing using the web assembly component model. In the upcoming releases we will be able to natively support all wasm compatible programming languages.
-
-- Stateful Service Development Kit docs- *Coming Soon* [Request Developer Preview Invite](https://infinyon.com/request/ss-early-access/)
-
 #### Try workflows on InfinyOn Cloud
-InfinyOn Cloud is Fluvio on the cloud as a managed service. All new users get $3000 worth of credits to build data flows on InfinyOn Cloud.
+InfinyOn Cloud is Fluvio on the cloud as a managed service.
 - [Check InfinyOn Cloud Guides](https://infinyon.com/docs/guides/)
 - [Check out experimental data flows on InfinyOn Labs Repo](https://github.com/infinyon/labs-projects)
 
@@ -133,7 +214,7 @@ InfinyOn Cloud is Fluvio on the cloud as a managed service. All new users get $3
 - [Rust API docs](https://docs.rs/fluvio/latest/fluvio/)
 - [Python API docs](https://infinyon.github.io/fluvio-client-python/fluvio.html)
 - [Javascript API docs](https://infinyon.github.io/fluvio-client-node/)
-- [Java API docs](https://infinyon.github.io/fluvio-client-java/com/infinyon/fluvio/package-summary.html)
+
 
 **Community Maintained:**
 - [Go API docs](https://github.com/avinassh/fluvio-go)
