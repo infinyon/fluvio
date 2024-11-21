@@ -20,7 +20,7 @@
   <br>
 </div>
 
-Fluvio is a lean and mean distributed data streaming engine written in Rust. Combined with Stateful DataFlow a distributed stream processing framework based on web assembly component model, Fluvio provides a unified composable distributed streaming and stream processing paradigm for developers. This system is the foundation of InfinyOn Cloud.
+**Fluvio** is a lean and mean distributed data streaming engine written in Rust. Combined with **Stateful DataFlow** distributed stream processing framework, Fluvio provides a *unified* *composable* *distributed streaming* and *stream processin*g paradigm for developers. It is the foundation of [InfinyOn Cloud](https://infinyon.cloud/).
 
 ## Quick Start - Get started with Fluvio and Stateful DataFlow in 5 minutes or less on your system!
 
