@@ -1,3 +1,9 @@
+use std::{
+    io::{Error as IoError, ErrorKind},
+    sync::atomic::{AtomicBool, Ordering},
+};
+use std::time::Duration;
+
 use fluvio::consumer::{ConsumerConfigExtBuilder, OffsetManagementStrategy};
 use fluvio::{Fluvio, FluvioConfig, Offset};
 use fluvio_connector_package::config::{ConsumerPartitionConfig, OffsetConfig, OffsetStrategyConfig};
@@ -74,4 +80,28 @@ pub async fn consumer_stream_from_config(
     let stream = fluvio.consumer_with_config(cfg).await?;
 
     Ok((fluvio, stream))
+}
+
+pub fn init_ctrlc() -> Result<async_channel::Receiver<()>> {
+    let (s, r) = async_channel::bounded(1);
+    let invoked = AtomicBool::new(false);
+    let result = ctrlc::set_handler(move || {
+        if invoked.load(Ordering::SeqCst) {
+            std::process::exit(0);
+        } else {
+            invoked.store(true, Ordering::SeqCst);
+            let _ = s.try_send(());
+            std::thread::sleep(Duration::from_secs(2));
+            std::process::exit(0);
+        }
+    });
+
+    if let Err(err) = result {
+        return Err(IoError::new(
+            ErrorKind::InvalidData,
+            format!("CTRL-C handler can't be initialized {err}"),
+        )
+        .into());
+    }
+    Ok(r)
 }
