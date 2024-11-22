@@ -109,6 +109,19 @@ impl<T: Stream<Item = Result<Record, ErrorCode>> + Unpin> Stream
     }
 }
 
+impl<T> ConsumerStream for futures_util::stream::TakeUntil<T, async_channel::Recv<'_, ()>>
+where
+    T: ConsumerStream,
+{
+    fn offset_commit(&mut self) -> Result<(), ErrorCode> {
+        self.get_mut().offset_commit()
+    }
+
+    fn offset_flush(&mut self) -> impl Future<Output = Result<(), ErrorCode>> + Send {
+        self.get_mut().offset_flush()
+    }
+}
+
 impl<T: Stream<Item = Result<Record, ErrorCode>> + Unpin> ConsumerStream
     for SinglePartitionConsumerStream<T>
 {
