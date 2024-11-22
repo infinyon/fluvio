@@ -1,5 +1,5 @@
 transforms:
-  - uses: infinyon/jolt@0.1.0
+  - uses: infinyon/jolt@0.4.1
     lookback:
       age: 1w
     with:
@@ -12,7 +12,7 @@ transforms:
           spec:
             device:
               type: "mobile"
-  - uses: infinyon/jolt@0.1.0
+  - uses: infinyon/jolt@0.4.1
     lookback:
       last: 1
     with:
@@ -25,7 +25,7 @@ transforms:
           spec:
             device:
               type: "mobile"
-  - uses: infinyon/json-sql@0.1.0
+  - uses: infinyon/json-sql@0.2.1
     lookback:
       last: 10
       age: 12 s  
