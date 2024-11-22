@@ -255,10 +255,6 @@ where
     /// # }
     /// ```
     #[instrument(skip(self, offset, config))]
-    #[deprecated(
-        since = "0.21.8",
-        note = "use `Fluvio::consumer_with_config()` instead"
-    )]
     pub async fn stream_batches_with_config(
         &self,
         offset: Offset,
