@@ -151,18 +151,18 @@ jobs:
           - os: ubuntu-24.04
             rust-target: x86_64-pc-windows-gnu
             binary: fluvio.exe
-          - os: macos-12
+          - os: macos-latest
             rust-target: x86_64-apple-darwin
             binary: fluvio
-          - os: macos-12
+          - os: macos-latest
             rust-target: aarch64-apple-darwin
             binary: fluvio
 
           # fluvio-run
-          - os: macos-12
+          - os: macos-latest
             rust-target: x86_64-apple-darwin
             binary: fluvio-run
-          - os: macos-12
+          - os: macos-latest
             rust-target: aarch64-apple-darwin
             binary: fluvio-run
 
@@ -177,26 +177,26 @@ jobs:
             rust: stable
             rust-target: x86_64-pc-windows-gnu
             binary: fluvio-channel.exe
-          - os: macos-12
+          - os: macos-latest
             rust-target: x86_64-apple-darwin
             binary: fluvio-channel
-          - os: macos-12
+          - os: macos-latest
             rust-target: aarch64-apple-darwin
             binary: fluvio-channel
 
           # smdk
-          - os: macos-12
+          - os: macos-latest
             rust-target: x86_64-apple-darwin
             binary: smdk
-          - os: macos-12
+          - os: macos-latest
             rust-target: aarch64-apple-darwin
             binary: smdk
 
           # cdk
-          - os: macos-12
+          - os: macos-latest
             rust-target: x86_64-apple-darwin
             binary: cdk
-          - os: macos-12
+          - os: macos-latest
             rust-target: aarch64-apple-darwin
             binary: cdk
 
@@ -210,10 +210,10 @@ jobs:
           - os: ubuntu-24.04
             rust-target: x86_64-pc-windows-gnu
             binary: fbm.exe
-          - os: macos-12
+          - os: macos-latest
             rust-target: x86_64-apple-darwin
             binary: fbm
-          - os: macos-12
+          - os: macos-latest
             rust-target: aarch64-apple-darwin
             binary: fbm
 
@@ -227,10 +227,10 @@ jobs:
           - os: ubuntu-24.04
             rust-target: x86_64-pc-windows-gnu
             binary: fvm.exe
-          - os: macos-12
+          - os: macos-latest
             rust-target: x86_64-apple-darwin
             binary: fvm
-          - os: macos-12
+          - os: macos-latest
             rust-target: aarch64-apple-darwin
             binary: fvm
 
@@ -273,7 +273,7 @@ jobs:
           key: ${{ matrix.os }}-${{ matrix.rust-target }}-${{ matrix.binary }}
       - name: Install Helm for Mac
         run: brew install helm
-        if: matrix.binary == 'fluvio' && matrix.os == 'macos-12'
+        if: matrix.binary == 'fluvio' && matrix.os == 'macos-latest'
 
       - name: Install mingw gcc
         if: matrix.rust-target  == 'x86_64-pc-windows-gnu'
