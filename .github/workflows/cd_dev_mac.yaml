@@ -37,7 +37,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-12]
+        os: [macos-latest]
         cluster_type: [local,k8]
         run: [r1]
     env:

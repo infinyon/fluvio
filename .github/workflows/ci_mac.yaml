@@ -50,7 +50,7 @@ jobs:
           - x86_64-apple-darwin
         rust: [stable]
         binary: [fluvio, fluvio-run, fluvio-test]
-        os: [macos-12]
+        os: [macos-latest]
         include:
           - os: ubuntu-latest
             rust: stable
@@ -133,7 +133,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-12]
+        os: [macos-latest]
         rust-target: [x86_64-apple-darwin]
         run: [r1]
         spu: [1]
@@ -205,7 +205,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-12]
+        os: [macos-latest]
         rust-target: [x86_64-apple-darwin]
         run: [r1]
         spu: [1]
@@ -302,7 +302,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-12]
+        os: [macos-latest]
         rust-target: [x86_64-apple-darwin]
         k8-target: [x86_64-unknown-linux-musl]
         run: [r1]
