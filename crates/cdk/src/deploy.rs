@@ -359,7 +359,7 @@ mod local_index {
 
     use anyhow::{anyhow, Result};
     use fluvio_connector_deployer::DeploymentResult;
-    use sysinfo::Pid;
+    use sysinfo::{Pid, Signal};
     use tracing::debug;
 
     const LOCAL_INDEX_FILE_NAME: &str = "fluvio_cdk_deploy_index.toml";
@@ -515,7 +515,7 @@ mod local_index {
             } = entry;
 
             if let Some(process) = self.system.process(Pid::from_u32(*process_id)) {
-                process.kill();
+                process.kill_with(Signal::Term);
             }
 
             Ok(())

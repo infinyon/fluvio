@@ -19,7 +19,7 @@ required-features = ["derive"]
 [dependencies]
 async-trait = { workspace = true }
 async-channel = { workspace = true }
-ctrlc = { workspace = true }
+ctrlc = { workspace = true, features = ["termination"]}
 anyhow = { workspace = true }
 futures = { workspace = true }
 futures-util = { workspace = true , features = ["sink"]}

@@ -45,7 +45,9 @@ meta:
     offset:
       strategy: auto
       start: beginning
-      flush: 10s
+      flush-period:
+        secs: 10
+        nanos: 0
 custom:
   api_key: api_key
   client_id: client_id
