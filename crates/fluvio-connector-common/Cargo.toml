@@ -27,6 +27,7 @@ serde = { workspace = true,  features = ["derive", "rc"] }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }
 tracing = { workspace = true }
+tokio = { workspace = true }
 
 fluvio = { workspace = true, features = ["smartengine"] }
 fluvio-future = { workspace = true, features = ["subscriber"] }
