@@ -997,7 +997,7 @@ spec:
                 assert_eq!(updates.len(), 3);
 
                 assert!(
-                    matches!(updates.first(), Some(LSUpdate::Mod(obj)) if obj.status.to_string().eq(""))
+                    matches!(updates.first(), Some(LSUpdate::Mod(obj)) if obj.status.to_string().is_empty())
                 );
                 assert!(
                     matches!(updates.get(1), Some(LSUpdate::Mod(obj)) if obj.status.to_string().eq("new status"))
@@ -1214,7 +1214,7 @@ spec:
                 assert_eq!(updates1.len(), 3);
 
                 assert!(
-                    matches!(updates1.first(), Some(LSUpdate::Mod(obj)) if obj.status.to_string().eq(""))
+                    matches!(updates1.first(), Some(LSUpdate::Mod(obj)) if obj.status.to_string().is_empty())
                 );
                 assert!(
                     matches!(updates1.get(1), Some(LSUpdate::Mod(obj)) if obj.status.to_string().eq("new status"))

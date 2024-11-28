@@ -25,8 +25,6 @@ pub const EXTENSION: &str = "index";
 
 /// Index file for offset
 /// Each entry in index consist of pair of (relative_offset, file_position)
-
-// implement index file
 pub struct MutLogIndex {
     mmap: MemoryMappedMutFile,
     file: File,

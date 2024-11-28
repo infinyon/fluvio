@@ -1,3 +1,5 @@
+//! API call from Spu to SC
+
 use std::io::Error as IoError;
 use std::convert::TryInto;
 
@@ -14,8 +16,6 @@ use crate::sc_api::update_mirror::UpdateMirrorStatRequest;
 use super::register_spu::RegisterSpuRequest;
 use super::update_lrs::UpdateLrsRequest;
 use super::remove::ReplicaRemovedRequest;
-
-/// API call from Spu to SC
 
 #[repr(u16)]
 #[derive(Eq, PartialEq, Debug, Encoder, Decoder, Clone, Copy)]

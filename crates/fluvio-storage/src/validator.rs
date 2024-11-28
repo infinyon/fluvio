@@ -260,12 +260,11 @@ impl LogValidator {
     }
 }
 
-/// validate the file and find last offset
-/// if file is not valid then return error
-
 #[cfg(test)]
 #[cfg(feature = "fixture")]
 mod tests {
+    //! validate the file and find last offset
+    //! if file is not valid then return error
 
     use std::env::temp_dir;
 

@@ -4,7 +4,7 @@ use toml::{map::Map, Value as TomlValue};
 
 use crate::{TomlChange, TomlDiff};
 
-impl<'a> fmt::Display for TomlDiff<'a> {
+impl fmt::Display for TomlDiff<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for change in &self.changes {
             match change {

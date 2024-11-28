@@ -87,8 +87,6 @@ impl OffsetPosition for Entry {
 ///
 /// For active segment, index can grow
 /// For non active, it is fixed
-
-// implement index file
 pub struct LogIndex {
     #[allow(dead_code)]
     mmap: MemoryMappedFile,

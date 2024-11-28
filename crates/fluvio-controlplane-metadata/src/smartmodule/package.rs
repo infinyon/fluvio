@@ -300,7 +300,6 @@ impl std::convert::TryFrom<&str> for SmartModuleVisibility {
 
 /// Convert from name into something that can be used as key in the store
 /// For now, we respect
-
 #[cfg(test)]
 mod package_test {
     use crate::smartmodule::SmartModulePackageKey;

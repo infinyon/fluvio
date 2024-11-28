@@ -328,7 +328,6 @@ impl Fluvio {
     ///    Ok(())
     /// }
     /// ```
-
     pub async fn consumer_with_config(
         &self,
         config: ConsumerConfigExt,

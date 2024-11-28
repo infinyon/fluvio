@@ -2,8 +2,7 @@
     feature = "nightly",
     doc = include_str!("../../../DEVELOPER.md")
 )]
-
-#[doc = include_str!("../README.md")]
+#![doc = include_str!("../README.md")]
 
 mod admin;
 mod error;
