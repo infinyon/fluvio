@@ -17,7 +17,7 @@ pub struct ProduceBatchIterator<'a> {
     len: usize,
 }
 
-impl<'a> SmartModuleInputBatch for ProduceBatch<'a> {
+impl SmartModuleInputBatch for ProduceBatch<'_> {
     fn records(&self) -> &Vec<u8> {
         &self.records
     }
