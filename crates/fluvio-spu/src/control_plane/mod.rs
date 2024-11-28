@@ -1,4 +1,4 @@
-/// Responsible for communication with SC
+//! Responsible for communication with SC
 
 mod dispatcher;
 mod action;

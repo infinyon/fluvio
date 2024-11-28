@@ -1,4 +1,4 @@
-/// SmartModule configuration
+//! SmartModule configuration
 
 mod config;
 mod error;

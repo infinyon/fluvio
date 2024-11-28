@@ -81,8 +81,8 @@ impl SpuTarget for LocalSpuProcess {
 
 const BASE_PORT: u16 = 9010;
 const BASE_SPU: u16 = 5001;
-/// manage spu process cluster
 
+/// Manage SPU Process Cluster
 pub struct LocalSpuProcessClusterManager {
     pub log_dir: PathBuf,
     pub launcher: Option<PathBuf>,

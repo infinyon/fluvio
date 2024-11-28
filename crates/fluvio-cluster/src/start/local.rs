@@ -384,7 +384,6 @@ impl LocalInstaller {
     /// # Ok(())
     /// # }
     /// ```
-
     pub fn from_config(config: LocalConfig) -> Self {
         Self {
             pb_factory: ProgressBarFactory::new(config.hide_spinner),
