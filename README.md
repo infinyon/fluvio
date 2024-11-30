@@ -6,7 +6,7 @@
   <br>
   <br>
 
-[![CI Status](https://github.com/infinyon/fluvio/workflows/CI/badge.svg?branch=master)](https://github.com/infinyon/fluvio/actions/workflows/ci.yml)
+[![CI Status](https://github.com/infinyon/fluvio/actions/workflows/hourly.yml/badge.svg)](https://github.com/infinyon/fluvio/actions/workflows/hourly.yml)
   [![CD Status](https://github.com/infinyon/fluvio/workflows/CD_Dev/badge.svg)](https://github.com/infinyon/fluvio/actions/workflows/cd_dev.yaml)
   [![fluvio Crates.io version](https://img.shields.io/crates/v/fluvio?style=flat)](https://crates.io/crates/fluvio)
   [![Fluvio Rust documentation](https://docs.rs/fluvio/badge.svg)](https://docs.rs/fluvio)
