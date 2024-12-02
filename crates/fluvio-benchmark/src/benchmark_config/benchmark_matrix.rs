@@ -26,7 +26,7 @@ impl SharedConfig {
     }
 }
 
-/// Corresponds to https://docs.rs/fluvio/latest/fluvio/struct.TopicProducerConfigBuilder.html
+/// Corresponds to <https://docs.rs/fluvio/latest/fluvio/struct.TopicProducerConfigBuilder.html>
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct FluvioProducerConfig {
     pub batch_size: Vec<u64>,
@@ -54,7 +54,7 @@ impl Default for FluvioProducerConfig {
     }
 }
 
-/// Corresponds to https://docs.rs/fluvio/latest/fluvio/consumer/struct.ConsumerConfigBuilder.html
+/// Corresponds to <https://docs.rs/fluvio/latest/fluvio/consumer/struct.ConsumerConfigBuilder.html>
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct FluvioConsumerConfig {
     pub max_bytes: Vec<u64>,
@@ -69,7 +69,7 @@ impl Default for FluvioConsumerConfig {
     }
 }
 
-/// Corresponds to https://docs.rs/fluvio/latest/fluvio/metadata/topic/struct.TopicSpec.html
+/// Corresponds to <https://docs.rs/fluvio/latest/fluvio/metadata/topic/struct.TopicSpec.html>
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct FluvioTopicConfig {
     pub num_partitions: Vec<u64>,

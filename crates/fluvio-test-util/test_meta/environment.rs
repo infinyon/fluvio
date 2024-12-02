@@ -162,7 +162,7 @@ pub struct EnvironmentSetup {
     #[arg(long, default_value = "1")]
     pub topic: u16,
 
-    /// Append random as "-<random>" to topic name (before id, if --num-topics > 1)
+    /// Append random as "-\<random\>" to topic name (before id, if --num-topics > 1)
     #[arg(long)]
     pub topic_random: bool,
 
