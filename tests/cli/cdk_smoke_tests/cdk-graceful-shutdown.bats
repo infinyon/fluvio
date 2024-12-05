@@ -51,6 +51,7 @@ meta:
 custom:
   api_key: api_key
   client_id: client_id
+  prevent_dropped_stream: true
 EOF
     # Test
     cd $CONNECTOR_DIR

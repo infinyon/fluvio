@@ -35,7 +35,7 @@ fn generate_source(func: &ConnectorFn) -> TokenStream {
                         match user_fn_result {
                             Ok(_) => ::fluvio_connector_common::tracing::info!("Connector arrived at end of stream"),
                             Err(e) => {
-                                ::fluvio_connector_common::tracing::error!(%e, "Connector failed");
+                                ::fluvio_connector_common::tracing::error!(%e, "Error encountered producing records in source connector");
                                 return Err(e.into());
                             },
                         }
@@ -78,7 +78,7 @@ fn generate_sink(func: &ConnectorFn) -> TokenStream {
                         match user_fn_result {
                             Ok(_) => ::fluvio_connector_common::tracing::info!("Connector arrived at end of stream"),
                             Err(e) => {
-                                ::fluvio_connector_common::tracing::error!(%e, "Connector failed");
+                                ::fluvio_connector_common::tracing::error!(%e, "Error encountered processing records in sink connector");
                                 return Err(e.into());
                             },
                         }

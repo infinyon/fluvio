@@ -7,7 +7,7 @@ use fluvio_protocol::{link::ErrorCode, record::ConsumerRecord as Record};
 use futures_util::stream::select_all;
 use futures_util::{future::try_join_all, ready, Future, FutureExt};
 use futures_util::Stream;
-use tracing::{debug, warn};
+use tracing::{info, warn};
 
 use super::config::OffsetManagementStrategy;
 use super::{offset::OffsetLocalStore, StreamToServer};
@@ -242,7 +242,7 @@ impl Drop for OffsetManagement {
             if let Err(err) = offset_store.try_flush() {
                 warn!("flush on drop failed: {err:?}");
             }
-            debug!("offsets flushed on drop");
+            info!("offsets flushed on drop, with: {}", offset_store);
         }
     }
 }
