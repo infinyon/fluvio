@@ -54,7 +54,7 @@ impl AccessToken {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CliAccessTokens {
     pub remote: String,
-    pub user_access_token: String,
+    pub user_access_token: Option<String>,
     pub org_access_tokens: HashMap<String, String>,
 }
 
@@ -215,6 +215,44 @@ fn default_file_path() -> String {
 #[cfg(test)]
 mod infinyon_tok_tests {
     use super::read_infinyon_token;
+    use super::CliAccessTokens;
+    use serde_json;
+
+    // parse token options
+    #[test]
+    fn read_token_outputs() {
+        let with_uat = r#"
+        {
+  "remote": "https://infinyon.cloud",
+  "user_access_token": "uat_token",
+  "org_access_tokens": {
+    "inf-billing": "an_org_token"
+  }
+    }
+        "#;
+
+        let cli_access_tokens = serde_json::from_str::<CliAccessTokens>(with_uat);
+        assert!(cli_access_tokens.is_ok(), "{:?} ", cli_access_tokens);
+        let cli_access_tokens = cli_access_tokens.expect("should succeed");
+        let org_token = cli_access_tokens.get_current_org_token().expect("retreiving org token");
+        assert_eq!(org_token, "an_org_token");
+        assert_eq!(cli_access_tokens.user_access_token, Some("uat_token".to_string()));
+
+        let no_uat = r#"
+        {
+  "remote": "https://infinyon.cloud",
+  "org_access_tokens": {
+    "inf-billing": "an_org_token"
+  }
+    }
+        "#;
+        let cli_access_tokens = serde_json::from_str::<CliAccessTokens>(no_uat);
+        assert!(cli_access_tokens.is_ok(), "{:?} ", cli_access_tokens);
+        let cli_access_tokens = cli_access_tokens.expect("should succeed");
+        let org_token = cli_access_tokens.get_current_org_token().expect("retreiving org token");
+        assert_eq!(org_token, "an_org_token");
+        assert_eq!(cli_access_tokens.user_access_token, None);
+    }
 
     // load default credentials (ignore by default becasuse config is not populated in ci env)
     #[ignore]
