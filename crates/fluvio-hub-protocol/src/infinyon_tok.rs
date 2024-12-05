@@ -80,35 +80,25 @@ impl CliAccessTokens {
 
 /// replaces old read_infinyon_token
 pub fn read_access_token() -> Result<AccessToken, InfinyonCredentialError> {
-    match read_infinyon_token_v4() {
-        Ok(cli_access_tokens) => {
-            println!(
-                "Using org access: {}",
-                cli_access_tokens.get_current_org_name()?
-            );
-            return Ok(AccessToken::V4(cli_access_tokens));
-        }
-        Err(_e) => {
-            // fallback to old token logic
-        }
-    };
+    if let Ok(cli_access_tokens) = read_infinyon_token_v4() {
+        println!(
+            "Using org access: {}",
+            cli_access_tokens.get_current_org_name()?
+        );
+        return Ok(AccessToken::V4(cli_access_tokens));
+    }
     let tok = read_infinyon_token_v3()?;
     Ok(AccessToken::V3(tok))
 }
 
 pub fn read_infinyon_token() -> Result<InfinyonToken, InfinyonCredentialError> {
-    match read_infinyon_token_v4() {
-        Ok(cli_access_tokens) => {
-            tracing::debug!(
-                "using v4 token for org {}",
-                cli_access_tokens.get_current_org_name()?
-            );
-            return cli_access_tokens.get_current_org_token();
-        }
-        Err(_e) => {
-            // fallback to old token logic
-        }
-    };
+    if let Ok(cli_access_tokens) = read_infinyon_token_v4() {
+        tracing::debug!(
+            "using v4 token for org {}",
+            cli_access_tokens.get_current_org_name()?
+        );
+        return cli_access_tokens.get_current_org_token();
+    }
     read_infinyon_token_v3()
 }
 
@@ -234,9 +224,14 @@ mod infinyon_tok_tests {
         let cli_access_tokens = serde_json::from_str::<CliAccessTokens>(with_uat);
         assert!(cli_access_tokens.is_ok(), "{:?} ", cli_access_tokens);
         let cli_access_tokens = cli_access_tokens.expect("should succeed");
-        let org_token = cli_access_tokens.get_current_org_token().expect("retreiving org token");
+        let org_token = cli_access_tokens
+            .get_current_org_token()
+            .expect("retreiving org token");
         assert_eq!(org_token, "an_org_token");
-        assert_eq!(cli_access_tokens.user_access_token, Some("uat_token".to_string()));
+        assert_eq!(
+            cli_access_tokens.user_access_token,
+            Some("uat_token".to_string())
+        );
 
         let no_uat = r#"
         {
@@ -249,7 +244,9 @@ mod infinyon_tok_tests {
         let cli_access_tokens = serde_json::from_str::<CliAccessTokens>(no_uat);
         assert!(cli_access_tokens.is_ok(), "{:?} ", cli_access_tokens);
         let cli_access_tokens = cli_access_tokens.expect("should succeed");
-        let org_token = cli_access_tokens.get_current_org_token().expect("retreiving org token");
+        let org_token = cli_access_tokens
+            .get_current_org_token()
+            .expect("retreiving org token");
         assert_eq!(org_token, "an_org_token");
         assert_eq!(cli_access_tokens.user_access_token, None);
     }
