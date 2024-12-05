@@ -176,7 +176,7 @@ impl HubAccess {
                     .org_access_tokens
                     .get(&org)
                     .ok_or(HubError::HubAccess("Missing org token".to_string()))?;
-                let authn_token = format!("bearer {tok}");
+                let authn_token = format!("Bearer {tok}");
                 builder = builder.header("Authorization", &authn_token);
             }
             Some(AccessToken::V3(tok)) => {
