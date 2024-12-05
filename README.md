@@ -6,7 +6,7 @@
   <br>
   <br>
 
-[![CI Status](https://github.com/infinyon/fluvio/workflows/CI/badge.svg?branch=staging)](https://github.com/infinyon/fluvio/actions/workflows/ci.yml)
+[![CI Status](https://github.com/infinyon/fluvio/actions/workflows/hourly.yml/badge.svg)](https://github.com/infinyon/fluvio/actions/workflows/hourly.yml)
   [![CD Status](https://github.com/infinyon/fluvio/workflows/CD_Dev/badge.svg)](https://github.com/infinyon/fluvio/actions/workflows/cd_dev.yaml)
   [![fluvio Crates.io version](https://img.shields.io/crates/v/fluvio?style=flat)](https://crates.io/crates/fluvio)
   [![Fluvio Rust documentation](https://docs.rs/fluvio/badge.svg)](https://docs.rs/fluvio)
@@ -52,7 +52,7 @@ fluvio cluster start
 Stateful dataflows are managed via `sdf cli` that we install it using `fvm`.
 
 ```bash
-fvm install sdf-beta3
+fvm install sdf-beta4
 ```
 
 ### Step 4. Create the Dataflow file
