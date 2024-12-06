@@ -12,6 +12,8 @@ description = "Deployer Fluvio Connector"
 [dependencies]
 tracing = { workspace = true }
 anyhow = { workspace = true }
+clap = { workspace = true, features = ["std", "derive", "help", "usage", "error-context", "env", "wrap_help", "suggestions"], default-features = false }
 derive_builder = { workspace = true }
+enum-display = { workspace = true }
 
 fluvio-connector-package = { workspace = true  }
