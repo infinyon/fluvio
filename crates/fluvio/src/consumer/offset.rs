@@ -1,4 +1,7 @@
-use std::sync::atomic::AtomicI64;
+use std::{
+    fmt::{Display, Formatter},
+    sync::atomic::AtomicI64,
+};
 
 use async_channel::{Sender, bounded};
 use anyhow::Result;
@@ -86,6 +89,18 @@ impl OffsetLocalStore {
 
     fn set_flushed(&self, val: i64) {
         self.flushed.store(val, DEFAULT_ORDERING)
+    }
+}
+
+impl Display for OffsetLocalStore {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "OffsetLocalStore {{ seen: {}, comitted: {}, flushed: {} }}",
+            self.seen.load(DEFAULT_ORDERING),
+            self.comitted.load(DEFAULT_ORDERING),
+            self.flushed.load(DEFAULT_ORDERING)
+        )
     }
 }
 

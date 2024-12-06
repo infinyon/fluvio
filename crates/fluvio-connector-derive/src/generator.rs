@@ -20,6 +20,7 @@ fn generate_source(func: &ConnectorFn) -> TokenStream {
 
         fn main() -> ::fluvio_connector_common::Result<()> {
             #init_and_parse_config
+            let stop_signal = ::fluvio_connector_common::consumer::init_ctrlc()?;
 
             ::fluvio_connector_common::future::run_block_on(async {
                 let (fluvio, producer) = ::fluvio_connector_common::producer::producer_from_config(&common_config).await?;
@@ -27,7 +28,23 @@ fn generate_source(func: &ConnectorFn) -> TokenStream {
                 let metrics = ::std::sync::Arc::new(::fluvio_connector_common::monitoring::ConnectorMetrics::new(fluvio.metrics()));
                 ::fluvio_connector_common::monitoring::init_monitoring(metrics);
 
-                #user_fn(user_config, producer).await
+                ::fluvio_connector_common::future::select! {
+                    user_fn_result = async {
+                        #user_fn(user_config, producer).await
+                    } => {
+                        match user_fn_result {
+                            Ok(_) => ::fluvio_connector_common::tracing::info!("Connector arrived at end of stream"),
+                            Err(e) => {
+                                ::fluvio_connector_common::tracing::error!(%e, "Error encountered producing records in source connector");
+                                return Err(e.into());
+                            },
+                        }
+                    },
+                    _ = stop_signal.recv() => {
+                        ::fluvio_connector_common::tracing::info!("Stop signal received, shutting down connector.");
+                    },
+                };
+                Ok(()) as ::fluvio_connector_common::Result<()>
             })?;
 
             Ok(())
@@ -45,17 +62,32 @@ fn generate_sink(func: &ConnectorFn) -> TokenStream {
     quote! {
 
         fn main() -> ::fluvio_connector_common::Result<()> {
-            let stop_signal = ::fluvio_connector_common::consumer::init_ctrlc()?;
             #init_and_parse_config
+            let stop_signal = ::fluvio_connector_common::consumer::init_ctrlc()?;
 
             ::fluvio_connector_common::future::run_block_on(async {
-                let (fluvio, stream) = ::fluvio_connector_common::consumer::consumer_stream_from_config(&common_config).await?;
+                let (fluvio, mut stream) = ::fluvio_connector_common::consumer::consumer_stream_from_config(&common_config).await?;
 
                 let metrics = ::std::sync::Arc::new(::fluvio_connector_common::monitoring::ConnectorMetrics::new(fluvio.metrics()));
                 ::fluvio_connector_common::monitoring::init_monitoring(metrics);
 
-                let mut stream = stream.take_until(stop_signal.recv());
-                #user_fn(user_config, stream).await
+                ::fluvio_connector_common::future::select! {
+                    user_fn_result = async {
+                        #user_fn(user_config, stream).await
+                    } => {
+                        match user_fn_result {
+                            Ok(_) => ::fluvio_connector_common::tracing::info!("Connector arrived at end of stream"),
+                            Err(e) => {
+                                ::fluvio_connector_common::tracing::error!(%e, "Error encountered processing records in sink connector");
+                                return Err(e.into());
+                            },
+                        }
+                    },
+                    _ = stop_signal.recv() => {
+                        ::fluvio_connector_common::tracing::info!("Stop signal received, shutting down connector.");
+                    },
+                };
+                Ok(()) as ::fluvio_connector_common::Result<()>
             })?;
 
             Ok(())
