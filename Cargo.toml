@@ -149,7 +149,7 @@ wasm-bindgen-test = "0.3.24"
 wasi-common = { version = "26.0.0" }
 wasmtime = { version = "26.0.0" }
 wasmparser = "0.212.0"
-which = "6.0.1"
+which = "6.0.3"
 x509-parser = "0.16.0"
 
 # External fluvio dependencies
