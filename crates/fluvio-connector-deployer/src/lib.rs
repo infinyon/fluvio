@@ -7,8 +7,6 @@ use derive_builder::Builder;
 
 use fluvio_connector_package::metadata::ConnectorMetadata;
 
-const DEFAULT_LOG_LEVEL: &str = "info";
-
 pub use local::LogLevel;
 
 #[derive(Clone)]
@@ -30,7 +28,7 @@ pub struct Deployment {
     pub config: PathBuf,     // Configuration to pass along,
     pub pkg: ConnectorMetadata, // Connector pkg definition
     pub deployment_type: DeploymentType, // deployment type
-    #[builder(default = "DEFAULT_LOG_LEVEL.to_string()")]
+    #[builder(default)]
     pub log_level: LogLevel, // log level
 }
 
