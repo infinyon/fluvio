@@ -18,9 +18,10 @@ use fluvio_future::task::run_block_on;
 use fluvio_hub_protocol::infinyon_tok::read_infinyon_token_rem;
 
 use fluvio_hub_protocol::{Result, HubError};
-use fluvio_hub_protocol::infinyon_tok::read_infinyon_token;
+use fluvio_hub_protocol::infinyon_tok::read_access_token;
 use fluvio_hub_protocol::constants::{HUB_API_ACT, HUB_API_HUBID, HUB_REMOTE, CLI_CONFIG_HUB};
 use fluvio_types::defaults::CLI_CONFIG_PATH;
+use fluvio_hub_protocol::infinyon_tok::AccessToken;
 
 #[cfg(not(target_arch = "wasm32"))]
 use crate::htclient;
@@ -149,15 +150,16 @@ impl HubAccess {
         action: &str,
         authn_token: &str,
     ) -> Result<String> {
-        self.make_action_token(action, authn_token.into()).await
+        let access_token = AccessToken::V3(authn_token.to_string());
+        self.make_action_token(action, Some(access_token)).await
     }
 
     async fn get_action_auth(&self, action: &str) -> Result<String> {
-        let cloud_token = read_infinyon_token().unwrap_or_default();
-        self.make_action_token(action, cloud_token).await
+        let access_token = read_access_token().ok();
+        self.make_action_token(action, access_token).await
     }
 
-    async fn make_action_token(&self, action: &str, authn_token: String) -> Result<String> {
+    async fn make_action_token(&self, action: &str, token: Option<AccessToken>) -> Result<String> {
         let host = &self.remote;
         let api_url = format!("{host}/{HUB_API_ACT}");
         let mat = MsgActionToken {
@@ -167,8 +169,24 @@ impl HubAccess {
             .map_err(|_e| HubError::HubAccess("Failed access setup".to_string()))?;
 
         let mut builder = http::Request::post(&api_url);
-        if !authn_token.is_empty() {
-            builder = builder.header("Authorization", &authn_token);
+        match token {
+            Some(AccessToken::V4(cli_access_tokens)) => {
+                let org = cli_access_tokens.get_current_org_name()?;
+                let tok = cli_access_tokens
+                    .org_access_tokens
+                    .get(&org)
+                    .ok_or(HubError::HubAccess("Missing org token".to_string()))?;
+                let authn_token = format!("Bearer {tok}");
+                builder = builder.header("Authorization", &authn_token);
+            }
+            Some(AccessToken::V3(tok)) => {
+                // v3 does not use "Bearer" prefix
+                builder = builder.header("Authorization", &tok);
+            }
+            None => {
+                // no token is allowed for some actions like downloading public
+                // packages
+            }
         }
         let req = builder
             .header(http::header::CONTENT_TYPE, mime::JSON.as_str())
