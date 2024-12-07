@@ -61,6 +61,24 @@ setup_file() {
     assert_success
 }
 
+@test "Deploy duplicated connectors should fail" {
+    # Deploy
+    cd $CONNECTOR_DIR
+    run $CDK_BIN deploy --target x86_64-unknown-linux-gnu start \
+	$CONFIG_FILE_FLAG
+    assert_success
+    assert_output --partial "Connector runs with process id"
+
+    run $CDK_BIN deploy --target x86_64-unknown-linux-gnu start \
+	$CONFIG_FILE_FLAG
+    assert_failure
+    assert_output --partial "Connector with name my-json-test-connector already exists"
+
+
+    run $CDK_BIN deploy shutdown --name my-json-test-connector
+    assert_success
+}
+
 @test "Run multiple connectors with --ipkg" {
     # create package meta doesn't exist
     cd $CONNECTOR_DIR
