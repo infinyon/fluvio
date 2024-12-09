@@ -3,24 +3,21 @@
 // 'read_infinyon_token' function to read from the current login config
 //
 use std::collections::HashMap;
-use std::env;
 use std::fs;
 use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 use serde_json;
-use tracing::debug;
 
 use fluvio_types::defaults::CLI_CONFIG_PATH;
 
-const INFINYON_CONFIG_PATH_ENV: &str = "INFINYON_CONFIG_PATH";
 const DEFAULT_LOGINS_DIR: &str = "logins"; // from logins.rs
 const CURRENT_LOGIN_FILE_NAME: &str = "current";
 
 type InfinyonToken = String;
 type InfinyonRemote = String;
 
-#[derive(thiserror::Error, Debug)]
+#[derive(Clone, thiserror::Error, Debug)]
 pub enum InfinyonCredentialError {
     #[error("no org access token found, please login or switch to an org with 'fluvio cloud org switch'")]
     MissingOrgToken,
@@ -32,26 +29,30 @@ pub enum InfinyonCredentialError {
     UnableToParseCredentials,
 }
 
+#[derive(Clone)]
 pub enum AccessToken {
-    V3(InfinyonToken),
+    V3((InfinyonToken, InfinyonRemote)),
     V4(CliAccessTokens),
 }
 
 impl AccessToken {
-    pub fn get_hub_token(&self) -> Result<String, InfinyonCredentialError> {
+    pub fn get_token(&self) -> Result<String, InfinyonCredentialError> {
         match self {
-            AccessToken::V3(tok) => Ok(tok.to_owned()),
-            AccessToken::V4(cli_access_tokens) => cli_access_tokens.get_current_org_token(),
+            AccessToken::V3((token, _remote)) => Ok(token.clone()),
+            AccessToken::V4(token) => Ok(token.get_current_org_token()?),
         }
     }
 
-    pub fn is_v4(&self) -> bool {
-        matches!(self, AccessToken::V4(_))
+    pub fn get_remote(&self) -> Result<String, InfinyonCredentialError> {
+        match self {
+            AccessToken::V3((_token, remote)) => Ok(remote.clone()),
+            AccessToken::V4(cli_access_tokens) => Ok(cli_access_tokens.remote.clone()),
+        }
     }
 }
 
 // multi-org access token output
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CliAccessTokens {
     pub remote: String,
     pub user_access_token: Option<String>,
@@ -80,26 +81,40 @@ impl CliAccessTokens {
 
 /// replaces old read_infinyon_token
 pub fn read_access_token() -> Result<AccessToken, InfinyonCredentialError> {
-    if let Ok(cli_access_tokens) = read_infinyon_token_v4() {
-        println!(
-            "Using org access: {}",
-            cli_access_tokens.get_current_org_name()?
-        );
-        return Ok(AccessToken::V4(cli_access_tokens));
-    }
-    let tok = read_infinyon_token_v3()?;
-    Ok(AccessToken::V3(tok))
+    // read token into cache once
+    static TOKEN_CACHE: std::sync::OnceLock<Result<AccessToken, InfinyonCredentialError>> =
+        std::sync::OnceLock::new();
+
+    TOKEN_CACHE
+        .get_or_init(|| {
+            let token = read_access_token_impl();
+            match token {
+                Ok(AccessToken::V3(_)) => {
+                    tracing::debug!("using v3 token");
+                }
+                Ok(AccessToken::V4(ref cli_access_token)) => {
+                    tracing::debug!("using v4 token");
+                    println!(
+                        "Using org access: {}",
+                        cli_access_token.get_current_org_name()?
+                    );
+                }
+                Err(ref err) => {
+                    tracing::debug!("failed to read token: {}", err);
+                }
+            }
+            token
+        })
+        .clone()
 }
 
-pub fn read_infinyon_token() -> Result<InfinyonToken, InfinyonCredentialError> {
+// replaces old read_infinyon_token
+fn read_access_token_impl() -> Result<AccessToken, InfinyonCredentialError> {
     if let Ok(cli_access_tokens) = read_infinyon_token_v4() {
-        tracing::debug!(
-            "using v4 token for org {}",
-            cli_access_tokens.get_current_org_name()?
-        );
-        return cli_access_tokens.get_current_org_token();
+        return Ok(AccessToken::V4(cli_access_tokens));
     }
-    read_infinyon_token_v3()
+    let pair = read_infinyon_token_v3()?;
+    Ok(AccessToken::V3(pair))
 }
 
 pub fn read_infinyon_token_v4() -> Result<CliAccessTokens, InfinyonCredentialError> {
@@ -137,29 +152,25 @@ fn read_infinyon_token_v4_cli(cloud_bin: &str) -> Result<CliAccessTokens, Infiny
     }
 }
 
-// depcreated, will be removed after multi-org is stable
-pub fn read_infinyon_token_v3() -> Result<InfinyonToken, InfinyonCredentialError> {
-    let cfgpath = default_file_path();
-    // this will read the indirection file to resolve the profile
-    let cred = Credentials::try_load(cfgpath)?;
-    Ok(cred.token)
-}
-
-pub fn read_infinyon_token_rem() -> Result<(InfinyonToken, InfinyonRemote), InfinyonCredentialError>
+// deprecated, will be removed after multi-org is stable
+pub fn read_infinyon_token_v3() -> Result<(InfinyonToken, InfinyonRemote), InfinyonCredentialError>
 {
-    // the ENV variable should point directly to the applicable profile
-    if let Ok(profilepath) = env::var(INFINYON_CONFIG_PATH_ENV) {
-        let cred = Credentials::load(Path::new(&profilepath))?;
-        debug!(
-            path = profilepath,
-            "profile loaded from INFINYON_CONFIG_PATH_ENV"
-        );
-        return Ok((cred.token, cred.remote));
-    }
     let cfgpath = default_file_path();
     // this will read the indirection file to resolve the profile
     let cred = Credentials::try_load(cfgpath)?;
     Ok((cred.token, cred.remote))
+}
+
+// read remote (older api)
+pub fn read_infinyon_token_rem() -> Result<InfinyonRemote, InfinyonCredentialError> {
+    let tok = read_access_token()?;
+    tok.get_remote()
+}
+
+// read token (older api)
+pub fn read_infinyon_token() -> Result<InfinyonToken, InfinyonCredentialError> {
+    let access = read_access_token()?;
+    access.get_token()
 }
 
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
