@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-extension-common"
-version = "0.14.3"
+version = "0.14.4"
 edition = "2021"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Fluvio extension common"
@@ -19,12 +19,14 @@ installation = ["fluvio"]
 anyhow = { workspace = true }
 async-trait = { workspace = true }
 clap = { workspace = true, features = ["std", "derive", "help", "usage", "error-context"], default-features = false }
+chrono = { workspace = true }
 comfy-table = { workspace = true }
 serde = { workspace = true, features = ['derive'] }
 serde_json ={ workspace = true }
 serde_yaml = { workspace = true }
 semver = { workspace = true, features = ["serde"] }
 thiserror = { workspace = true }
+timeago = { workspace = true }
 tracing = { workspace = true }
 toml = { workspace = true, features = ["display"] }
 
