@@ -420,8 +420,17 @@ mod local_index {
             Ok(index)
         }
 
-        fn insert(&mut self, entry: Entry) {
-            self.entries.push(entry)
+        fn insert(&mut self, entry: Entry) -> Result<()> {
+            match entry {
+                Entry::Local { ref name, .. } => {
+                    if let Some((_, _)) = self.find_by_name(name) {
+                        return Err(anyhow!("Connector with name {} already exists", name));
+                    }
+                }
+            }
+
+            self.entries.push(entry);
+            Ok(())
         }
 
         fn remove(&mut self, index: usize) -> Result<()> {
@@ -560,7 +569,7 @@ mod local_index {
 
     pub(super) fn store(deployment: DeploymentResult) -> Result<()> {
         let mut index = load()?;
-        index.insert(deployment.into());
+        index.insert(deployment.into())?;
         index.flush()
     }
 
@@ -682,7 +691,7 @@ mod local_index {
                 name: "test_connector".to_owned(),
                 log_file: None,
                 tmp_dir: None,
-            });
+            })?;
             index.flush()?;
 
             //then
@@ -721,7 +730,7 @@ mod local_index {
                 name: "test_connector2".to_owned(),
                 log_file: None,
                 tmp_dir: None,
-            });
+            })?;
             index.flush()?;
 
             //then
@@ -737,6 +746,44 @@ mod local_index {
             assert_eq!(
                 std::fs::read_to_string(file_path)?,
                 "[[entries]]\ntype = \"local\"\nprocess_id = 1\nname = \"test_connector\"\n\n[[entries]]\ntype = \"local\"\nprocess_id = 2\nname = \"test_connector2\"\n"
+            );
+
+            Ok(())
+        }
+
+        #[test]
+        fn test_do_not_allow_duplicated_insert() -> Result<()> {
+            //given
+            let file_path = TestFile::new();
+            std::fs::write(
+                &file_path,
+                b"[[entries]]\ntype = \"local\"\nprocess_id = 1\nname = \"test_connector\"\n",
+            )?;
+
+            //when
+            let mut index: LocalIndex<NoopOperator> = LocalIndex::load(&file_path)?;
+            assert!(index.find_by_name("test_connector").is_some());
+
+            let result = index.insert(Entry::Local {
+                process_id: 1,
+                name: "test_connector".to_owned(),
+                log_file: None,
+                tmp_dir: None,
+            });
+
+            //then
+            assert!(result.is_err());
+
+            let mut output = Cursor::new(Vec::new());
+            index.print_table(&mut output)?;
+            let output = String::from_utf8_lossy(output.get_ref());
+            assert_eq!(
+                output,
+                " NAME            STATUS  \n test_connector  Running \n"
+            );
+            assert_eq!(
+                std::fs::read_to_string(file_path)?,
+                "[[entries]]\ntype = \"local\"\nprocess_id = 1\nname = \"test_connector\"\n"
             );
 
             Ok(())
