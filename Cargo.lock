@@ -2680,7 +2680,9 @@ name = "fluvio-connector-deployer"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "clap",
  "derive_builder",
+ "enum-display",
  "fluvio-connector-package",
  "tracing",
 ]
