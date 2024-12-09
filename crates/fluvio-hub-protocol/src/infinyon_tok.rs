@@ -36,10 +36,6 @@ pub enum AccessToken {
 }
 
 impl AccessToken {
-    pub fn is_v4(&self) -> bool {
-        matches!(self, AccessToken::V4(_))
-    }
-
     pub fn get_token(&self) -> Result<String, InfinyonCredentialError> {
         match self {
             AccessToken::V3((token, _remote)) => Ok(token.clone()),
