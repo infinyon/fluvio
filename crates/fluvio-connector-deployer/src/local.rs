@@ -3,11 +3,23 @@ use std::path::Path;
 use std::process::{Command, Stdio};
 
 use anyhow::{Context, Result};
+use clap::ValueEnum;
+use enum_display::EnumDisplay;
 use tracing::debug;
 
 use crate::Deployment;
 
-pub type LogLevel = String;
+#[derive(ValueEnum, Debug, Clone, PartialEq, Eq, Default, EnumDisplay)]
+#[clap(rename_all = "kebab-case")]
+#[enum_display(case = "Kebab")]
+pub enum LogLevel {
+    Trace,
+    Debug,
+    #[default]
+    Info,
+    Warn,
+    Error,
+}
 
 pub(crate) fn deploy_local<P: AsRef<Path>>(
     deployment: &Deployment,
@@ -29,7 +41,7 @@ pub(crate) fn deploy_local<P: AsRef<Path>>(
     debug!("running executable: {}", &executable.to_string_lossy());
     let mut cmd = Command::new(executable);
 
-    cmd.env("RUST_LOG", &deployment.log_level);
+    cmd.env("RUST_LOG", deployment.log_level.to_string());
     cmd.stdin(Stdio::null());
     cmd.stdout(stdout);
     cmd.stderr(stderr);
