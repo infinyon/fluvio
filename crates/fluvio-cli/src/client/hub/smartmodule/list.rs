@@ -100,11 +100,9 @@ mod output {
                         Cell::new(&e.visibility).set_alignment(CellAlignment::Left),
                         Cell::new(
                             e.published_at()
-                                .map(|date| {
-                                    time_elapsed(date).unwrap_or(String::from("N/A"))
-                                })
-                                .unwrap_or(String::from("N/A"))
-                        )
+                                .map(|date| time_elapsed(date).unwrap_or(String::from("N/A")))
+                                .unwrap_or(String::from("N/A")),
+                        ),
                     ])
                 })
                 .collect()
