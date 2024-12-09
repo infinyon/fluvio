@@ -145,15 +145,6 @@ impl HubAccess {
         self.get_action_auth(ACTION_PUBLISH).await
     }
 
-    pub async fn get_action_auth_with_token(
-        &self,
-        action: &str,
-        authn_token: &str,
-    ) -> Result<String> {
-        let access_token = AccessToken::V3(authn_token.to_string());
-        self.make_action_token(action, Some(access_token)).await
-    }
-
     async fn get_action_auth(&self, action: &str) -> Result<String> {
         let access_token = read_access_token().ok();
         self.make_action_token(action, access_token).await
@@ -170,18 +161,17 @@ impl HubAccess {
 
         let mut builder = http::Request::post(&api_url);
         match token {
-            Some(AccessToken::V4(cli_access_tokens)) => {
-                let org = cli_access_tokens.get_current_org_name()?;
-                let tok = cli_access_tokens
-                    .org_access_tokens
-                    .get(&org)
-                    .ok_or(HubError::HubAccess("Missing org token".to_string()))?;
-                let authn_token = format!("Bearer {tok}");
-                builder = builder.header("Authorization", &authn_token);
-            }
-            Some(AccessToken::V3(tok)) => {
-                // v3 does not use "Bearer" prefix
-                builder = builder.header("Authorization", &tok);
+            Some(token) => {
+                let auth_token = token.get_token()?;
+                match token {
+                    AccessToken::V4(_) => {
+                        builder = builder.header("Authorization", format!("Bearer {auth_token}"));
+                    }
+                    AccessToken::V3(_) => {
+                        // v3 does not use "Bearer" prefix
+                        builder = builder.header("Authorization", auth_token);
+                    }
+                }
             }
             None => {
                 // no token is allowed for some actions like downloading public
@@ -357,7 +347,7 @@ struct ReplyHubref {
 
 #[cfg(not(target_arch = "wasm32"))]
 fn get_hubref() -> Option<String> {
-    let Ok((_, fcremote)) = read_infinyon_token_rem() else {
+    let Ok(fcremote) = read_infinyon_token_rem() else {
         return None;
     };
     if fcremote == DEFAULT_CLOUD_REMOTE {
