@@ -240,7 +240,10 @@ Here a a few listed below:
 - [Elastic Connector](https://github.com/fluvio-connectors/elastic-connector): Send data from Fluvio to Elastic Search
 
 ## Community Development Resources
-- [Hello World Fluvio Connector](https://github.com/infinyon/connector-hello-source): Sample Fluvio connector template to build your own connector
+
+More projects and utilities are available in the  [Fluvio Community Github Org](https://github.com/fluvio-community/)
+
+- [Hello World Fluvio Connector](https://github.com/fluvio-community/connector-hello-source): Sample Fluvio connector template to build your own connector
 - [Gurubase](https://gurubase.io/g/fluvio): Third-party AI/LLM Docs query
 
 ### Contributors are awesome
