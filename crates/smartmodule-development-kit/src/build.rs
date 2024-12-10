@@ -11,7 +11,7 @@ use crate::cmd::PackageCmd;
 use crate::ENV_SMDK_NOWASI;
 
 pub(crate) const BUILD_TARGET: &str = "wasm32-unknown-unknown";
-pub(crate) const BUILD_TARGET_WASI: &str = "wasm32-wasi";
+pub(crate) const BUILD_TARGET_WASI: &str = "wasm32-wasip1";
 
 /// Builds the SmartModule in the current working directory into a WASM file
 #[derive(Debug, Parser)]

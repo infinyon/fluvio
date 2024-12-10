@@ -154,9 +154,9 @@ impl CargoBuilder {
 #[cfg(test)]
 mod test {
     use std::ffi::OsStr;
+    use crate::WASM_TARGET;
 
     use super::*;
-    const WASM_TARGET: &str = "wasm32-wasi";
 
     #[test]
     fn test_builder_default() {

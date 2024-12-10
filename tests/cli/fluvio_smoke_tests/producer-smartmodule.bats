@@ -13,7 +13,7 @@ load "$TEST_HELPER_DIR"/bats-assert/load.bash
 setup_file() {
     # Compile the smartmodule examples
 #    pushd "$BATS_TEST_DIRNAME/../../.." && make build_smartmodules && popd
-    SMARTMODULE_BUILD_DIR="$BATS_TEST_DIRNAME/../../../smartmodule/examples/target/wasm32-wasi/release-lto"
+    SMARTMODULE_BUILD_DIR="$BATS_TEST_DIRNAME/../../../smartmodule/examples/target/wasm32-wasip1/release-lto"
     export SMARTMODULE_BUILD_DIR
 
 }

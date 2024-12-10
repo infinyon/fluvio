@@ -214,6 +214,9 @@ longevity-test: build-test
 	$(TEST_BIN) longevity --expect-timeout -- $(VERBOSE_FLAG) --runtime-seconds=60
 endif
 
+sm-target:
+	rustup target add wasm32-wasip1
+
 cli-backward-compatibility-test:
 	./tests/cli/cli-backward-compatibility.bash
 
@@ -237,7 +240,7 @@ cli-fluvio-mirroring-smoke:
 cli-fluvio-mirroring-smoke-e2e:
 	bats $(shell ls -1 ./tests/cli/mirroring_smoke_tests/e2e/*.bats | sort -R)
 
-cli-smdk-smoke:
+cli-smdk-smoke: sm-target
 	bats $(shell ls -1 ./tests/cli/smdk_smoke_tests/*.bats | sort -R)
 
 cli-cdk-smoke:
@@ -249,22 +252,22 @@ cli-fvm-smoke:
 cli-basic-test:
 	bats ./tests/cli/fluvio_smoke_tests/e2e-basic.bats
 
-cli-smartmodule-all-test:
+cli-smartmodule-all-test: sm-target
 	bats ./tests/cli/fluvio_smoke_tests/e2e-smartmodule-basic.bats
 
-cli-smartmodule-aggregate-test:
+cli-smartmodule-aggregate-test: sm-target
 	bats -f aggregate ./tests/cli/fluvio_smoke_tests/e2e-smartmodule-basic.bats
 
-cli-smartmodule-basic-test:
+cli-smartmodule-basic-test: sm-target
 	bats ./tests/cli/fluvio_smoke_tests/smartmodule-basic.bats
 
-cli-producer-smartmodule-test:
+cli-producer-smartmodule-test: sm-target
 	bats ./tests/cli/fluvio_smoke_tests/producer-smartmodule.bats
 
 stats-test:
 	$(TEST_BIN) stats -- $(VERBOSE_FLAG) --tolerance=5
 
-cli-smdk-basic-test:
+cli-smdk-basic-test: sm-target
 	SMDK_BIN=$(shell readlink -f $(SMDK_BIN)) bats   ./tests/cli/smdk_smoke_tests/smdk-basic.bats
 
 cli-cdk-basic-test:

@@ -2,7 +2,6 @@ use std::sync::OnceLock;
 
 use regex::Regex;
 
-
 use fluvio_smartmodule::{
     smartmodule, SmartModuleRecord, Result, eyre,
     dataplane::smartmodule::{SmartModuleExtraParams, SmartModuleInitError},
