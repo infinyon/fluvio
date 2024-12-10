@@ -8,7 +8,7 @@ SUBDIRS := $(filter-out target/., $(wildcard */.))
 .PHONY: build $(SUBDIRS)
 
 setup:
-	rustup target add wasm32-wasi
+	rustup target add wasm32-wasip1
 	@echo SMDK_BIN ${SMDK_BIN}
 
 dirs:
