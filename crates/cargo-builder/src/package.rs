@@ -7,6 +7,8 @@ use std::path::{Path, PathBuf};
 use anyhow::{anyhow, Context};
 use cargo_metadata::{CargoOpt, MetadataCommand, Package};
 
+use crate::WASM_TARGET;
+
 #[derive(Debug)]
 pub struct PackageOption {
     pub release: String,
@@ -124,7 +126,7 @@ impl PackageInfo {
     /// path to package's wasm32-wasi target
     pub fn target_wasm32_wasi_path(&self) -> anyhow::Result<PathBuf> {
         let mut path = self.target_dir.clone();
-        path.push("wasm32-wasi");
+        path.push(WASM_TARGET);
         path.push(&self.profile);
         path.push(self.target_name()?.replace('-', "_"));
         path.set_extension("wasm");
@@ -159,6 +161,7 @@ pub fn get_current_project_path() -> anyhow::Result<Option<PathBuf>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::WASM_TARGET;
 
     #[test]
     fn test_package_info() {
@@ -189,6 +192,6 @@ mod tests {
         assert!(package_info
             .target_wasm32_wasi_path()
             .unwrap()
-            .ends_with("wasm32-wasi/release-lto/cargo_builder.wasm"));
+            .ends_with(format!("{WASM_TARGET}/release-lto/cargo_builder.wasm")));
     }
 }
