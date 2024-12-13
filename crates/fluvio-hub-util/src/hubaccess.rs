@@ -145,6 +145,16 @@ impl HubAccess {
         self.get_action_auth(ACTION_PUBLISH).await
     }
 
+    pub async fn get_action_auth_with_token(
+        &self,
+        action: &str,
+        authn_token: &str,
+        remote: &str,
+    ) -> Result<String> {
+        let access_token = AccessToken::V3((authn_token.to_string(), remote.to_string()));
+        self.make_action_token(action, Some(access_token)).await
+    }
+
     async fn get_action_auth(&self, action: &str) -> Result<String> {
         let access_token = read_access_token().ok();
         self.make_action_token(action, access_token).await
