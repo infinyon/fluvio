@@ -2,7 +2,46 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
-## Platform Version 0.13.1-dev-1 - UNRELEASED
+## Platform Version 0.14.0 - 2024-12-14
+
+### Added
+
+* Add community projects section ([#4266](https://github.com/infinyon/fluvio/issues/4266))
+* Add graceful shutdown for consume connectors ([#4268](https://github.com/infinyon/fluvio/issues/4268))
+* Update fluvio readme, update image, copy, links, add sdf ([#4270](https://github.com/infinyon/fluvio/issues/4270))
+* Optional v4 token access ([#4212](https://github.com/infinyon/fluvio/issues/4212))
+
+### CI
+
+* Use macos-latest on ci ([#4275](https://github.com/infinyon/fluvio/issues/4275))
+
+### Changed
+
+* Update versions for refs ([#4271](https://github.com/infinyon/fluvio/issues/4271))
+* Update README.md ([#4278](https://github.com/infinyon/fluvio/issues/4278))
+* Update sm readme ([#4295](https://github.com/infinyon/fluvio/issues/4295))
+
+### Fixed
+
+* Do not allow connectors offset without id ([#4264](https://github.com/infinyon/fluvio/issues/4264))
+* Sort 'fluvio profile list' output ([#4263](https://github.com/infinyon/fluvio/issues/4263))
+* Use `Connector` over `SmartConnector` to match docs ([#4269](https://github.com/infinyon/fluvio/issues/4269))
+* Shutdown of the cdk consumer ([#4273](https://github.com/infinyon/fluvio/issues/4273))
+* Minor inline doc fixups ([#4281](https://github.com/infinyon/fluvio/issues/4281))
+* Shutdown of the cdk consumer by future not stream ([#4276](https://github.com/infinyon/fluvio/issues/4276))
+* Use info as default log level for cdk ([#4286](https://github.com/infinyon/fluvio/issues/4286))
+* Not allow duplicated connectors ([#4288](https://github.com/infinyon/fluvio/issues/4288))
+* Multi-org token remote ([#4291](https://github.com/infinyon/fluvio/issues/4291))
+* Smdk should reference wasm32-wasip1 due to wasm tooling changes ([#4292](https://github.com/infinyon/fluvio/issues/4292))
+
+### Other
+
+* Introducing Fluvio Guru on Gurubase.io ([#4253](https://github.com/infinyon/fluvio/issues/4253))
+
+### Removed
+
+* Un-deprecate stream_batches_with_config ([#4272](https://github.com/infinyon/fluvio/issues/4272))
+
 
 ## Platform Version 0.13.0 - 2024-11-14
 
