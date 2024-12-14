@@ -18,7 +18,7 @@ function check_if_crate_uploaded() {
     local CRATE=$1;
 
     # Check for whether the crate was already uploaded to determine if we're good to move forward
-    tail -1 "$CARGO_OUTPUT_TMP" | grep "already uploaded" > /dev/null
+    tail -1 "$CARGO_OUTPUT_TMP" | grep "already exists" > /dev/null
 
     # If exit code from `grep` is 0
     if [[ ${PIPESTATUS[1]} != 0 ]];
