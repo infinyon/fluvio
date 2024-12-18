@@ -244,7 +244,7 @@ cfg_if::cfg_if! {
     }  else if #[cfg(feature = "rustls")] {
 
         impl TryFrom<TlsPolicy> for DomainConnector {
-            type Error = IoError;
+            type Error = anyhow::Error;
 
             fn try_from(config: TlsPolicy) -> Result<Self, Self::Error> {
 
