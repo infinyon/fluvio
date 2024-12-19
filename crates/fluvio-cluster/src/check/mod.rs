@@ -236,7 +236,7 @@ pub enum UnrecoverableCheckStatus {
     CreateLocalConfigError,
 
     /// The installed version of the local cluster is incompatible
-    #[error("Check Versions match failed: cannot resume a {installed} cluster with fluvio version {required}.")]
+    #[error("Check Versions match failed: cannot resume a {installed} cluster with fluvio version {required}.\nShutdown the cluster with \"fluvio cluster shutdown\" and use \"fluvio cluster upgrade\" to update to the new version")]
     IncompatibleLocalClusterVersion {
         /// The currently-installed version
         installed: String,
