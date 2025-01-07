@@ -52,7 +52,7 @@ fluvio cluster start
 Stateful dataflows are managed via `sdf cli` that we install it using `fvm`.
 
 ```bash
-fvm install sdf-beta4
+fvm install sdf-beta5
 ```
 
 ### Step 4. Create the Dataflow file
