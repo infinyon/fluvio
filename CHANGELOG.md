@@ -2,6 +2,23 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## Platform Version 0.14.1 - 2025-01-08
+
+### Added
+
+* Enhance IncompatibleLocalClusterVersion error message ([#4303](https://github.com/infinyon/fluvio/issues/4303))
+
+### Changed
+
+* Wrap offset_flush return in pin<box<_>> ([#4306](https://github.com/infinyon/fluvio/issues/4306))
+* Use box future ([#4307](https://github.com/infinyon/fluvio/issues/4307))
+* Update README.md ([#4309](https://github.com/infinyon/fluvio/issues/4309))
+
+### Fixed
+
+* Fix how check if a package is uploaded ([#4302](https://github.com/infinyon/fluvio/issues/4302))
+
+
 ## Platform Version 0.14.0 - 2024-12-14
 
 ### Added
