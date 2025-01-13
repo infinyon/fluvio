@@ -650,7 +650,7 @@ mod publish_stream {
 }
 
 /// MAX FETCH BYTES
-static MAX_FETCH_BYTES: Lazy<i32> = Lazy::new(|| {
+pub static MAX_FETCH_BYTES: Lazy<i32> = Lazy::new(|| {
     use std::env;
     use fluvio_protocol::Encoder;
     use fluvio_spu_schema::fetch::FetchResponse;

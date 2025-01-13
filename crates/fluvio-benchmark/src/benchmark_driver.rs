@@ -1,14 +1,14 @@
-use std::time::Instant;
+use std::{sync::Arc, time::Instant};
 
 use anyhow::Result;
-use async_channel::{unbounded, Sender, Receiver};
+use async_channel::{bounded, unbounded, Receiver, Sender};
 use tracing::{debug, info};
 
 use fluvio_future::{task::spawn, future::timeout, timer::sleep};
 use fluvio::{metadata::topic::TopicSpec, FluvioAdmin};
 use crate::{
-    benchmark_config::BenchmarkConfig, producer_worker::ProducerWorker,
-    consumer_worker::ConsumerWorker, stats_collector::StatsWorker, stats::AllStatsSync,
+    benchmark_config::BenchmarkConfig, consumer_worker::ConsumerWorker, content::CachedMessages,
+    producer_worker::ProducerWorker, stats::AllStatsSync, stats_collector::StatsWorker,
 };
 
 pub struct BenchmarkDriver {}
@@ -26,7 +26,13 @@ impl BenchmarkDriver {
         // Set up producers
         for producer_id in 0..config.num_concurrent_producer_workers {
             let (tx_control, rx_control) = unbounded();
-            let worker = ProducerWorker::new(producer_id, config.clone(), tx_stats.clone()).await?;
+            let worker = ProducerWorker::new(
+                producer_id,
+                config.clone(),
+                tx_stats.clone(),
+                //CachedMessages::new(config.record_size, 1_000_00),
+            )
+            .await?;
             let jh = spawn(timeout(
                 config.worker_timeout,
                 ProducerDriver::main_loop(rx_control, tx_success.clone(), worker),
@@ -87,7 +93,6 @@ impl BenchmarkDriver {
             expect_success(&mut rx_success, &config, num_expected_messages).await?;
 
             // Do the batch
-            debug!("Sending batch");
             send_control_message(&mut tx_controls, ControlMessage::SendBatch).await?;
             expect_success(&mut rx_success, &config, num_expected_messages).await?;
 
@@ -109,14 +114,16 @@ impl BenchmarkDriver {
             );
 
             let elapsed = now.elapsed();
-            sleep(config.duration_between_samples).await;
+            if config.duration_between_samples.as_millis() > 0 {
+                sleep(config.duration_between_samples).await;
+            }
 
-            if i != 0 {
-                info!(
+            //if i != 0 {
+                println!(
                     "Sample {} / {} complete, took {:?} + {:?}",
                     i, config.num_samples, elapsed, config.duration_between_samples
                 );
-            }
+            //}
         }
         // Close all worker tasks.
         send_control_message(&mut tx_controls, ControlMessage::Exit).await?;

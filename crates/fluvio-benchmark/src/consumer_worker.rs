@@ -81,10 +81,11 @@ impl ConsumerWorker {
 
     pub async fn send_results(&mut self) -> Result<()> {
         for (record, recv_time) in self.received.iter() {
-            let data = record.get_value().as_utf8_lossy_string();
+            //let data = record.get_value().as_utf8_lossy_string();
+            let data = record.get_value();
             self.tx_to_stats_collector
                 .send(StatsCollectorMessage::MessageHash {
-                    hash: hash_record(&data),
+                    hash: hash_record(data),
                     recv_time: *recv_time,
                     consumer_id: self.consumer_id,
                 })

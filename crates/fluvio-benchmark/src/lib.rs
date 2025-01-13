@@ -4,10 +4,12 @@ use std::io::Error as IoError;
 
 use async_channel::{SendError, RecvError};
 
+use fluvio::dataplane::record::RecordData;
 use rand::{distributions::Alphanumeric, Rng};
 use fluvio_future::future::TimeoutError;
 use fluvio::{RecordKey, FluvioError};
 
+pub mod content;
 pub mod consumer_worker;
 pub mod benchmark_config;
 pub mod producer_worker;
@@ -17,18 +19,20 @@ pub mod stats;
 
 pub struct BenchmarkRecord {
     pub key: RecordKey,
-    pub data: String,
+    pub data: RecordData,
     pub hash: u64,
 }
 
 impl BenchmarkRecord {
-    pub fn new(key: RecordKey, data: String) -> Self {
+    pub fn new(key: RecordKey, data: RecordData) -> Self {
         let hash = hash_record(&data);
         Self { key, data, hash }
     }
 }
 
-pub fn hash_record(data: &str) -> u64 {
+//pub fn hash_record(data: &str) -> u64 {
+//pub fn hash_record(data: &[u8]) -> u64 {
+pub fn hash_record(data: &RecordData) -> u64 {
     let mut hasher_state = DefaultHasher::new();
     data.hash(&mut hasher_state);
     hasher_state.finish()

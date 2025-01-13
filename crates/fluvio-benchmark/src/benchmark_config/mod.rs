@@ -55,6 +55,7 @@ pub struct BenchmarkConfig {
     pub num_records_per_producer_worker_per_batch: u64,
     pub producer_batch_size: u64,
     pub producer_queue_size: u64,
+    pub producer_max_request_size: u64,
     pub producer_linger: Duration,
     pub producer_server_timeout: Duration,
     pub producer_compression: Compression,
@@ -84,6 +85,7 @@ impl PartialEq for BenchmarkConfig {
                 == other.num_records_per_producer_worker_per_batch
             && self.producer_batch_size == other.producer_batch_size
             && self.producer_queue_size == other.producer_queue_size
+            && self.producer_max_request_size == other.producer_max_request_size
             && self.producer_linger == other.producer_linger
             && self.producer_server_timeout == other.producer_server_timeout
             && self.producer_compression == other.producer_compression
@@ -110,6 +112,7 @@ impl Hash for BenchmarkConfig {
         self.num_records_per_producer_worker_per_batch.hash(state);
         self.producer_batch_size.hash(state);
         self.producer_queue_size.hash(state);
+        self.producer_max_request_size.hash(state);
         self.producer_linger.hash(state);
         self.producer_server_timeout.hash(state);
         self.producer_compression.hash(state);

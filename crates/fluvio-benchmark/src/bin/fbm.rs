@@ -1,9 +1,10 @@
 use std::{
     fs::File,
     io::{Read, Write},
+    mem,
     path::PathBuf,
     sync::Arc,
-    mem,
+    thread::sleep,
     time::Duration,
 };
 
@@ -13,7 +14,7 @@ use anyhow::Result;
 use fluvio_cli_common::install::fluvio_base_dir;
 use fluvio_future::{task::run_block_on, sync::Mutex, future::timeout};
 use futures_util::FutureExt;
-use fluvio::{Compression, Isolation};
+use fluvio::{consumer::MAX_FETCH_BYTES, Compression, Isolation, RetryPolicy};
 use fluvio_benchmark::{
     benchmark_config::{
         benchmark_matrix::{
@@ -76,6 +77,8 @@ fn main() -> Result<()> {
                 println!();
             }
         }
+
+        sleep(Duration::from_secs(10));
     }
 
     let mut all_stats = run_block_on(take_stats(all_stats));
@@ -131,7 +134,7 @@ fn print_example_config() {
         shared_config: SharedConfig {
             matrix_name: "ExampleMatrix".to_string(),
             num_samples: 100,
-            millis_between_samples: Millis::new(500),
+            millis_between_samples: Millis::new(0),
             worker_timeout_seconds: Seconds::new(3600),
         },
         producer_config: FluvioProducerConfig {
@@ -147,6 +150,7 @@ fn print_example_config() {
             ],
             isolation: vec![Isolation::ReadUncommitted, Isolation::ReadCommitted],
             delivery_semantic: vec![DeliverySemanticStrategy::AtMostOnce],
+            max_request_size: vec![1_048_576 * 10],
         },
         consumer_config: FluvioConsumerConfig {
             max_bytes: vec![64000],
@@ -221,34 +225,37 @@ fn default_configs() -> Vec<BenchmarkMatrix> {
     vec![BenchmarkMatrix {
         shared_config: SharedConfig {
             matrix_name: "Fluvio Default Benchmark".to_string(),
-            num_samples: 100,
-            millis_between_samples: Millis::new(250),
+            num_samples: 1000,
+            millis_between_samples: Millis::new(0),
             worker_timeout_seconds: Seconds::new(3000),
         },
         producer_config: FluvioProducerConfig {
-            batch_size: vec![16000],
-            queue_size: vec![100],
-            linger_millis: vec![Millis::new(10)],
+            batch_size: vec![1_048_576],
+            queue_size: vec![1_000_000],
+            max_request_size: vec![1_048_576 * 10],
+            linger_millis: vec![Millis::new(100)],
             server_timeout_millis: vec![Millis::new(5000)],
             compression: vec![Compression::None],
             isolation: vec![Isolation::ReadUncommitted],
             delivery_semantic: vec![DeliverySemanticStrategy::AtLeastOnce(
-                AtLeastOnceStrategy::Exponential,
+                AtLeastOnceStrategy::Custom(RetryPolicy::default()),
             )],
         },
         consumer_config: FluvioConsumerConfig {
-            max_bytes: vec![64000],
+            max_bytes: vec![*MAX_FETCH_BYTES as u64],
             isolation: vec![Isolation::ReadUncommitted],
         },
         topic_config: FluvioTopicConfig {
             num_partitions: vec![1],
         },
         load_config: BenchmarkLoadConfig {
-            num_records_per_producer_worker_per_batch: vec![100, 1000, 10000],
+            //num_records_per_producer_worker_per_batch: vec![100, 1000, 10000],
+            //num_records_per_producer_worker_per_batch: vec![2147483648],
+            num_records_per_producer_worker_per_batch: vec![10],
             record_key_allocation_strategy: vec![RecordKeyAllocationStrategy::NoKey],
-            num_concurrent_producer_workers: vec![1],
-            num_concurrent_consumers_per_partition: vec![1],
-            record_size: vec![1000],
+            num_concurrent_producer_workers: vec![10],
+            num_concurrent_consumers_per_partition: vec![10],
+            record_size: vec![5120],
         },
     }]
 }

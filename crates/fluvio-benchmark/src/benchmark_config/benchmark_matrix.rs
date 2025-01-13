@@ -1,7 +1,10 @@
 use std::fs::File;
 use serde::{Deserialize, Serialize};
 
-use fluvio::{Compression, config::ConfigFile, Isolation, DeliverySemantic, RetryPolicy, RetryStrategy};
+use fluvio::{
+    config::ConfigFile, consumer::MAX_FETCH_BYTES, Compression, DeliverySemantic, Isolation,
+    RetryPolicy, RetryStrategy,
+};
 use super::{BenchmarkConfig, BenchmarkConfigBuilder, CrossIterate, Millis, Seconds};
 
 /// Key used by AllShareSameKey
@@ -21,7 +24,7 @@ impl SharedConfig {
             num_samples: 2,
             worker_timeout_seconds: Seconds::new(300),
             // TODO 0 millis once hanging bug is fixed
-            millis_between_samples: Millis::new(500),
+            millis_between_samples: Millis::new(0),
         }
     }
 }
@@ -31,6 +34,7 @@ impl SharedConfig {
 pub struct FluvioProducerConfig {
     pub batch_size: Vec<u64>,
     pub queue_size: Vec<u64>,
+    pub max_request_size: Vec<u64>,
     pub linger_millis: Vec<Millis>,
     pub server_timeout_millis: Vec<Millis>,
     pub compression: Vec<Compression>,
@@ -41,14 +45,15 @@ pub struct FluvioProducerConfig {
 impl Default for FluvioProducerConfig {
     fn default() -> Self {
         Self {
-            batch_size: vec![16000],
-            queue_size: vec![100],
-            linger_millis: vec![Millis::new(10)],
+            batch_size: vec![1_048_576],
+            queue_size: vec![1_000_000],
+            max_request_size: vec![1_048_576 * 10],
+            linger_millis: vec![Millis::new(100)],
             server_timeout_millis: vec![Millis::new(5000)],
             compression: vec![Compression::None],
             isolation: vec![Isolation::ReadUncommitted],
             delivery_semantic: vec![DeliverySemanticStrategy::AtLeastOnce(
-                AtLeastOnceStrategy::Exponential,
+                AtLeastOnceStrategy::Custom(RetryPolicy::default()),
             )],
         }
     }
@@ -63,7 +68,7 @@ pub struct FluvioConsumerConfig {
 impl Default for FluvioConsumerConfig {
     fn default() -> Self {
         Self {
-            max_bytes: vec![64000],
+            max_bytes: vec![*MAX_FETCH_BYTES as u64],
             isolation: vec![Isolation::ReadUncommitted],
         }
     }
@@ -169,6 +174,9 @@ impl BenchmarkMatrix {
             })
             .cross_iterate(&self.producer_config.queue_size, |v, b| {
                 b.producer_queue_size(v);
+            })
+            .cross_iterate(&self.producer_config.max_request_size, |v, b| {
+                b.producer_max_request_size(v);
             })
             .cross_iterate(&self.producer_config.linger_millis, |v, b| {
                 b.producer_linger(v.into());

@@ -218,15 +218,15 @@ impl RecordMetadata {
         send_time: Instant,
         num_bytes: u64,
     ) -> Result<(), BenchmarkError> {
-        if self.send_time.is_some() {
-            Err(BenchmarkError::ErrorWithExplanation(
-                "Message already marked as sent".to_string(),
-            ))
-        } else {
+        //if self.send_time.is_some() {
+        //    Err(BenchmarkError::ErrorWithExplanation(
+        //        "Message already marked as sent".to_string(),
+        //    ))
+        //} else {
             self.num_bytes = Some(num_bytes);
             self.send_time = Some(send_time);
             Ok(())
-        }
+        //}
     }
 
     pub fn mark_recv_time(
