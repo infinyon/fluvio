@@ -52,6 +52,7 @@ impl ConsumerWorker {
         })
     }
 
+    /* 
     pub async fn consume(&mut self) -> Result<()> {
         self.received.clear();
         loop {
@@ -78,7 +79,9 @@ impl ConsumerWorker {
             }
         }
     }
+    */
 
+    /* 
     pub async fn send_results(&mut self) -> Result<()> {
         for (record, recv_time) in self.received.iter() {
             let data = record.get_value().as_utf8_lossy_string();
@@ -92,4 +95,5 @@ impl ConsumerWorker {
         }
         Ok(())
     }
+    */
 }
