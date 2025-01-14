@@ -3,6 +3,8 @@ use std::io::Cursor;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::io::SeekFrom;
+use std::os::fd::AsRawFd;
+use std::os::fd::FromRawFd;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -70,6 +72,15 @@ pub struct CheckPoint<T> {
     offset: T,
     path: PathBuf,
     file: File,
+}
+
+impl<Offset> Drop for CheckPoint<Offset> {
+    fn drop(&mut self) {
+        let raw_fd = self.file.as_raw_fd();
+        let std_file = unsafe { std::fs::File::from_raw_fd(raw_fd) };
+        std_file.sync_all().expect("sync checkpoint");
+        std::mem::forget(std_file);
+    }
 }
 
 impl<T> CheckPoint<T>
@@ -151,7 +162,6 @@ where
         self.offset = pos;
         self.offset.write_to(&mut contents);
         self.file.write_all(&contents).await?;
-        self.file.sync_all().await?;
         Ok(())
     }
 }
