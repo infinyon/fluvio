@@ -225,15 +225,15 @@ fn default_configs() -> Vec<BenchmarkMatrix> {
     vec![BenchmarkMatrix {
         shared_config: SharedConfig {
             matrix_name: "Fluvio Default Benchmark".to_string(),
-            num_samples: 1000,
+            num_samples: 2,
             millis_between_samples: Millis::new(0),
             worker_timeout_seconds: Seconds::new(3000),
         },
         producer_config: FluvioProducerConfig {
             batch_size: vec![1_048_576],
-            queue_size: vec![1_000_000],
+            queue_size: vec![100],
             max_request_size: vec![1_048_576 * 10],
-            linger_millis: vec![Millis::new(100)],
+            linger_millis: vec![Millis::new(0)],
             server_timeout_millis: vec![Millis::new(5000)],
             compression: vec![Compression::None],
             isolation: vec![Isolation::ReadUncommitted],
@@ -251,11 +251,11 @@ fn default_configs() -> Vec<BenchmarkMatrix> {
         load_config: BenchmarkLoadConfig {
             //num_records_per_producer_worker_per_batch: vec![100, 1000, 10000],
             //num_records_per_producer_worker_per_batch: vec![2147483648],
-            num_records_per_producer_worker_per_batch: vec![10],
+            num_records_per_producer_worker_per_batch: vec![50000],
             record_key_allocation_strategy: vec![RecordKeyAllocationStrategy::NoKey],
-            num_concurrent_producer_workers: vec![10],
-            num_concurrent_consumers_per_partition: vec![10],
-            record_size: vec![5120],
+            num_concurrent_producer_workers: vec![1],
+            num_concurrent_consumers_per_partition: vec![1],
+            record_size: vec![5000],
         },
     }]
 }

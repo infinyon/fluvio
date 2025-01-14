@@ -53,7 +53,7 @@ impl ProducerWorker {
         //let cache_messages = CachedMessages::new(config.record_size, 100000);
         let cache_messages = CachedMessages::new(
             config.record_size,
-            config.num_records_per_producer_worker_per_batch * 10000
+            config.num_records_per_producer_worker_per_batch * 10000,
         );
         Ok(ProducerWorker {
             fluvio_producer,
