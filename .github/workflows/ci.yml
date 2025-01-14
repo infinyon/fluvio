@@ -1,8 +1,6 @@
 # Build platform and run smoke test
 name: CI
 
-permissions: read-all
-
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
