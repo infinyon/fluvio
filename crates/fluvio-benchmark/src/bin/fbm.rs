@@ -1,18 +1,6 @@
-use std::{
-    fs::File,
-    io::{Read, Write},
-    path::PathBuf,
-    sync::Arc,
-    mem,
-    time::Duration,
-};
-
 use clap::{arg, Parser};
 use anyhow::Result;
 
-use fluvio_cli_common::install::fluvio_base_dir;
-use fluvio_future::{task::run_block_on, sync::Mutex, future::timeout};
-use futures_util::FutureExt;
 use fluvio::{Compression, Isolation};
 use fluvio_benchmark::{
     benchmark_config::{
@@ -24,9 +12,8 @@ use fluvio_benchmark::{
         Seconds, Millis,
     },
     benchmark_driver::BenchmarkDriver,
-    stats::{AllStats, AllStatsSync},
-    BenchmarkError,
 };
+use fluvio_future::task::run_block_on;
 
 fn main() -> Result<()> {
     fluvio_future::subscriber::init_logger();
@@ -38,7 +25,7 @@ fn main() -> Result<()> {
     }
 
     // TODO accept directory of files.
-    let matrices = if args.test_cluster {
+    let mut matrices = if args.test_cluster {
         test_configs()
     } else {
         match args.config {
@@ -47,81 +34,33 @@ fn main() -> Result<()> {
         }
     };
 
-    let all_stats = Arc::new(Mutex::new(AllStats::default()));
-    let previous = load_previous_stats();
-
-    println!("# Fluvio Benchmark Results");
-    for matrix in matrices {
-        println!("## Matrix: {}", matrix.shared_config.matrix_name);
-        for (i, config) in matrix.into_iter().enumerate() {
-            run_block_on(timeout(
-                // Give time for workers to clean up if workers timeout.
-                config.worker_timeout + Duration::from_secs(10),
-                BenchmarkDriver::run_benchmark(config.clone(), all_stats.clone()),
-            ))??;
-            println!("### {}: Iteration {:3.0}", config.matrix_name, i);
-            println!("{}", config.to_markdown());
-            println!();
-            run_block_on(
-                all_stats
-                    .lock()
-                    .map(|a| println!("{}", a.to_markdown(&config))),
-            );
-            if let Some(other) = previous.as_ref() {
-                run_block_on(
-                    all_stats
-                        .lock()
-                        .map(|a| println!("{}", a.compare_stats(&config, other))),
-                );
-                println!();
-            }
+    for matrix in &mut matrices {
+        if let Some(producer_batch_size) = args.producer_batch_size {
+            matrix.producer_config.batch_size = vec![producer_batch_size];
+        }
+        if let Some(record_size) = args.record_size {
+            matrix.load_config.record_size = vec![record_size];
         }
     }
 
-    let mut all_stats = run_block_on(take_stats(all_stats));
+    run_block_on(run_benchmark(matrices))
+}
 
-    if let Some(previous) = previous {
-        all_stats.merge(&previous)
+async fn run_benchmark(matrices: Vec<BenchmarkMatrix>) -> Result<()> {
+    // let previous = load_previous_stats();
+
+    //println!("# Fluvio Benchmark Results");
+    for matrix in matrices {
+        // println!(" Matrix: {}", matrix.shared_config.matrix_name);
+        println!("{:#?}", matrix);
+        for (i, config) in matrix.into_iter().enumerate() {
+            BenchmarkDriver::run_benchmark(config.clone()).await?;
+            println!("### {}: Iteration {:3.0}", config.matrix_name, i);
+            println!("{}", config.to_markdown());
+            println!();
+        }
     }
-    write_stats(all_stats)
-}
 
-async fn take_stats(all_stats: AllStatsSync) -> AllStats {
-    let mut guard = all_stats.lock().await;
-    mem::take(&mut *guard)
-}
-fn benchmarking_dir() -> Result<PathBuf> {
-    let dir_path = fluvio_base_dir()?.join("benchmarks");
-    if !dir_path.exists() {
-        std::fs::create_dir_all(&dir_path)?;
-    }
-    Ok(dir_path)
-}
-
-fn historic_run_path() -> Result<PathBuf> {
-    let mut path = benchmarking_dir()?;
-    path.push("previous");
-    Ok(path)
-}
-
-fn load_previous_stats() -> Option<AllStats> {
-    let mut file = File::open(historic_run_path().ok()?).ok()?;
-    let mut buffer: Vec<u8> = Vec::new();
-    file.read_to_end(&mut buffer).ok()?;
-    AllStats::decode(&buffer).ok()
-}
-
-fn write_stats(stats: AllStats) -> Result<()> {
-    let encoded = stats.encode();
-
-    let mut file = std::fs::OpenOptions::new()
-        .write(true)
-        .create(true)
-        .truncate(true)
-        .open(historic_run_path()?)
-        .map_err(|e| BenchmarkError::ErrorWithExplanation(format!("{e:?}")))?;
-    file.write(&encoded)
-        .map_err(|e| BenchmarkError::ErrorWithExplanation(format!("{e:?}")))?;
     Ok(())
 }
 
@@ -135,9 +74,9 @@ fn print_example_config() {
             worker_timeout_seconds: Seconds::new(3600),
         },
         producer_config: FluvioProducerConfig {
-            batch_size: vec![16000],
+            batch_size: vec![1048576],
             queue_size: vec![100],
-            linger_millis: vec![Millis::new(10)],
+            linger_millis: vec![Millis::new(100)],
             server_timeout_millis: vec![Millis::new(5000)],
             compression: vec![
                 Compression::None,
@@ -166,7 +105,7 @@ fn print_example_config() {
             ],
             num_concurrent_producer_workers: vec![1],
             num_concurrent_consumers_per_partition: vec![1],
-            record_size: vec![1000],
+            record_size: vec![5000],
         },
     };
     println!("{}", serde_yaml::to_string(&example_config).unwrap());
@@ -226,9 +165,9 @@ fn default_configs() -> Vec<BenchmarkMatrix> {
             worker_timeout_seconds: Seconds::new(3000),
         },
         producer_config: FluvioProducerConfig {
-            batch_size: vec![16000],
-            queue_size: vec![100],
-            linger_millis: vec![Millis::new(10)],
+            batch_size: vec![1000000],
+            queue_size: vec![10],
+            linger_millis: vec![Millis::new(0)],
             server_timeout_millis: vec![Millis::new(5000)],
             compression: vec![Compression::None],
             isolation: vec![Isolation::ReadUncommitted],
@@ -244,11 +183,11 @@ fn default_configs() -> Vec<BenchmarkMatrix> {
             num_partitions: vec![1],
         },
         load_config: BenchmarkLoadConfig {
-            num_records_per_producer_worker_per_batch: vec![100, 1000, 10000],
+            num_records_per_producer_worker_per_batch: vec![100],
             record_key_allocation_strategy: vec![RecordKeyAllocationStrategy::NoKey],
             num_concurrent_producer_workers: vec![1],
             num_concurrent_consumers_per_partition: vec![1],
-            record_size: vec![1000],
+            record_size: vec![5000],
         },
     }]
 }
@@ -268,4 +207,10 @@ struct Args {
     /// Run a suite of tests to ensure fluvio is behaving as expected
     #[arg(short, long, exclusive(true))]
     test_cluster: bool,
+
+    #[arg(long)]
+    producer_batch_size: Option<u64>,
+
+    #[arg(long)]
+    record_size: Option<u64>,
 }
