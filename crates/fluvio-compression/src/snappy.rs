@@ -31,7 +31,7 @@ mod tests {
         let text = "FLUVIO_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
         let compressed = compress(text.as_bytes()).unwrap();
 
-        assert!(compressed.len() < text.as_bytes().len());
+        assert!(compressed.len() < text.len());
 
         let uncompressed = String::from_utf8(uncompress(compressed.reader()).unwrap()).unwrap();
 

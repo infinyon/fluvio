@@ -167,7 +167,7 @@ where
             let mut batches = self.batches_lock.batches.lock().await;
             while !batches.is_empty() {
                 let ready = force
-                    || batches.front().map_or(false, |batch| {
+                    || batches.front().is_some_and(|batch| {
                         batch.is_full() || batch.elapsed() as u128 >= self.config.linger.as_millis()
                     });
                 if ready {
