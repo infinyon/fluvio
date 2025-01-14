@@ -60,7 +60,7 @@ jobs:
         rust-target:
           - x86_64-unknown-linux-musl
           - aarch64-unknown-linux-musl
-        binary: [fluvio, fluvio-run, fluvio-test, fluvio-channel, smdk, fbm, cdk, fvm]
+        binary: [fluvio, fluvio-run, fluvio-test, fluvio-channel, smdk, fluvio-bench, cdk, fvm]
         os: [ubuntu-latest]
     env:
       RUST_BACKTRACE: full
@@ -110,9 +110,9 @@ jobs:
         if: matrix.binary == 'cdk'
         run: make build-cdk
 
-      - name: Build fbm
-        if: matrix.binary == 'fbm'
-        run: make build-fbm
+      - name: Build fluvio-bench
+        if: matrix.binary == 'fluvio-bench'
+        run: make build-bench
 
       - name: Build fvm
         if: matrix.binary == 'fvm'

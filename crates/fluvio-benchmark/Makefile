@@ -1,2 +1,2 @@
 build:
-	cargo build --bin fbm --release
+	cargo build --bin fluvio-bench --release

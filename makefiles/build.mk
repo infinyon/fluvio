@@ -8,8 +8,8 @@ build-smdk: install_rustup_target
 build-cdk: install_rustup_target
 	$(CARGO_BUILDER) build --bin cdk -p cdk $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG) $(SMARTENGINE_FLAG)
 
-build-fbm: install_rustup_target
-	$(CARGO_BUILDER) build --bin fbm -p fluvio-benchmark $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG) $(SMARTENGINE_FLAG)
+build-bench: install_rustup_target
+	$(CARGO_BUILDER) build --bin fluvio-bench -p fluvio-benchmark $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG) $(SMARTENGINE_FLAG)
 
 build-fvm: install_rustup_target
 	$(CARGO_BUILDER) build --bin fvm -p fluvio-version-manager $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG) $(SMARTENGINE_FLAG)
