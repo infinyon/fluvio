@@ -16,7 +16,7 @@ required-features = ["cli", "fluvio-future/subscriber"]
 
 [features]
 default = ["iterators"]
-cli = ["clap"]
+cli = ["clap", "humantime"]
 iterators = []
 fixture = []
 
@@ -29,34 +29,42 @@ required-features = ["fixture"]
 [dependencies]
 anyhow = { workspace = true }
 async-lock = { workspace = true }
-blocking = "1.1.0"
+blocking = { workspace = true }
 derive_builder = { workspace = true }
 bytes = { workspace = true }
 nix = { workspace = true }
 thiserror = { workspace = true }
-libc = "0.2.116"
+libc = { workspace = true }
 futures-lite = { workspace = true }
-pin-utils = "0.1.0"
+pin-utils = { workspace = true }
 async-channel = { workspace = true }
 async-trait = { workspace = true }
-clap = { workspace = true, features = ["std", "derive", "help", "usage", "error-context"], optional = true }
-serde = { workspace = true, features = ['derive','std'] }
+serde = { workspace = true, features = ['derive', 'std'] }
 tracing = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
 
+# these are for CLI only
+clap = { workspace = true, features = [
+    "std",
+    "derive",
+    "help",
+    "usage",
+    "error-context",
+], optional = true }
+humantime = { workspace = true, optional = true }
 
 # Fluvio dependencies
-fluvio-types = { workspace = true, features = ["events",]}
-fluvio-future = { workspace = true, features = ["fs", "mmap", "zero_copy"] }
+fluvio-types = { workspace = true, features = ["events"] }
+fluvio-future = { workspace = true, features = ["fs", "mmap", "zero_copy","timer"] }
 fluvio-protocol = { workspace = true }
-fluvio-controlplane-metadata = { workspace = true  }
+fluvio-controlplane-metadata = { workspace = true }
 fluvio-controlplane = { workspace = true }
-fluvio-spu-schema = { workspace = true, features = [ "file"] }
+fluvio-spu-schema = { workspace = true, features = ["file"] }
 
 [dev-dependencies]
 fluvio-future = { workspace = true, features = ["fixture"] }
-fluvio-socket = { workspace = true,  features = ["file"] }
-fluvio-protocol = { workspace = true,  features = ["fixture"] }
+fluvio-socket = { workspace = true, features = ["file"] }
+fluvio-protocol = { workspace = true, features = ["fixture"] }
 flv-util = { workspace = true, features = ["fixture"] }
 
 [package.metadata.cargo-udeps.ignore]

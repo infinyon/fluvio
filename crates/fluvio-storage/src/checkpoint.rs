@@ -21,6 +21,8 @@ use fluvio_future::fs::util;
 
 use crate::config::SharedReplicaConfig;
 
+pub const HW_CHECKPOINT_FILE_NAME: &str = "replication.chk";
+
 pub trait ReadToBuf: Sized {
     fn read_from<B>(buf: &mut B) -> Self
     where
@@ -117,6 +119,12 @@ where
 
     pub fn get_offset(&self) -> &T {
         &self.offset
+    }
+
+    /// return last modified time
+    pub async fn get_last_modified(&self) -> Result<std::time::SystemTime, IoError> {
+        let metadata = self.file.metadata().await?;
+        Ok(metadata.modified()?)
     }
 
     /// read contents of the

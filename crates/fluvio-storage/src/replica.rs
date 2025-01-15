@@ -16,6 +16,7 @@ use fluvio_protocol::record::{Offset, ReplicaKey, Size, Size64};
 use fluvio_protocol::record::{Batch, BatchRecords};
 use fluvio_protocol::record::RecordSet;
 
+use crate::checkpoint::HW_CHECKPOINT_FILE_NAME;
 use crate::{OffsetInfo, checkpoint::CheckPoint};
 use crate::segments::SharedSegments;
 use crate::segment::MutableSegment;
@@ -254,8 +255,12 @@ impl FileReplica {
 
         let last_base_offset = active_segment.get_base_offset();
 
-        let mut commit_checkpoint: CheckPoint<Offset> =
-            CheckPoint::create(shared_config.clone(), "replication.chk", last_base_offset).await?;
+        let mut commit_checkpoint: CheckPoint<Offset> = CheckPoint::create(
+            shared_config.clone(),
+            HW_CHECKPOINT_FILE_NAME,
+            last_base_offset,
+        )
+        .await?;
 
         // ensure checkpoint is valid
         let hw = *commit_checkpoint.get_offset();
