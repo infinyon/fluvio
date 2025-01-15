@@ -6,7 +6,7 @@ copy-profile:
 	fluvio profile export > fluvio_profile.toml
 
 build: copy-profile
-	docker build --network host --progress=plain -t $(ORG)/$(IMAGE):$(VERSION) .
+	docker build --progress=plain -t $(ORG)/$(IMAGE):$(VERSION) .
 
 run: build
-	docker run --network host --name connector $(ORG)/$(IMAGE):$(VERSION)
+	docker run --network host --rm  $(ORG)/$(IMAGE):$(VERSION)
