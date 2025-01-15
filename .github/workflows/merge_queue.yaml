@@ -1,5 +1,6 @@
 # Build all binaries
-name: mergegroup build on ${{ github.event.merge_group.head_commit.message }}
+name: mergegroup build
+run-name: mergegroup build on ${{ github.event.merge_group.head_commit.message }}
 
 permissions: read-all
 
