@@ -1,0 +1,9 @@
+apiVersion: 0.1.0
+meta:
+  version: 0.3.8
+  name: http-quotes
+  type: http-source
+  topic: quotes
+http:
+  endpoint: https://demo-data.infinyon.com/api/quote
+  interval: 2s
