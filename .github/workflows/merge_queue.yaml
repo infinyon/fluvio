@@ -9,13 +9,9 @@ concurrency:
 
 on:
   merge_group:
-  pull_request:
-    branches: [master]
-    paths:
-      - "**"
-      - "!/*.md"
-      - "!/**.md"
-      - "!/rfc/**"
+#  pull_request:
+#    branches: [master]
+
 
 
 env:
