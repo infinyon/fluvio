@@ -161,6 +161,11 @@ where
         self.file.write_all(&contents).await?;
         Ok(())
     }
+
+    #[cfg(test)]
+    async fn sync_all(&mut self) -> Result<(), IoError> {
+        self.file.sync_all().await
+    }
 }
 
 #[cfg(test)]
@@ -191,6 +196,7 @@ mod tests {
         assert_eq!(*ck.get_offset(), 0);
         ck.write(10).await.expect("first write");
         ck.write(40).await.expect("2nd write");
+        ck.sync_all().await.expect("sync");
 
         drop(ck);
 
