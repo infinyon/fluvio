@@ -3076,6 +3076,7 @@ dependencies = [
  "fluvio-types",
  "flv-util",
  "futures-lite",
+ "humantime",
  "libc",
  "nix",
  "pin-utils",
