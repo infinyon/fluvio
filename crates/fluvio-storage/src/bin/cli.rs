@@ -5,6 +5,7 @@ use clap::Parser;
 use anyhow::{Result, anyhow};
 
 use fluvio_controlplane_metadata::partition::ReplicaKey;
+use fluvio_future::timer::sleep;
 use fluvio_protocol::record::Offset;
 use fluvio_future::task::run_block_on;
 use fluvio_storage::checkpoint::{CheckPoint, HW_CHECKPOINT_FILE_NAME};
@@ -256,6 +257,9 @@ pub(crate) async fn replica_info(opt: ReplicaOpt) -> Result<()> {
 pub(crate) struct Hw {
     #[arg(long)]
     path: PathBuf,
+
+    #[arg(long)]
+    offset: Option<Offset>,
 }
 
 impl Hw {
@@ -266,7 +270,18 @@ impl Hw {
             ..Default::default()
         };
 
-        let commit_checkpoint: CheckPoint<Offset> =
+        if let Some(offset) = self.offset {
+            println!("writing hw: {offset} to checkpoint");
+            let mut commit_checkpoint =
+                CheckPoint::create(Arc::new(config.into()), HW_CHECKPOINT_FILE_NAME, offset)
+                    .await?;
+            commit_checkpoint.write(offset).await?;
+            sleep(std::time::Duration::from_secs(1)).await;
+            println!("hw: {offset} written to checkpoint");
+            return Ok(());
+        }
+
+        let commit_checkpoint =
             CheckPoint::create(Arc::new(config.into()), HW_CHECKPOINT_FILE_NAME, 0).await?;
 
         let hw = commit_checkpoint.get_offset();

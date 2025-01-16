@@ -37,7 +37,7 @@ pub struct FileReplica {
     option: Arc<SharedReplicaConfig>,
     active_segment: MutableSegment,
     prev_segments: Arc<SharedSegments>,
-    commit_checkpoint: CheckPoint<Offset>,
+    commit_checkpoint: CheckPoint,
     cleaner: Arc<Cleaner>,
     size: Arc<ReplicaSize>,
 }
@@ -74,7 +74,7 @@ impl ReplicaStorage for FileReplica {
 
     #[inline(always)]
     fn get_hw(&self) -> Offset {
-        *self.commit_checkpoint.get_offset()
+        self.commit_checkpoint.get_offset()
     }
 
     /// offset mark that beginning of uncommitted
@@ -255,7 +255,7 @@ impl FileReplica {
 
         let last_base_offset = active_segment.get_base_offset();
 
-        let mut commit_checkpoint: CheckPoint<Offset> = CheckPoint::create(
+        let mut commit_checkpoint = CheckPoint::create(
             shared_config.clone(),
             HW_CHECKPOINT_FILE_NAME,
             last_base_offset,
@@ -263,7 +263,7 @@ impl FileReplica {
         .await?;
 
         // ensure checkpoint is valid
-        let hw = *commit_checkpoint.get_offset();
+        let hw = commit_checkpoint.get_offset();
         let leo = active_segment.get_end_offset();
         if hw > leo {
             info!(
