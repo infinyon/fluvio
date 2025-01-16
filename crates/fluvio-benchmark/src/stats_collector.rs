@@ -1,8 +1,7 @@
-use std::sync::atomic::{AtomicBool, AtomicU64};
+use std::sync::atomic::AtomicU64;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct ProduceStat {
     pub message_send: AtomicU64,
     pub message_bytes: AtomicU64,
-    pub end: AtomicBool,
 }

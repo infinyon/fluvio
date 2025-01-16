@@ -55,7 +55,7 @@ jobs:
         rust-target:
           - x86_64-unknown-linux-musl
           - aarch64-unknown-linux-musl
-        binary: [fluvio, fluvio-run, fluvio-test, fluvio-channel, smdk, fbm, cdk, fvm]
+        binary: [fluvio, fluvio-run, fluvio-test, fluvio-channel, smdk, fluvio-benchmark, cdk, fvm]
         os: [ubuntu-latest]
     env:
       RUST_BACKTRACE: full
@@ -105,9 +105,9 @@ jobs:
         if: matrix.binary == 'cdk'
         run: make build-cdk
 
-      - name: Build fbm
-        if: matrix.binary == 'fbm'
-        run: make build-fbm
+      - name: Build fluvio-benchmark
+        if: matrix.binary == 'fluvio-benchmark'
+        run: make build-benchmark
 
       - name: Build fvm
         if: matrix.binary == 'fvm'
@@ -191,22 +191,22 @@ jobs:
             rust-target: aarch64-apple-darwin
             binary: cdk
 
-          # fbm
+          # fluvio-benchmark
           - os: ubuntu-latest
             rust-target: arm-unknown-linux-gnueabihf
-            binary: fbm
+            binary: fluvio-benchmark
           - os: ubuntu-latest
             rust-target: armv7-unknown-linux-gnueabihf
-            binary: fbm
+            binary: fluvio-benchmark
           - os: ubuntu-24.04
             rust-target: x86_64-pc-windows-gnu
-            binary: fbm.exe
+            binary: fluvio-benchmark.exe
           - os: macos-latest
             rust-target: x86_64-apple-darwin
-            binary: fbm
+            binary: fluvio-benchmark
           - os: macos-latest
             rust-target: aarch64-apple-darwin
-            binary: fbm
+            binary: fluvio-benchmark
 
           # fvm
           - os: ubuntu-latest
@@ -316,15 +316,15 @@ jobs:
         if: matrix.binary == 'cdk'
         run: make build-cdk
 
-      - name: Build fbm
+      - name: Build fluvio-benchmark
         timeout-minutes: 40
-        if: matrix.binary == 'fbm'
-        run: make build-fbm
+        if: matrix.binary == 'fluvio-benchmark'
+        run: make build-benchmark
 
-      - name: Build fbm.exe
+      - name: Build fluvio-benchmark.exe
         timeout-minutes: 40
-        if: matrix.binary == 'fbm.exe'
-        run: make build-fbm
+        if: matrix.binary == 'fluvio-benchmark.exe'
+        run: make build-benchmark
 
       - name: Build fvm
         timeout-minutes: 40
@@ -476,7 +476,7 @@ jobs:
           - arm-unknown-linux-gnueabihf
           - x86_64-apple-darwin
           - x86_64-unknown-linux-musl
-        artifact: [fluvio, fluvio-channel, smdk, fbm, cdk, fvm]
+        artifact: [fluvio, fluvio-channel, smdk, fluvio-benchmark, cdk, fvm]
         exclude:
           - rust-target: armv7-unknown-linux-gnueabihf
             artifact: smdk
@@ -508,7 +508,7 @@ jobs:
           - rust-target: x86_64-unknown-linux-musl
             artifact: fluvio-test
           - rust-target: x86_64-pc-windows-gnu
-            artifact: fbm.exe
+            artifact: fluvio-benchmark.exe
     permissions: write-all
     steps:
       #- name: Login GH CLI

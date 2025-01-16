@@ -65,6 +65,7 @@ mod root {
 
     use clap::{Parser, Command as ClapCommand, CommandFactory};
     use clap_complete::{generate, Shell};
+    use fluvio_benchmark::cli::BenchmarkOpt;
     use tracing::debug;
     use anyhow::Result;
 
@@ -126,6 +127,9 @@ mod root {
         #[command(flatten)]
         #[cfg(feature = "consumer")]
         Fluvio(FluvioCmd),
+
+        #[command(name = "bench", alias = "benchmark")]
+        Bench(BenchmarkOpt),
 
         /// Manage Profiles, which describe linked clusters
         ///
@@ -214,6 +218,9 @@ mod root {
                 }
                 Self::Metadata(metadata) => {
                     metadata.process()?;
+                }
+                Self::Bench(bench) => {
+                    bench.process().await?;
                 }
 
                 Self::External(args) => {

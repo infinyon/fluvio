@@ -3,106 +3,152 @@ use std::sync::{atomic::Ordering, Arc};
 use anyhow::Result;
 
 use fluvio::{
-    dataplane::{bytes::Bytes, record::RecordData},
-    Fluvio, RecordKey, TopicProducerConfigBuilder, TopicProducerPool,
+    dataplane::record::RecordData, DeliverySemantic, Fluvio, Isolation, RecordKey,
+    TopicProducerConfigBuilder, TopicProducerPool,
 };
 
 use crate::{
-    benchmark_config::{
-        benchmark_matrix::{RecordKeyAllocationStrategy, SHARED_KEY},
-        BenchmarkConfig,
-    },
-    generate_random_string,
+    config::{ProducerConfig, RecordKeyAllocationStrategy},
     stats_collector::ProduceStat,
-    BenchmarkRecord,
+    utils,
 };
+
+const SHARED_KEY: &str = "shared_key";
 
 pub struct ProducerWorker {
     fluvio_producer: TopicProducerPool,
-    records_to_send: Option<Vec<BenchmarkRecord>>,
-    config: BenchmarkConfig,
-    producer_id: u64,
+    records_to_send: Vec<BenchmarkRecord>,
     stat: Arc<ProduceStat>,
 }
 impl ProducerWorker {
-    pub async fn new(
-        producer_id: u64,
-        config: BenchmarkConfig,
-        stat: Arc<ProduceStat>,
-    ) -> Result<Self> {
+    pub async fn new(id: u64, config: ProducerConfig, stat: Arc<ProduceStat>) -> Result<Self> {
         let fluvio = Fluvio::connect().await?;
 
         let fluvio_config = TopicProducerConfigBuilder::default()
-            .batch_size(config.producer_batch_size as usize)
-            .batch_queue_size(config.producer_queue_size as usize)
-            .max_request_size(3200000)
-            .linger(config.producer_linger)
-            // todo allow alternate partitioner
-            .compression(config.producer_compression)
-            .timeout(config.producer_server_timeout)
-            .isolation(config.producer_isolation)
-            .delivery_semantic(config.producer_delivery_semantic)
+            .batch_size(config.batch_size.as_u64() as usize)
+            .batch_queue_size(config.queue_size as usize)
+            .max_request_size(config.max_request_size.as_u64() as usize)
+            .linger(config.linger)
+            .compression(config.compression)
+            .timeout(config.server_timeout)
+            .isolation(Isolation::ReadUncommitted)
+            .delivery_semantic(DeliverySemantic::default())
             .build()?;
+
         let fluvio_producer = fluvio
-            .topic_producer_with_config(config.topic_name.clone(), fluvio_config)
+            .topic_producer_with_config(
+                config.shared_config.topic_config.topic_name.clone(),
+                fluvio_config,
+            )
             .await?;
+
+        let num_records = records_per_producer(
+            id,
+            config.shared_config.load_config.num_producers,
+            config.shared_config.load_config.num_records,
+        );
+
+        println!("producer {} will send {} records", id, num_records);
+
+        let records_to_send = create_records(config.clone(), num_records, id);
+
+        println!(
+            "producer {} will send {} records",
+            id,
+            records_to_send.len()
+        );
+
         Ok(ProducerWorker {
             fluvio_producer,
-            records_to_send: None,
-            config,
-            producer_id,
+            records_to_send,
             stat,
         })
     }
-    pub async fn prepare_for_batch(&mut self) {
-        let records = (0..self.config.num_records_per_producer_worker_per_batch)
-            .map(|i| {
-                let key = match self.config.record_key_allocation_strategy {
-                    RecordKeyAllocationStrategy::NoKey => RecordKey::NULL,
-                    RecordKeyAllocationStrategy::AllShareSameKey => RecordKey::from(SHARED_KEY),
-                    RecordKeyAllocationStrategy::ProducerWorkerUniqueKey => {
-                        RecordKey::from(format!("producer-{}", self.producer_id.clone()))
-                    }
-                    RecordKeyAllocationStrategy::RoundRobinKey(x) => {
-                        RecordKey::from(format!("rr-{}", i % x))
-                    }
-                    RecordKeyAllocationStrategy::RandomKey => {
-                        RecordKey::from(format!("random-{}", generate_random_string(10)))
-                    }
-                };
-                let data = generate_random_string(self.config.record_size as usize);
-                BenchmarkRecord::new(key, data)
-            })
-            .collect();
-        self.records_to_send = Some(records);
-    }
 
-    pub async fn send_batch(&mut self) -> Result<()> {
+    pub async fn send_batch(self) -> Result<()> {
         println!("producer is sending batch");
-        let data_len = self.config.record_size as usize;
-        let data = Bytes::from(generate_random_string(data_len));
-        //    let record = BenchmarkRecord::new(RecordKey::NULL, rando_datam);
-        let record_data: RecordData = data.into();
 
-        loop {
-            if self.stat.end.load(Ordering::Relaxed) {
-                self.fluvio_producer.flush().await?;
-                break;
-            }
-
-            //println!("Sending record: {}", records.len());
+        for record in self.records_to_send.into_iter() {
+            self.fluvio_producer
+                .send(record.key, record.data.clone())
+                .await?;
             self.stat
                 .message_bytes
-                .fetch_add(data_len as u64, Ordering::Relaxed);
+                .fetch_add(record.data.len() as u64, Ordering::Relaxed);
             self.stat.message_send.fetch_add(1, Ordering::Relaxed);
-
-            self.fluvio_producer
-                .send(RecordKey::NULL, record_data.clone())
-                .await?;
         }
 
+        self.fluvio_producer.flush().await?;
         println!("producer is done sending batch");
 
         Ok(())
+    }
+}
+
+fn create_records(config: ProducerConfig, num_records: u64, id: u64) -> Vec<BenchmarkRecord> {
+    utils::generate_random_string_vec(
+        num_records as usize,
+        config.shared_config.load_config.record_size.as_u64() as usize,
+    )
+    .into_iter()
+    .map(|data| {
+        let key = match config
+            .shared_config
+            .load_config
+            .record_key_allocation_strategy
+        {
+            RecordKeyAllocationStrategy::NoKey => RecordKey::NULL,
+            RecordKeyAllocationStrategy::AllShareSameKey => RecordKey::from(SHARED_KEY),
+            RecordKeyAllocationStrategy::ProducerWorkerUniqueKey => {
+                RecordKey::from(format!("producer-{}", id.clone()))
+            }
+            RecordKeyAllocationStrategy::RandomKey => {
+                //TODO: this could be optimized
+                RecordKey::from(format!("random-{}", utils::generate_random_string(10)))
+            }
+        };
+        BenchmarkRecord::new(key, data.into())
+    })
+    .collect()
+}
+
+pub struct BenchmarkRecord {
+    pub key: RecordKey,
+    pub data: RecordData,
+}
+
+impl BenchmarkRecord {
+    pub fn new(key: RecordKey, data: RecordData) -> Self {
+        Self { key, data }
+    }
+}
+
+/// Calculate the number of records each producer should send
+fn records_per_producer(id: u64, num_producers: u64, num_records: u64) -> u64 {
+    if id == 0 {
+        num_records / num_producers + num_records % num_producers
+    } else {
+        num_records / num_producers
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_num_records_per_producer() {
+        let num_producers = 3;
+        let num_records = 10;
+
+        assert_eq!(records_per_producer(0, num_producers, num_records), 4);
+        assert_eq!(records_per_producer(1, num_producers, num_records), 3);
+        assert_eq!(records_per_producer(2, num_producers, num_records), 3);
+
+        let num_producers = 3;
+        let num_records = 12;
+        assert_eq!(records_per_producer(0, num_producers, num_records), 4);
+        assert_eq!(records_per_producer(1, num_producers, num_records), 4);
+        assert_eq!(records_per_producer(2, num_producers, num_records), 4);
     }
 }
