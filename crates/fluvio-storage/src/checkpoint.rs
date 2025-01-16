@@ -124,7 +124,7 @@ where
     /// return last modified time
     pub async fn get_last_modified(&self) -> Result<std::time::SystemTime, IoError> {
         let metadata = self.file.metadata().await?;
-        Ok(metadata.modified()?)
+        metadata.modified()
     }
 
     /// read contents of the
