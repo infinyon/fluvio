@@ -123,7 +123,7 @@ impl PackageInfo {
         Ok(path)
     }
 
-    /// path to package's wasm32-wasi target
+    /// path to package's wasm32-wasip1 target
     pub fn target_wasm32_wasi_path(&self) -> anyhow::Result<PathBuf> {
         let mut path = self.target_dir.clone();
         path.push(WASM_TARGET);

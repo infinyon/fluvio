@@ -48,7 +48,7 @@ RUN curl -fsS https://hub.infinyon.cloud/install/install.sh?ctx=ci | bash
 # add Fluvio smartmodule deps
 # source cargo/env is a little bit of a workaround
 RUN source "$HOME/.cargo/env" && rustup target install wasm32-unknown-unknown
-RUN source "$HOME/.cargo/env" && rustup target install wasm32-wasi
+RUN source "$HOME/.cargo/env" && rustup target install wasm32-wasip1
 RUN source "$HOME/.cargo/env" && cargo install cargo-generate
 
 # create example-sm dir with a template project in it
