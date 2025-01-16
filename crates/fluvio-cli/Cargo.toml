@@ -76,6 +76,7 @@ fluvio-cluster = { path = "../fluvio-cluster", default-features = false, feature
 
 fluvio = { workspace = true }
 fluvio-auth = { workspace = true }
+fluvio-benchmark = { workspace = true }
 fluvio-command = { workspace = true  }
 fluvio-package-index = { workspace = true }
 fluvio-extension-common = { workspace = true,  features = ["target", "installation"] }

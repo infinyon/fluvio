@@ -124,6 +124,8 @@ portpicker = "0.1.1"
 proc-macro2 = "1.0"
 quote = "1.0"
 rand = "0.8.5"
+rayon = "1.10.0"
+rand_xoshiro = "0.6.0"
 regex = "1.7"
 reqwest = "0.12"
 semver = "1.0.13"
@@ -172,6 +174,7 @@ trybuild = { branch = "check_option", git = "https://github.com/infinyon/trybuil
 # Internal fluvio dependencies
 fluvio = { version = "0.24.0", path = "crates/fluvio" }
 fluvio-auth = { path = "crates/fluvio-auth" }
+fluvio-benchmark = { path = "crates/fluvio-benchmark" }
 fluvio-channel = { path = "crates/fluvio-channel" }
 fluvio-cli-common = { path = "crates/fluvio-cli-common"}
 fluvio-compression = { version = "0.3.2", path = "crates/fluvio-compression", default-features = false }
