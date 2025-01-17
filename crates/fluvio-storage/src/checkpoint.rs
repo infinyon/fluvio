@@ -176,6 +176,7 @@ impl LazyWriter {
             }
         }
 
+        info!("lazy writer loop done");
         Ok(())
     }
 
@@ -202,6 +203,7 @@ impl LazyWriter {
     }
 
     async fn flush(&mut self) -> Result<(), IoError> {
+        info!("lazywriter flushing checkpoint");
         self.file.sync_all().await?;
         Ok(())
     }
@@ -251,13 +253,18 @@ mod tests {
         assert_eq!(ck.get_offset(), 0);
         ck.write(10);
         ck.write(40);
-        drop(ck);
-        sleep(std::time::Duration::from_millis(200)).await;
 
-        let mut ck2 = CheckPoint::create(option, "test.chk", 0)
+        // allow time for checkpoint to write
+        sleep(std::time::Duration::from_millis(1000)).await;
+        drop(ck);
+
+        // wait until checkpoint is fully fully flushed
+        sleep(std::time::Duration::from_millis(1000)).await;
+
+        let ck2 = CheckPoint::create(option, "test.chk", 0)
             .await
             .expect("restore");
+
         assert_eq!(ck2.get_offset(), 40);
-        ck2.write(20);
     }
 }

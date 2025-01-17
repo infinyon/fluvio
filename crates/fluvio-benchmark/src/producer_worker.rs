@@ -1,5 +1,3 @@
-use std::sync::{atomic::Ordering, Arc};
-
 use anyhow::Result;
 
 use fluvio::{
@@ -9,19 +7,19 @@ use fluvio::{
 
 use crate::{
     config::{ProducerConfig, RecordKeyAllocationStrategy},
-    stats_collector::ProduceStat,
+    stats_collector::StatCollector,
     utils,
 };
 
 const SHARED_KEY: &str = "shared_key";
 
-pub struct ProducerWorker {
+pub(crate) struct ProducerWorker {
     fluvio_producer: TopicProducerPool,
     records_to_send: Vec<BenchmarkRecord>,
-    stat: Arc<ProduceStat>,
+    stat: StatCollector,
 }
 impl ProducerWorker {
-    pub async fn new(id: u64, config: ProducerConfig, stat: Arc<ProduceStat>) -> Result<Self> {
+    pub(crate) async fn new(id: u64, config: ProducerConfig, stat: StatCollector) -> Result<Self> {
         let fluvio = Fluvio::connect().await?;
 
         let fluvio_config = TopicProducerConfigBuilder::default()
@@ -65,20 +63,19 @@ impl ProducerWorker {
         })
     }
 
-    pub async fn send_batch(self) -> Result<()> {
+    pub async fn send_batch(mut self) -> Result<()> {
         println!("producer is sending batch");
 
         for record in self.records_to_send.into_iter() {
+            self.stat.start();
             self.fluvio_producer
                 .send(record.key, record.data.clone())
                 .await?;
-            self.stat
-                .message_bytes
-                .fetch_add(record.data.len() as u64, Ordering::Relaxed);
-            self.stat.message_send.fetch_add(1, Ordering::Relaxed);
+            self.stat.record_record_send(record.data.len() as u64).await;
         }
 
         self.fluvio_producer.flush().await?;
+        self.stat.finish();
         println!("producer is done sending batch");
 
         Ok(())
