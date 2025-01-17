@@ -275,7 +275,7 @@ impl Hw {
             let mut commit_checkpoint =
                 CheckPoint::create(Arc::new(config.into()), HW_CHECKPOINT_FILE_NAME, offset)
                     .await?;
-            commit_checkpoint.write(offset).await?;
+            commit_checkpoint.write(offset);
             sleep(std::time::Duration::from_secs(1)).await;
             println!("hw: {offset} written to checkpoint");
             return Ok(());

@@ -114,11 +114,9 @@ impl CheckPoint {
         metadata.modified()
     }
 
-    pub async fn write(&mut self, pos: Offset) -> Result<(), IoError> {
+    pub fn write(&mut self, pos: Offset) {
         debug!(%pos,"Update checkpoint");
         self.offset.update(pos);
-
-        Ok(())
     }
 }
 
@@ -251,8 +249,8 @@ mod tests {
             .await
             .expect("create");
         assert_eq!(ck.get_offset(), 0);
-        ck.write(10).await.expect("first write");
-        ck.write(40).await.expect("2nd write");
+        ck.write(10);
+        ck.write(40);
         drop(ck);
         sleep(std::time::Duration::from_millis(200)).await;
 
@@ -260,8 +258,6 @@ mod tests {
             .await
             .expect("restore");
         assert_eq!(ck2.get_offset(), 40);
-        ck2.write(20)
-            .await
-            .expect("write aft er reading should work");
+        ck2.write(20);
     }
 }

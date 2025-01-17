@@ -179,7 +179,7 @@ impl ReplicaStorage for FileReplica {
                 old_offset,
                 offset
             );
-            self.commit_checkpoint.write(offset).await?;
+            self.commit_checkpoint.write(offset);
             Ok(true)
         }
     }
@@ -270,7 +270,7 @@ impl FileReplica {
                 hw,
                 leo, "high watermark is greater than log end offset, resetting to leo"
             );
-            commit_checkpoint.write(leo).await?;
+            commit_checkpoint.write(leo);
         }
 
         let size = Arc::new(ReplicaSize::default());
