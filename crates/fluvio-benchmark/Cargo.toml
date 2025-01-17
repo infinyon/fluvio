@@ -17,8 +17,10 @@ clap = { workspace = true, features = ["std","derive"] }
 derive_builder = { workspace = true }
 futures-util = { workspace = true }
 humantime = { workspace = true }
+hdrhistogram = { workspace = true }
 rand = { workspace = true }
 rand_xoshiro = { workspace = true }
+tokio = { workspace = true, features = ['macros'] }
 rayon = { workspace = true }
 serde = { workspace = true , features = ['derive'] }
 serde_yaml = { workspace = true }

@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use rand::{distributions::Alphanumeric, Rng};
 use rand::{RngCore, SeedableRng};
 use rand_xoshiro::Xoshiro256PlusPlus;
@@ -43,4 +45,8 @@ pub fn generate_random_string_vec(num: usize, size: usize) -> Vec<String> {
         .collect();
 
     random_strings
+}
+
+pub fn nanos_to_ms_pritable(nano: u64) -> f64 {
+    Duration::from_nanos(nano).as_secs_f64() * 1000.0
 }

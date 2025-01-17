@@ -7,9 +7,9 @@ use bytesize::ByteSize;
 
 use crate::utils;
 
-const DEFAULT_BATCH_SIZE: ByteSize = ByteSize(16_384);
+const DEFAULT_BATCH_SIZE: ByteSize = ByteSize::kib(16);
 const DEFAULT_QUEUE_SIZE: u64 = 10;
-const DEFAULT_MAX_REQUEST_SIZE: ByteSize = ByteSize(33_554_432);
+const DEFAULT_MAX_REQUEST_SIZE: ByteSize = ByteSize::mib(32);
 const DEFAULT_LINGER: &str = "0ms";
 const DEFAULT_SERVER_TIMEOUT: &str = "5000ms";
 const DEFAULT_COMPRESSION: Compression = Compression::None;
@@ -19,7 +19,7 @@ const DEFAULT_WORKER_TIMEOUT: &str = "3000s";
 const DEFAULT_RECORD_KEY_ALLOCATION_STRATEGY: RecordKeyAllocationStrategy =
     RecordKeyAllocationStrategy::NoKey;
 const DEFAULT_NUM_PRODUCERS: u64 = 1;
-const DEFAULT_RECORD_SIZE: ByteSize = ByteSize(5120);
+const DEFAULT_RECORD_SIZE: ByteSize = ByteSize::kib(5);
 const DEFAULT_NUM_RECORDS: u64 = 10_000;
 const DEFAULT_PARTITIONS: u32 = 1;
 const DEFAULT_REPLICAS: u32 = 1;
