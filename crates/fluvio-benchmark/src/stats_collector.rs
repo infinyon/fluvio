@@ -40,16 +40,23 @@ impl ProducerStat {
             while let Ok((send_out, time)) = rx.recv().await {
                 let hist = histogram.clone();
                 let latency_sender = latency_sender.clone();
-                spawn(async move {
-                    let _o = send_out.wait().await.unwrap();
-                    let duration = time.elapsed();
-                    let mut hist = hist.lock().await;
-                    hist.record(duration.as_nanos() as u64).expect("record");
+                //spawn(async move {
+                match send_out.wait().await {
+                    Ok(_) => {
+                        let duration = time.elapsed();
+                        let mut hist = hist.lock().await;
+                        hist.record(duration.as_nanos() as u64).expect("record");
 
-                    if hist.len() >= num_records {
-                        latency_sender.send(hist.clone()).await.expect("send");
+                        if hist.len() >= num_records {
+                            latency_sender.send(hist.clone()).await.expect("send");
+                        }
                     }
-                });
+                    Err(err) => {
+                        println!("error sending record: {}", err);
+                        return;
+                    }
+                }
+                //});
             }
         });
     }

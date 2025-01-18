@@ -34,17 +34,10 @@ impl ProducerWorker {
             .build()?;
 
         let fluvio_producer = fluvio
-            .topic_producer_with_config(
-                config.shared_config.topic_config.topic_name.clone(),
-                fluvio_config,
-            )
+            .topic_producer_with_config(config.topic_name.clone(), fluvio_config)
             .await?;
 
-        let num_records = records_per_producer(
-            id,
-            config.shared_config.load_config.num_producers,
-            config.shared_config.load_config.num_records,
-        );
+        let num_records = records_per_producer(id, config.num_producers, config.num_records);
 
         println!("producer {} will send {} records", id, num_records);
 
@@ -85,30 +78,23 @@ impl ProducerWorker {
 }
 
 fn create_records(config: ProducerConfig, num_records: u64, id: u64) -> Vec<BenchmarkRecord> {
-    utils::generate_random_string_vec(
-        num_records as usize,
-        config.shared_config.load_config.record_size.as_u64() as usize,
-    )
-    .into_iter()
-    .map(|data| {
-        let key = match config
-            .shared_config
-            .load_config
-            .record_key_allocation_strategy
-        {
-            RecordKeyAllocationStrategy::NoKey => RecordKey::NULL,
-            RecordKeyAllocationStrategy::AllShareSameKey => RecordKey::from(SHARED_KEY),
-            RecordKeyAllocationStrategy::ProducerWorkerUniqueKey => {
-                RecordKey::from(format!("producer-{}", id.clone()))
-            }
-            RecordKeyAllocationStrategy::RandomKey => {
-                //TODO: this could be optimized
-                RecordKey::from(format!("random-{}", utils::generate_random_string(10)))
-            }
-        };
-        BenchmarkRecord::new(key, data.into())
-    })
-    .collect()
+    utils::generate_random_string_vec(num_records as usize, config.record_size.as_u64() as usize)
+        .into_iter()
+        .map(|data| {
+            let key = match config.record_key_allocation_strategy {
+                RecordKeyAllocationStrategy::NoKey => RecordKey::NULL,
+                RecordKeyAllocationStrategy::AllShareSameKey => RecordKey::from(SHARED_KEY),
+                RecordKeyAllocationStrategy::ProducerWorkerUniqueKey => {
+                    RecordKey::from(format!("producer-{}", id.clone()))
+                }
+                RecordKeyAllocationStrategy::RandomKey => {
+                    //TODO: this could be optimized
+                    RecordKey::from(format!("random-{}", utils::generate_random_string(10)))
+                }
+            };
+            BenchmarkRecord::new(key, data.into())
+        })
+        .collect()
 }
 
 pub struct BenchmarkRecord {
