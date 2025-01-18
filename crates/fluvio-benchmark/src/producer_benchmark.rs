@@ -1,9 +1,14 @@
 use anyhow::Result;
 use async_channel::{unbounded, Receiver};
 
+use bytesize::ByteSize;
 use fluvio_future::{task::spawn, future::timeout, timer::sleep};
 use fluvio::{metadata::topic::TopicSpec, FluvioAdmin};
-use crate::{config::ProducerConfig, producer_worker::ProducerWorker, stats_collector::StatCollector};
+use tokio::select;
+
+use crate::{
+    utils, config::ProducerConfig, producer_worker::ProducerWorker, stats_collector::StatCollector,
+};
 
 pub struct ProducerBenchmark {}
 
@@ -49,10 +54,16 @@ impl ProducerBenchmark {
         let mut workers_jh = Vec::new();
 
         let (stat_sender, stat_receiver) = unbounded();
+        let (latency_sender, latency_receiver) = unbounded();
         // Set up producers
         for producer_id in 0..config.shared_config.load_config.num_producers {
             println!("starting up producer {}", producer_id);
-            let stat_collector = StatCollector::create(10000, stat_sender.clone());
+            let stat_collector = StatCollector::create(
+                config.batch_size.as_u64(),
+                config.shared_config.load_config.num_records,
+                latency_sender.clone(),
+                stat_sender.clone(),
+            );
             let (tx_control, rx_control) = unbounded();
             let worker = ProducerWorker::new(producer_id, config.clone(), stat_collector).await?;
             let jh = spawn(timeout(
@@ -64,20 +75,41 @@ impl ProducerBenchmark {
             tx_controls.push(tx_control);
             workers_jh.push(jh);
         }
-        println!("benchmark started");
+        println!("Benchmark started");
 
-        // delay 1 seconds, so produce can start
-        sleep(std::time::Duration::from_secs(1)).await;
-
-        while let Ok(stat) = stat_receiver.recv().await {
-            if stat.end {
-                break;
+        loop {
+            select! {
+                hist = latency_receiver.recv() => {
+                    if let Ok(hist) = hist {
+                        let mut latency_yaml = String::new();
+                        latency_yaml.push_str(&format!("{:.2}ms avg latency, {:.2}ms max latency",
+                            utils::nanos_to_ms_pritable(hist.mean() as u64),
+                            utils::nanos_to_ms_pritable(hist.value_at_quantile(1.0))));
+                        for percentile in [0.5, 0.95, 0.99] {
+                            latency_yaml.push_str(&format!(
+                                ", {:.2}ms p{percentile:4.2}",
+                                utils::nanos_to_ms_pritable(hist.value_at_quantile(percentile)),
+                            ));
+                        }
+                        println!("{}", latency_yaml);
+                    }
+                    break;
+                }
+                stat_rx = stat_receiver.recv() => {
+                    if let Ok(stat) = stat_rx {
+                        // lantecy_receiver is finishing the benchmark now
+                        //if stat.end {
+                        //    break;
+                        //}
+                        let human_readable_bytes = ByteSize(stat.bytes_per_sec as u64).to_string();
+                        println!(
+                            "{} records sent, {} records/sec: ({}/sec), {:.2}ms avg latency, {:.2}ms max latency",
+                             stat.total_records_send, stat.records_per_sec, human_readable_bytes,
+                                utils::nanos_to_ms_pritable(stat.latency_avg), utils::nanos_to_ms_pritable(stat.latency_max)
+                        );
+                    }
+                }
             }
-            let human_readable_bytes = format!("{:9.1}mb/s", stat.bytes_per_sec / 1000000.0);
-            println!(
-                "total bytes send: {} | total message send: {} | message: per second: {}, bytes per  sec: {}, ",
-                    stat.total_bytes_send, stat.total_message_send, stat.message_per_sec,human_readable_bytes
-                );
         }
 
         // Wait for all producers to finish

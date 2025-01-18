@@ -2328,6 +2328,7 @@ dependencies = [
  "fluvio",
  "fluvio-future",
  "futures-util",
+ "hdrhistogram",
  "humantime",
  "rand",
  "rand_xoshiro",
@@ -2335,6 +2336,7 @@ dependencies = [
  "serde",
  "serde_yaml",
  "thiserror 1.0.69",
+ "tokio",
  "tracing",
 ]
 

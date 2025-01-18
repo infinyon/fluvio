@@ -1,48 +1,96 @@
-use std::time::Instant;
+use std::{sync::Arc, time::Instant};
 
 use async_channel::Sender;
+use fluvio::ProduceOutput;
+use fluvio_future::{sync::Mutex, task::spawn};
+use hdrhistogram::Histogram;
 
 #[derive(Debug)]
 pub(crate) struct ProducerStat {
     record_send: u64,
     record_bytes: u64,
     start_time: Instant,
+    output_tx: Sender<(ProduceOutput, Instant)>,
+    histogram: Arc<Mutex<Histogram<u64>>>,
 }
 
 impl ProducerStat {
-    pub(crate) fn new() -> Self {
+    pub(crate) fn new(num_records: u64, latency_sender: Sender<Histogram<u64>>) -> Self {
+        let (output_tx, rx) = async_channel::unbounded::<(ProduceOutput, Instant)>();
+        let histogram = Arc::new(Mutex::new(hdrhistogram::Histogram::<u64>::new(2).unwrap()));
+
+        ProducerStat::track_latency(num_records, latency_sender, rx, histogram.clone());
+
         Self {
             record_send: 0,
             record_bytes: 0,
             start_time: Instant::now(),
+            output_tx,
+            histogram,
         }
+    }
+
+    fn track_latency(
+        num_records: u64,
+        latency_sender: Sender<Histogram<u64>>,
+        rx: async_channel::Receiver<(ProduceOutput, Instant)>,
+        histogram: Arc<Mutex<Histogram<u64>>>,
+    ) {
+        spawn(async move {
+            while let Ok((send_out, time)) = rx.recv().await {
+                let hist = histogram.clone();
+                let latency_sender = latency_sender.clone();
+                spawn(async move {
+                    let _o = send_out.wait().await.unwrap();
+                    let duration = time.elapsed();
+                    let mut hist = hist.lock().await;
+                    hist.record(duration.as_nanos() as u64).expect("record");
+
+                    if hist.len() >= num_records {
+                        latency_sender.send(hist.clone()).await.expect("send");
+                    }
+                });
+            }
+        });
     }
 
     pub(crate) fn calcuate(&mut self) -> Stat {
         let elapse = self.start_time.elapsed().as_millis();
-        let message_per_sec = ((self.record_send as f64 / elapse as f64) * 1000.0).round();
+        let records_per_sec = ((self.record_send as f64 / elapse as f64) * 1000.0).round();
         let bytes_per_sec = (self.record_bytes as f64 / elapse as f64) * 1000.0;
 
+        let hist = self.histogram.lock_blocking();
+        let latency_avg = hist.mean() as u64;
+        let latency_max = hist.value_at_quantile(1.0);
+
         Stat {
-            message_per_sec,
+            records_per_sec,
             bytes_per_sec,
-            total_bytes_send: self.record_bytes,
-            total_message_send: self.record_send,
-            end: false,
+            _total_bytes_send: self.record_bytes,
+            total_records_send: self.record_send,
+            latency_avg,
+            latency_max,
+            _end: false,
         }
     }
 
     pub(crate) fn set_current_time(&mut self) {
         self.start_time = Instant::now();
     }
+
+    pub(crate) fn send_out(&mut self, out: (ProduceOutput, Instant)) {
+        self.output_tx.try_send(out).expect("send out");
+    }
 }
 
 pub(crate) struct Stat {
-    pub message_per_sec: f64,
+    pub records_per_sec: f64,
     pub bytes_per_sec: f64,
-    pub total_bytes_send: u64,
-    pub total_message_send: u64,
-    pub end: bool,
+    pub _total_bytes_send: u64,
+    pub total_records_send: u64,
+    pub latency_avg: u64,
+    pub latency_max: u64,
+    pub _end: bool,
 }
 
 pub(crate) struct StatCollector {
@@ -53,9 +101,14 @@ pub(crate) struct StatCollector {
 }
 
 impl StatCollector {
-    pub(crate) fn create(batch_size: u64, sender: Sender<Stat>) -> Self {
+    pub(crate) fn create(
+        batch_size: u64,
+        num_records: u64,
+        latency_sender: Sender<Histogram<u64>>,
+        sender: Sender<Stat>,
+    ) -> Self {
         Self {
-            current: ProducerStat::new(),
+            current: ProducerStat::new(num_records, latency_sender),
             batch_size,
             current_record: 0,
             sender,
@@ -68,7 +121,11 @@ impl StatCollector {
         }
     }
 
-    pub(crate) async fn record_record_send(&mut self, bytes: u64) {
+    pub(crate) fn send_out(&mut self, out: (ProduceOutput, Instant)) {
+        self.current.send_out(out);
+    }
+
+    pub(crate) async fn add_record(&mut self, bytes: u64) {
         self.current.record_send += 1;
         self.current.record_bytes += bytes;
         self.current_record += 1;
@@ -84,11 +141,13 @@ impl StatCollector {
 
     pub(crate) fn finish(&mut self) {
         let end_record = Stat {
-            message_per_sec: 0.0,
+            records_per_sec: 0.0,
             bytes_per_sec: 0.0,
-            total_bytes_send: 0,
-            total_message_send: 0,
-            end: true,
+            _total_bytes_send: 0,
+            total_records_send: 0,
+            latency_avg: 0,
+            latency_max: 0,
+            _end: true,
         };
 
         self.sender.try_send(end_record).expect("send end stats");
