@@ -7,19 +7,16 @@ use fluvio::{metadata::topic::TopicSpec, FluvioAdmin};
 use tokio::select;
 
 use crate::{
-    utils, config::ProducerConfig, producer_worker::ProducerWorker, stats_collector::StatCollector,
+    config::ProducerConfig, producer_worker::ProducerWorker, stats_collector::StatCollector, utils,
 };
 
 pub struct ProducerBenchmark {}
 
 impl ProducerBenchmark {
     pub async fn run_benchmark(config: ProducerConfig) -> Result<()> {
-        let topic_name = config.shared_config.topic_config.topic_name.clone();
-        let new_topic = TopicSpec::new_computed(
-            config.shared_config.topic_config.partitions,
-            config.shared_config.topic_config.replicas,
-            Some(config.shared_config.topic_config.ignore_rack),
-        );
+        let topic_name = config.topic_name.clone();
+        let new_topic =
+            TopicSpec::new_computed(config.partitions, config.replicas, Some(config.ignore_rack));
         let admin = FluvioAdmin::connect().await?;
 
         // Create topic if it doesn't exist
@@ -41,7 +38,7 @@ impl ProducerBenchmark {
         }
 
         // Clean up topic
-        if config.shared_config.topic_config.delete_topic {
+        if config.delete_topic {
             admin.delete::<TopicSpec>(topic_name.clone()).await?;
             print!("Topic deleted successfully {}", topic_name.clone());
         }
@@ -56,18 +53,18 @@ impl ProducerBenchmark {
         let (stat_sender, stat_receiver) = unbounded();
         let (latency_sender, latency_receiver) = unbounded();
         // Set up producers
-        for producer_id in 0..config.shared_config.load_config.num_producers {
+        for producer_id in 0..config.num_producers {
             println!("starting up producer {}", producer_id);
             let stat_collector = StatCollector::create(
                 config.batch_size.as_u64(),
-                config.shared_config.load_config.num_records,
+                config.num_records,
                 latency_sender.clone(),
                 stat_sender.clone(),
             );
             let (tx_control, rx_control) = unbounded();
             let worker = ProducerWorker::new(producer_id, config.clone(), stat_collector).await?;
             let jh = spawn(timeout(
-                config.shared_config.worker_timeout,
+                config.worker_timeout,
                 ProducerDriver::main_loop(rx_control, worker),
             ));
 

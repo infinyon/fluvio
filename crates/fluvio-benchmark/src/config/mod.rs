@@ -1,6 +1,10 @@
+pub mod config_matrix;
+pub mod cross;
+
 use std::time::Duration;
 
 use clap::{Parser, ValueEnum};
+use derive_builder::Builder;
 use fluvio::Compression;
 use serde::{Deserialize, Serialize};
 use bytesize::ByteSize;
@@ -25,7 +29,13 @@ const DEFAULT_PARTITIONS: u32 = 1;
 const DEFAULT_REPLICAS: u32 = 1;
 const DEFAULT_DELETE_TOPIC: bool = false;
 
-#[derive(Debug, Parser, Clone)]
+#[derive(Debug, Clone)]
+pub enum BenchmarkConfig {
+    Producer(ProducerConfig),
+    Consumer(ConsumerConfig),
+}
+
+#[derive(Debug, Parser, Clone, Builder)]
 pub struct ProducerConfig {
     /// Size of each batch
     #[arg(short, long, value_name = "bytes", default_value_t = DEFAULT_BATCH_SIZE)]
@@ -45,32 +55,6 @@ pub struct ProducerConfig {
     /// Compression algorithm to use
     #[arg(short, long, default_value_t = DEFAULT_COMPRESSION)]
     pub compression: Compression,
-    #[clap(flatten)]
-    pub shared_config: SharedConfig,
-}
-
-#[derive(Debug, Parser, Clone)]
-pub struct ConsumerConfig {
-    #[arg(short, long, value_name = "bytes", default_value_t = DEFAULT_BATCH_SIZE)]
-    pub batch_size: bytesize::ByteSize,
-    /// Number of records to fetch
-    #[arg(short, long, default_value_t = DEFAULT_QUEUE_SIZE)]
-    pub queue_size: u64,
-    /// Maximum size of a request
-    #[arg(short, long, value_name = "bytes", default_value_t = DEFAULT_MAX_REQUEST_SIZE)]
-    pub max_request_size: bytesize::ByteSize,
-    /// Time to wait for new records
-    #[arg(short, long, value_parser = humantime::parse_duration, default_value = DEFAULT_LINGER)]
-    pub linger: Duration,
-    /// Timeout for the server
-    #[arg(short, long, value_parser = humantime::parse_duration, default_value = DEFAULT_SERVER_TIMEOUT)]
-    pub server_timeout: Duration,
-    #[clap(flatten)]
-    pub shared_config: SharedConfig,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, Parser)]
-pub struct SharedConfig {
     /// Number of samples to take
     #[arg(long, default_value_t = DEFAULT_NUM_SAMPLES)]
     pub num_samples: usize,
@@ -80,14 +64,7 @@ pub struct SharedConfig {
     /// Timeout for each worker
     #[arg(long, value_parser = humantime::parse_duration, default_value = DEFAULT_WORKER_TIMEOUT)]
     pub worker_timeout: Duration,
-    #[clap(flatten)]
-    pub topic_config: FluvioTopicConfig,
-    #[clap(flatten)]
-    pub load_config: BenchmarkLoadConfig,
-}
 
-#[derive(Debug, Serialize, Deserialize, Clone, Parser)]
-pub struct BenchmarkLoadConfig {
     /// Strategy for allocating record keys
     #[clap(long, value_enum, default_value_t = DEFAULT_RECORD_KEY_ALLOCATION_STRATEGY)]
     pub record_key_allocation_strategy: RecordKeyAllocationStrategy,
@@ -100,10 +77,7 @@ pub struct BenchmarkLoadConfig {
     /// Size of each record in bytes
     #[arg(long, value_name = "bytes", default_value_t = DEFAULT_RECORD_SIZE)]
     pub record_size: ByteSize,
-}
 
-#[derive(Debug, Serialize, Deserialize, Clone, Parser)]
-pub struct FluvioTopicConfig {
     /// Number of partitions for the topic
     #[clap(short, long, default_value_t = DEFAULT_PARTITIONS)]
     pub partitions: u32,
@@ -120,6 +94,9 @@ pub struct FluvioTopicConfig {
     #[clap(long, default_value_t = DEFAULT_DELETE_TOPIC)]
     pub ignore_rack: bool,
 }
+
+#[derive(Debug, Parser, Clone, Builder)]
+pub struct ConsumerConfig {}
 
 #[derive(Debug, Parser, ValueEnum, Clone, Eq, PartialEq, Serialize, Deserialize)]
 #[clap(rename_all = "kebab-case")]
