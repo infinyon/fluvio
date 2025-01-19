@@ -1,5 +1,6 @@
 use anyhow::Result;
 
+use bytesize::ByteSize;
 use fluvio::{
     dataplane::record::RecordData, DeliverySemantic, Fluvio, Isolation, RecordKey,
     TopicProducerConfigBuilder, TopicProducerPool,
@@ -17,6 +18,8 @@ pub(crate) struct ProducerWorker {
     fluvio_producer: TopicProducerPool,
     records_to_send: Vec<BenchmarkRecord>,
     stat: StatCollector,
+    num_records: u64,
+    total_records: u64,
 }
 impl ProducerWorker {
     pub(crate) async fn new(id: u64, config: ProducerConfig, stat: StatCollector) -> Result<Self> {
@@ -49,29 +52,46 @@ impl ProducerWorker {
             records_to_send.len()
         );
 
+        let total_records = config.num_records * num_records;
+
         Ok(ProducerWorker {
             fluvio_producer,
             records_to_send,
             stat,
+            num_records,
+            total_records
         })
     }
 
     pub async fn send_batch(mut self) -> Result<()> {
         println!("producer is sending batch");
 
+        let start = std::time::Instant::now();
         for record in self.records_to_send.into_iter() {
-            self.stat.start();
-            let time = std::time::Instant::now();
-            let send_out = self
+        //    self.stat.start();
+            //let time = std::time::Instant::now();
+            let _ = self
                 .fluvio_producer
                 .send(record.key, record.data.clone())
                 .await?;
 
-            self.stat.send_out((send_out, time));
-            self.stat.add_record(record.data.len() as u64).await;
+          //  self.stat.send_out((send_out, time));
+          //  self.stat.add_record(record.data.len() as u64).await;
         }
         self.fluvio_producer.flush().await?;
-        self.stat.finish();
+
+        let elapse = start.elapsed().as_millis();
+        let records_per_sec = ((self.num_records as f64 / elapse as f64) * 1000.0).round();
+        let bytes_per_sec = (self.total_records as f64 / elapse as f64) * 1000.0;
+
+        let human_readable_bytes = ByteSize(bytes_per_sec as u64).to_string();
+
+        println!(
+            "{} records sent, {} records/sec: ({}/sec) ",
+             self.total_records, records_per_sec, human_readable_bytes
+        );
+
+       // self.stat.finish();
 
         Ok(())
     }
