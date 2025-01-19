@@ -19,7 +19,7 @@ pub(crate) struct ProducerWorker {
     records_to_send: Vec<BenchmarkRecord>,
     stat: StatCollector,
     num_records: u64,
-    total_records: u64,
+    record_size: u64,
 }
 impl ProducerWorker {
     pub(crate) async fn new(id: u64, config: ProducerConfig, stat: StatCollector) -> Result<Self> {
@@ -41,15 +41,18 @@ impl ProducerWorker {
             .await?;
 
         let num_records = records_per_producer(id, config.num_producers, config.num_records);
+        let record_size = config.record_size.as_u64();
 
         println!("producer {} will send {} records", id, num_records);
 
         let records_to_send = create_records(config.clone(), num_records, id);
 
         println!(
-            "producer {} will send {} records",
+            "producer {} will send {} records of each: {}",
             id,
-            records_to_send.len()
+            num_records,
+            record_size
+            
         );
 
         let total_records = config.num_records * num_records;
@@ -59,7 +62,7 @@ impl ProducerWorker {
             records_to_send,
             stat,
             num_records,
-            total_records
+            record_size,
         })
     }
 
@@ -81,14 +84,15 @@ impl ProducerWorker {
         self.fluvio_producer.flush().await?;
 
         let elapse = start.elapsed().as_millis();
+        println!("producer finished sending batch, elapsed: {} ms", elapse);
         let records_per_sec = ((self.num_records as f64 / elapse as f64) * 1000.0).round();
-        let bytes_per_sec = (self.total_records as f64 / elapse as f64) * 1000.0;
+        let bytes_per_sec = ((self.num_records * self.record_size) as f64 / elapse as f64) * 1000.0;
 
         let human_readable_bytes = ByteSize(bytes_per_sec as u64).to_string();
 
         println!(
             "{} records sent, {} records/sec: ({}/sec) ",
-             self.total_records, records_per_sec, human_readable_bytes
+             self.num_records, records_per_sec, human_readable_bytes
         );
 
        // self.stat.finish();
