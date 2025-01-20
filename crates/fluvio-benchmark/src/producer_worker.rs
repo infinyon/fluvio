@@ -30,7 +30,7 @@ impl BenchmarkProducerCallback {
     }
 }
 
-impl ProducerCallback<ProduceCompletionEvent> for BenchmarkProducerCallback {
+impl ProducerCallback for BenchmarkProducerCallback {
     fn finished(&self, event: ProduceCompletionEvent) -> BoxFuture<'_, anyhow::Result<()>> {
         Box::pin(async {
             self.event_sender.send(event).await?;
@@ -52,7 +52,7 @@ impl ProducerWorker {
         event_sender: Sender<ProduceCompletionEvent>,
     ) -> Result<Self> {
         let fluvio = Fluvio::connect().await?;
-        let callback: SharedProducerCallback<ProduceCompletionEvent> =
+        let callback: SharedProducerCallback =
             Arc::new(BenchmarkProducerCallback::new(event_sender));
 
         let fluvio_config = TopicProducerConfigBuilder::default()

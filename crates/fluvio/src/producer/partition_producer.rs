@@ -34,7 +34,7 @@ where
     batch_events: Arc<BatchEvents>,
     last_error: Arc<RwLock<Option<ProducerError>>>,
     metrics: Arc<ClientMetrics>,
-    callback: Option<SharedProducerCallback<ProduceCompletionEvent>>,
+    callback: Option<SharedProducerCallback>,
 }
 
 impl<S> PartitionProducer<S>

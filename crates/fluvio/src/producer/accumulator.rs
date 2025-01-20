@@ -223,9 +223,9 @@ pub struct ProduceCompletionEvent {
     pub metadata: Arc<BatchMetadata>,
 }
 
-pub type SharedProducerCallback<T> = Arc<dyn ProducerCallback<T> + Send + Sync>;
-pub trait ProducerCallback<T> {
-    fn finished(&self, item: T) -> BoxFuture<'_, anyhow::Result<()>>;
+pub type SharedProducerCallback = Arc<dyn ProducerCallback + Send + Sync>;
+pub trait ProducerCallback {
+    fn finished(&self, item: ProduceCompletionEvent) -> BoxFuture<'_, anyhow::Result<()>>;
 }
 
 pub(crate) struct PushRecord {

@@ -78,7 +78,7 @@ where
     batches_deque: Arc<BatchesDeque>,
     batch_events: Arc<BatchEvents>,
     client_metric: Arc<ClientMetrics>,
-    callback: Option<SharedProducerCallback<ProduceCompletionEvent>>,
+    callback: Option<SharedProducerCallback>,
 }
 
 impl ProducerPool {
@@ -88,7 +88,7 @@ impl ProducerPool {
         spu_pool: Arc<S>,
         batches: Arc<HashMap<PartitionId, BatchHandler>>,
         client_metric: Arc<ClientMetrics>,
-        callback: Option<SharedProducerCallback<ProduceCompletionEvent>>,
+        callback: Option<SharedProducerCallback>,
     ) -> Self
     where
         S: SpuPool + Send + Sync + 'static,

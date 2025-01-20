@@ -16,7 +16,6 @@ use crate::producer::partitioning::{Partitioner, SiphashRoundRobinPartitioner};
 
 use super::accumulator::SharedProducerCallback;
 use super::partitioning::SpecificPartitioner;
-use super::ProduceCompletionEvent;
 
 const DEFAULT_LINGER_MS: u64 = 0;
 const DEFAULT_TIMEOUT_MS: u64 = 1500;
@@ -122,7 +121,7 @@ pub struct TopicProducerConfig {
     pub(crate) smartmodules: Vec<SmartModuleInvocation>,
 
     #[builder(setter(into, strip_option), default)]
-    pub(crate) callback: Option<SharedProducerCallback<ProduceCompletionEvent>>,
+    pub(crate) callback: Option<SharedProducerCallback>,
 }
 
 impl TopicProducerConfigBuilder {

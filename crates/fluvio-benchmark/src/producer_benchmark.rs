@@ -60,7 +60,6 @@ impl ProducerBenchmark {
             let stat_collector =
                 StatCollector::create(end_sender.clone(), stat_sender.clone(), event_receiver);
             let (tx_control, rx_control) = unbounded();
-            //sleep(Duration::from_secs(1)).await;
             let worker =
                 ProducerWorker::new(producer_id, config.clone(), stat_collector, event_sender)
                     .await?;
