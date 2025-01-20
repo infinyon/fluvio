@@ -35,7 +35,7 @@ impl RecordMetadata {
 }
 
 /// Possible states of a batch in the accumulator
-pub enum BatchMetadataState {
+pub(crate) enum BatchMetadataState {
     /// The batch is buffered and ready to be sent to the SPU
     Buffered(Receiver<ProducePartitionResponseFuture>),
     /// The batch was sent to the SPU. Base offset is known
@@ -59,7 +59,7 @@ impl BatchMetadata {
 
     /// Wait for the base offset of the batch. This is the offset of the first
     /// record in the batch and it is known once the batch is sent to the server.
-    pub async fn base_offset(&self) -> Result<Offset> {
+    pub(crate) async fn base_offset(&self) -> Result<Offset> {
         let mut state = self.state.write().await;
         match &*state {
             BatchMetadataState::Buffered(receiver) => {

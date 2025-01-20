@@ -47,7 +47,7 @@ use self::accumulator::BatchHandler;
 use self::accumulator::BatchesDeque;
 pub use self::accumulator::SharedProducerCallback;
 pub use self::accumulator::ProducerCallback;
-pub use self::accumulator::ProduceCompletionEvent;
+pub use self::accumulator::ProduceCompletionBatchEvent;
 pub use self::config::{
     TopicProducerConfigBuilder, TopicProducerConfig, TopicProducerConfigBuilderError,
     DeliverySemantic, RetryPolicy, RetryStrategy,

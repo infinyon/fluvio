@@ -1,18 +1,15 @@
 use std::{
     f64,
     sync::{atomic::AtomicU64, Arc},
-    time::{Duration, Instant},
+    time::Duration,
 };
 
 use async_channel::{Receiver, Sender};
-use fluvio::ProduceCompletionEvent;
+use fluvio::ProduceCompletionBatchEvent;
 use fluvio_future::{sync::Mutex, task::spawn, timer::sleep};
 use hdrhistogram::Histogram;
 
-pub(crate) struct ProducerStat {
-    stats: Arc<AtomicStats>,
-    start_time: Arc<Mutex<Option<Instant>>>,
-}
+pub(crate) struct ProducerStat {}
 
 pub struct AtomicStats {
     record_send: AtomicU64,
@@ -39,9 +36,8 @@ impl ProducerStat {
     pub(crate) fn new(
         end_sender: Sender<EndProducerStat>,
         stats_sender: Sender<Stats>,
-        event_receiver: Receiver<ProduceCompletionEvent>,
+        event_receiver: Receiver<ProduceCompletionBatchEvent>,
     ) -> Self {
-        let start_time = Arc::new(Mutex::new(None));
         let stats = Arc::new(AtomicStats {
             record_send: AtomicU64::new(0),
             record_bytes: AtomicU64::new(0),
@@ -49,21 +45,12 @@ impl ProducerStat {
 
         let histogram = Arc::new(Mutex::new(hdrhistogram::Histogram::<u64>::new(3).unwrap()));
 
-        ProducerStat::track_latency(
-            end_sender,
-            histogram.clone(),
-            event_receiver,
-            stats.clone(),
-            Arc::clone(&start_time),
-        );
+        ProducerStat::track_latency(end_sender, histogram.clone(), event_receiver, stats.clone());
 
         ProducerStat::send_stats(histogram.clone(), stats_sender, stats.clone())
             .expect("send stats");
 
-        Self {
-            stats: stats.clone(),
-            start_time,
-        }
+        Self {}
     }
 
     fn send_stats(
@@ -118,29 +105,31 @@ impl ProducerStat {
     fn track_latency(
         end_sender: Sender<EndProducerStat>,
         histogram: Arc<Mutex<Histogram<u64>>>,
-        event_receiver: Receiver<ProduceCompletionEvent>,
+        event_receiver: Receiver<ProduceCompletionBatchEvent>,
         stats: Arc<AtomicStats>,
-        start_time: Arc<Mutex<Option<Instant>>>,
     ) {
         spawn(async move {
             let hist = histogram.clone();
+            let mut first_start_time = Option::None;
             while let Ok(event) = event_receiver.recv().await {
-                match event.metadata.base_offset().await {
-                    Ok(_base_offset) => {
-                        let elapsed = event.created_at.elapsed();
-                        let mut hist = hist.lock().await;
-                        hist.record(elapsed.as_nanos() as u64).expect("record");
-                    }
-                    Err(err) => {
-                        println!("received err: {:?}", err);
-                    }
+                if first_start_time.is_none() {
+                    first_start_time = Some(event.created_at);
                 }
+                let elapsed = event.created_at.elapsed();
+                let mut hist = hist.lock().await;
+                hist.record(elapsed.as_nanos() as u64).expect("record");
+
+                stats
+                    .record_send
+                    .fetch_add(event.records_len, std::sync::atomic::Ordering::Relaxed);
+                stats
+                    .record_bytes
+                    .fetch_add(event.bytes_size, std::sync::atomic::Ordering::Relaxed);
             }
 
             // send end
             let hist = hist.lock().await;
-            let start_time = start_time.lock().await.expect("start time");
-            let elapsed = start_time.elapsed();
+            let elapsed = first_start_time.expect("start time").elapsed();
 
             let elapsed_seconds = elapsed.as_millis() as f64 / 1000.0;
             let records_per_sec = (stats.record_send.load(std::sync::atomic::Ordering::Relaxed)
@@ -162,46 +151,20 @@ impl ProducerStat {
             end_sender.send(end).await.expect("send end");
         });
     }
-
-    pub(crate) fn add_record(&mut self, bytes: u64) {
-        self.stats
-            .record_send
-            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        self.stats
-            .record_bytes
-            .fetch_add(bytes, std::sync::atomic::Ordering::Relaxed);
-    }
-
-    pub(crate) async fn set_current_time(&mut self) {
-        self.start_time.lock().await.replace(Instant::now());
-    }
 }
 
 pub(crate) struct StatCollector {
-    current: ProducerStat,
-    current_record: u64,
+    _current: ProducerStat,
 }
 
 impl StatCollector {
     pub(crate) fn create(
         end_sender: Sender<EndProducerStat>,
         stat_sender: Sender<Stats>,
-        event_receiver: Receiver<ProduceCompletionEvent>,
+        event_receiver: Receiver<ProduceCompletionBatchEvent>,
     ) -> Self {
         Self {
-            current: ProducerStat::new(end_sender, stat_sender, event_receiver),
-            current_record: 0,
+            _current: ProducerStat::new(end_sender, stat_sender, event_receiver),
         }
-    }
-
-    pub(crate) async fn start(&mut self) {
-        if self.current_record == 0 {
-            self.current.set_current_time().await;
-        }
-    }
-
-    pub(crate) async fn add_record(&mut self, bytes: u64) {
-        self.current.add_record(bytes);
-        self.current_record += 1;
     }
 }

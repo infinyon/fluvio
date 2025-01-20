@@ -18,7 +18,9 @@ use fluvio_socket::VersionedSerialSocket;
 use crate::spu::SpuPool;
 use crate::TopicProducerConfig;
 
-use super::{PartitionProducerParams, ProduceCompletionEvent, SharedProducerCallback, ProducerError};
+use super::{
+    PartitionProducerParams, ProduceCompletionBatchEvent, SharedProducerCallback, ProducerError,
+};
 use super::accumulator::{BatchEvents, BatchesDeque};
 use super::event::EventHandler;
 
@@ -191,7 +193,9 @@ where
             ..Default::default()
         };
 
-        let mut batches_notify_and_metadata = vec![];
+        let mut batch_notifiers = vec![];
+
+        let mut events_to_callback = vec![];
 
         for p_batch in batches_ready {
             let mut partition_request = DefaultPartitionRequest {
@@ -205,12 +209,27 @@ where
             let raw_batch: Batch<RawRecords> = batch.try_into()?;
 
             let producer_metrics = self.metrics.producer_client();
-            producer_metrics.add_records(raw_batch.records_len() as u64);
-            producer_metrics.add_bytes(raw_batch.batch_len() as u64);
+            let records_len = raw_batch.records_len() as u64;
+            let bytes_size = raw_batch.batch_len() as u64;
+            producer_metrics.add_records(records_len);
+            producer_metrics.add_bytes(bytes_size);
 
             partition_request.records.batches.push(raw_batch);
-            batches_notify_and_metadata.push((notify, metadata));
+            batch_notifiers.push(notify);
             topic_request.partitions.push(partition_request);
+
+            if self.callback.is_some() {
+                let created_at = metadata.created_at;
+                let event = ProduceCompletionBatchEvent {
+                    created_at,
+                    topic: self.replica.topic.clone(),
+                    partition: self.replica.partition,
+                    bytes_size,
+                    records_len,
+                };
+
+                events_to_callback.push(event);
+            }
         }
 
         request.isolation = self.config.isolation;
@@ -220,20 +239,19 @@ where
 
         let (response, _) = self.send_to_socket(spu_socket, request).await?;
 
-        for ((notify, batch_metadata), partition_response_fut) in batches_notify_and_metadata
-            .into_iter()
-            .zip(response.into_iter())
+        for (batch_notifier, partition_response_fut) in
+            batch_notifiers.into_iter().zip(response.into_iter())
         {
-            if let Err(_e) = notify.send(partition_response_fut.clone()).await {
+            if let Err(_e) = batch_notifier.send(partition_response_fut).await {
                 trace!("Failed to notify produce result because receiver was dropped");
             }
+        }
 
-            if let Some(callback) = self.callback.clone() {
-                let event = ProduceCompletionEvent {
-                    created_at: batch_metadata.created_at,
-                    metadata: batch_metadata.clone(),
-                };
-                callback.finished(event).await.unwrap();
+        if let Some(callback) = self.callback.clone() {
+            for event in events_to_callback {
+                if let Err(e) = callback.finished(event).await {
+                    error!("Failed to send event to callback: {}", e);
+                }
             }
         }
 

@@ -4,9 +4,9 @@ use anyhow::Result;
 
 use async_channel::Sender;
 use fluvio::{
-    dataplane::record::RecordData, DeliverySemantic, Fluvio, Isolation, ProduceCompletionEvent,
-    ProducerCallback, SharedProducerCallback, RecordKey, TopicProducerConfigBuilder,
-    TopicProducerPool,
+    dataplane::record::RecordData, DeliverySemantic, Fluvio, Isolation,
+    ProduceCompletionBatchEvent, ProducerCallback, SharedProducerCallback, RecordKey,
+    TopicProducerConfigBuilder, TopicProducerPool,
 };
 use futures_util::future::BoxFuture;
 
@@ -21,17 +21,17 @@ const SHARED_KEY: &str = "shared_key";
 // Example implementation of the ProducerCallback trait
 #[derive(Debug)]
 struct BenchmarkProducerCallback {
-    event_sender: Sender<ProduceCompletionEvent>,
+    event_sender: Sender<ProduceCompletionBatchEvent>,
 }
 
 impl BenchmarkProducerCallback {
-    pub fn new(event_sender: Sender<ProduceCompletionEvent>) -> Self {
+    pub fn new(event_sender: Sender<ProduceCompletionBatchEvent>) -> Self {
         Self { event_sender }
     }
 }
 
 impl ProducerCallback for BenchmarkProducerCallback {
-    fn finished(&self, event: ProduceCompletionEvent) -> BoxFuture<'_, anyhow::Result<()>> {
+    fn finished(&self, event: ProduceCompletionBatchEvent) -> BoxFuture<'_, anyhow::Result<()>> {
         Box::pin(async {
             self.event_sender.send(event).await?;
             Ok(())
@@ -42,14 +42,14 @@ impl ProducerCallback for BenchmarkProducerCallback {
 pub(crate) struct ProducerWorker {
     fluvio_producer: TopicProducerPool,
     records_to_send: Vec<BenchmarkRecord>,
-    stat: StatCollector,
+    _stat: StatCollector,
 }
 impl ProducerWorker {
     pub(crate) async fn new(
         id: u64,
         config: ProducerConfig,
         stat: StatCollector,
-        event_sender: Sender<ProduceCompletionEvent>,
+        event_sender: Sender<ProduceCompletionBatchEvent>,
     ) -> Result<Self> {
         let fluvio = Fluvio::connect().await?;
         let callback: SharedProducerCallback =
@@ -78,21 +78,18 @@ impl ProducerWorker {
         Ok(ProducerWorker {
             fluvio_producer,
             records_to_send,
-            stat,
+            _stat: stat,
         })
     }
 
-    pub async fn send_batch(mut self) -> Result<()> {
+    pub async fn send_batch(self) -> Result<()> {
         println!("producer is sending batch");
 
         for record in self.records_to_send.into_iter() {
-            self.stat.start().await;
             let _ = self
                 .fluvio_producer
                 .send(record.key, record.data.clone())
                 .await?;
-
-            self.stat.add_record(record.data.len() as u64).await;
         }
         self.fluvio_producer.flush().await?;
 

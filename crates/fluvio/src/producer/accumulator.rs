@@ -218,14 +218,18 @@ impl RecordAccumulator {
     }
 }
 
-pub struct ProduceCompletionEvent {
+#[derive(Debug)]
+pub struct ProduceCompletionBatchEvent {
+    pub topic: String,
+    pub bytes_size: u64,
+    pub records_len: u64,
+    pub partition: PartitionId,
     pub created_at: Instant,
-    pub metadata: Arc<BatchMetadata>,
 }
 
 pub type SharedProducerCallback = Arc<dyn ProducerCallback + Send + Sync>;
 pub trait ProducerCallback {
-    fn finished(&self, item: ProduceCompletionEvent) -> BoxFuture<'_, anyhow::Result<()>>;
+    fn finished(&self, item: ProduceCompletionBatchEvent) -> BoxFuture<'_, anyhow::Result<()>>;
 }
 
 pub(crate) struct PushRecord {
@@ -332,8 +336,7 @@ type ProduceResponseFuture = Shared<BoxFuture<'static, Arc<Result<ProduceRespons
 
 /// A Future that resolves to pair `base_offset` and `error_code`, which effectively come from
 /// [`PartitionProduceResponse`].
-#[derive(Debug, Clone)]
-pub struct ProducePartitionResponseFuture {
+pub(crate) struct ProducePartitionResponseFuture {
     inner: Either<(ProduceResponseFuture, usize), Option<(Offset, ErrorCode)>>,
 }
 
