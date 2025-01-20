@@ -14,7 +14,9 @@ use serde::{Serialize, Deserialize};
 
 use crate::producer::partitioning::{Partitioner, SiphashRoundRobinPartitioner};
 
+use super::accumulator::SharedProducerCallback;
 use super::partitioning::SpecificPartitioner;
+use super::ProduceCompletionEvent;
 
 const DEFAULT_LINGER_MS: u64 = 0;
 const DEFAULT_TIMEOUT_MS: u64 = 1500;
@@ -70,7 +72,7 @@ impl fmt::Debug for Box<dyn Partitioner + Send + Sync> {
 /// Create this struct with [`TopicProducerConfigBuilder`].
 ///
 /// Create a producer with a custom config with [`crate::Fluvio::topic_producer_with_config()`].
-#[derive(Debug, Builder)]
+#[derive(Builder)]
 #[builder(pattern = "owned")]
 pub struct TopicProducerConfig {
     /// Maximum amount of bytes accumulated by the records before sending the batch.
@@ -118,6 +120,9 @@ pub struct TopicProducerConfig {
 
     #[builder(default)]
     pub(crate) smartmodules: Vec<SmartModuleInvocation>,
+
+    #[builder(setter(into, strip_option), default)]
+    pub(crate) callback: Option<SharedProducerCallback<ProduceCompletionEvent>>,
 }
 
 impl TopicProducerConfigBuilder {
@@ -177,6 +182,7 @@ impl Default for TopicProducerConfig {
             isolation: default_isolation(),
             delivery_semantic: default_delivery(),
             smartmodules: vec![],
+            callback: None,
         }
     }
 }

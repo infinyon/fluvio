@@ -18,7 +18,7 @@ use fluvio_socket::VersionedSerialSocket;
 use crate::spu::SpuPool;
 use crate::TopicProducerConfig;
 
-use super::{PartitionProducerParams, ProducerError};
+use super::{PartitionProducerParams, ProduceCompletionEvent, SharedProducerCallback, ProducerError};
 use super::accumulator::{BatchEvents, BatchesDeque};
 use super::event::EventHandler;
 
@@ -34,6 +34,7 @@ where
     batch_events: Arc<BatchEvents>,
     last_error: Arc<RwLock<Option<ProducerError>>>,
     metrics: Arc<ClientMetrics>,
+    callback: Option<SharedProducerCallback<ProduceCompletionEvent>>,
 }
 
 impl<S> PartitionProducer<S>
@@ -53,6 +54,7 @@ where
             batch_events: params.batch_events,
             last_error,
             metrics: params.client_metric,
+            callback: params.callback,
         }
     }
 
@@ -189,7 +191,7 @@ where
             ..Default::default()
         };
 
-        let mut batch_notifiers = vec![];
+        let mut batches_notify_and_metadata = vec![];
 
         for p_batch in batches_ready {
             let mut partition_request = DefaultPartitionRequest {
@@ -197,6 +199,7 @@ where
                 ..Default::default()
             };
             let notify = p_batch.notify.clone();
+            let metadata = p_batch.metadata().clone();
             let batch = p_batch.batch();
 
             let raw_batch: Batch<RawRecords> = batch.try_into()?;
@@ -206,7 +209,7 @@ where
             producer_metrics.add_bytes(raw_batch.batch_len() as u64);
 
             partition_request.records.batches.push(raw_batch);
-            batch_notifiers.push(notify);
+            batches_notify_and_metadata.push((notify, metadata));
             topic_request.partitions.push(partition_request);
         }
 
@@ -217,11 +220,20 @@ where
 
         let (response, _) = self.send_to_socket(spu_socket, request).await?;
 
-        for (batch_notifier, partition_response_fut) in
-            batch_notifiers.into_iter().zip(response.into_iter())
+        for ((notify, batch_metadata), partition_response_fut) in batches_notify_and_metadata
+            .into_iter()
+            .zip(response.into_iter())
         {
-            if let Err(_e) = batch_notifier.send(partition_response_fut).await {
+            if let Err(_e) = notify.send(partition_response_fut.clone()).await {
                 trace!("Failed to notify produce result because receiver was dropped");
+            }
+
+            if let Some(callback) = self.callback.clone() {
+                let event = ProduceCompletionEvent {
+                    created_at: batch_metadata.created_at,
+                    metadata: batch_metadata.clone(),
+                };
+                callback.finished(event).await.unwrap();
             }
         }
 

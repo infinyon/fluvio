@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use std::time::Instant;
 
 use async_channel::Receiver;
 use async_lock::RwLock;
@@ -34,7 +35,7 @@ impl RecordMetadata {
 }
 
 /// Possible states of a batch in the accumulator
-pub(crate) enum BatchMetadataState {
+pub enum BatchMetadataState {
     /// The batch is buffered and ready to be sent to the SPU
     Buffered(Receiver<ProducePartitionResponseFuture>),
     /// The batch was sent to the SPU. Base offset is known
@@ -43,20 +44,22 @@ pub(crate) enum BatchMetadataState {
     Failed(ProducerError),
 }
 
-pub(crate) struct BatchMetadata {
-    state: RwLock<BatchMetadataState>,
+pub struct BatchMetadata {
+    pub state: RwLock<BatchMetadataState>,
+    pub created_at: Instant,
 }
 
 impl BatchMetadata {
     pub(crate) fn new(receiver: Receiver<ProducePartitionResponseFuture>) -> Self {
         Self {
             state: RwLock::new(BatchMetadataState::Buffered(receiver)),
+            created_at: Instant::now(),
         }
     }
 
     /// Wait for the base offset of the batch. This is the offset of the first
     /// record in the batch and it is known once the batch is sent to the server.
-    pub(crate) async fn base_offset(&self) -> Result<Offset> {
+    pub async fn base_offset(&self) -> Result<Offset> {
         let mut state = self.state.write().await;
         match &*state {
             BatchMetadataState::Buffered(receiver) => {

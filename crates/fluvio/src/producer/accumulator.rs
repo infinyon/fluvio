@@ -3,7 +3,7 @@ use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use async_channel::Sender;
 use async_lock::RwLock;
@@ -218,6 +218,16 @@ impl RecordAccumulator {
     }
 }
 
+pub struct ProduceCompletionEvent {
+    pub created_at: Instant,
+    pub metadata: Arc<BatchMetadata>,
+}
+
+pub type SharedProducerCallback<T> = Arc<dyn ProducerCallback<T> + Send + Sync>;
+pub trait ProducerCallback<T> {
+    fn finished(&self, item: T) -> BoxFuture<'_, anyhow::Result<()>>;
+}
+
 pub(crate) struct PushRecord {
     pub(crate) future: FutureRecordMetadata,
 }
@@ -276,6 +286,10 @@ impl ProducerBatch {
     pub(crate) fn batch(self) -> Batch {
         self.batch.into()
     }
+
+    pub(crate) fn metadata(&self) -> Arc<BatchMetadata> {
+        self.batch_metadata.clone()
+    }
 }
 
 pub(crate) struct BatchEvents {
@@ -318,7 +332,8 @@ type ProduceResponseFuture = Shared<BoxFuture<'static, Arc<Result<ProduceRespons
 
 /// A Future that resolves to pair `base_offset` and `error_code`, which effectively come from
 /// [`PartitionProduceResponse`].
-pub(crate) struct ProducePartitionResponseFuture {
+#[derive(Debug, Clone)]
+pub struct ProducePartitionResponseFuture {
     inner: Either<(ProduceResponseFuture, usize), Option<(Offset, ErrorCode)>>,
 }
 

@@ -1,9 +1,14 @@
+use std::sync::Arc;
+
 use anyhow::Result;
 
+use async_channel::Sender;
 use fluvio::{
-    dataplane::record::RecordData, DeliverySemantic, Fluvio, Isolation, RecordKey,
-    TopicProducerConfigBuilder, TopicProducerPool,
+    dataplane::record::RecordData, DeliverySemantic, Fluvio, Isolation, ProduceCompletionEvent,
+    ProducerCallback, SharedProducerCallback, RecordKey, TopicProducerConfigBuilder,
+    TopicProducerPool,
 };
+use futures_util::future::BoxFuture;
 
 use crate::{
     config::{ProducerConfig, RecordKeyAllocationStrategy},
@@ -13,16 +18,45 @@ use crate::{
 
 const SHARED_KEY: &str = "shared_key";
 
+// Example implementation of the ProducerCallback trait
+#[derive(Debug)]
+struct BenchmarkProducerCallback {
+    event_sender: Sender<ProduceCompletionEvent>,
+}
+
+impl BenchmarkProducerCallback {
+    pub fn new(event_sender: Sender<ProduceCompletionEvent>) -> Self {
+        Self { event_sender }
+    }
+}
+
+impl ProducerCallback<ProduceCompletionEvent> for BenchmarkProducerCallback {
+    fn finished(&self, event: ProduceCompletionEvent) -> BoxFuture<'_, anyhow::Result<()>> {
+        Box::pin(async {
+            self.event_sender.send(event).await?;
+            Ok(())
+        })
+    }
+}
+
 pub(crate) struct ProducerWorker {
     fluvio_producer: TopicProducerPool,
     records_to_send: Vec<BenchmarkRecord>,
     stat: StatCollector,
 }
 impl ProducerWorker {
-    pub(crate) async fn new(id: u64, config: ProducerConfig, stat: StatCollector) -> Result<Self> {
+    pub(crate) async fn new(
+        id: u64,
+        config: ProducerConfig,
+        stat: StatCollector,
+        event_sender: Sender<ProduceCompletionEvent>,
+    ) -> Result<Self> {
         let fluvio = Fluvio::connect().await?;
+        let callback: SharedProducerCallback<ProduceCompletionEvent> =
+            Arc::new(BenchmarkProducerCallback::new(event_sender));
 
         let fluvio_config = TopicProducerConfigBuilder::default()
+            .callback(callback)
             .batch_size(config.batch_size.as_u64() as usize)
             .batch_queue_size(config.queue_size as usize)
             .max_request_size(config.max_request_size.as_u64() as usize)
@@ -39,15 +73,7 @@ impl ProducerWorker {
 
         let num_records = records_per_producer(id, config.num_producers, config.num_records);
 
-        println!("producer {} will send {} records", id, num_records);
-
         let records_to_send = create_records(config.clone(), num_records, id);
-
-        println!(
-            "producer {} will send {} records",
-            id,
-            records_to_send.len()
-        );
 
         Ok(ProducerWorker {
             fluvio_producer,
@@ -60,18 +86,15 @@ impl ProducerWorker {
         println!("producer is sending batch");
 
         for record in self.records_to_send.into_iter() {
-            self.stat.start();
-            let time = std::time::Instant::now();
-            let send_out = self
+            self.stat.start().await;
+            let _ = self
                 .fluvio_producer
                 .send(record.key, record.data.clone())
                 .await?;
 
-            self.stat.send_out((send_out, time));
             self.stat.add_record(record.data.len() as u64).await;
         }
         self.fluvio_producer.flush().await?;
-        self.stat.finish();
 
         Ok(())
     }
