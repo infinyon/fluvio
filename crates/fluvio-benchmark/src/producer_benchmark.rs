@@ -80,9 +80,11 @@ impl ProducerBenchmark {
                     if let Ok(stat) = stat_rx {
                         let human_readable_bytes = ByteSize(stat.bytes_per_sec).to_string();
                         println!(
-                            "{} records sent, {} records/sec: ({}/sec), {:.2}ms avg latency, {:.2}ms max latency",
+                            //TODO: fix inteval latency
+                            //"{} records sent, {} records/sec: ({}/sec), {:.2}ms avg latency, {:.2}ms max latency",
+                            "{} records sent, {} records/sec: ({}/sec)",
                              stat.record_send, stat.records_per_sec, human_readable_bytes,
-                                utils::nanos_to_ms_pritable(stat.latency_avg), utils::nanos_to_ms_pritable(stat.latency_max)
+                            //utils::nanos_to_ms_pritable(stat.latency_avg), utils::nanos_to_ms_pritable(stat.latency_max)
                         );
                     }
                 }
