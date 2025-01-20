@@ -16,7 +16,7 @@ use crate::producer::partitioning::{Partitioner, SiphashRoundRobinPartitioner};
 
 use super::partitioning::SpecificPartitioner;
 
-const DEFAULT_LINGER_MS: u64 = 100;
+const DEFAULT_LINGER_MS: u64 = 0;
 const DEFAULT_TIMEOUT_MS: u64 = 1500;
 const DEFAULT_BATCH_SIZE_BYTES: usize = 16_384;
 const DEFAULT_BATCH_QUEUE_SIZE: usize = 100;
