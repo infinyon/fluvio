@@ -730,7 +730,12 @@ mod tests {
         // record contains 2 batch
         assert_eq!(replica.get_hw(), 2);
 
+        // allow time for checkpoint to write
+        sleep(Duration::from_millis(1000)).await;
         drop(replica);
+
+        // wait until checkpoint is fully fully flushed
+        sleep(Duration::from_millis(1000)).await;
 
         // restore replica
         let replica = create_replica("test", 0, option).await;
