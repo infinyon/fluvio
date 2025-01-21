@@ -50,23 +50,18 @@ impl ProducerBenchmark {
         let mut tx_controls = Vec::new();
         let mut workers_jh = Vec::new();
 
-        let (stat_sender, stat_receiver) = unbounded();
+        let (stats_sender, stats_receiver) = unbounded();
         let (end_sender, end_receiver) = unbounded();
+        let stat_collector =
+            StatCollector::create(config.num_records, end_sender.clone(), stats_sender.clone());
 
         // Set up producers
         for producer_id in 0..config.num_producers {
             let (event_sender, event_receiver) = unbounded();
+            stat_collector.add_producer(event_receiver);
             println!("starting up producer {}", producer_id);
-            let stat_collector = StatCollector::create(
-                config.num_records,
-                end_sender.clone(),
-                stat_sender.clone(),
-                event_receiver,
-            );
             let (tx_control, rx_control) = unbounded();
-            let worker =
-                ProducerWorker::new(producer_id, config.clone(), stat_collector, event_sender)
-                    .await?;
+            let worker = ProducerWorker::new(producer_id, config.clone(), event_sender).await?;
             let jh = spawn(timeout(
                 config.worker_timeout,
                 ProducerDriver::main_loop(rx_control, worker),
@@ -80,7 +75,7 @@ impl ProducerBenchmark {
 
         loop {
             select! {
-                stat_rx = stat_receiver.recv() => {
+                stat_rx = stats_receiver.recv() => {
                     if let Ok(stat) = stat_rx {
                         let human_readable_bytes = ByteSize(stat.bytes_per_sec).to_string();
                         println!(
