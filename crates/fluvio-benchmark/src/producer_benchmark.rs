@@ -79,11 +79,9 @@ impl ProducerBenchmark {
                     if let Ok(stat) = stat_rx {
                         let human_readable_bytes = ByteSize(stat.bytes_per_sec).to_string();
                         println!(
-                            //TODO: fix inteval latency
-                            //"{} records sent, {} records/sec: ({}/sec), {:.2}ms avg latency, {:.2}ms max latency",
-                            "{} records sent, {} records/sec: ({}/sec)",
+                            "{} records sent, {} records/sec: ({}/sec), {:.2}ms avg latency, {:.2}ms max latency",
                              stat.record_send, stat.records_per_sec, human_readable_bytes,
-                            //utils::nanos_to_ms_pritable(stat.latency_avg), utils::nanos_to_ms_pritable(stat.latency_max)
+                            utils::nanos_to_ms_pritable(stat.latency_avg), utils::nanos_to_ms_pritable(stat.latency_max)
                         );
                     }
                 }
@@ -91,12 +89,12 @@ impl ProducerBenchmark {
                     if let Ok(end) = end {
                         let mut latency_yaml = String::new();
                         latency_yaml.push_str(&format!("{:.2}ms avg latency, {:.2}ms max latency",
-                            utils::nanos_to_ms_pritable(end.histogram.mean() as u64),
-                            utils::nanos_to_ms_pritable(end.histogram.value_at_quantile(1.0))));
+                            utils::nanos_to_ms_pritable(end.latencies_histogram.mean() as u64),
+                            utils::nanos_to_ms_pritable(end.latencies_histogram.value_at_quantile(1.0))));
                         for percentile in [0.5, 0.95, 0.99] {
                             latency_yaml.push_str(&format!(
                                 ", {:.2}ms p{percentile:4.2}",
-                                utils::nanos_to_ms_pritable(end.histogram.value_at_quantile(percentile)),
+                                utils::nanos_to_ms_pritable(end.latencies_histogram.value_at_quantile(percentile)),
                             ));
                         }
                         println!();
