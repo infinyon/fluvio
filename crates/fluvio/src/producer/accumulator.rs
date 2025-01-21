@@ -3,7 +3,7 @@ use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use async_channel::Sender;
 use async_lock::RwLock;
@@ -218,6 +218,20 @@ impl RecordAccumulator {
     }
 }
 
+#[derive(Debug)]
+pub struct ProduceCompletionBatchEvent {
+    pub bytes_size: u64,
+    pub records_len: u64,
+    pub partition: PartitionId,
+    pub created_at: Instant,
+    pub elapsed: Duration,
+}
+
+pub type SharedProducerCallback = Arc<dyn ProducerCallback + Send + Sync>;
+pub trait ProducerCallback {
+    fn finished(&self, item: ProduceCompletionBatchEvent) -> BoxFuture<'_, anyhow::Result<()>>;
+}
+
 pub(crate) struct PushRecord {
     pub(crate) future: FutureRecordMetadata,
 }
@@ -275,6 +289,10 @@ impl ProducerBatch {
 
     pub(crate) fn batch(self) -> Batch {
         self.batch.into()
+    }
+
+    pub(crate) fn metadata(&self) -> Arc<BatchMetadata> {
+        self.batch_metadata.clone()
     }
 }
 

@@ -19,6 +19,7 @@ pub mod spu;
 pub use error::FluvioError;
 pub use config::FluvioConfig;
 pub use producer::{
+    ProducerCallback, SharedProducerCallback, ProduceCompletionBatchEvent,
     TopicProducerConfigBuilder, TopicProducerConfig, TopicProducer, TopicProducerPool, RecordKey,
     ProduceOutput, FutureRecordMetadata, RecordMetadata, DeliverySemantic, RetryPolicy,
     RetryStrategy, Partitioner, PartitionerConfig, ProducerError,

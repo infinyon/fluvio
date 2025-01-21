@@ -51,18 +51,22 @@ impl ProducerBenchmark {
         let mut workers_jh = Vec::new();
 
         let (stat_sender, stat_receiver) = unbounded();
-        let (latency_sender, latency_receiver) = unbounded();
+        let (end_sender, end_receiver) = unbounded();
+
         // Set up producers
         for producer_id in 0..config.num_producers {
+            let (event_sender, event_receiver) = unbounded();
             println!("starting up producer {}", producer_id);
             let stat_collector = StatCollector::create(
-                config.batch_size.as_u64(),
                 config.num_records,
-                latency_sender.clone(),
+                end_sender.clone(),
                 stat_sender.clone(),
+                event_receiver,
             );
             let (tx_control, rx_control) = unbounded();
-            let worker = ProducerWorker::new(producer_id, config.clone(), stat_collector).await?;
+            let worker =
+                ProducerWorker::new(producer_id, config.clone(), stat_collector, event_sender)
+                    .await?;
             let jh = spawn(timeout(
                 config.worker_timeout,
                 ProducerDriver::main_loop(rx_control, worker),
@@ -76,35 +80,40 @@ impl ProducerBenchmark {
 
         loop {
             select! {
-                hist = latency_receiver.recv() => {
-                    if let Ok(hist) = hist {
+                stat_rx = stat_receiver.recv() => {
+                    if let Ok(stat) = stat_rx {
+                        let human_readable_bytes = ByteSize(stat.bytes_per_sec).to_string();
+                        println!(
+                            //TODO: fix inteval latency
+                            //"{} records sent, {} records/sec: ({}/sec), {:.2}ms avg latency, {:.2}ms max latency",
+                            "{} records sent, {} records/sec: ({}/sec)",
+                             stat.record_send, stat.records_per_sec, human_readable_bytes,
+                            //utils::nanos_to_ms_pritable(stat.latency_avg), utils::nanos_to_ms_pritable(stat.latency_max)
+                        );
+                    }
+                }
+                end = end_receiver.recv() => {
+                    if let Ok(end) = end {
                         let mut latency_yaml = String::new();
                         latency_yaml.push_str(&format!("{:.2}ms avg latency, {:.2}ms max latency",
-                            utils::nanos_to_ms_pritable(hist.mean() as u64),
-                            utils::nanos_to_ms_pritable(hist.value_at_quantile(1.0))));
+                            utils::nanos_to_ms_pritable(end.histogram.mean() as u64),
+                            utils::nanos_to_ms_pritable(end.histogram.value_at_quantile(1.0))));
                         for percentile in [0.5, 0.95, 0.99] {
                             latency_yaml.push_str(&format!(
                                 ", {:.2}ms p{percentile:4.2}",
-                                utils::nanos_to_ms_pritable(hist.value_at_quantile(percentile)),
+                                utils::nanos_to_ms_pritable(end.histogram.value_at_quantile(percentile)),
                             ));
                         }
+                        println!();
                         println!("{}", latency_yaml);
-                    }
-                    break;
-                }
-                stat_rx = stat_receiver.recv() => {
-                    if let Ok(stat) = stat_rx {
-                        // lantecy_receiver is finishing the benchmark now
-                        //if stat.end {
-                        //    break;
-                        //}
-                        let human_readable_bytes = ByteSize(stat.bytes_per_sec as u64).to_string();
+
+                        let human_readable_bytes = ByteSize(end.bytes_per_sec).to_string();
                         println!(
-                            "{} records sent, {} records/sec: ({}/sec), {:.2}ms avg latency, {:.2}ms max latency",
-                             stat.total_records_send, stat.records_per_sec, human_readable_bytes,
-                                utils::nanos_to_ms_pritable(stat.latency_avg), utils::nanos_to_ms_pritable(stat.latency_max)
+                            "{} total records sent, {} records/sec: ({}/sec) ",
+                             end.total_records, end.records_per_sec, human_readable_bytes
                         );
                     }
+                    break;
                 }
             }
         }

@@ -45,6 +45,9 @@ pub use crate::producer::partitioning::{Partitioner, PartitionerConfig};
 use self::accumulator::BatchEvents;
 use self::accumulator::BatchHandler;
 use self::accumulator::BatchesDeque;
+pub use self::accumulator::SharedProducerCallback;
+pub use self::accumulator::ProducerCallback;
+pub use self::accumulator::ProduceCompletionBatchEvent;
 pub use self::config::{
     TopicProducerConfigBuilder, TopicProducerConfig, TopicProducerConfigBuilderError,
     DeliverySemantic, RetryPolicy, RetryStrategy,
@@ -75,6 +78,7 @@ where
     batches_deque: Arc<BatchesDeque>,
     batch_events: Arc<BatchEvents>,
     client_metric: Arc<ClientMetrics>,
+    callback: Option<SharedProducerCallback>,
 }
 
 impl ProducerPool {
@@ -84,6 +88,7 @@ impl ProducerPool {
         spu_pool: Arc<S>,
         batches: Arc<HashMap<PartitionId, BatchHandler>>,
         client_metric: Arc<ClientMetrics>,
+        callback: Option<SharedProducerCallback>,
     ) -> Self
     where
         S: SpuPool + Send + Sync + 'static,
@@ -103,6 +108,7 @@ impl ProducerPool {
                 batches_deque: batch_list.clone(),
                 batch_events: batch_events.clone(),
                 client_metric: client_metric.clone(),
+                callback: callback.clone(),
             };
 
             PartitionProducer::start(
@@ -271,6 +277,7 @@ where
             batches_deque: BatchesDeque::shared(),
             batch_events: BatchEvents::shared(),
             client_metric: self.metrics.clone(),
+            callback: self.config.callback.clone(),
         };
 
         let _ = producer_pool
@@ -433,6 +440,7 @@ where
             spu_pool.clone(),
             Arc::new(record_accumulator.batches().await),
             metrics.clone(),
+            config.callback.clone(),
         );
 
         Ok(Self {

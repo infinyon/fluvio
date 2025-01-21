@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use std::time::Instant;
 
 use async_channel::Receiver;
 use async_lock::RwLock;
@@ -45,12 +46,14 @@ pub(crate) enum BatchMetadataState {
 
 pub(crate) struct BatchMetadata {
     state: RwLock<BatchMetadataState>,
+    pub(crate) created_at: Instant,
 }
 
 impl BatchMetadata {
     pub(crate) fn new(receiver: Receiver<ProducePartitionResponseFuture>) -> Self {
         Self {
             state: RwLock::new(BatchMetadataState::Buffered(receiver)),
+            created_at: Instant::now(),
         }
     }
 
