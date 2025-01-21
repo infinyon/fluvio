@@ -12,7 +12,6 @@ use futures_util::future::BoxFuture;
 
 use crate::{
     config::{ProducerConfig, RecordKeyAllocationStrategy},
-    stats_collector::StatCollector,
     utils,
 };
 
@@ -42,13 +41,11 @@ impl ProducerCallback for BenchmarkProducerCallback {
 pub(crate) struct ProducerWorker {
     fluvio_producer: TopicProducerPool,
     records_to_send: Vec<BenchmarkRecord>,
-    _stat: StatCollector,
 }
 impl ProducerWorker {
     pub(crate) async fn new(
         id: u64,
         config: ProducerConfig,
-        stat: StatCollector,
         event_sender: Sender<ProduceCompletionBatchEvent>,
     ) -> Result<Self> {
         let fluvio = Fluvio::connect().await?;
@@ -78,7 +75,6 @@ impl ProducerWorker {
         Ok(ProducerWorker {
             fluvio_producer,
             records_to_send,
-            _stat: stat,
         })
     }
 
