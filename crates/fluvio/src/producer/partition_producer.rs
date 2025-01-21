@@ -220,12 +220,13 @@ where
 
             if self.callback.is_some() {
                 let created_at = metadata.created_at;
+                let elapsed = created_at.elapsed();
                 let event = ProduceCompletionBatchEvent {
                     created_at,
-                    topic: self.replica.topic.clone(),
                     partition: self.replica.partition,
                     bytes_size,
                     records_len,
+                    elapsed,
                 };
 
                 events_to_callback.push(event);

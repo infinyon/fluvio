@@ -57,8 +57,12 @@ impl ProducerBenchmark {
         for producer_id in 0..config.num_producers {
             let (event_sender, event_receiver) = unbounded();
             println!("starting up producer {}", producer_id);
-            let stat_collector =
-                StatCollector::create(end_sender.clone(), stat_sender.clone(), event_receiver);
+            let stat_collector = StatCollector::create(
+                config.num_records,
+                end_sender.clone(),
+                stat_sender.clone(),
+                event_receiver,
+            );
             let (tx_control, rx_control) = unbounded();
             let worker =
                 ProducerWorker::new(producer_id, config.clone(), stat_collector, event_sender)

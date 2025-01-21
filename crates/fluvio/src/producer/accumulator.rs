@@ -220,11 +220,11 @@ impl RecordAccumulator {
 
 #[derive(Debug)]
 pub struct ProduceCompletionBatchEvent {
-    pub topic: String,
     pub bytes_size: u64,
     pub records_len: u64,
     pub partition: PartitionId,
     pub created_at: Instant,
+    pub elapsed: Duration,
 }
 
 pub type SharedProducerCallback = Arc<dyn ProducerCallback + Send + Sync>;

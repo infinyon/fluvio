@@ -6,7 +6,11 @@ use std::{
 
 use async_channel::{Receiver, Sender};
 use fluvio::ProduceCompletionBatchEvent;
-use fluvio_future::{sync::Mutex, task::spawn, timer::sleep};
+use fluvio_future::{
+    sync::{Mutex, RwLock},
+    task::spawn,
+    timer::sleep,
+};
 use hdrhistogram::Histogram;
 
 pub(crate) struct ProducerStat {}
@@ -34,6 +38,7 @@ pub struct EndProducerStat {
 
 impl ProducerStat {
     pub(crate) fn new(
+        num_records: u64,
         end_sender: Sender<EndProducerStat>,
         stats_sender: Sender<Stats>,
         event_receiver: Receiver<ProduceCompletionBatchEvent>,
@@ -45,7 +50,13 @@ impl ProducerStat {
 
         let histogram = Arc::new(Mutex::new(hdrhistogram::Histogram::<u64>::new(3).unwrap()));
 
-        ProducerStat::track_latency(end_sender, histogram.clone(), event_receiver, stats.clone());
+        ProducerStat::track_latency(
+            num_records,
+            end_sender,
+            histogram.clone(),
+            event_receiver,
+            stats.clone(),
+        );
 
         ProducerStat::send_stats(histogram.clone(), stats_sender, stats.clone())
             .expect("send stats");
@@ -103,6 +114,7 @@ impl ProducerStat {
     }
 
     fn track_latency(
+        num_records: u64,
         end_sender: Sender<EndProducerStat>,
         histogram: Arc<Mutex<Histogram<u64>>>,
         event_receiver: Receiver<ProduceCompletionBatchEvent>,
@@ -110,45 +122,53 @@ impl ProducerStat {
     ) {
         spawn(async move {
             let hist = histogram.clone();
-            let mut first_start_time = Option::None;
+            let first_start_time = Arc::new(RwLock::new(None));
             while let Ok(event) = event_receiver.recv().await {
-                if first_start_time.is_none() {
-                    first_start_time = Some(event.created_at);
-                }
-                let elapsed = event.created_at.elapsed();
-                let mut hist = hist.lock().await;
-                hist.record(elapsed.as_nanos() as u64).expect("record");
+                let hist = hist.clone();
+                let stats = stats.clone();
+                let first_start_time = first_start_time.clone();
+                spawn(async move {
+                    if first_start_time.read().await.is_none() {
+                        first_start_time.write().await.replace(event.created_at);
+                    }
+                    let mut hist = hist.lock().await;
+                    hist.record(event.elapsed.as_nanos() as u64)
+                        .expect("record");
 
-                stats
-                    .record_send
-                    .fetch_add(event.records_len, std::sync::atomic::Ordering::Relaxed);
-                stats
-                    .record_bytes
-                    .fetch_add(event.bytes_size, std::sync::atomic::Ordering::Relaxed);
+                    stats
+                        .record_send
+                        .fetch_add(event.records_len, std::sync::atomic::Ordering::Relaxed);
+                    stats
+                        .record_bytes
+                        .fetch_add(event.bytes_size, std::sync::atomic::Ordering::Relaxed);
+                });
             }
 
             // send end
-            let hist = hist.lock().await;
-            let elapsed = first_start_time.expect("start time").elapsed();
+            if stats.record_send.load(std::sync::atomic::Ordering::Relaxed) >= num_records {
+                let hist = hist.lock().await;
+                let elapsed = first_start_time.read().await.expect("start time").elapsed();
 
-            let elapsed_seconds = elapsed.as_millis() as f64 / 1000.0;
-            let records_per_sec = (stats.record_send.load(std::sync::atomic::Ordering::Relaxed)
-                as f64
-                / elapsed_seconds)
-                .round() as u64;
-            let bytes_per_sec = (stats
-                .record_bytes
-                .load(std::sync::atomic::Ordering::Relaxed) as f64
-                / elapsed_seconds)
-                .round() as u64;
+                let elapsed_seconds = elapsed.as_millis() as f64 / 1000.0;
+                let records_per_sec = (stats.record_send.load(std::sync::atomic::Ordering::Relaxed)
+                    as f64
+                    / elapsed_seconds)
+                    .round() as u64;
+                let bytes_per_sec = (stats
+                    .record_bytes
+                    .load(std::sync::atomic::Ordering::Relaxed)
+                    as f64
+                    / elapsed_seconds)
+                    .round() as u64;
 
-            let end = EndProducerStat {
-                histogram: hist.clone(),
-                total_records: stats.record_send.load(std::sync::atomic::Ordering::Relaxed),
-                records_per_sec,
-                bytes_per_sec,
-            };
-            end_sender.send(end).await.expect("send end");
+                let end = EndProducerStat {
+                    histogram: hist.clone(),
+                    total_records: stats.record_send.load(std::sync::atomic::Ordering::Relaxed),
+                    records_per_sec,
+                    bytes_per_sec,
+                };
+                end_sender.send(end).await.expect("send end");
+            }
         });
     }
 }
@@ -159,12 +179,13 @@ pub(crate) struct StatCollector {
 
 impl StatCollector {
     pub(crate) fn create(
+        num_records: u64,
         end_sender: Sender<EndProducerStat>,
         stat_sender: Sender<Stats>,
         event_receiver: Receiver<ProduceCompletionBatchEvent>,
     ) -> Self {
         Self {
-            _current: ProducerStat::new(end_sender, stat_sender, event_receiver),
+            _current: ProducerStat::new(num_records, end_sender, stat_sender, event_receiver),
         }
     }
 }

@@ -44,9 +44,9 @@ pub(crate) enum BatchMetadataState {
     Failed(ProducerError),
 }
 
-pub struct BatchMetadata {
-    pub state: RwLock<BatchMetadataState>,
-    pub created_at: Instant,
+pub(crate) struct BatchMetadata {
+    state: RwLock<BatchMetadataState>,
+    pub(crate) created_at: Instant,
 }
 
 impl BatchMetadata {
