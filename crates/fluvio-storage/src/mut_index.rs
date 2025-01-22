@@ -26,7 +26,7 @@ pub const EXTENSION: &str = "index";
 /// Index file for offset
 /// Each entry in index consist of pair of (relative_offset, file_position)
 pub struct MutLogIndex {
-    mmap: MemoryMappedMutFile,
+    _mmap: MemoryMappedMutFile,
     file: File,
     base_offset: Offset,         // base offset of segment
     accumulated_batch_len: Size, // accumulated batches len
@@ -76,7 +76,7 @@ impl MutLogIndex {
 
         Ok(MutLogIndex {
             max_index_interval,
-            mmap: m_file,
+            _mmap: m_file,
             file,
             first_empty_slot: 0,
             accumulated_batch_len: 0,
@@ -112,7 +112,7 @@ impl MutLogIndex {
         let max_index_interval = option.index_max_interval_bytes.get_consistent();
 
         let mut index = MutLogIndex {
-            mmap: m_file,
+            _mmap: m_file,
             max_index_interval,
             file,
             first_empty_slot: 0,
@@ -213,7 +213,6 @@ impl MutLogIndex {
             let slot_index = self.first_empty_slot as usize;
             debug!(slot_index, offset_delta, file_position, "add new entry at");
             self[slot_index] = (offset_delta.to_be(), file_position.to_be());
-            self.mmap.flush_ft().await?;
             self.accumulated_batch_len = 0;
             self.first_empty_slot += 1;
         } else {
