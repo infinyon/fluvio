@@ -152,9 +152,9 @@ ureq = { version = "=2.9.7", default-features = false, features = ["tls", "http-
 url = "2.5"
 uuid = { version = "1.1", features = ["serde", "v4"] }
 wasm-bindgen-test = "0.3.24"
-wasi-common = { version = "28.0.1" }
-wasmtime = { version = "28.0.1" }
-wasmparser = "0.223.0"
+wasi-common = { version = "29.0.1" }
+wasmtime = { version = "29.0.1" }
+wasmparser = "0.224.0"
 which = "6.0.1"
 x509-parser = "0.16.0"
 
