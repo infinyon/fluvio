@@ -9,6 +9,7 @@ use fluvio::{
     TopicProducerConfigBuilder, TopicProducerPool,
 };
 use futures_util::future::BoxFuture;
+use tracing::debug;
 
 use crate::{
     config::{ProducerConfig, RecordKeyAllocationStrategy},
@@ -68,7 +69,7 @@ impl ProducerWorker {
             .topic_producer_with_config(config.topic_name.clone(), fluvio_config)
             .await?;
 
-        let num_records = records_per_producer(id, config.num_producers, config.num_records);
+        let num_records = utils::records_per_producer(id, config.num_producers, config.num_records);
 
         let records_to_send = create_records(config.clone(), num_records, id);
 
@@ -79,7 +80,7 @@ impl ProducerWorker {
     }
 
     pub async fn send_batch(self) -> Result<()> {
-        println!("producer is sending batch");
+        debug!("producer is sending batch");
 
         for record in self.records_to_send.into_iter() {
             let _ = self
@@ -121,35 +122,5 @@ pub struct BenchmarkRecord {
 impl BenchmarkRecord {
     pub fn new(key: RecordKey, data: RecordData) -> Self {
         Self { key, data }
-    }
-}
-
-/// Calculate the number of records each producer should send
-fn records_per_producer(id: u64, num_producers: u64, num_records: u64) -> u64 {
-    if id == 0 {
-        num_records / num_producers + num_records % num_producers
-    } else {
-        num_records / num_producers
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_get_num_records_per_producer() {
-        let num_producers = 3;
-        let num_records = 10;
-
-        assert_eq!(records_per_producer(0, num_producers, num_records), 4);
-        assert_eq!(records_per_producer(1, num_producers, num_records), 3);
-        assert_eq!(records_per_producer(2, num_producers, num_records), 3);
-
-        let num_producers = 3;
-        let num_records = 12;
-        assert_eq!(records_per_producer(0, num_producers, num_records), 4);
-        assert_eq!(records_per_producer(1, num_producers, num_records), 4);
-        assert_eq!(records_per_producer(2, num_producers, num_records), 4);
     }
 }

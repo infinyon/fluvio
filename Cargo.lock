@@ -2338,7 +2338,6 @@ dependencies = [
  "anyhow",
  "async-channel 1.9.0",
  "bytesize",
- "chrono",
  "clap",
  "derive_builder",
  "fluvio",
@@ -2352,7 +2351,6 @@ dependencies = [
  "serde",
  "serde_yaml",
  "thiserror 2.0.11",
- "tokio",
  "tracing",
 ]
 
