@@ -7,7 +7,7 @@ use std::marker::PhantomData;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
-use std::sync::atomic::Ordering::SeqCst;
+use std::sync::atomic::Ordering::{SeqCst, Relaxed};
 use std::sync::atomic::AtomicI32;
 use std::time::Duration;
 use std::fmt;
@@ -119,7 +119,7 @@ impl MultiplexerSocket {
 
     /// get next available correlation to use
     fn next_correlation_id(&self) -> i32 {
-        self.correlation_id_counter.fetch_add(1, SeqCst)
+        self.correlation_id_counter.fetch_add(1, Relaxed)
     }
 
     /// create socket to perform request and response
