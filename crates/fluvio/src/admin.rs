@@ -349,21 +349,23 @@ impl FluvioAdmin {
         debug!(api_version = req_msg.header.api_version(), obj = %S::LABEL, "create watch stream");
         let inner_socket = self.socket.new_socket();
         let stream = inner_socket.create_stream(req_msg, 10).await?;
-        Ok(stream.map(|respons_result| match respons_result {
-            Ok(response) => {
-                let watch_response = response.downcast().map_err(|err| {
-                    IoError::new(ErrorKind::Other, format!("downcast error: {:#?}", err))
-                })?;
-                watch_response.ok_or(IoError::new(
+        Ok(stream
+            .map(|respons_result| match respons_result {
+                Ok(response) => {
+                    let watch_response = response.downcast().map_err(|err| {
+                        IoError::new(ErrorKind::Other, format!("downcast error: {:#?}", err))
+                    })?;
+                    watch_response.ok_or(IoError::new(
+                        ErrorKind::Other,
+                        format!("cannot decoded as {s}", s = S::LABEL),
+                    ))
+                }
+                Err(err) => Err(IoError::new(
                     ErrorKind::Other,
-                    format!("cannot decoded as {s}", s = S::LABEL),
-                ))
-            }
-            Err(err) => Err(IoError::new(
-                ErrorKind::Other,
-                format!("socket error {err}"),
-            )),
-        }))
+                    format!("socket error {err}"),
+                )),
+            })
+            .boxed())
     }
 }
 
