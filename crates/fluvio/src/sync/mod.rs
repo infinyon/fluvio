@@ -168,7 +168,7 @@ mod context {
     mod unstable {
         use super::*;
         use crate::metadata::store::MetadataChanges;
-        use futures_util::Stream;
+        use futures_util::{Stream, StreamExt};
 
         impl<S> StoreContext<S>
         where
@@ -193,7 +193,7 @@ mod context {
                     }
                 });
 
-                receiver
+                receiver.boxed()
             }
         }
     }

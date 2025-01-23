@@ -2263,7 +2263,7 @@ name = "fluvio"
 version = "0.24.3"
 dependencies = [
  "anyhow",
- "async-channel 1.9.0",
+ "async-channel 2.3.1",
  "async-lock",
  "async-std",
  "async-trait",
@@ -2320,7 +2320,7 @@ name = "fluvio-benchmark"
 version = "0.0.0"
 dependencies = [
  "anyhow",
- "async-channel 1.9.0",
+ "async-channel 2.3.1",
  "bytesize",
  "chrono",
  "clap",
@@ -2380,7 +2380,7 @@ name = "fluvio-cli"
 version = "0.0.0"
 dependencies = [
  "anyhow",
- "async-channel 1.9.0",
+ "async-channel 2.3.1",
  "async-trait",
  "bytesize",
  "clap",
@@ -2469,7 +2469,7 @@ name = "fluvio-cluster"
 version = "0.0.0"
 dependencies = [
  "anyhow",
- "async-channel 1.9.0",
+ "async-channel 2.3.1",
  "async-trait",
  "bytesize",
  "chrono",
@@ -2546,7 +2546,7 @@ name = "fluvio-connector-common"
 version = "0.0.0"
 dependencies = [
  "anyhow",
- "async-channel 1.9.0",
+ "async-channel 2.3.1",
  "async-trait",
  "ctrlc",
  "fluvio",
@@ -2562,7 +2562,7 @@ dependencies = [
  "serde_yaml",
  "tokio",
  "tracing",
- "trybuild 1.0.102",
+ "trybuild 1.0.103",
 ]
 
 [[package]]
@@ -2829,7 +2829,7 @@ dependencies = [
  "thiserror 1.0.69",
  "tokio-util",
  "tracing",
- "trybuild 1.0.102",
+ "trybuild 1.0.103",
 ]
 
 [[package]]
@@ -2970,7 +2970,7 @@ dependencies = [
 name = "fluvio-socket"
 version = "0.15.1"
 dependencies = [
- "async-channel 1.9.0",
+ "async-channel 2.3.1",
  "async-lock",
  "async-trait",
  "built",
@@ -2998,7 +2998,7 @@ version = "0.0.0"
 dependencies = [
  "adaptive_backoff",
  "anyhow",
- "async-channel 1.9.0",
+ "async-channel 2.3.1",
  "async-io",
  "async-lock",
  "async-trait",
@@ -3062,7 +3062,7 @@ name = "fluvio-storage"
 version = "0.0.0"
 dependencies = [
  "anyhow",
- "async-channel 1.9.0",
+ "async-channel 2.3.1",
  "async-lock",
  "async-trait",
  "blocking",
@@ -3090,10 +3090,10 @@ dependencies = [
 
 [[package]]
 name = "fluvio-stream-dispatcher"
-version = "0.13.7"
+version = "0.13.8"
 dependencies = [
  "anyhow",
- "async-channel 1.9.0",
+ "async-channel 2.3.1",
  "async-lock",
  "async-trait",
  "cfg-if",
@@ -3131,7 +3131,7 @@ name = "fluvio-test"
 version = "0.0.0"
 dependencies = [
  "anyhow",
- "async-channel 1.9.0",
+ "async-channel 2.3.1",
  "clap",
  "comfy-table",
  "crc",
@@ -5330,9 +5330,9 @@ dependencies = [
 
 [[package]]
 name = "openssl-probe"
-version = "0.1.5"
+version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ff011a302c396a5197692431fc1948019154afc178baf7d8e37367442a4601cf"
+checksum = "d05e27ee213611ffe7d6348b942e8f942b37114c00cc03cec254295a4a17852e"
 
 [[package]]
 name = "openssl-src"
@@ -7520,9 +7520,9 @@ dependencies = [
 
 [[package]]
 name = "trybuild"
-version = "1.0.102"
+version = "1.0.103"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9f14b5c02a137632f68194ec657ecb92304138948e8957c932127eb1b58c23be"
+checksum = "b812699e0c4f813b872b373a4471717d9eb550da14b311058a4d9cf4173cbca6"
 dependencies = [
  "glob",
  "serde",
@@ -7576,9 +7576,9 @@ checksum = "7eec5d1121208364f6793f7d2e222bf75a915c19557537745b195b253dd64217"
 
 [[package]]
 name = "unicode-ident"
-version = "1.0.14"
+version = "1.0.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "adb9e6ca4f869e1180728b7950e35922a7fc6397f7b641499e8f3ef06e50dc83"
+checksum = "11cd88e12b17c6494200a9c1b683a04fcac9573ed74cd1b62aeb2727c5592243"
 
 [[package]]
 name = "unicode-normalization"

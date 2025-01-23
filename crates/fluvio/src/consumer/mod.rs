@@ -384,10 +384,11 @@ where
             warn!("SPU does not support Offset Management API");
         }
 
-        let mut stream = self
-            .pool
-            .create_stream_with_version(&replica, stream_request, stream_fetch_version)
-            .await?;
+        let mut stream = StreamExt::boxed(
+            self.pool
+                .create_stream_with_version(&replica, stream_request, stream_fetch_version)
+                .await?,
+        );
 
         let (server_sender, server_recv) =
             async_channel::bounded::<StreamToServer>(STREAM_TO_SERVER_CHANNEL_SIZE);

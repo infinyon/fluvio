@@ -110,7 +110,8 @@ impl<T: Stream<Item = Result<Record, ErrorCode>> + Unpin> Stream
     }
 }
 
-impl<T> ConsumerStream for futures_util::stream::TakeUntil<T, async_channel::Recv<'_, ()>>
+impl<T> ConsumerStream
+    for futures_util::stream::TakeUntil<T, BoxFuture<'_, async_channel::Recv<'_, ()>>>
 where
     T: ConsumerStream,
 {

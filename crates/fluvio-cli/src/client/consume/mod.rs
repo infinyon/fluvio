@@ -394,7 +394,7 @@ mod cmd {
             let mut stream = fluvio
                 .consumer_with_config(consume_config)
                 .await?
-                .take_until(stop_signal.recv());
+                .take_until(stop_signal.recv().boxed());
             self.consume_records_stream(&mut stream, tableformat)
                 .await?;
 
