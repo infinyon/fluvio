@@ -11,9 +11,9 @@ use bytesize::ByteSize;
 
 use crate::utils;
 
-const DEFAULT_BATCH_SIZE: ByteSize = ByteSize::kib(16);
+const DEFAULT_BATCH_SIZE: &str = "16kib";
 const DEFAULT_QUEUE_SIZE: u64 = 10;
-const DEFAULT_MAX_REQUEST_SIZE: ByteSize = ByteSize::mib(32);
+const DEFAULT_MAX_REQUEST_SIZE: &str = "32mib";
 const DEFAULT_LINGER: &str = "0ms";
 const DEFAULT_SERVER_TIMEOUT: &str = "5000ms";
 const DEFAULT_COMPRESSION: Compression = Compression::None;
@@ -23,7 +23,7 @@ const DEFAULT_WORKER_TIMEOUT: &str = "3000s";
 const DEFAULT_RECORD_KEY_ALLOCATION_STRATEGY: RecordKeyAllocationStrategy =
     RecordKeyAllocationStrategy::NoKey;
 const DEFAULT_NUM_PRODUCERS: u64 = 1;
-const DEFAULT_RECORD_SIZE: ByteSize = ByteSize::kib(5);
+const DEFAULT_RECORD_SIZE: &str = "5kib";
 const DEFAULT_NUM_RECORDS: u64 = 10_000;
 const DEFAULT_PARTITIONS: u32 = 1;
 const DEFAULT_REPLICAS: u32 = 1;
@@ -38,13 +38,13 @@ pub enum BenchmarkConfig {
 #[derive(Debug, Parser, Clone, Builder)]
 pub struct ProducerConfig {
     /// Size of each batch
-    #[arg(short, long, value_name = "bytes", default_value_t = DEFAULT_BATCH_SIZE)]
+    #[arg(short, long, value_name = "bytes", default_value = DEFAULT_BATCH_SIZE)]
     pub batch_size: ByteSize,
     /// Number of records to send
     #[arg(short, long, default_value_t = DEFAULT_QUEUE_SIZE)]
     pub queue_size: u64,
     /// Maximum size of a request
-    #[arg(long, value_name = "bytes", default_value_t = DEFAULT_MAX_REQUEST_SIZE)]
+    #[arg(long, value_name = "bytes", default_value = DEFAULT_MAX_REQUEST_SIZE)]
     pub max_request_size: ByteSize,
     /// Time to wait for new records
     #[arg(short, long, value_parser = humantime::parse_duration, default_value = DEFAULT_LINGER)]
@@ -75,7 +75,7 @@ pub struct ProducerConfig {
     #[clap(long, default_value_t = DEFAULT_NUM_RECORDS)]
     pub num_records: u64,
     /// Size of each record in bytes
-    #[arg(long, value_name = "bytes", default_value_t = DEFAULT_RECORD_SIZE)]
+    #[arg(long, value_name = "bytes", default_value = DEFAULT_RECORD_SIZE)]
     pub record_size: ByteSize,
 
     /// Number of partitions for the topic
