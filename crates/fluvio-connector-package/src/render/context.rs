@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 use serde::Serialize;
 use minijinja::value::Value;
@@ -31,7 +31,7 @@ impl ContextStore for &dyn SecretStore {
     fn extract_context_values(&self, input: &str) -> anyhow::Result<Value> {
         let connector_config: ConnectorConfig = serde_yaml::from_reader(input.as_bytes())?;
 
-        let mut values = HashMap::default();
+        let mut values = BTreeMap::default();
 
         for secret in connector_config.secrets().iter() {
             let secret_value = self.read(secret.name())?;

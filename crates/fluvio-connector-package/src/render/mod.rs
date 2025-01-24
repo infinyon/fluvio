@@ -1,9 +1,7 @@
-use minijinja::{Environment};
+use minijinja::Environment;
 use tracing::error;
 
-use crate::{
-    secret::{self},
-};
+use crate::secret::{self};
 
 use self::{
     context::{Context, ContextStore},
@@ -34,7 +32,7 @@ impl ConfigRenderer {
     fn new_with_context_stores(context_stores: Vec<Box<dyn ContextStore>>) -> anyhow::Result<Self> {
         let mut inner_renderer = Environment::new();
         inner_renderer.set_undefined_behavior(minijinja::UndefinedBehavior::Strict);
-        inner_renderer.set_syntax(ConnectorTemplateSyntax::default().into())?;
+        inner_renderer.set_syntax(ConnectorTemplateSyntax::default().into());
         inner_renderer.set_fuel(Some(500));
 
         Ok(Self::new(inner_renderer, context_stores))
