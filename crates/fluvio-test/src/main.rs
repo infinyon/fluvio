@@ -96,7 +96,7 @@ fn run_test(
     debug!(?root_pid, "current root pid");
     sysinfo::set_open_files_limit(0);
     let mut sys = System::new();
-    sys.refresh_processes(sysinfo::ProcessesToUpdate::Some(&[root_pid]));
+    sys.refresh_processes(sysinfo::ProcessesToUpdate::Some(&[root_pid]), true);
     let root_process = sys.process(root_pid).expect("Unable to get root process");
     let _child_pid = match fork::fork() {
         Ok(fork::Fork::Parent(child_pid)) => child_pid,
@@ -199,7 +199,7 @@ fn kill_child_processes(root_process: &Process) {
     let root_pid = root_process.pid();
     sysinfo::set_open_files_limit(0);
     let mut sys2 = System::new();
-    sys2.refresh_processes(sysinfo::ProcessesToUpdate::All);
+    sys2.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
     let g_id = root_process.group_id();
 
     let processes = sys2.processes();
@@ -297,7 +297,7 @@ fn get_parent_pid() -> sysinfo::Pid {
     let pid = get_current_pid().expect("Unable to get current pid");
     sysinfo::set_open_files_limit(0);
     let mut sys2 = System::new();
-    sys2.refresh_processes(sysinfo::ProcessesToUpdate::All);
+    sys2.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
     let current_process = sys2.process(pid).expect("Current process not found");
     current_process.parent().expect("Parent process not found")
 }
