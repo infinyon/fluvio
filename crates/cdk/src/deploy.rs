@@ -483,7 +483,7 @@ mod local_index {
 
             sysinfo::set_open_files_limit(0);
             let mut system = sysinfo::System::new();
-            system.refresh_processes(sysinfo::ProcessesToUpdate::All);
+            system.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
             for connector in self.entries {
                 let status = self.operator.status(&connector)?;
                 let Entry::Local {
@@ -534,7 +534,7 @@ mod local_index {
     impl Default for LocalProcesses {
         fn default() -> Self {
             let mut system: sysinfo::System = Default::default();
-            system.refresh_processes(sysinfo::ProcessesToUpdate::All);
+            system.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
             Self { system }
         }
     }

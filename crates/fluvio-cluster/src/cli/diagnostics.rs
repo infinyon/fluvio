@@ -271,7 +271,7 @@ impl DiagnosticsOpt {
         // First we update all information of our `System` struct.
         println!("getting system info");
         sys.refresh_all();
-        net.refresh();
+        net.refresh(true);
 
         let info = SystemInfo::load(&sys);
         write(serde_yaml::to_string(&info).unwrap(), "sysinfo")?;

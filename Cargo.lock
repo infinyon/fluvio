@@ -928,16 +928,6 @@ dependencies = [
 
 [[package]]
 name = "cargo_toml"
-version = "0.20.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "88da5a13c620b4ca0078845707ea9c3faf11edbc3ffd8497d11d686211cd1ac0"
-dependencies = [
- "serde",
- "toml 0.8.19",
-]
-
-[[package]]
-name = "cargo_toml"
 version = "0.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5fbd1fe9db3ebf71b89060adaf7b0504c2d6a425cf061313099547e382c2e472"
@@ -1191,11 +1181,10 @@ checksum = "5b63caa9aa9397e2d9480a9b13673856c78d8ac123288526c37d7839f2a86990"
 
 [[package]]
 name = "colored"
-version = "2.2.0"
+version = "3.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "117725a109d387c937a1533ce01b450cbde6b88abceea8473c4d7a85853cda3c"
+checksum = "fde0e0ec90c9dfb3b4b1a0891a7dcd0e2bffde2f7efed5fe7c9bb00e5bfb915e"
 dependencies = [
- "lazy_static",
  "windows-sys 0.59.0",
 ]
 
@@ -1585,16 +1574,16 @@ dependencies = [
 
 [[package]]
 name = "crossterm"
-version = "0.27.0"
+version = "0.28.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f476fe445d41c9e991fd07515a6f463074b782242ccf4a5b7b1d1012e70824df"
+checksum = "829d955a0bb380ef178a640b91779e3987da38c9aea133b20614cfed8cdea9c6"
 dependencies = [
  "bitflags 2.8.0",
  "crossterm_winapi",
  "futures-core",
- "libc",
- "mio 0.8.11",
+ "mio 1.0.3",
  "parking_lot 0.12.3",
+ "rustix",
  "signal-hook",
  "signal-hook-mio",
  "winapi",
@@ -1842,11 +1831,11 @@ dependencies = [
 
 [[package]]
 name = "directories"
-version = "5.0.1"
+version = "6.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9a49173b84e034382284f27f1af4dcbbd231ffa358c0fe316541a7337f376a35"
+checksum = "16f5094c54661b38d03bd7e50df373292118db60b585c08a411c6d840017fe7d"
 dependencies = [
- "dirs-sys 0.4.1",
+ "dirs-sys 0.5.0",
 ]
 
 [[package]]
@@ -1878,13 +1867,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "dirs"
+version = "6.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c3e8aa94d75141228480295a7d0e7feb620b1a5ad9f12bc40be62411e38cce4e"
+dependencies = [
+ "dirs-sys 0.5.0",
+]
+
+[[package]]
 name = "dirs-sys"
 version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1b1d1d91c932ef41c0f2663aa8b0ca0342d444d842c06914aa0a7e352d0bada6"
 dependencies = [
  "libc",
- "redox_users",
+ "redox_users 0.4.6",
  "winapi",
 ]
 
@@ -1896,8 +1894,20 @@ checksum = "520f05a5cbd335fae5a99ff7a6ab8627577660ee5cfd6a94a6a929b52ff0321c"
 dependencies = [
  "libc",
  "option-ext",
- "redox_users",
+ "redox_users 0.4.6",
  "windows-sys 0.48.0",
+]
+
+[[package]]
+name = "dirs-sys"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e01a3366d27ee9890022452ee61b2b63a67e6f13f58900b651ff5665f0bb1fab"
+dependencies = [
+ "libc",
+ "option-ext",
+ "redox_users 0.5.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -1907,7 +1917,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4ebda144c4fe02d1f7ea1a7d9641b6fc6b580adcfa024ae48797ecdeb6825b4d"
 dependencies = [
  "libc",
- "redox_users",
+ "redox_users 0.4.6",
  "winapi",
 ]
 
@@ -2117,6 +2127,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "env_home"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c7f84e12ccf0a7ddc17a6c41c93326024c42920d7ee630d04950e6926645c0fe"
+
+[[package]]
 name = "env_logger"
 version = "0.11.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2270,7 +2286,7 @@ dependencies = [
  "cfg-if",
  "chrono",
  "derive_builder",
- "dirs 5.0.1",
+ "dirs 6.0.0",
  "event-listener 5.4.0",
  "fluvio-compression",
  "fluvio-future",
@@ -2289,7 +2305,7 @@ dependencies = [
  "semver 1.0.25",
  "serde",
  "siphasher",
- "thiserror 1.0.69",
+ "thiserror 2.0.11",
  "tokio",
  "toml 0.8.19",
  "tracing",
@@ -2310,7 +2326,7 @@ dependencies = [
  "futures-util",
  "serde",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.11",
  "tracing",
  "x509-parser",
 ]
@@ -2335,7 +2351,7 @@ dependencies = [
  "rayon",
  "serde",
  "serde_yaml",
- "thiserror 1.0.69",
+ "thiserror 2.0.11",
  "tokio",
  "tracing",
 ]
@@ -2347,11 +2363,11 @@ dependencies = [
  "anyhow",
  "cfg-if",
  "clap",
- "dirs 5.0.1",
+ "dirs 6.0.0",
  "fluvio-types",
  "semver 1.0.25",
  "serde",
- "thiserror 1.0.69",
+ "thiserror 2.0.11",
  "toml 0.8.19",
  "tracing",
 ]
@@ -2364,7 +2380,7 @@ dependencies = [
  "assert_cmd",
  "cfg-if",
  "clap",
- "dirs 5.0.1",
+ "dirs 6.0.0",
  "fluvio-channel",
  "fluvio-cli-common",
  "fluvio-future",
@@ -2388,7 +2404,7 @@ dependencies = [
  "colored",
  "comfy-table",
  "content_inspector",
- "crossterm 0.27.0",
+ "crossterm 0.28.1",
  "ctrlc",
  "current_platform",
  "flate2",
@@ -2425,11 +2441,11 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "sha2",
- "thiserror 1.0.69",
+ "thiserror 2.0.11",
  "tokio",
  "tracing",
  "tui",
- "which 6.0.3",
+ "which 7.0.1",
 ]
 
 [[package]]
@@ -2459,7 +2475,7 @@ dependencies = [
  "sha2",
  "sysinfo",
  "tempfile",
- "thiserror 1.0.69",
+ "thiserror 2.0.11",
  "tracing",
  "ureq",
 ]
@@ -2510,11 +2526,11 @@ dependencies = [
  "sysinfo",
  "tar",
  "tempfile",
- "thiserror 1.0.69",
+ "thiserror 2.0.11",
  "tokio",
  "tracing",
  "url",
- "which 6.0.3",
+ "which 7.0.1",
 ]
 
 [[package]]
@@ -2537,7 +2553,7 @@ dependencies = [
  "lz4_flex",
  "serde",
  "snap",
- "thiserror 1.0.69",
+ "thiserror 2.0.11",
  "zstd",
 ]
 
@@ -2562,7 +2578,7 @@ dependencies = [
  "serde_yaml",
  "tokio",
  "tracing",
- "trybuild 1.0.102",
+ "trybuild 1.0.103",
 ]
 
 [[package]]
@@ -2638,7 +2654,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
- "thiserror 1.0.69",
+ "thiserror 2.0.11",
  "toml 0.8.19",
  "tracing",
 ]
@@ -2658,7 +2674,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
- "thiserror 1.0.69",
+ "thiserror 2.0.11",
  "timeago",
  "toml 0.8.19",
  "tracing",
@@ -2666,9 +2682,9 @@ dependencies = [
 
 [[package]]
 name = "fluvio-future"
-version = "0.7.0"
+version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0a28090046453db33a8bace0e1f71350b9878cd7fb576e48592ae8284bc83c7e"
+checksum = "e7673846b1e7fc5513b9a704ed868adbc007f6c4e2cb57ef5a3f9cefaebd7e4a"
 dependencies = [
  "anyhow",
  "async-fs",
@@ -2692,7 +2708,7 @@ dependencies = [
  "pin-utils",
  "rustls-pemfile",
  "socket2",
- "thiserror 1.0.69",
+ "thiserror 2.0.11",
  "tracing",
  "tracing-subscriber",
  "ws_stream_wasm",
@@ -2726,15 +2742,15 @@ dependencies = [
 name = "fluvio-hub-protocol"
 version = "0.0.0"
 dependencies = [
- "cargo_toml 0.20.5",
+ "cargo_toml",
  "const_format",
- "dirs 5.0.1",
+ "dirs 6.0.0",
  "fluvio-controlplane-metadata",
  "fluvio-types",
  "serde",
  "serde_json",
  "serde_yaml",
- "thiserror 1.0.69",
+ "thiserror 2.0.11",
  "toml 0.8.19",
  "tracing",
  "url",
@@ -2746,13 +2762,13 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "async-trait",
- "cargo_toml 0.20.5",
+ "cargo_toml",
  "chrono",
  "clap",
  "comfy-table",
  "const_format",
  "current_platform",
- "dirs 5.0.1",
+ "dirs 6.0.0",
  "ed25519-dalek",
  "flate2",
  "fluvio-extension-common",
@@ -2775,7 +2791,7 @@ dependencies = [
  "ssh-key",
  "tar",
  "tempfile",
- "thiserror 1.0.69",
+ "thiserror 2.0.11",
  "tracing",
  "ureq",
  "url",
@@ -2802,7 +2818,7 @@ dependencies = [
  "semver 1.0.25",
  "serde",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.11",
  "tracing",
  "url",
 ]
@@ -2826,10 +2842,10 @@ dependencies = [
  "futures",
  "once_cell",
  "semver 1.0.25",
- "thiserror 1.0.69",
+ "thiserror 2.0.11",
  "tokio-util",
  "tracing",
- "trybuild 1.0.102",
+ "trybuild 1.0.103",
 ]
 
 [[package]]
@@ -2853,7 +2869,7 @@ dependencies = [
  "fluvio-spu",
  "semver 1.0.25",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.11",
 ]
 
 [[package]]
@@ -2905,7 +2921,7 @@ dependencies = [
  "serde",
  "serde_json",
  "static_assertions",
- "thiserror 1.0.69",
+ "thiserror 2.0.11",
  "tracing",
 ]
 
@@ -2938,7 +2954,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
- "thiserror 1.0.69",
+ "thiserror 2.0.11",
  "tracing",
  "wasi-common",
  "wasmtime",
@@ -2952,7 +2968,7 @@ dependencies = [
  "eyre",
  "fluvio-protocol",
  "fluvio-smartmodule-derive",
- "thiserror 1.0.69",
+ "thiserror 2.0.11",
  "tracing",
  "trybuild 1.0.42",
 ]
@@ -2986,7 +3002,7 @@ dependencies = [
  "pin-project",
  "portpicker",
  "semver 1.0.25",
- "thiserror 1.0.69",
+ "thiserror 2.0.11",
  "tokio",
  "tokio-util",
  "tracing",
@@ -3032,7 +3048,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sysinfo",
- "thiserror 1.0.69",
+ "thiserror 2.0.11",
  "tokio",
  "tracing",
 ]
@@ -3083,7 +3099,7 @@ dependencies = [
  "nix",
  "pin-utils",
  "serde",
- "thiserror 1.0.69",
+ "thiserror 2.0.11",
  "tokio",
  "tracing",
 ]
@@ -3221,7 +3237,7 @@ dependencies = [
  "event-listener 5.4.0",
  "fluvio-future",
  "serde",
- "thiserror 1.0.69",
+ "thiserror 2.0.11",
  "tokio",
  "toml 0.8.19",
  "tracing",
@@ -3237,7 +3253,7 @@ dependencies = [
  "comfy-table",
  "current_platform",
  "dialoguer",
- "dirs 5.0.1",
+ "dirs 6.0.0",
  "fluvio-future",
  "fluvio-hub-util",
  "fs_extra",
@@ -3914,16 +3930,18 @@ dependencies = [
 
 [[package]]
 name = "handlebars"
-version = "5.1.2"
+version = "6.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d08485b96a0e6393e9e4d1b8d48cf74ad6c063cd905eb33f42c1ce3f0377539b"
+checksum = "3d6b224b95c1e668ac0270325ad563b2eef1469fbbb8959bc7c692c844b813d9"
 dependencies = [
+ "derive_builder",
  "log",
+ "num-order",
  "pest",
  "pest_derive",
  "serde",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.11",
 ]
 
 [[package]]
@@ -4761,7 +4779,7 @@ checksum = "656c8e7ffdbc0056353f44fc690873cf8040c67b9317f392e99bbbf9fd48050f"
 dependencies = [
  "anyhow",
  "byte-unit",
- "cargo_toml 0.21.0",
+ "cargo_toml",
  "chrono",
  "chrono-humanize",
  "crates_io_api",
@@ -5085,6 +5103,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2886843bf800fba2e3377cff24abf6379b4c4d5c6681eaf9ea5b0d15090450bd"
 dependencies = [
  "libc",
+ "log",
  "wasi",
  "windows-sys 0.52.0",
 ]
@@ -5225,6 +5244,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "num-modular"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "17bb261bf36fa7d83f4c294f834e91256769097b3cb505d44831e0a179ac647f"
+
+[[package]]
+name = "num-order"
+version = "1.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "537b596b97c40fcf8056d153049eb22f481c17ebce72a513ec9286e4986d1bb6"
+dependencies = [
+ "num-modular",
+]
+
+[[package]]
 name = "num-traits"
 version = "0.2.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5330,9 +5364,9 @@ dependencies = [
 
 [[package]]
 name = "openssl-probe"
-version = "0.1.5"
+version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ff011a302c396a5197692431fc1948019154afc178baf7d8e37367442a4601cf"
+checksum = "d05e27ee213611ffe7d6348b942e8f942b37114c00cc03cec254295a4a17852e"
 
 [[package]]
 name = "openssl-src"
@@ -6073,6 +6107,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "redox_users"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dd6f9d3d47bdd2ad6945c5015a226ec6155d0bcdfd8f7cd29f86b71f8de99d2b"
+dependencies = [
+ "getrandom",
+ "libredox",
+ "thiserror 2.0.11",
+]
+
+[[package]]
 name = "regalloc2"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6754,6 +6799,7 @@ checksum = "34db1a06d485c9142248b7a054f034b349b212551f3dfd19c94d45a754a217cd"
 dependencies = [
  "libc",
  "mio 0.8.11",
+ "mio 1.0.3",
  "signal-hook",
 ]
 
@@ -6827,7 +6873,7 @@ dependencies = [
  "cargo-builder",
  "cargo-generate",
  "clap",
- "dirs 5.0.1",
+ "dirs 6.0.0",
  "enum-display",
  "fluvio",
  "fluvio-cli-common",
@@ -7021,9 +7067,9 @@ dependencies = [
 
 [[package]]
 name = "sysinfo"
-version = "0.31.4"
+version = "0.33.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "355dbe4f8799b304b05e1b0f05fc59b2a18d36645cf169607da45bde2f69a1be"
+checksum = "4fc858248ea01b66f19d8e8a6d55f41deaf91e9d495246fd01368d99935c6c01"
 dependencies = [
  "core-foundation-sys",
  "libc",
@@ -7520,9 +7566,9 @@ dependencies = [
 
 [[package]]
 name = "trybuild"
-version = "1.0.102"
+version = "1.0.103"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9f14b5c02a137632f68194ec657ecb92304138948e8957c932127eb1b58c23be"
+checksum = "b812699e0c4f813b872b373a4471717d9eb550da14b311058a4d9cf4173cbca6"
 dependencies = [
  "glob",
  "serde",
@@ -7576,9 +7622,9 @@ checksum = "7eec5d1121208364f6793f7d2e222bf75a915c19557537745b195b253dd64217"
 
 [[package]]
 name = "unicode-ident"
-version = "1.0.14"
+version = "1.0.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "adb9e6ca4f869e1180728b7950e35922a7fc6397f7b641499e8f3ef06e50dc83"
+checksum = "11cd88e12b17c6494200a9c1b683a04fcac9573ed74cd1b62aeb2727c5592243"
 
 [[package]]
 name = "unicode-normalization"
@@ -8252,12 +8298,12 @@ dependencies = [
 
 [[package]]
 name = "which"
-version = "6.0.3"
+version = "7.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b4ee928febd44d98f2f459a4a79bd4d928591333a494a10a868418ac1b39cf1f"
+checksum = "fb4a9e33648339dc1642b0e36e21b3385e6148e289226f657c809dee59df5028"
 dependencies = [
  "either",
- "home",
+ "env_home",
  "rustix",
  "winsafe",
 ]
