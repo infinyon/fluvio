@@ -147,6 +147,7 @@ impl ProducerBenchmark {
 
     pub fn to_markdown_table(end: &EndProducerStat) -> String {
         let mut md = String::new();
+        md.push('\n');
         let mut latency_yaml = "- Variable: Latency\n".to_string();
         for percentile in [0.0, 0.5, 0.95, 0.99, 1.0] {
             latency_yaml.push_str(&format!(

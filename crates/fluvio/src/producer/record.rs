@@ -50,10 +50,17 @@ pub(crate) struct BatchMetadata {
 }
 
 impl BatchMetadata {
-    pub(crate) fn new(receiver: Receiver<ProducePartitionResponseFuture>) -> Self {
+    pub(crate) fn new(
+        receiver: Receiver<ProducePartitionResponseFuture>,
+        created_at: Option<Instant>,
+    ) -> Self {
         Self {
             state: RwLock::new(BatchMetadataState::Buffered(receiver)),
-            created_at: Instant::now(),
+            created_at: if let Some(created_at) = created_at {
+                created_at
+            } else {
+                Instant::now()
+            },
         }
     }
 
