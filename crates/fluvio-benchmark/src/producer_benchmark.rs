@@ -7,6 +7,7 @@ use bytesize::ByteSize;
 use fluvio_future::{future::timeout, task::spawn, timer::sleep};
 use fluvio::{metadata::topic::TopicSpec, FluvioAdmin};
 use futures_util::{stream::FuturesUnordered, StreamExt};
+use madato::yaml::mk_md_table_from_yaml;
 use tokio::sync::broadcast;
 use tracing::debug;
 
@@ -115,9 +116,10 @@ impl ProducerBenchmark {
             sleep(std::time::Duration::from_secs(1)).await;
             let mut latency_yaml = String::new();
             latency_yaml.push_str(&format!(
-                "{} avg latency, {} max latency",
+                "latencies: {} min, {} avg, {} max",
+                utils::nanos_to_ms_pritable(end.latencies_histogram.min()),
                 utils::nanos_to_ms_pritable(end.latencies_histogram.mean() as u64),
-                utils::nanos_to_ms_pritable(end.latencies_histogram.value_at_quantile(1.0))
+                utils::nanos_to_ms_pritable(end.latencies_histogram.max())
             ));
             for percentile in [0.5, 0.95, 0.99] {
                 latency_yaml.push_str(&format!(
@@ -138,7 +140,33 @@ impl ProducerBenchmark {
                 human_readable_bytes,
                 utils::pretty_duration(end.elapsed)
             );
+
+            println!("{}", Self::to_markdown_table(&end));
         }
+    }
+
+    pub fn to_markdown_table(end: &EndProducerStat) -> String {
+        let mut md = String::new();
+        md.push('\n');
+        let mut latency_yaml = "- Variable: Latency\n".to_string();
+        for percentile in [0.0, 0.5, 0.95, 0.99, 1.0] {
+            latency_yaml.push_str(&format!(
+                "  p{percentile:4.2}: {}\n",
+                utils::nanos_to_ms_pritable(end.latencies_histogram.value_at_quantile(percentile)),
+            ));
+        }
+        md.push_str("**Per Record E2E Latency**\n\n");
+        md.push_str(&mk_md_table_from_yaml(&latency_yaml, &None));
+        md.push_str("\n\n**Throughput (Total Produced Bytes / Time)**\n\n");
+        let mut throughput_yaml = String::new();
+        throughput_yaml.push_str("- Variable: Produced Throughput\n");
+        throughput_yaml.push_str(&format!(
+            "  Speed: \"{}/sec\"\n",
+            ByteSize(end.bytes_per_sec)
+        ));
+        md.push_str(&mk_md_table_from_yaml(&throughput_yaml, &None));
+        md.push('\n');
+        md
     }
 }
 
