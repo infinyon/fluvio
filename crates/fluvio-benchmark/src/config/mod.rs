@@ -12,7 +12,7 @@ use bytesize::ByteSize;
 use crate::utils;
 
 const DEFAULT_BATCH_SIZE: &str = "16kib";
-const DEFAULT_QUEUE_SIZE: u64 = 10;
+const DEFAULT_QUEUE_SIZE: u64 = 100;
 const DEFAULT_MAX_REQUEST_SIZE: &str = "32mib";
 const DEFAULT_LINGER: &str = "0ms";
 const DEFAULT_SERVER_TIMEOUT: &str = "5000ms";

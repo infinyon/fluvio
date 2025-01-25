@@ -1,13 +1,20 @@
+use std::sync::Arc;
+
 use anyhow::Result;
-use async_channel::{unbounded, Receiver};
+use async_channel::unbounded;
 
 use bytesize::ByteSize;
-use fluvio_future::{task::spawn, future::timeout, timer::sleep};
+use fluvio_future::{future::timeout, task::spawn, timer::sleep};
 use fluvio::{metadata::topic::TopicSpec, FluvioAdmin};
-use tokio::select;
+use futures_util::{stream::FuturesUnordered, StreamExt};
+use tokio::sync::broadcast;
+use tracing::debug;
 
 use crate::{
-    config::ProducerConfig, producer_worker::ProducerWorker, stats_collector::StatCollector, utils,
+    config::ProducerConfig,
+    producer_worker::ProducerWorker,
+    stats_collector::{EndProducerStat, StatCollector, Stats},
+    utils,
 };
 
 pub struct ProducerBenchmark {}
@@ -28,7 +35,7 @@ impl ProducerBenchmark {
             admin.create(topic_name.clone(), false, new_topic).await?;
         }
 
-        println!("created topic {}", topic_name);
+        debug!("created topic {}", topic_name);
         let result = ProducerBenchmark::run_samples(config.clone()).await;
 
         sleep(std::time::Duration::from_millis(100)).await;
@@ -40,108 +47,106 @@ impl ProducerBenchmark {
         // Clean up topic
         if config.delete_topic {
             admin.delete::<TopicSpec>(topic_name.clone()).await?;
-            print!("Topic deleted successfully {}", topic_name.clone());
+            debug!("Topic deleted successfully {}", topic_name.clone());
         }
 
         Ok(())
     }
 
     async fn run_samples(config: ProducerConfig) -> Result<()> {
-        let mut tx_controls = Vec::new();
-        let mut workers_jh = Vec::new();
-
         let (stats_sender, stats_receiver) = unbounded();
-        let (end_sender, end_receiver) = unbounded();
+        let (end_sender, mut end_receiver) = broadcast::channel(2);
+        let end_sender = Arc::new(end_sender);
         let stat_collector =
-            StatCollector::create(config.num_records, end_sender.clone(), stats_sender.clone());
+            StatCollector::create(config.num_records, stats_sender.clone(), end_sender.clone());
 
-        // Set up producers
-        for producer_id in 0..config.num_producers {
-            let (event_sender, event_receiver) = unbounded();
-            stat_collector.add_producer(event_receiver);
-            println!("starting up producer {}", producer_id);
-            let (tx_control, rx_control) = unbounded();
-            let worker = ProducerWorker::new(producer_id, config.clone(), event_sender).await?;
-            let jh = spawn(timeout(
-                config.worker_timeout,
-                ProducerDriver::main_loop(rx_control, worker),
-            ));
-
-            tx_control.send(ControlMessage::SendBatch).await?;
-            tx_controls.push(tx_control);
-            workers_jh.push(jh);
-        }
+        Self::setup_producers(config.clone(), stat_collector).await;
         println!("Benchmark started");
-
-        loop {
-            select! {
-                stat_rx = stats_receiver.recv() => {
-                    if let Ok(stat) = stat_rx {
-                        let human_readable_bytes = ByteSize(stat.bytes_per_sec).to_string();
-                        println!(
-                            "{} records sent, {} records/sec: ({}/sec), {:.2}ms avg latency, {:.2}ms max latency",
-                             stat.record_send, stat.records_per_sec, human_readable_bytes,
-                            utils::nanos_to_ms_pritable(stat.latency_avg), utils::nanos_to_ms_pritable(stat.latency_max)
-                        );
-                    }
-                }
-                end = end_receiver.recv() => {
-                    if let Ok(end) = end {
-                        let mut latency_yaml = String::new();
-                        latency_yaml.push_str(&format!("{:.2}ms avg latency, {:.2}ms max latency",
-                            utils::nanos_to_ms_pritable(end.latencies_histogram.mean() as u64),
-                            utils::nanos_to_ms_pritable(end.latencies_histogram.value_at_quantile(1.0))));
-                        for percentile in [0.5, 0.95, 0.99] {
-                            latency_yaml.push_str(&format!(
-                                ", {:.2}ms p{percentile:4.2}",
-                                utils::nanos_to_ms_pritable(end.latencies_histogram.value_at_quantile(percentile)),
-                            ));
-                        }
-                        println!();
-                        println!("{}", latency_yaml);
-
-                        let human_readable_bytes = ByteSize(end.bytes_per_sec).to_string();
-                        println!(
-                            "{} total records sent, {} records/sec: ({}/sec) ",
-                             end.total_records, end.records_per_sec, human_readable_bytes
-                        );
-                    }
-                    break;
-                }
-            }
-        }
-
-        // Wait for all producers to finish
-        for jh in workers_jh {
-            jh.await??;
-        }
-
-        // Print stats
+        Self::print_progress_on_backgroud(stats_receiver).await;
+        Self::print_benchmark_on_end(&mut end_receiver).await;
         println!("Benchmark completed");
 
         Ok(())
+    }
+
+    async fn setup_producers(config: ProducerConfig, stat_collector: StatCollector) {
+        spawn(async move {
+            let worker_futures = FuturesUnordered::new();
+            for producer_id in 0..config.num_producers {
+                let (event_sender, event_receiver) = unbounded();
+                stat_collector.add_producer(event_receiver);
+                let config = config.clone();
+                let jh = spawn(timeout(config.worker_timeout, async move {
+                    debug!("starting up producer {}", producer_id);
+                    let worker = ProducerWorker::new(producer_id, config, event_sender)
+                        .await
+                        .expect("create producer worker");
+                    ProducerDriver::main_loop(worker).await.expect("main loop");
+                }));
+
+                worker_futures.push(jh);
+            }
+
+            for worker in worker_futures.collect::<Vec<_>>().await {
+                worker.expect("producer worker failed");
+            }
+        });
+    }
+
+    async fn print_progress_on_backgroud(stats_receiver: async_channel::Receiver<Stats>) {
+        spawn(async move {
+            while let Ok(stat) = stats_receiver.recv().await {
+                let human_readable_bytes = ByteSize(stat.bytes_per_sec).to_string();
+                println!(
+                    "{} records sent, {} records/sec: ({}/sec), {} avg latency, {} max latency",
+                    stat.record_send,
+                    stat.records_per_sec,
+                    human_readable_bytes,
+                    utils::nanos_to_ms_pritable(stat.latency_avg),
+                    utils::nanos_to_ms_pritable(stat.latency_max)
+                );
+            }
+        });
+    }
+
+    async fn print_benchmark_on_end(end_receiver: &mut broadcast::Receiver<EndProducerStat>) {
+        if let Ok(end) = end_receiver.recv().await {
+            // sleep enough time to make sure all stats are printed
+            sleep(std::time::Duration::from_secs(1)).await;
+            let mut latency_yaml = String::new();
+            latency_yaml.push_str(&format!(
+                "{} avg latency, {} max latency",
+                utils::nanos_to_ms_pritable(end.latencies_histogram.mean() as u64),
+                utils::nanos_to_ms_pritable(end.latencies_histogram.value_at_quantile(1.0))
+            ));
+            for percentile in [0.5, 0.95, 0.99] {
+                latency_yaml.push_str(&format!(
+                    ", {} p{percentile:4.2}",
+                    utils::nanos_to_ms_pritable(
+                        end.latencies_histogram.value_at_quantile(percentile)
+                    ),
+                ));
+            }
+            println!();
+            println!("{}", latency_yaml);
+
+            let human_readable_bytes = ByteSize(end.bytes_per_sec).to_string();
+            println!(
+                "{} total records sent, {} records/sec: ({}/sec), total time: {}",
+                end.total_records,
+                end.records_per_sec,
+                human_readable_bytes,
+                utils::pretty_duration(end.elapsed)
+            );
+        }
     }
 }
 
 struct ProducerDriver;
 
 impl ProducerDriver {
-    async fn main_loop(rx: Receiver<ControlMessage>, worker: ProducerWorker) -> Result<()> {
-        //loop {
-        match rx.recv().await? {
-            ControlMessage::SendBatch => {
-                println!("producer send batch");
-                if let Err(err) = worker.send_batch().await {
-                    println!("producer send batch error: {:#?}", err);
-                }
-            }
-        };
-        //}
+    async fn main_loop(worker: ProducerWorker) -> Result<()> {
+        worker.send_batch().await?;
         Ok(())
     }
-}
-
-#[derive(Clone, Copy, Debug)]
-enum ControlMessage {
-    SendBatch,
 }

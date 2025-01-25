@@ -33,8 +33,6 @@ pub enum BenchmarkMode {
 }
 
 pub async fn run_benchmarks(opt: BenchmarkOpt) -> Result<()> {
-    println!("# Fluvio Benchmark Results");
-
     if let Some(mode) = opt.benchmark {
         BenchmarkDriver::run_benchmark(mode).await?;
     } else {

@@ -47,6 +47,69 @@ pub fn generate_random_string_vec(num: usize, size: usize) -> Vec<String> {
     random_strings
 }
 
-pub fn nanos_to_ms_pritable(nano: u64) -> f64 {
-    Duration::from_nanos(nano).as_secs_f64() * 1000.0
+pub fn nanos_to_ms_pritable(nano: u64) -> String {
+    pretty_duration(Duration::from_nanos(nano))
+}
+
+pub fn pretty_duration(d: Duration) -> String {
+    let nanos = d.as_nanos();
+    // 1 ns = 1
+    // 1 µs = 1,000 ns
+    // 1 ms = 1,000,000 ns
+    // 1 s  = 1,000,000,000 ns
+    // 1 m  = 60 s
+
+    if nanos < 1_000 {
+        // Less than 1µs, display in ns
+        format!("{}ns", nanos)
+    } else if nanos < 1_000_000 {
+        // Less than 1ms, display in µs
+        let us = nanos as f64 / 1_000.0;
+        format!("{:.1}µs", us)
+    } else if nanos < 1_000_000_000 {
+        // Less than 1s, display in ms
+        let ms = nanos as f64 / 1_000_000.0;
+        format!("{:.1}ms", ms)
+    } else {
+        // Now we’re at least 1 second
+        let secs = nanos as f64 / 1_000_000_000.0;
+        if secs < 60.0 {
+            // Less than a minute, display in seconds
+            format!("{:.1}s", secs)
+        } else {
+            // Otherwise, display in minutes
+            let mins = secs / 60.0;
+            format!("{:.1}m", mins)
+        }
+    }
+}
+
+/// Calculate the number of records each producer should send
+pub fn records_per_producer(id: u64, num_producers: u64, num_records: u64) -> u64 {
+    if id == 0 {
+        num_records / num_producers + num_records % num_producers
+    } else {
+        num_records / num_producers
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_num_records_per_producer() {
+        let num_producers = 3;
+        let num_records = 10;
+
+        assert_eq!(records_per_producer(0, num_producers, num_records), 4);
+        assert_eq!(records_per_producer(1, num_producers, num_records), 3);
+        assert_eq!(records_per_producer(2, num_producers, num_records), 3);
+
+        let num_producers = 3;
+        let num_records = 12;
+        assert_eq!(records_per_producer(0, num_producers, num_records), 4);
+        assert_eq!(records_per_producer(1, num_producers, num_records), 4);
+        assert_eq!(records_per_producer(2, num_producers, num_records), 4);
+    }
 }
