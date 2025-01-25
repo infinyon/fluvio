@@ -2,6 +2,47 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## Platform Version 0.15.0 - 2025-01-25
+
+### Added
+
+* Provide sample Dockerfile ([#4330](https://github.com/infinyon/fluvio/issues/4330))
+* Reorganize fluvio benchmark ([#4336](https://github.com/infinyon/fluvio/issues/4336))
+* Add latency table on fluvio-benchmark ([#4333](https://github.com/infinyon/fluvio/issues/4333))
+* Add strategy config to fluvio benchmark ([#4338](https://github.com/infinyon/fluvio/issues/4338))
+* Add fluvio producer callback ([#4340](https://github.com/infinyon/fluvio/issues/4340))
+
+### CI
+
+* Separate out merge group from ci ([#4327](https://github.com/infinyon/fluvio/issues/4327))
+
+### Changed
+
+* Update Rust to `1.84.0` ([#4313](https://github.com/infinyon/fluvio/issues/4313))
+* Update wasmtime ([#4353](https://github.com/infinyon/fluvio/issues/4353))
+* More update dep ([#4361](https://github.com/infinyon/fluvio/issues/4361))
+
+### Fixed
+
+* Bytes unit on benchmark ([#4347](https://github.com/infinyon/fluvio/issues/4347))
+* Benchmark with multiple producers ([#4348](https://github.com/infinyon/fluvio/issues/4348))
+* Fix intermittent test_replica_commit ([#4350](https://github.com/infinyon/fluvio/issues/4350))
+* Benchmark default bytesizes ([#4356](https://github.com/infinyon/fluvio/issues/4356))
+* Benchmark dead channels ([#4359](https://github.com/infinyon/fluvio/issues/4359))
+
+### Other
+
+* Reduce fbm to only deal with producer benchmark ([#4315](https://github.com/infinyon/fluvio/issues/4315))
+* Move fbm to fluvio cli ([#4326](https://github.com/infinyon/fluvio/issues/4326))
+* Perf improvement: implement async write for hw checkpoint ([#4335](https://github.com/infinyon/fluvio/issues/4335))
+* Refer to sdf beta6 ([#4337](https://github.com/infinyon/fluvio/issues/4337))
+* Change default linger to be 0 ([#4344](https://github.com/infinyon/fluvio/issues/4344))
+* Relax correlation id constrain ([#4354](https://github.com/infinyon/fluvio/issues/4354))
+
+### Removed
+
+* Remove index flush ([#4352](https://github.com/infinyon/fluvio/issues/4352))
+
 ## Platform Version 0.14.1 - 2025-01-08
 
 ### Added
