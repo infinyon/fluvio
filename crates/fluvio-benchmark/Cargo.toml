@@ -22,6 +22,7 @@ rand = { workspace = true }
 rand_xoshiro = { workspace = true }
 rayon = { workspace = true }
 tokio = { workspace = true, features = ['sync', 'macros'] }
+madato = { workspace = true }
 serde = { workspace = true , features = ['derive'] }
 serde_yaml = { workspace = true }
 thiserror = { workspace = true }
