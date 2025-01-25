@@ -100,6 +100,8 @@ impl RecordAccumulator {
         record: Record,
         partition_id: PartitionId,
     ) -> Result<PushRecord, ProducerError> {
+        let created_at = Instant::now();
+
         let batches_lock = self.batches.read().await;
         let (batch_events, batches_lock) = batches_lock
             .get(&partition_id)
@@ -126,7 +128,7 @@ impl RecordAccumulator {
 
                     // Create and push a new batch if needed
                     let push_record = self
-                        .create_and_new_batch(batch_events, &mut batches, record, 1)
+                        .create_and_new_batch(batch_events, &mut batches, record, 1, created_at)
                         .await?;
 
                     return Ok(PushRecord::new(
@@ -143,7 +145,7 @@ impl RecordAccumulator {
 
         // Create and push a new batch if needed
         let push_record = self
-            .create_and_new_batch(batch_events, &mut batches, record, 1)
+            .create_and_new_batch(batch_events, &mut batches, record, 1, created_at)
             .await?;
 
         Ok(PushRecord::new(
@@ -177,6 +179,7 @@ impl RecordAccumulator {
         batches: &mut VecDeque<ProducerBatch>,
         record: Record,
         attempts: usize,
+        created_at: Instant,
     ) -> Result<PartialFutureRecordMetadata, ProducerError> {
         if attempts > 2 {
             // This should never happen, but if it does, we should stop the recursion
@@ -185,8 +188,12 @@ impl RecordAccumulator {
             ));
         }
 
-        let mut batch =
-            ProducerBatch::new(self.max_request_size, self.batch_size, self.compression);
+        let mut batch = ProducerBatch::new(
+            self.max_request_size,
+            self.batch_size,
+            self.compression,
+            created_at,
+        );
 
         match batch.push_record(record) {
             Ok(ProduceBatchStatus::Added(push_record)) => {
@@ -206,8 +213,14 @@ impl RecordAccumulator {
 
                 batches.push_back(batch);
                 // Box the future to avoid infinite size due to recursion
-                Box::pin(self.create_and_new_batch(batch_events, batches, record, attempts + 1))
-                    .await
+                Box::pin(self.create_and_new_batch(
+                    batch_events,
+                    batches,
+                    record,
+                    attempts + 1,
+                    created_at,
+                ))
+                .await
             }
             Err(err) => Err(err),
         }
@@ -254,9 +267,14 @@ pub(crate) struct ProducerBatch {
     batch: MemoryBatch,
 }
 impl ProducerBatch {
-    fn new(write_limit: usize, batch_limit: usize, compression: Compression) -> Self {
+    fn new(
+        write_limit: usize,
+        batch_limit: usize,
+        compression: Compression,
+        created_at: Instant,
+    ) -> Self {
         let (sender, receiver) = async_channel::bounded(1);
-        let batch_metadata = Arc::new(BatchMetadata::new(receiver));
+        let batch_metadata = Arc::new(BatchMetadata::new(receiver, Some(created_at)));
         let batch = MemoryBatch::new(write_limit, batch_limit, compression);
 
         Self {
@@ -415,6 +433,7 @@ mod test {
                 + Batch::<RawRecords>::default().write_size(0)
                 + Vec::<RawRecords>::default().write_size(0),
             Compression::None,
+            Instant::now(),
         );
 
         assert!(matches!(
@@ -450,6 +469,7 @@ mod test {
                 + Batch::<RawRecords>::default().write_size(0)
                 + Vec::<RawRecords>::default().write_size(0),
             Compression::None,
+            Instant::now(),
         );
 
         assert!(matches!(
@@ -487,6 +507,7 @@ mod test {
                 + Batch::<RawRecords>::default().write_size(0)
                 + Vec::<RawRecords>::default().write_size(0),
             Compression::None,
+            Instant::now(),
         );
 
         assert!(matches!(
