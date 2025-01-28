@@ -29,6 +29,7 @@ pub enum BenchmarkMode {
     /// Run a producer benchmark
     Producer(ProducerConfig),
     /// Run a consumer benchmark
+    #[clap(hide = true)]
     Consumer(ConsumerConfig),
 }
 

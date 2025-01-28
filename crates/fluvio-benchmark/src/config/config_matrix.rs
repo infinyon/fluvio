@@ -50,7 +50,7 @@ pub struct FluvioTopicMatrixConfig {
     pub partitions: Vec<u32>,
     pub replicas: Vec<u32>,
     pub topic_name: Vec<String>,
-    pub delete_topic: Vec<bool>,
+    pub keep_topic: Vec<bool>,
     pub ignore_rack: Vec<bool>,
 }
 
@@ -96,8 +96,8 @@ impl Matrix {
                 .cross_iterate(&self.shared_config.topic_config.topic_name, |v, b| {
                     b.topic_name(v);
                 })
-                .cross_iterate(&self.shared_config.topic_config.delete_topic, |v, b| {
-                    b.delete_topic(v);
+                .cross_iterate(&self.shared_config.topic_config.keep_topic, |v, b| {
+                    b.keep_topic(v);
                 })
                 .cross_iterate(&self.shared_config.topic_config.ignore_rack, |v, b| {
                     b.ignore_rack(v);
@@ -155,8 +155,8 @@ pub fn default_config() -> Matrix {
                 partitions: vec![1],
                 replicas: vec![1],
                 topic_name: vec![default_topic_name()],
-                delete_topic: vec![true],
-                ignore_rack: vec![true],
+                keep_topic: vec![false],
+                ignore_rack: vec![false],
             },
             load_config: BenchmarkLoadMatrixConfig {
                 record_key_allocation_strategy: vec![RecordKeyAllocationStrategy::NoKey],

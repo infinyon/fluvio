@@ -27,7 +27,8 @@ const DEFAULT_RECORD_SIZE: &str = "5kib";
 const DEFAULT_NUM_RECORDS: u64 = 10_000;
 const DEFAULT_PARTITIONS: u32 = 1;
 const DEFAULT_REPLICAS: u32 = 1;
-const DEFAULT_DELETE_TOPIC: bool = false;
+const DEFAULT_KEEP_TOPIC: bool = false;
+const DEFAULT_IGNORE_RACK: bool = false;
 
 #[derive(Debug, Clone)]
 pub enum BenchmarkConfig {
@@ -87,11 +88,11 @@ pub struct ProducerConfig {
     /// Name of the topic to create
     #[clap(short, long, default_value_t = default_topic_name())]
     pub topic_name: String,
-    /// Delete the topic after the benchmark
-    #[clap(short, long, default_value_t = DEFAULT_DELETE_TOPIC)]
-    pub delete_topic: bool,
+    /// Keep the topic after the benchmark
+    #[clap(short, long, default_value_t = DEFAULT_KEEP_TOPIC)]
+    pub keep_topic: bool,
     /// Ignore rack assignment
-    #[clap(long, default_value_t = DEFAULT_DELETE_TOPIC)]
+    #[clap(long, default_value_t = DEFAULT_IGNORE_RACK)]
     pub ignore_rack: bool,
 }
 
