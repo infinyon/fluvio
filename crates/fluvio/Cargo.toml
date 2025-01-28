@@ -1,6 +1,6 @@
 [package]
 name = "fluvio"
-version = "0.24.3"
+version = "0.24.4"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -73,6 +73,7 @@ fluvio-spu-schema = { workspace = true, features = ["file"] }
 fluvio-spu-schema = { workspace = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
+web-time = { workspace = true }
 fluvio-spu-schema = { workspace = true }
 chrono = { workspace = true, features = ["wasmbind", "clock"] }
 
