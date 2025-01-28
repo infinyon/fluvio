@@ -2333,7 +2333,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.24.3"
+version = "0.24.4"
 dependencies = [
  "anyhow",
  "async-channel 1.9.0",
@@ -2367,6 +2367,7 @@ dependencies = [
  "toml 0.8.19",
  "tracing",
  "wasm-bindgen-test",
+ "web-time",
 ]
 
 [[package]]
