@@ -46,7 +46,7 @@ impl ProducerBenchmark {
         }
 
         // Clean up topic
-        if config.delete_topic {
+        if !config.keep_topic {
             admin.delete::<TopicSpec>(topic_name.clone()).await?;
             debug!("Topic deleted successfully {}", topic_name.clone());
         }
