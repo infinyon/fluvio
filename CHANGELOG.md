@@ -2,6 +2,18 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## Platform Version 0.15.1 - 2025-01-28
+
+### CI
+
+* Pos release fluvio 0.15.0 ([#4366](https://github.com/infinyon/fluvio/issues/4366))
+* Add sleep on upgrade test ([#4370](https://github.com/infinyon/fluvio/issues/4370))
+
+### Fixed
+
+* Fluvio time panicking on wasm ([#4367](https://github.com/infinyon/fluvio/pull/4367))
+* Benchmark delete topic as default ([#4368](https://github.com/infinyon/fluvio/issues/4368))
+
 ## Platform Version 0.15.0 - 2025-01-25
 
 ### Added
