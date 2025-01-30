@@ -70,7 +70,7 @@ impl CheckPoint {
                         offset
                     }
                     Err(err) => {
-                        error!("error reading checkpoint: {}, resetting", err);
+                        info!("error reading checkpoint: {}, resetting", err);
                         0
                     }
                 };
