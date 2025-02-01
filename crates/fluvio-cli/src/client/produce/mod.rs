@@ -199,47 +199,30 @@ mod cmd {
             fluvio: &Fluvio,
         ) -> Result<()> {
             init_monitoring(fluvio.metrics());
-            let config_builder = if self.interactive_mode() {
-                TopicProducerConfigBuilder::default().linger(std::time::Duration::from_millis(10))
-            } else {
-                Default::default()
+            let mut config_builder = TopicProducerConfigBuilder::default();
+            if self.interactive_mode() {
+                config_builder.linger(std::time::Duration::from_millis(10));
             };
-
             // Compression
-            let config_builder = if let Some(compression) = self.compression {
-                config_builder.compression(compression)
-            } else {
-                config_builder
-            };
-
+            if let Some(compression) = self.compression {
+                config_builder.compression(compression);
+            }
             // Linger
-            let config_builder = if let Some(linger) = self.linger {
-                config_builder.linger(linger)
-            } else {
-                config_builder
-            };
-
+            if let Some(linger) = self.linger {
+                config_builder.linger(linger);
+            }
             // Batch size
-            let config_builder = if let Some(batch_size) = self.batch_size {
-                config_builder.batch_size(batch_size)
-            } else {
-                config_builder
-            };
-
+            if let Some(batch_size) = self.batch_size {
+                config_builder.batch_size(batch_size);
+            }
             // Max request size
-            let config_builder = if let Some(max_request_size) = self.max_request_size {
-                config_builder.max_request_size(max_request_size)
-            } else {
-                config_builder
-            };
-
+            if let Some(max_request_size) = self.max_request_size {
+                config_builder.max_request_size(max_request_size);
+            }
             // Isolation
-            let config_builder = if let Some(isolation) = self.isolation {
-                config_builder.isolation(isolation)
-            } else {
-                config_builder
-            };
-
+            if let Some(isolation) = self.isolation {
+                config_builder.isolation(isolation);
+            }
             // Delivery Semantic
             if self.delivery_semantic == DeliverySemantic::AtMostOnce && self.isolation.is_some() {
                 warn!("Isolation is ignored for AtMostOnce delivery semantic");

@@ -9,7 +9,7 @@ pub async fn producer_from_config(config: &ConnectorConfig) -> Result<(Fluvio, T
 
     let fluvio = Fluvio::connect_with_config(&cluster_config).await?;
     ensure_topic_exists(config).await?;
-    let mut config_builder = TopicProducerConfigBuilder::default();
+    let mut config_builder = &mut TopicProducerConfigBuilder::default();
 
     if let Some(producer_params) = &config.meta().producer() {
         // Linger
