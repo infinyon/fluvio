@@ -60,8 +60,8 @@ impl MemoryBatch {
         if actual_batch_size > self.write_limit {
             self.is_full = true;
             return Err(ProducerError::RecordTooLarge(
-                record_size,
                 actual_batch_size,
+                self.write_limit,
             ));
         }
 
