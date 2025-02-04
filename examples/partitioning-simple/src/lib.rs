@@ -5,6 +5,17 @@ use fluvio::{dataplane::types::PartitionId, Partitioner, PartitionerConfig};
 /// If key is not provided, it will always return 0 or key is not properly string
 /// If length of key is greater than partition count, it will wrap around
 /// String is assumed to be utf-8 format
+/// To configure Fluvio producer
+/// 
+/// ```
+/// use fluvio::{producer::Partitioner, producer::PartitionerConfig};
+/// 
+/// let config = TopicProducerConfigBuilder::default()
+///    .partitioner(Box::new(new AlphabetPartitioning()))
+///   .build();
+///   .expect("Failed to create a config");
+///    let producer = fluvio.topic_producer_with_config("my-fluvio-topic", config).await.expect("Failed to create a producer");
+/// ```
 pub struct AlphabetPartitioning {}
 
 impl AlphabetPartitioning {
