@@ -5608,6 +5608,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "partitioning-simple"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "fluvio",
+]
+
+[[package]]
 name = "paste"
 version = "1.0.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
