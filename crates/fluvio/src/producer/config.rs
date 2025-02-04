@@ -1,5 +1,6 @@
 use std::fmt::{self, Debug, Display, Formatter};
 use std::str::FromStr;
+use std::sync::Arc;
 use std::time::Duration;
 
 use derive_builder::Builder;
@@ -44,8 +45,8 @@ fn default_linger_duration() -> Duration {
     Duration::from_millis(DEFAULT_LINGER_MS)
 }
 
-fn default_partitioner() -> Box<dyn Partitioner + Send + Sync> {
-    Box::new(SiphashRoundRobinPartitioner::new())
+fn default_partitioner() -> Arc<dyn Partitioner + Send + Sync> {
+    Arc::new(SiphashRoundRobinPartitioner::new())
 }
 
 fn default_timeout() -> Duration {
@@ -71,8 +72,7 @@ impl fmt::Debug for Box<dyn Partitioner + Send + Sync> {
 /// Create this struct with [`TopicProducerConfigBuilder`].
 ///
 /// Create a producer with a custom config with [`crate::Fluvio::topic_producer_with_config()`].
-#[derive(Builder)]
-#[builder(pattern = "owned")]
+#[derive(Builder, Clone)]
 pub struct TopicProducerConfig {
     /// Maximum amount of bytes accumulated by the records before sending the batch.
     #[builder(default = "default_batch_size()")]
@@ -88,7 +88,7 @@ pub struct TopicProducerConfig {
     pub(crate) linger: Duration,
     /// Partitioner assigns the partition to each record that needs to be send
     #[builder(default = "default_partitioner()")]
-    pub(crate) partitioner: Box<dyn Partitioner + Send + Sync>,
+    pub(crate) partitioner: Arc<dyn Partitioner + Send + Sync>,
 
     /// Compression algorithm used by Fluvio producer to compress data.
     /// If there is a topic level compression and it is not compatible with this setting, the producer
@@ -125,8 +125,8 @@ pub struct TopicProducerConfig {
 }
 
 impl TopicProducerConfigBuilder {
-    pub fn set_specific_partitioner(self, partition_id: PartitionId) -> Self {
-        self.partitioner(Box::new(SpecificPartitioner::new(partition_id)))
+    pub fn set_specific_partitioner(&mut self, partition_id: PartitionId) -> &mut Self {
+        self.partitioner(Arc::new(SpecificPartitioner::new(partition_id)))
     }
 }
 

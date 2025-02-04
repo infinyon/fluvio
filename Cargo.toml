@@ -173,7 +173,7 @@ k8-diff = { version = "0.1.2" }
 trybuild = { branch = "check_option", git = "https://github.com/infinyon/trybuild" }
 
 # Internal fluvio dependencies
-fluvio = { version = "0.24.0", path = "crates/fluvio" }
+fluvio = { version = "0.25.0", path = "crates/fluvio" }
 fluvio-auth = { path = "crates/fluvio-auth" }
 fluvio-benchmark = { path = "crates/fluvio-benchmark" }
 fluvio-channel = { path = "crates/fluvio-channel" }
