@@ -74,7 +74,7 @@ impl fmt::Debug for Box<dyn Partitioner + Send + Sync> {
 /// Create a producer with a custom config with [`crate::Fluvio::topic_producer_with_config()`].
 #[derive(Builder, Clone)]
 pub struct TopicProducerConfig {
-    /// Maximum amount of byte accumulated by the records before sending the batch.
+    /// Maximum amount of bytes accumulated by the records before sending the batch.
     #[builder(default = "default_batch_size()")]
     pub(crate) batch_size: usize,
     /// Maximum amount of bytes that the server is allowed to process in a single request.

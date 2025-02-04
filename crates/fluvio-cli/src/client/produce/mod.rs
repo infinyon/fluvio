@@ -200,9 +200,6 @@ mod cmd {
         ) -> Result<()> {
             init_monitoring(fluvio.metrics());
             let mut config_builder = TopicProducerConfigBuilder::default();
-            if self.interactive_mode() {
-                config_builder.linger(std::time::Duration::from_millis(10));
-            };
             // Compression
             if let Some(compression) = self.compression {
                 config_builder.compression(compression);
