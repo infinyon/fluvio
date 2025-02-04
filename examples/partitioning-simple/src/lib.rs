@@ -8,13 +8,17 @@ use fluvio::{dataplane::types::PartitionId, Partitioner, PartitionerConfig};
 /// To configure Fluvio producer
 ///
 /// ```
-/// use fluvio::{producer::Partitioner, producer::PartitionerConfig};
+/// async fn example() {
+///     use fluvio::{Partitioner,PartitionerConfig};
+///     use partitioning_simple::AlphabetPartitioning;
 ///
-/// let config = TopicProducerConfigBuilder::default()
-///    .partitioner(Box::new(new AlphabetPartitioning()))
-///   .build();
-///   .expect("Failed to create a config");
-///    let producer = fluvio.topic_producer_with_config("my-fluvio-topic", config).await.expect("Failed to create a producer");
+///     let config = fluvio::TopicProducerConfigBuilder::default()
+///         .partitioner(Box::new(AlphabetPartitioning::new()))
+///         .build()
+///         .expect("Failed to create a config");
+///     let fluvio_instance = fluvio::Fluvio::connect().await.expect("Failed to connect to Fluvio");
+///     let producer = fluvio_instance.topic_producer_with_config("my-fluvio-topic", config).await.expect("Failed to create a producer");
+///}
 /// ```
 pub struct AlphabetPartitioning {}
 
