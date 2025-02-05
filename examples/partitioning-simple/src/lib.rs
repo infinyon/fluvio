@@ -14,20 +14,15 @@ use fluvio::{dataplane::types::PartitionId, Partitioner, PartitionerConfig};
 ///     use partitioning_simple::AlphabetPartitioning;
 ///
 ///     let config = fluvio::TopicProducerConfigBuilder::default()
-///         .partitioner(Arc::new(AlphabetPartitioning::new()))
+///         .partitioner(Arc::new(AlphabetPartitioning::default()))
 ///         .build()
 ///         .expect("Failed to create a config");
 ///     let fluvio_instance = fluvio::Fluvio::connect().await.expect("");
 ///     let producer = fluvio_instance.topic_producer_with_config("my-fluvio-topic", config).await.expect("Failed to create a producer");
 ///}
 /// ```
+#[derive(Default)]
 pub struct AlphabetPartitioning {}
-
-impl AlphabetPartitioning {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
 
 impl Partitioner for AlphabetPartitioning {
     fn partition(
@@ -40,8 +35,7 @@ impl Partitioner for AlphabetPartitioning {
             Some(key) => match std::str::from_utf8(key) {
                 Ok(key_str) => {
                     let count = key_str.chars().count() as u32;
-                    let partition_id = count % config.partition_count() as u32;
-                    partition_id
+                    count % config.partition_count()
                 }
                 Err(_) => 0,
             },
@@ -57,7 +51,7 @@ mod test {
 
     #[test]
     fn test() {
-        let partitioner = AlphabetPartitioning::new();
+        let partitioner = AlphabetPartitioning::default();
         assert_eq!(
             partitioner.partition(&PartitionerConfig { partition_count: 3 }, Some(b"aa"), &[]),
             2
