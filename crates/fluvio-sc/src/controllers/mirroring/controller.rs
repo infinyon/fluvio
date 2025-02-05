@@ -71,7 +71,7 @@ impl<C: MetadataItem> RemoteMirrorController<C> {
             if let Some((home, _)) = self.get_mirror_home_cluster().await {
                 info!(home = %home.id,  "connected to home cluster");
                 let home_config = self.build_home_client(&home).await?;
-                let mut stream = self.request_stream(&home, home_config).await?;
+                let mut stream = self.request_stream(&home, home_config).await?.boxed();
 
                 info!("created request stream");
 

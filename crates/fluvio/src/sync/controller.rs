@@ -76,15 +76,17 @@ where
     }
 
     #[instrument(
-        skip(self,response),
+        skip(self,async_response),
         fields(
             spec = S::LABEL,
         )
     )]
-    async fn dispatch_loop(mut self, mut response: AsyncResponse<ObjectApiWatchRequest>) {
+    async fn dispatch_loop(mut self, async_response: AsyncResponse<ObjectApiWatchRequest>) {
         use tokio::select;
 
         debug!("{} starting dispatch loop", S::LABEL);
+
+        let mut response = async_response.boxed();
 
         loop {
             // check if shutdown is set
