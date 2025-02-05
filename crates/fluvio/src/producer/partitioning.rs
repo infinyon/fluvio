@@ -23,7 +23,7 @@ pub trait Partitioner {
 }
 
 pub struct PartitionerConfig {
-    pub(crate) partition_count: PartitionCount,
+    pub partition_count: PartitionCount,
 }
 
 impl PartitionerConfig {
