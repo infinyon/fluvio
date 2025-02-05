@@ -9,11 +9,12 @@ use fluvio::{dataplane::types::PartitionId, Partitioner, PartitionerConfig};
 ///
 /// ```
 /// async fn example() {
+///     use std::sync::Arc;
 ///     use fluvio::{Partitioner,PartitionerConfig};
 ///     use partitioning_simple::AlphabetPartitioning;
 ///
 ///     let config = fluvio::TopicProducerConfigBuilder::default()
-///         .partitioner(Box::new(AlphabetPartitioning::new()))
+///         .partitioner(Arc::new(AlphabetPartitioning::new()))
 ///         .build()
 ///         .expect("Failed to create a config");
 ///     let fluvio_instance = fluvio::Fluvio::connect().await.expect("");
