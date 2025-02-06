@@ -2,6 +2,24 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## Platform Version 0.15.2 - 2025-02-06
+
+### CI
+
+* Pos release fluvio 0.15.1 ([#4374](https://github.com/infinyon/fluvio/issues/4374))
+
+### Changed
+
+* Change checkpoint error to info ([#4373](https://github.com/infinyon/fluvio/issues/4373))
+
+### Fixed
+
+* Record too large error ([#4376](https://github.com/infinyon/fluvio/issues/4376))
+
+### Removed
+
+* Produce config builder as mutable ([#4375](https://github.com/infinyon/fluvio/issues/4375))
+
 ## Platform Version 0.15.1 - 2025-01-28
 
 ### CI
