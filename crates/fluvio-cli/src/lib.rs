@@ -128,8 +128,9 @@ mod root {
         #[cfg(feature = "consumer")]
         Fluvio(FluvioCmd),
 
-        #[command(name = "bench", alias = "benchmark")]
-        Bench(BenchmarkOpt),
+        /// Run Fluvio benchmarks
+        #[command(name = "benchmark", alias = "bench")]
+        Benchmark(BenchmarkOpt),
 
         /// Manage Profiles, which describe linked clusters
         ///
@@ -219,7 +220,7 @@ mod root {
                 Self::Metadata(metadata) => {
                     metadata.process()?;
                 }
-                Self::Bench(bench) => {
+                Self::Benchmark(bench) => {
                     bench.process().await?;
                 }
 
