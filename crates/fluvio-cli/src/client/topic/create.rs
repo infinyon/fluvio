@@ -6,6 +6,7 @@
 use std::path::PathBuf;
 use std::time::Duration;
 
+use fluvio_sc_schema::smartmodule::SmartModuleSpec;
 use tracing::debug;
 use clap::Parser;
 use humantime::parse_duration;
@@ -28,10 +29,14 @@ use fluvio_sc_schema::topic::Bounds;
 use fluvio_sc_schema::topic::Deduplication;
 use fluvio_sc_schema::topic::Filter;
 use fluvio_sc_schema::topic::Transform;
+use fluvio_hub_util as hubutil;
+use hubutil::cmd::get_hub_access;
 
 use fluvio::Fluvio;
 use fluvio::FluvioAdmin;
 use fluvio::metadata::topic::TopicSpec;
+use crate::client::hub::download_cluster;
+use crate::client::hub::download_local;
 use crate::CliError;
 
 const DEFAULT_DEDUP_FILTER: &str = "fluvio/dedup-bloom-filter@0.1.0";
@@ -236,6 +241,20 @@ impl CreateTopicOpt {
         }
 
         if self.setting.dedup {
+            let sm = admin
+                .list::<SmartModuleSpec, _>(vec![DEFAULT_DEDUP_FILTER.to_string()])
+                .await?
+                .into_iter()
+                .next();
+
+            if sm.is_none() {
+                println!("deduplication filter not found, downloading");
+                let access = get_hub_access(&None)?;
+                let pkgname = DEFAULT_DEDUP_FILTER;
+                let pkgfile = download_local(pkgname, &access, None).await?;
+                download_cluster(admin, &pkgfile).await?;
+            }
+
             let deduplication =
                 create_deduplication(self.setting.dedup_count, Some(self.setting.dedup_age));
             topic_spec.set_deduplication(Some(deduplication));

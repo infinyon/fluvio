@@ -1,7 +1,7 @@
 mod list;
 pub use list::SmartModuleHubListOpts;
 mod download;
-pub use download::SmartModuleDownloadHubOpts;
+pub use download::{SmartModuleDownloadHubOpts, download_local, download_cluster};
 
 use std::sync::Arc;
 use std::fmt::Debug;
