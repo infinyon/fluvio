@@ -24,11 +24,17 @@ use fluvio_sc_schema::shared::validate_resource_name;
 use fluvio_sc_schema::mirror::MirrorSpec;
 use fluvio_sc_schema::topic::HomeMirrorConfig;
 use fluvio_sc_schema::topic::MirrorConfig;
+use fluvio_sc_schema::topic::Bounds;
+use fluvio_sc_schema::topic::Deduplication;
+use fluvio_sc_schema::topic::Filter;
+use fluvio_sc_schema::topic::Transform;
 
 use fluvio::Fluvio;
 use fluvio::FluvioAdmin;
 use fluvio::metadata::topic::TopicSpec;
 use crate::CliError;
+
+const DEFAULT_DEDUP_FILTER: &str = "fluvio/dedup-bloom-filter@0.1.0";
 
 #[derive(Debug, Parser)]
 pub struct CreateTopicOpt {
@@ -229,6 +235,12 @@ impl CreateTopicOpt {
             topic_spec.set_compression_type(compression_type);
         }
 
+        if self.setting.dedup {
+            let deduplication =
+                create_deduplication(self.setting.dedup_count, Some(self.setting.dedup_age));
+            topic_spec.set_deduplication(Some(deduplication));
+        }
+
         topic_spec.set_system(self.setting.system);
 
         if self.setting.segment_size.is_some() || self.setting.max_partition_size.is_some() {
@@ -258,6 +270,21 @@ fn validate(name: &str, _spec: &TopicSpec) -> Result<()> {
     Ok(())
 }
 
+fn create_deduplication(dedup_count: u64, dedup_age: Option<Duration>) -> Deduplication {
+    Deduplication {
+        bounds: Bounds {
+            count: dedup_count,
+            age: dedup_age,
+        },
+        filter: Filter {
+            transform: Transform {
+                uses: DEFAULT_DEDUP_FILTER.to_string(),
+                with: Default::default(),
+            },
+        },
+    }
+}
+
 #[derive(Debug, Parser)]
 #[group(id = "config-arg")]
 pub struct TopicConfigOpt {
@@ -279,6 +306,19 @@ pub struct TopicConfigOpt {
     /// Ex: `2048`, '2 Ki', '10 MiB', `1 GB`
     #[arg(long, value_name = "bytes")]
     max_partition_size: Option<bytesize::ByteSize>,
+
+    /// Deduplicate records in the topic
+    #[arg(long)]
+    dedup: bool,
+
+    /// Number of records to keep in deduplication filter
+    #[arg(long, value_name = "integer", requires = "dedup", default_value = "5")]
+    dedup_count: u64,
+
+    /// Age of records to keep in deduplication filter
+    /// Ex: '1h', '2d 10s', '7 days' (default)
+    #[arg(long, value_name = "time", value_parser=parse_duration, requires = "dedup", default_value = "5s")]
+    dedup_age: Duration,
 
     /// Flag to create a system topic
     /// System topics are for internal operations
