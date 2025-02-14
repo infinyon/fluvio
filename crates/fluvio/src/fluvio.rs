@@ -1,5 +1,6 @@
 use std::convert::TryFrom;
 use std::sync::Arc;
+use std::time::Duration;
 
 use anyhow::{Context, Result};
 use semver::Version;
@@ -18,8 +19,8 @@ use fluvio_socket::{
 use crate::admin::FluvioAdmin;
 use crate::error::anyhow_version_error;
 use crate::consumer::{
-    MultiplePartitionConsumer, PartitionSelectionStrategy, ConsumerStream,
-    MultiplePartitionConsumerStream, Record, ConsumerConfigExt, ConsumerOffset,
+    ConsumerConfigExt, ConsumerOffset, ConsumerStream, ConsumerWithRetry,
+    MultiplePartitionConsumer, MultiplePartitionConsumerStream, PartitionSelectionStrategy, Record,
 };
 use crate::metrics::ClientMetrics;
 use crate::producer::{TopicProducerPool, TopicProducerConfig};
@@ -31,6 +32,7 @@ use crate::{TopicProducer, PartitionConsumer, FluvioError, FluvioConfig};
 pub struct Fluvio {
     socket: SharedMultiplexerSocket,
     config: Arc<ClientConfig>,
+    fluvio_config: FluvioConfig,
     versions: Versions,
     spu_pool: OnceCell<Arc<SpuSocketPool>>,
     metadata: MetadataStores,
@@ -104,11 +106,14 @@ impl Fluvio {
     /// Creates a new Fluvio client with the given connector and configuration
     pub async fn connect_with_connector(
         connector: DomainConnector,
-        config: &FluvioConfig,
+        fluvio_config: &FluvioConfig,
     ) -> Result<Self> {
-        let mut client_config =
-            ClientConfig::new(&config.endpoint, connector, config.use_spu_local_address);
-        if let Some(client_id) = &config.client_id {
+        let mut client_config = ClientConfig::new(
+            &fluvio_config.endpoint,
+            connector,
+            fluvio_config.use_spu_local_address,
+        );
+        if let Some(client_id) = &fluvio_config.client_id {
             client_config.set_client_id(client_id.to_owned());
         }
         let inner_client = client_config.connect().await?;
@@ -128,6 +133,7 @@ impl Fluvio {
             Ok(Self {
                 socket,
                 config,
+                fluvio_config: fluvio_config.clone(),
                 versions,
                 spu_pool,
                 metadata,
@@ -329,6 +335,23 @@ impl Fluvio {
     /// }
     /// ```
     pub async fn consumer_with_config(
+        &self,
+        config: ConsumerConfigExt,
+    ) -> Result<
+        impl ConsumerStream<Item = std::result::Result<Record, fluvio_protocol::link::ErrorCode>>,
+    > {
+        ConsumerWithRetry::new(
+            self.fluvio_config.clone(),
+            config.topic.clone(),
+            10,
+            Duration::from_secs(1),
+            false,
+            config.offset_start.clone(),
+        )
+        .await
+    }
+
+    pub async fn consumer_with_config_inner(
         &self,
         config: ConsumerConfigExt,
     ) -> Result<
