@@ -11,43 +11,37 @@ use futures_util::StreamExt;
 use tracing::{debug, error, info, warn};
 
 use fluvio_sc_schema::errors::ErrorCode;
-
 use crate::{Fluvio, FluvioConfig, Offset};
-
 use super::{ConsumerConfigExt, ConsumerStream};
 
 pub const MAX_RETRY_PAIRS: u32 = 20;
 pub const RETRY_BACKOFF: Duration = Duration::from_secs(1);
 
+// Define type aliases that conditionally include +Send for non-wasm targets.
+#[cfg(target_arch = "wasm32")]
+type BoxConsumerStream =
+    Pin<Box<dyn ConsumerStream<Item = Result<ConsumerRecord, ErrorCode>> + 'static>>;
+#[cfg(not(target_arch = "wasm32"))]
+type BoxConsumerStream =
+    Pin<Box<dyn ConsumerStream<Item = Result<ConsumerRecord, ErrorCode>> + Send + 'static>>;
+
+#[cfg(target_arch = "wasm32")]
+type BoxPendingFuture =
+    Pin<Box<dyn Future<Output = (ConsumerRecord, BoxConsumerStream, Option<i64>)> + 'static>>;
+#[cfg(not(target_arch = "wasm32"))]
+type BoxPendingFuture = Pin<
+    Box<dyn Future<Output = (ConsumerRecord, BoxConsumerStream, Option<i64>)> + Send + 'static>,
+>;
+
 pub struct ConsumerWithRetry {
     fluvio_client: Arc<Fluvio>,
     next_offset_to_read: Option<i64>,
     start_offset: Offset,
-    current_stream: Option<
-        Pin<Box<dyn ConsumerStream<Item = Result<ConsumerRecord, ErrorCode>> + Send + 'static>>,
-    >,
+    current_stream: Option<BoxConsumerStream>,
     max_retry_pairs: u32,
     retry_backoff: Duration,
     hard_exit_on_fail: bool,
-    pending: Option<
-        Pin<
-            Box<
-                dyn Future<
-                        Output = (
-                            ConsumerRecord,
-                            Pin<
-                                Box<
-                                    dyn ConsumerStream<Item = Result<ConsumerRecord, ErrorCode>>
-                                        + Send
-                                        + 'static,
-                                >,
-                            >,
-                            Option<i64>,
-                        ),
-                    > + Send,
-            >,
-        >,
-    >,
+    pending: Option<BoxPendingFuture>,
     topic_name: String,
     config: ConsumerConfigExt,
 }
@@ -100,11 +94,11 @@ impl Stream for ConsumerWithRetry {
                 Poll::Pending => Poll::Pending,
             }
         } else {
-            // Should not happen.
             Poll::Ready(None)
         }
     }
 }
+
 impl ConsumerStream for ConsumerWithRetry {
     fn offset_commit(&mut self) -> std::result::Result<(), ErrorCode> {
         if let Some(ref mut stream) = self.current_stream {
@@ -135,19 +129,14 @@ impl ConsumerWithRetry {
         start_offset: Offset,
     ) -> Result<Self> {
         let fluvio = Fluvio::connect_with_config(&fluvio_config).await?;
-
         let config = ConsumerConfigExt::builder()
             .topic(&topic_name)
             .isolation(Isolation::ReadCommitted)
             .offset_start(start_offset.clone())
             .build()?;
-
-        // Obtain the stream from the client.
         let stream = fluvio.consumer_with_config_inner(config.clone()).await?;
-        // Coerce the concrete stream into a trait object.
-        let current_stream: Pin<
-            Box<dyn ConsumerStream<Item = Result<ConsumerRecord, ErrorCode>> + Send + 'static>,
-        > = Box::pin(stream);
+        // Coerce the concrete stream into our trait object.
+        let current_stream: BoxConsumerStream = Box::pin(stream);
         let current_stream = Some(current_stream);
 
         Ok(Self {
@@ -166,20 +155,17 @@ impl ConsumerWithRetry {
 
     pub async fn get_last_known_offset(&mut self) -> Result<Option<u64>> {
         let offset = Offset::from_end(1);
-
         let config = ConsumerConfigExt::builder()
             .topic(&self.topic_name)
             .offset_start(offset)
             .disable_continuous(true)
             .build()?;
-
         let mut stream = self
             .fluvio_client
             .consumer_with_config_inner(config)
             .await?;
         let last_known = stream.next().await.transpose()?.map(|r| r.offset());
         let last_known: Option<u64> = last_known.map(|f| f.try_into()).transpose()?;
-
         Ok(last_known)
     }
 
@@ -220,9 +206,7 @@ impl ConsumerWithRetry {
     // The refactored async helper that performs the consumption logic without borrowing self.
     async fn consume_with_retry_owned(
         fluvio_client: Arc<Fluvio>,
-        mut current_stream: Pin<
-            Box<dyn ConsumerStream<Item = Result<ConsumerRecord, ErrorCode>> + Send + 'static>,
-        >,
+        mut current_stream: BoxConsumerStream,
         next_offset: Option<i64>,
         start_offset: Offset,
         topic_name: String,
@@ -230,11 +214,7 @@ impl ConsumerWithRetry {
         max_retry_pairs: u32,
         retry_backoff: Duration,
         hard_exit_on_fail: bool,
-    ) -> (
-        ConsumerRecord,
-        Pin<Box<dyn ConsumerStream<Item = Result<ConsumerRecord, ErrorCode>> + Send + 'static>>,
-        Option<i64>,
-    ) {
+    ) -> (ConsumerRecord, BoxConsumerStream, Option<i64>) {
         let mut i = 0;
         loop {
             // Try to get a record from the current stream.
@@ -253,7 +233,6 @@ impl ConsumerWithRetry {
                 }
             }
             fluvio_future::timer::sleep(retry_backoff).await;
-
             // Attempt to reconnect to the stream.
             fluvio_future::timer::sleep(retry_backoff).await;
             let offset = if let Some(next) = next_offset {
@@ -266,14 +245,7 @@ impl ConsumerWithRetry {
             match fluvio_client.consumer_with_config(new_config).await {
                 Ok(new_stream) => {
                     // Coerce new_stream into our trait object.
-                    current_stream = Box::pin(new_stream)
-                        as Pin<
-                            Box<
-                                dyn ConsumerStream<Item = Result<ConsumerRecord, ErrorCode>>
-                                    + Send
-                                    + 'static,
-                            >,
-                        >;
+                    current_stream = Box::pin(new_stream) as BoxConsumerStream;
                     info!("Created new consume stream with offset: {:?}", next_offset);
                     continue;
                 }
@@ -281,7 +253,6 @@ impl ConsumerWithRetry {
                     error!("Could not connect to stream on {}: {}", topic_name, e);
                 }
             }
-
             // Attempt to reconnect to the consumer.
             fluvio_future::timer::sleep(retry_backoff).await;
             i += 1;
@@ -294,12 +265,10 @@ impl ConsumerWithRetry {
                 fluvio_future::timer::sleep(retry_backoff).await;
                 i += 1;
             }
-
             if i >= max_retry_pairs {
                 break;
             }
         }
-
         if hard_exit_on_fail {
             error!("Exiting due to irrecoverable failure to consume");
             std::process::exit(1);
