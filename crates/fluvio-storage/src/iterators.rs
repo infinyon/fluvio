@@ -241,7 +241,7 @@ mod test {
     fn test_file_record_iterator() -> anyhow::Result<()> {
         //given
         let base_dir = temp_dir().join("test_file_record_iterator");
-        let mut replica = run_block_on(FileReplica::create_or_load(
+        let mut replica = run_block_on(FileReplica::create_or_load_inner(
             format!(
                 "test_file_record_iterator_{}",
                 SystemTime::now()
