@@ -40,6 +40,9 @@ pub struct FileReplica {
     commit_checkpoint: CheckPoint,
     cleaner: Arc<Cleaner>,
     size: Arc<ReplicaSize>,
+    append_failure: bool, // if this is true, last append failed, should not append again
+    max_request_size: usize,
+    max_segment_size: usize,
 }
 
 #[derive(Debug, Default)]
@@ -133,22 +136,20 @@ impl ReplicaStorage for FileReplica {
         records: &mut RecordSet<R>,
         update_highwatermark: bool,
     ) -> Result<usize> {
-        let max_request_size = self.option.max_request_size.get() as usize;
-        let max_segment_size = self.option.segment_max_bytes.get() as usize;
         let mut total_size = 0;
         // check if any of the records's batch exceed max length
         for batch in &records.batches {
             let batch_size = batch.write_size(0);
-            if batch_size > max_segment_size {
+            if batch_size > self.max_segment_size {
                 return Err(StorageError::BatchExceededSegment {
                     batch_size: batch_size.try_into()?,
-                    max_segment_size: max_segment_size.try_into()?,
+                    max_segment_size: self.max_segment_size.try_into()?,
                 }
                 .into());
             }
             total_size += batch_size;
-            if batch_size > max_request_size {
-                return Err(StorageError::BatchTooBig(max_request_size).into());
+            if batch_size > self.max_request_size {
+                return Err(StorageError::BatchTooBig(self.max_request_size).into());
             }
         }
 
@@ -282,6 +283,9 @@ impl FileReplica {
             size.clone(),
         );
 
+        let max_request_size = shared_config.max_request_size.get_consistent() as usize;
+        let max_segment_size = shared_config.segment_max_bytes.get_consistent() as usize;
+
         Ok(Self {
             option: shared_config,
             last_base_offset,
@@ -291,6 +295,9 @@ impl FileReplica {
             commit_checkpoint,
             cleaner,
             size,
+            append_failure: false,
+            max_request_size,
+            max_segment_size,
         })
     }
 
@@ -398,24 +405,71 @@ impl FileReplica {
 
     #[instrument(skip(self, item))]
     async fn write_batch<R: BatchRecords>(&mut self, item: &mut Batch<R>) -> Result<()> {
-        if !(self.active_segment.append_batch(item).await?) {
-            info!(
-                partition = self.partition,
-                path = %self.option.base_dir.display(),
-                base_offset = self.active_segment.get_base_offset(),
-                end_offset = self.active_segment.get_end_offset(),
-                "rolling over active segment");
-            self.active_segment.roll_over().await?;
-            let last_offset = self.active_segment.get_end_offset();
-            let new_segment = MutableSegment::create(last_offset, self.option.clone()).await?;
-            let old_mut_segment = mem::replace(&mut self.active_segment, new_segment);
-            let old_segment = old_mut_segment.as_segment().await?;
-            self.size.add_prev(old_segment.occupied_memory());
-            self.prev_segments.add_segment(old_segment).await;
-            self.active_segment.append_batch(item).await?;
+        if self.append_failure {
+            return Err(
+                StorageError::Other("last append failed, disabling append".to_owned()).into(),
+            );
         }
+
+        match self.active_segment.append_batch(item).await {
+            Ok(true) => {}
+            Ok(false) => {
+                // segment is full, need to rollver
+                match self.rollver().await {
+                    Ok(_) => {
+                        // after rollver is done, append to new segment, this should succeed
+                        match self.active_segment.append_batch(item).await {
+                            Ok(true) => {}
+                            Ok(false) => {
+                                warn!("failed to append even after rollver");
+                                self.append_failure = true;
+                                return Err(StorageError::Other(
+                                    "failed to append even after rollver".to_owned(),
+                                )
+                                .into());
+                            }
+                            Err(err) => {
+                                warn!("failed to append after rollver: {:#?}", err);
+                                self.append_failure = true;
+                                return Err(err);
+                            }
+                        }
+                    }
+                    Err(err) => {
+                        warn!("failed to rollver: {:#?}", err);
+                        self.append_failure = true;
+                        return Err(err);
+                    }
+                }
+            }
+            Err(err) => {
+                warn!("failed to write to active segment: {:#?}", err);
+                self.append_failure = true;
+                return Err(err);
+            }
+        }
+
         self.size
             .store_active(self.active_segment.occupied_memory());
+        Ok(())
+    }
+
+    /// perform roll over which involves creating new segment and
+    #[instrument(skip(self))]
+    async fn rollver(&mut self) -> Result<()> {
+        info!(
+            partition = self.partition,
+            path = %self.option.base_dir.display(),
+            base_offset = self.active_segment.get_base_offset(),
+            end_offset = self.active_segment.get_end_offset(),
+            "rolling over active segment");
+        self.active_segment.roll_over().await?;
+        let last_offset = self.active_segment.get_end_offset();
+        let new_segment = MutableSegment::create(last_offset, self.option.clone()).await?;
+        let old_mut_segment = mem::replace(&mut self.active_segment, new_segment);
+        let old_segment = old_mut_segment.as_segment().await?;
+        self.size.add_prev(old_segment.occupied_memory());
+        self.prev_segments.add_segment(old_segment).await;
         Ok(())
     }
 }
