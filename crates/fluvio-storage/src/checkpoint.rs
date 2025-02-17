@@ -22,6 +22,7 @@ use tracing::info;
 use fluvio_future::fs::File;
 use fluvio_future::fs::metadata;
 use fluvio_future::fs::util;
+use tracing::instrument;
 
 use crate::config::SharedReplicaConfig;
 
@@ -52,17 +53,17 @@ pub struct CheckPoint {
 }
 
 impl CheckPoint {
+    #[instrument(skip(option))]
     pub async fn create(
         option: Arc<SharedReplicaConfig>,
         name: &str,
         initial_offset: Offset,
     ) -> Result<Self, IoError> {
         let checkpoint_path = option.base_dir.join(name);
-
         match metadata(&checkpoint_path).await {
             Ok(_) => {
-                info!("checkpoint {:#?} exists, reading", checkpoint_path);
                 let file = util::open_read_write(&checkpoint_path).await?;
+                info!(checkpoint=%checkpoint_path.display(),"checkpoint exists");
                 let mut lazy_writer = LazyWriter::new(file);
                 let old_offset = match lazy_writer.read().await {
                     Ok(offset) => {
@@ -84,12 +85,8 @@ impl CheckPoint {
                 })
             }
             Err(_) => {
-                info!(
-                    "no existing creating checkpoint {}, creating",
-                    checkpoint_path.display()
-                );
+                info!(checkpoint=%checkpoint_path.display(),"checkpoint doesn't esists, creating");
                 let file = util::open_read_write(&checkpoint_path).await?;
-                info!("checkfile created: {:#?}", checkpoint_path);
                 let lazy_writer = LazyWriter::new(file);
                 let offset = OffsetPublisher::shared(initial_offset);
                 let flush = lazy_writer.spawn_writer(offset.change_listener());
@@ -155,7 +152,7 @@ impl LazyWriter {
         mut listener: OffsetChangeListener,
         flush: Arc<StickyEvent>,
     ) -> Result<()> {
-        info!("starting checkpoint writer loop");
+        info!(?self.file, "starting checkpoint writer loop");
         loop {
             select! {
                 _ = flush.listen() => {
