@@ -386,8 +386,8 @@ impl Segment<MutLogIndex, MutFileRecords> {
         self.index.shrink().await
     }
 
-    // perform any action during roll over
-    pub async fn roll_over(&mut self) -> Result<(), IoError> {
+    // close this segment as writeable
+    pub async fn close(&mut self) -> Result<(), IoError> {
         self.index.shrink().await
     }
 

@@ -415,7 +415,7 @@ impl FileReplica {
             Ok(true) => {}
             Ok(false) => {
                 // segment is full, need to rollver
-                match self.rollver().await {
+                match self.roll_over().await {
                     Ok(_) => {
                         // after rollver is done, append to new segment, this should succeed
                         match self.active_segment.append_batch(item).await {
@@ -454,16 +454,19 @@ impl FileReplica {
         Ok(())
     }
 
-    /// perform roll over which involves creating new segment and
+    /// perform roll over.  This will perform
+    /// 1. close current segment by shrinking index and make it readable
+    /// 2. create new segment as active segment
+    /// 3. add old segment to prev segments
     #[instrument(skip(self))]
-    async fn rollver(&mut self) -> Result<()> {
+    async fn roll_over(&mut self) -> Result<()> {
         info!(
             partition = self.partition,
             path = %self.option.base_dir.display(),
             base_offset = self.active_segment.get_base_offset(),
             end_offset = self.active_segment.get_end_offset(),
             "rolling over active segment");
-        self.active_segment.roll_over().await?;
+        self.active_segment.close().await?;
         let last_offset = self.active_segment.get_end_offset();
         let new_segment = MutableSegment::create(last_offset, self.option.clone()).await?;
         let old_mut_segment = mem::replace(&mut self.active_segment, new_segment);
