@@ -1,5 +1,5 @@
 use std::cmp::min;
-use std::mem;
+use std::{fmt, mem};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -62,7 +62,7 @@ impl ReplicaStorage for FileReplica {
             .build()
             .map_err(|err| StorageError::Other(format!("failed to build cleaner config: {err}")))?;
 
-        Self::create_or_load_with_storage(
+        Self::create_or_load(
             replica.topic.clone(),
             replica.partition,
             0,
@@ -212,8 +212,8 @@ impl FileReplica {
     /// If there is existing directory then it will load existing logs.
     /// The logs will be validated to ensure it's safe to use it.
     /// It is possible logs can't be used because they may be corrupted.
-    #[instrument(skip(topic, partition, base_offset, replica_config, storage_config))]
-    pub async fn create_or_load_with_storage<S>(
+    #[instrument(skip(replica_config, storage_config))]
+    pub async fn create_or_load<S>(
         topic: S,
         partition: Size,
         base_offset: Offset,
@@ -221,14 +221,13 @@ impl FileReplica {
         storage_config: Arc<StorageConfig>,
     ) -> Result<FileReplica>
     where
-        S: AsRef<str> + Send + 'static,
+        S: AsRef<str> + Send + 'static + fmt::Debug,
     {
         let replica_dir = replica_config
             .base_dir
             .join(replica_dir_name(topic, partition));
 
-        info!("creating rep dir: {}", replica_dir.display());
-        debug!("replica config: {:?}", replica_config);
+        info!(replica_dir = %replica_dir.display(),  "creating");
         create_dir_all(&replica_dir).await?; // ensure dir_name exits
 
         let mut rep_option = replica_config.clone();
@@ -239,7 +238,7 @@ impl FileReplica {
         let (segments, last_offset_res) = SharedSegments::from_dir(shared_config.clone()).await?;
 
         let active_segment = if let Some(last_offset) = last_offset_res {
-            debug!(last_offset, "last segment found, validating offsets");
+            info!(last_offset, "last segment found, validating offsets");
             let mut last_segment =
                 MutableSegment::open_for_write(last_offset, shared_config.clone()).await?;
             last_segment.validate_and_repair().await?;
@@ -498,7 +497,7 @@ mod tests {
         base_offset: Offset,
         config: ReplicaConfig,
     ) -> FileReplica {
-        FileReplica::create_or_load_with_storage(topic, 0, base_offset, config, storage_config())
+        FileReplica::create_or_load(topic, 0, base_offset, config, storage_config())
             .await
             .expect("replica")
     }
@@ -671,15 +670,10 @@ mod tests {
     async fn test_rep_log_roll_over() {
         let option = rollover_option(TEST_REPLICA_DIR);
 
-        let mut replica = FileReplica::create_or_load_with_storage(
-            "test",
-            1,
-            START_OFFSET,
-            option.clone(),
-            storage_config(),
-        )
-        .await
-        .expect("create rep");
+        let mut replica =
+            FileReplica::create_or_load("test", 1, START_OFFSET, option.clone(), storage_config())
+                .await
+                .expect("create rep");
 
         // first batch
         debug!(">>>> sending first batch");
@@ -986,15 +980,10 @@ mod tests {
             .build()
             .expect("batch");
 
-        let mut new_replica = FileReplica::create_or_load_with_storage(
-            "test",
-            0,
-            0,
-            option.clone(),
-            Arc::new(storage_config),
-        )
-        .await
-        .expect("create");
+        let mut new_replica =
+            FileReplica::create_or_load("test", 0, 0, option.clone(), Arc::new(storage_config))
+                .await
+                .expect("create");
         let reader = new_replica.prev_segments.read().await;
         assert!(reader.len() == 0);
         drop(reader);
@@ -1058,7 +1047,7 @@ mod tests {
         option.max_partition_size = max_partition_size;
         option.segment_max_bytes = max_segment_size;
 
-        let mut replica = FileReplica::create_or_load_with_storage(
+        let mut replica = FileReplica::create_or_load(
             "test",
             0,
             START_OFFSET,

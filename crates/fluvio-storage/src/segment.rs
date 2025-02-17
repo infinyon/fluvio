@@ -303,11 +303,12 @@ impl Segment<LogIndex, FileRecordsSlice> {
 impl Segment<MutLogIndex, MutFileRecords> {
     // create segment on base directory
 
+    #[instrument(skip(option))]
     pub async fn create(
         base_offset: Offset,
         option: Arc<SharedReplicaConfig>,
     ) -> Result<MutableSegment, StorageError> {
-        debug!(base_offset, "creating new active segment");
+        info!(base_offset, "creating new active segment");
         let msg_log = MutFileRecords::create(base_offset, option.clone()).await?;
 
         let index = MutLogIndex::create(base_offset, option.clone()).await?;
