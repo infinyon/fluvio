@@ -5,7 +5,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use tracing::{debug, trace, instrument, info, error};
-use anyhow::{Result};
+use anyhow::Result;
 
 use fluvio_future::fs::remove_file;
 use fluvio_future::file_slice::AsyncFileSlice;
@@ -20,9 +20,9 @@ use crate::index::Index;
 use crate::records::FileRecords;
 use crate::mut_records::MutFileRecords;
 use crate::records::FileRecordsSlice;
-use crate::config::{SharedReplicaConfig};
+use crate::config::SharedReplicaConfig;
 use crate::StorageError;
-use crate::batch::{FileBatchStream};
+use crate::batch::FileBatchStream;
 use crate::index::OffsetPosition;
 use crate::validator::LogValidationError;
 
