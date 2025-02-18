@@ -2335,6 +2335,7 @@ dependencies = [
 name = "fluvio"
 version = "0.26.0"
 dependencies = [
+ "adaptive_backoff",
  "anyhow",
  "async-channel 1.9.0",
  "async-lock",
@@ -2884,7 +2885,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.12.0"
+version = "0.12.1"
 dependencies = [
  "bytes",
  "cfg-if",

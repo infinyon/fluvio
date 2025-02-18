@@ -25,6 +25,7 @@ nightly = []
 unstable = []
 
 [dependencies]
+adaptive_backoff = { workspace = true }
 async-channel = { workspace = true }
 async-lock = { workspace = true }
 async-trait = { workspace = true }
