@@ -297,7 +297,7 @@ impl Fluvio {
     ///        .await?;
     ///    while let Some(Ok(record)) = stream.next().await {
     ///        println!("{}", String::from_utf8_lossy(record.as_ref()));
-    ///        stream.offset_commit()?;
+    ///        stream.offset_commit().await?;
     ///        stream.offset_flush().await?;
     ///    }
     ///    Ok(())

@@ -403,7 +403,7 @@ mod cmd {
             }
 
             if self.consumer.is_some() {
-                stream.get_mut().offset_commit()?;
+                stream.get_mut().offset_commit().await?;
                 stream.get_mut().offset_flush().await?;
             }
 
