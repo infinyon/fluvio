@@ -2,7 +2,7 @@ use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use anyhow::Result;
 use adaptive_backoff::prelude::{
@@ -11,9 +11,10 @@ use adaptive_backoff::prelude::{
 use futures_util::future::BoxFuture;
 use futures_util::Stream;
 use futures_util::StreamExt;
+use tokio::sync::Notify;
 use tracing::{debug, info, warn};
 
-use fluvio_future::timer::sleep;
+use fluvio_future::{task::run_block_on, timer::sleep};
 use fluvio_protocol::record::ConsumerRecord;
 use fluvio_sc_schema::errors::ErrorCode;
 
@@ -81,6 +82,14 @@ enum ConsumerState {
 pub struct ConsumerWithRetry {
     inner: ConsumerWithRetryInner,
     state: ConsumerState,
+    notify: Arc<Notify>,
+}
+
+impl ConsumerWithRetry {
+    fn change_state(&mut self, new_state: ConsumerState) {
+        self.state = new_state;
+        self.notify.notify_one();
+    }
 }
 
 impl Stream for ConsumerWithRetry {
@@ -101,26 +110,29 @@ impl Stream for ConsumerWithRetry {
                     };
 
                     let client = Arc::clone(&this.inner.fluvio_client);
-                    this.state = ConsumerState::Pending(Box::pin(Self::consumer_with_retry(
+                    let new_state = ConsumerState::Pending(Box::pin(Self::consumer_with_retry(
                         this.inner.clone(),
                         client,
                         stream,
                     )));
+
+                    this.change_state(new_state);
                     // Loop to poll the new pending future.
                 }
                 ConsumerState::Pending(pending) => {
                     match pending.as_mut().poll(cx) {
                         Poll::Ready(Some(Ok((record, new_stream, new_offset)))) => {
                             this.inner.next_offset_to_read = new_offset;
-                            this.state = ConsumerState::Current(new_stream);
+                            this.change_state(ConsumerState::Current(new_stream));
                             return Poll::Ready(Some(Ok(record)));
                         }
                         Poll::Ready(Some(Err(e))) => {
                             // Transition back to Idle with a dummy stream.
+                            this.notify.notify_one();
                             return Poll::Ready(Some(Err(e)));
                         }
                         Poll::Ready(None) => {
-                            this.state = ConsumerState::Terminated;
+                            this.change_state(ConsumerState::Terminated);
                             return Poll::Ready(None);
                         }
                         Poll::Pending => return Poll::Pending,
@@ -131,13 +143,9 @@ impl Stream for ConsumerWithRetry {
     }
 }
 
-const MAX_COMMIT_DELAY: Duration = Duration::from_secs(5);
-
 impl ConsumerStream for ConsumerWithRetry {
     /// TODO: rework this as an async method.
     fn offset_commit(&mut self) -> Result<(), ErrorCode> {
-        let start = Instant::now();
-        // Wait until the state becomes Idle.
         loop {
             match &mut self.state {
                 ConsumerState::Current(stream) => return stream.offset_commit(),
@@ -146,20 +154,36 @@ impl ConsumerStream for ConsumerWithRetry {
                     return Ok(());
                 }
                 _ => {
-                    if start.elapsed() > MAX_COMMIT_DELAY {
-                        warn!("offset_commit timed out");
-                        return Err(ErrorCode::MaxCommitDuration);
-                    }
-                    // Yield a bit; in a busy loop this is not ideal, but it's a workaround.
-                    std::thread::yield_now();
+                    let notify = self.notify.clone();
+                    run_block_on(async move {
+                        notify.notified().await;
+                    });
                 }
             }
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     fn offset_flush(&mut self) -> BoxFuture<'_, Result<(), ErrorCode>> {
-        let start = Instant::now();
-        // Wait until the state becomes Idle.
+        let notify = self.notify.clone();
+        Box::pin(async move {
+            loop {
+                match self.state {
+                    ConsumerState::Current(ref mut stream) => return stream.offset_flush().await,
+                    ConsumerState::Terminated => {
+                        warn!("offset_flush called but stream is terminated");
+                        return Ok(());
+                    }
+                    _ => {
+                        notify.notified().await;
+                    }
+                }
+            }
+        })
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    fn offset_flush(&mut self) -> BoxFuture<'_, Result<(), ErrorCode>> {
         loop {
             match self.state {
                 ConsumerState::Current(ref mut stream) => return stream.offset_flush(),
@@ -168,13 +192,10 @@ impl ConsumerStream for ConsumerWithRetry {
                     return Box::pin(async { Ok(()) });
                 }
                 _ => {
-                    // Yield a bit; in a busy loop this is not ideal, but it's a workaround.
-                    if start.elapsed() > MAX_COMMIT_DELAY {
-                        warn!("offset_commit timed out");
-                        return Box::pin(async { Err(ErrorCode::MaxCommitDuration) });
-                    }
-                    // Yield a bit; in a busy loop this is not ideal, but it's a workaround.
-                    std::thread::yield_now();
+                    let notify = self.notify.clone();
+                    run_block_on(async move {
+                        notify.notified().await;
+                    });
                 }
             }
         }
@@ -195,6 +216,7 @@ impl ConsumerWithRetry {
                 consumer_config: config,
             },
             state: ConsumerState::Current(boxed_stream),
+            notify: Arc::new(Notify::new()),
         })
     }
 
@@ -309,6 +331,6 @@ fn create_backoff() -> Result<ExponentialBackoff> {
 async fn backoff_and_wait(backoff: &mut ExponentialBackoff) {
     let wait_duration = backoff.wait();
     info!(target: SPAN_RETRY, seconds = wait_duration.as_secs(), "Starting backoff: sleeping for duration");
-    sleep(wait_duration).await;
+    let _ = sleep(wait_duration).await;
     debug!(target: SPAN_RETRY, "Resuming after backoff");
 }

@@ -125,9 +125,6 @@ pub enum ErrorCode {
     #[fluvio(tag = 3005)]
     #[error("max retry attempts reached")]
     MaxRetryReached,
-    #[fluvio(tag = 3006)]
-    #[error("max commit duration reached")]
-    MaxCommitDuration,
 
     // Managed Connector Errors
     #[fluvio(tag = 5000)]
