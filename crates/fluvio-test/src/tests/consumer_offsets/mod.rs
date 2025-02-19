@@ -109,7 +109,7 @@ async fn test_strategy_none(client: &Fluvio, topic: &str, partitions: usize) -> 
     for _ in 0..RECORDS_COUNT {
         ensure_read(&mut stream, &mut counts).await?;
     }
-    ensure!(stream.offset_commit().is_err());
+    ensure!(stream.offset_commit().await.is_err());
     ensure!(stream.offset_flush().await.is_err());
     Ok(())
 }
@@ -125,7 +125,7 @@ async fn test_strategy_manual(client: &Fluvio, topic: &str, partitions: usize) -
         for _ in chunk {
             ensure_read(&mut stream, &mut counts).await?;
         }
-        stream.offset_commit()?;
+        stream.offset_commit().await?;
         stream.offset_flush().await?;
     }
     // no more records for this consumer

@@ -17,7 +17,7 @@ use super::{offset::OffsetLocalStore, StreamToServer};
 pub trait ConsumerStream: Stream<Item = Result<Record, ErrorCode>> + Unpin {
     /// Mark the offset of the last yelded record as committed. Depending on [`OffsetManagementStrategy`]
     /// it may require a subsequent `offset_flush()` call to take any effect.
-    fn offset_commit(&mut self) -> Result<(), ErrorCode>;
+    fn offset_commit(&mut self) -> BoxFuture<'_, Result<(), ErrorCode>>;
 
     /// Send the committed offset to the server. The method waits for the server's acknowledgment before it finishes.
     fn offset_flush(&mut self) -> BoxFuture<'_, Result<(), ErrorCode>>;
@@ -114,7 +114,7 @@ impl<T> ConsumerStream for futures_util::stream::TakeUntil<T, async_channel::Rec
 where
     T: ConsumerStream,
 {
-    fn offset_commit(&mut self) -> Result<(), ErrorCode> {
+    fn offset_commit(&mut self) -> BoxFuture<'_, Result<(), ErrorCode>> {
         self.get_mut().offset_commit()
     }
 
@@ -126,8 +126,8 @@ where
 impl<T: Stream<Item = Result<Record, ErrorCode>> + Unpin> ConsumerStream
     for SinglePartitionConsumerStream<T>
 {
-    fn offset_commit(&mut self) -> Result<(), ErrorCode> {
-        self.offset_mngt.commit()
+    fn offset_commit(&mut self) -> BoxFuture<'_, Result<(), ErrorCode>> {
+        Box::pin(async { self.offset_mngt.commit() })
     }
 
     fn offset_flush(&mut self) -> BoxFuture<'_, Result<(), ErrorCode>> {
@@ -138,11 +138,14 @@ impl<T: Stream<Item = Result<Record, ErrorCode>> + Unpin> ConsumerStream
 impl<T: Stream<Item = Result<Record, ErrorCode>> + Unpin> ConsumerStream
     for MultiplePartitionConsumerStream<T>
 {
-    fn offset_commit(&mut self) -> Result<(), ErrorCode> {
+    fn offset_commit(&mut self) -> BoxFuture<'_, Result<(), ErrorCode>> {
         for partition in &self.offset_mgnts {
-            partition.commit()?;
+            if let Err(err) = partition.commit() {
+                return Box::pin(async { Err(err) });
+            }
         }
-        Ok(())
+
+        Box::pin(async { Ok(()) })
     }
 
     fn offset_flush(&mut self) -> BoxFuture<'_, Result<(), ErrorCode>> {
@@ -350,7 +353,7 @@ mod tests {
         );
 
         //when
-        let res = partition_stream.offset_commit();
+        let res = partition_stream.offset_commit().await;
 
         //then
         assert_eq!(res, Err(ErrorCode::OffsetManagementDisabled));
@@ -388,9 +391,9 @@ mod tests {
         //when
         assert!(partition_stream.next().await.is_some()); // seen = 0
         assert!(partition_stream.next().await.is_some()); // seen = 1
-        let _ = partition_stream.offset_commit(); // comitted = 1
+        let _ = partition_stream.offset_commit().await; // comitted = 1
         assert!(partition_stream.next().await.is_some()); // seen = 2
-        let _ = partition_stream.offset_commit(); // comitted = 2
+        let _ = partition_stream.offset_commit().await; // comitted = 2
 
         //then
         fluvio_future::task::spawn(async move {
@@ -436,9 +439,9 @@ mod tests {
         //when
         assert!(multi_stream.next().await.is_some()); // p1 seen = 0
         assert!(multi_stream.next().await.is_some()); // p2 seen = 0
-        let _ = multi_stream.offset_commit(); // both comitted = 0
+        let _ = multi_stream.offset_commit().await; // both comitted = 0
         assert!(multi_stream.next().await.is_some()); // p2 seen = 1
-        let _ = multi_stream.offset_commit(); // comitted p1 = 0, p2 = 1
+        let _ = multi_stream.offset_commit().await; // comitted p1 = 0, p2 = 1
 
         //then
         fluvio_future::task::spawn(async move {
@@ -700,7 +703,7 @@ mod tests {
         });
 
         assert!(partition_stream.next().await.is_some()); // seen = 0
-        let _ = partition_stream.offset_commit();
+        let _ = partition_stream.offset_commit().await;
         let flush_res = partition_stream.offset_flush().await;
 
         //then
@@ -730,7 +733,7 @@ mod tests {
         //when
         assert!(multi_stream.next().await.is_some()); // p1 seen = 0
         assert!(multi_stream.next().await.is_some()); // p2 seen = 0
-        let _ = multi_stream.offset_commit();
+        let _ = multi_stream.offset_commit().await;
         fluvio_future::task::spawn(async move {
             let message = rx1.recv().await;
             assert!(
