@@ -14,7 +14,7 @@ use futures_util::StreamExt;
 use tokio::sync::Notify;
 use tracing::{debug, info, warn};
 
-use fluvio_future::{task::run_block_on, timer::sleep};
+use fluvio_future::timer::sleep;
 use fluvio_protocol::record::ConsumerRecord;
 use fluvio_sc_schema::errors::ErrorCode;
 
@@ -145,17 +145,37 @@ impl Stream for ConsumerWithRetry {
 
 impl ConsumerStream for ConsumerWithRetry {
     /// TODO: rework this as an async method.
-    fn offset_commit(&mut self) -> Result<(), ErrorCode> {
+    #[cfg(not(target_arch = "wasm32"))]
+    fn offset_commit(&mut self) -> BoxFuture<'_, Result<(), ErrorCode>> {
+        let notify = self.notify.clone();
+        Box::pin(async move {
+            loop {
+                match self.state {
+                    ConsumerState::Current(ref mut stream) => return stream.offset_commit().await,
+                    ConsumerState::Terminated => {
+                        warn!("offset_commit called but stream is terminated");
+                        return Ok(());
+                    }
+                    _ => {
+                        notify.notified().await;
+                    }
+                }
+            }
+        })
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    fn offset_commit(&mut self) -> BoxFuture<'_, Result<(), ErrorCode>> {
         loop {
-            match &mut self.state {
-                ConsumerState::Current(stream) => return stream.offset_commit(),
+            match self.state {
+                ConsumerState::Current(ref mut stream) => return stream.offset_commit(),
                 ConsumerState::Terminated => {
                     warn!("offset_commit called but stream is terminated");
-                    return Ok(());
+                    return Box::pin(async { Ok(()) });
                 }
                 _ => {
                     let notify = self.notify.clone();
-                    run_block_on(async move {
+                    fluvio_future::task::run_block_on(async move {
                         notify.notified().await;
                     });
                 }
@@ -193,7 +213,7 @@ impl ConsumerStream for ConsumerWithRetry {
                 }
                 _ => {
                     let notify = self.notify.clone();
-                    run_block_on(async move {
+                    fluvio_future::task::run_block_on(async move {
                         notify.notified().await;
                     });
                 }
