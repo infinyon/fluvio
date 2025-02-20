@@ -3,6 +3,7 @@
 mod config;
 mod stream;
 mod offset;
+mod retry;
 
 use std::sync::Arc;
 
@@ -32,9 +33,10 @@ use crate::offset::{Offset, fetch_offsets};
 use crate::spu::{SpuDirectory, SpuSocketPool};
 
 pub use config::{ConsumerConfig, ConsumerConfigBuilder};
-pub use config::{ConsumerConfigExt, ConsumerConfigExtBuilder, OffsetManagementStrategy};
+pub use config::{ConsumerConfigExt, ConsumerConfigExtBuilder, OffsetManagementStrategy, RetryMode};
 pub use stream::{ConsumerStream, MultiplePartitionConsumerStream, SinglePartitionConsumerStream};
 pub use offset::ConsumerOffset;
+pub use retry::ConsumerWithRetry;
 
 pub use fluvio_protocol::record::ConsumerRecord as Record;
 pub use fluvio_spu_schema::server::smartmodule::SmartModuleInvocation;

@@ -7,6 +7,7 @@ use std::sync::Arc;
 
 use libc::c_void;
 use tracing::debug;
+use tracing::info;
 use tracing::instrument;
 use tracing::trace;
 use tracing::error;
@@ -43,6 +44,7 @@ unsafe impl Sync for MutLogIndex {}
 unsafe impl Send for MutLogIndex {}
 
 impl MutLogIndex {
+    #[instrument(skip(option))]
     pub async fn create(
         base_offset: Offset,
         option: Arc<SharedReplicaConfig>,
@@ -58,7 +60,7 @@ impl MutLogIndex {
 
         let max_index_interval = option.index_max_interval_bytes.get_consistent();
 
-        debug!(
+        info!(
             ?index_file_path,
             index_max_bytes = option.index_max_bytes.get(),
             index_max_interval_bytes = option.index_max_interval_bytes.get(),

@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-smartengine"
-version = "0.8.4"
+version = "0.8.5"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -38,3 +38,4 @@ fluvio-smartmodule = { workspace = true, default-features = false }
 
 [dev-dependencies]
 fluvio-future = { workspace = true, default-features = false, features = ["task"] }
+serde_json = { workspace = true }

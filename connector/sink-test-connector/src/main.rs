@@ -54,7 +54,7 @@ async fn process_item(
     stream: &mut impl ConsumerStream,
 ) -> Result<()> {
     sink.send(str).await?;
-    stream.offset_commit()?;
+    stream.offset_commit().await?;
     stream.offset_flush().await?;
     Ok(())
 }

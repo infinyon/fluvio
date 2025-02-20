@@ -10,6 +10,7 @@ use std::time::Instant;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 
+use tracing::info;
 use tracing::instrument;
 use tracing::{debug, trace};
 use futures_lite::io::AsyncWriteExt;
@@ -79,17 +80,18 @@ fn get_flush_policy_from_config(option: &SharedReplicaConfig) -> FlushPolicy {
 }
 
 impl MutFileRecords {
+    #[instrument(skip(option))]
     pub async fn create(
         base_offset: Offset,
         option: Arc<SharedReplicaConfig>,
     ) -> Result<MutFileRecords, BoundedFileSinkError> {
         let log_path = generate_file_name(&option.base_dir, base_offset, MESSAGE_LOG_EXTENSION);
         let max_len = option.segment_max_bytes.get();
-        debug!(log_path = ?log_path, max_len = "creating log at");
+        info!(log_path = ?log_path, max_len = "creating log file");
         let file = fluvio_future::fs::util::open_read_append(log_path.clone()).await?;
         let metadata = file.metadata().await?;
         let len = metadata.len() as u32;
-        debug!(len, "log created");
+        info!(len, "log file created");
         Ok(MutFileRecords {
             base_offset,
             file,

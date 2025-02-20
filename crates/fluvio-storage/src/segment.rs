@@ -5,7 +5,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use tracing::{debug, trace, instrument, info, error};
-use anyhow::{Result};
+use anyhow::Result;
 
 use fluvio_future::fs::remove_file;
 use fluvio_future::file_slice::AsyncFileSlice;
@@ -20,9 +20,9 @@ use crate::index::Index;
 use crate::records::FileRecords;
 use crate::mut_records::MutFileRecords;
 use crate::records::FileRecordsSlice;
-use crate::config::{SharedReplicaConfig};
+use crate::config::SharedReplicaConfig;
 use crate::StorageError;
-use crate::batch::{FileBatchStream};
+use crate::batch::FileBatchStream;
 use crate::index::OffsetPosition;
 use crate::validator::LogValidationError;
 
@@ -303,11 +303,12 @@ impl Segment<LogIndex, FileRecordsSlice> {
 impl Segment<MutLogIndex, MutFileRecords> {
     // create segment on base directory
 
+    #[instrument(skip(option))]
     pub async fn create(
         base_offset: Offset,
         option: Arc<SharedReplicaConfig>,
     ) -> Result<MutableSegment, StorageError> {
-        debug!(base_offset, "creating new active segment");
+        info!(base_offset, "creating new active segment");
         let msg_log = MutFileRecords::create(base_offset, option.clone()).await?;
 
         let index = MutLogIndex::create(base_offset, option.clone()).await?;
@@ -385,8 +386,8 @@ impl Segment<MutLogIndex, MutFileRecords> {
         self.index.shrink().await
     }
 
-    // perform any action during roll over
-    pub async fn roll_over(&mut self) -> Result<(), IoError> {
+    // close this segment as writeable
+    pub async fn close(&mut self) -> Result<(), IoError> {
         self.index.shrink().await
     }
 

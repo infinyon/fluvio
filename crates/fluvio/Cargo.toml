@@ -1,6 +1,6 @@
 [package]
 name = "fluvio"
-version = "0.25.0"
+version = "0.26.0"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -25,6 +25,7 @@ nightly = []
 unstable = []
 
 [dependencies]
+adaptive_backoff = { workspace = true }
 async-channel = { workspace = true }
 async-lock = { workspace = true }
 async-trait = { workspace = true }

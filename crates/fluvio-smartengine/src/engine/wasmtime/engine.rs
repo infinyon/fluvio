@@ -150,11 +150,12 @@ impl SmartModuleChainInstance {
             for instance in instances {
                 // pass raw inputs to transform instance
                 // each raw input may result in multiple records
+                let time = std::time::Instant::now();
                 self.store.top_up_fuel();
                 let output = instance.process(next_input, &mut self.store)?;
                 let fuel_used = self.store.get_used_fuel();
                 debug!(fuel_used, "fuel used");
-                metric.add_fuel_used(fuel_used);
+                metric.add_fuel_used(fuel_used, time.elapsed());
 
                 if let Some(ref smerr) = output.error {
                     // encountered error, we stop processing and return partial output
@@ -168,6 +169,7 @@ impl SmartModuleChainInstance {
                 }
             }
 
+            let time = std::time::Instant::now();
             self.store.top_up_fuel();
             let output = last.process(next_input, &mut self.store)?;
             if let Some(ref smerr) = output.error {
@@ -175,7 +177,7 @@ impl SmartModuleChainInstance {
             }
             let fuel_used = self.store.get_used_fuel();
             debug!(fuel_used, "fuel used");
-            metric.add_fuel_used(fuel_used);
+            metric.add_fuel_used(fuel_used, time.elapsed());
             let records_out = output.successes.len();
             metric.add_records_out(records_out as u64);
             debug!(records_out, "sm records out");
@@ -206,6 +208,7 @@ impl SmartModuleChainInstance {
                 let input: SmartModuleInput =
                     SmartModuleInput::try_from_records(records, instance.version())?;
 
+                let time = std::time::Instant::now();
                 metrics.add_bytes_in(input.raw_bytes().len() as u64);
                 self.store.top_up_fuel();
 
@@ -213,7 +216,7 @@ impl SmartModuleChainInstance {
                 let fuel_used = self.store.get_used_fuel();
 
                 debug!(fuel_used, "fuel used");
-                metrics.add_fuel_used(fuel_used);
+                metrics.add_fuel_used(fuel_used, time.elapsed());
                 result?;
             }
         }

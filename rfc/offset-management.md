@@ -81,7 +81,7 @@ async fn offset_example() -> Result<()> {
         if some_condition {
             break;
         }
-        stream.offset_commit();
+        stream.offset_commit().await?;
     }
 
     // synchronously flush for shutdown (or none if intentionally ending processing)

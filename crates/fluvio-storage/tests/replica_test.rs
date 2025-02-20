@@ -62,15 +62,10 @@ async fn setup_replica() -> Result<FileReplica, StorageError> {
 
     ensure_clean_dir(&option.base_dir);
 
-    let mut replica = FileReplica::create_or_load_with_storage(
-        TOPIC_NAME,
-        0,
-        START_OFFSET,
-        option,
-        storage_config(),
-    )
-    .await
-    .expect("test replica");
+    let mut replica =
+        FileReplica::create_or_load_inner(TOPIC_NAME, 0, START_OFFSET, option, storage_config())
+            .await
+            .expect("test replica");
     replica
         .write_recordset(&mut create_records(2), false)
         .await
