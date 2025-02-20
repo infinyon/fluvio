@@ -286,7 +286,7 @@ impl GenerateCmd {
             ..Default::default()
         };
 
-        generate(args).map_err(Error::from)?;
+        generate(args)?;
 
         Ok(())
     }
