@@ -117,9 +117,11 @@ pub struct TopicProducerConfig {
     #[builder(default = "default_delivery()")]
     pub(crate) delivery_semantic: DeliverySemantic,
 
+    /// SmartModules that will be invoked by each record produced.
     #[builder(default)]
     pub(crate) smartmodules: Vec<SmartModuleInvocation>,
 
+    /// Callback that will be called after the record is sent to the server.
     #[builder(setter(into, strip_option), default)]
     pub(crate) callback: Option<SharedProducerCallback>,
 }

@@ -236,6 +236,7 @@ impl RecordAccumulator {
     }
 }
 
+/// An event that is triggered when a batch is full.
 #[derive(Debug)]
 pub struct ProduceCompletionBatchEvent {
     pub bytes_size: u64,
@@ -245,7 +246,12 @@ pub struct ProduceCompletionBatchEvent {
     pub elapsed: Duration,
 }
 
+/// A shared trait object for the producer callback.
 pub type SharedProducerCallback = Arc<dyn ProducerCallback + Send + Sync>;
+
+/// A trait for the producer callback.
+///
+/// The producer callback is called when a batch of records is successfully produced.
 pub trait ProducerCallback {
     fn finished(&self, item: ProduceCompletionBatchEvent) -> BoxFuture<'_, anyhow::Result<()>>;
 }
