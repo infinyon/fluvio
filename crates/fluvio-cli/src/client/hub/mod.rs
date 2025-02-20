@@ -2,6 +2,7 @@ pub use cmd::HubCmd;
 
 mod connector;
 mod smartmodule;
+pub use smartmodule::{download_local, download_cluster};
 
 mod cmd {
     use std::sync::Arc;
