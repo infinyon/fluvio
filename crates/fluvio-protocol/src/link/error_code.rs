@@ -122,6 +122,9 @@ pub enum ErrorCode {
     #[fluvio(tag = 3004)]
     #[error("the offset management is disabled for the stream")]
     OffsetManagementDisabled,
+    #[fluvio(tag = 3005)]
+    #[error("max retry attempts reached")]
+    MaxRetryReached,
 
     // Managed Connector Errors
     #[fluvio(tag = 5000)]

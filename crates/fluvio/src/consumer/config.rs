@@ -53,6 +53,14 @@ pub enum OffsetManagementStrategy {
     Auto,
 }
 
+#[derive(Debug, Default, Clone, PartialEq)]
+pub enum RetryMode {
+    Disabled,
+    TryUntil(u32),
+    #[default]
+    TryForever,
+}
+
 #[derive(Debug, Builder, Clone)]
 #[builder(build_fn(private, name = "build_impl"))]
 pub struct ConsumerConfigExt {
@@ -70,13 +78,15 @@ pub struct ConsumerConfigExt {
     #[builder(default = "DEFAULT_OFFSET_FLUSH_PERIOD")]
     pub offset_flush: Duration,
     #[builder(default)]
-    disable_continuous: bool,
+    pub disable_continuous: bool,
     #[builder(default = "*MAX_FETCH_BYTES")]
     pub max_bytes: i32,
     #[builder(default)]
     pub isolation: Isolation,
     #[builder(default)]
     pub smartmodule: Vec<SmartModuleInvocation>,
+    #[builder(default)]
+    pub retry_mode: RetryMode,
 }
 
 impl ConsumerConfigExt {
@@ -105,6 +115,7 @@ impl ConsumerConfigExt {
             smartmodule,
             offset_strategy,
             offset_flush,
+            retry_mode: _,
         } = self;
 
         let config = ConsumerConfig {
@@ -162,6 +173,7 @@ impl From<ConsumerConfigExt> for ConsumerConfig {
             max_bytes,
             isolation,
             smartmodule,
+            retry_mode: _,
         } = value;
 
         Self {

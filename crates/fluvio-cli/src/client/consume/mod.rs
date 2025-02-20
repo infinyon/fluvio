@@ -490,6 +490,10 @@ mod cmd {
                                         continue;
                                     }
                                     */
+                                    Err(ErrorCode::MaxRetryReached) => {
+                                        eprintln!("Max limit of retry connection reached");
+                                        break;
+                                    }
                                     Err(other) => return Err(other.into()),
                                 };
 
