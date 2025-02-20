@@ -144,7 +144,6 @@ impl Stream for ConsumerWithRetry {
 }
 
 impl ConsumerStream for ConsumerWithRetry {
-    /// TODO: rework this as an async method.
     #[cfg(not(target_arch = "wasm32"))]
     fn offset_commit(&mut self) -> BoxFuture<'_, Result<(), ErrorCode>> {
         let notify = self.notify.clone();
