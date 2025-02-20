@@ -86,7 +86,7 @@ impl GenerateCmd {
             ..Default::default()
         };
 
-        let _gen_dir = generate(args).map_err(Error::from)?;
+        let _gen_dir = generate(args)?;
 
         Ok(())
     }
