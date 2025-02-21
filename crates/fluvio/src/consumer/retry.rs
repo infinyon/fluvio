@@ -8,7 +8,6 @@ use anyhow::Result;
 use adaptive_backoff::prelude::{
     Backoff, BackoffBuilder, ExponentialBackoff, ExponentialBackoffBuilder,
 };
-use futures_util::future::BoxFuture;
 use futures_util::Stream;
 use futures_util::StreamExt;
 use tokio::sync::Notify;
@@ -20,14 +19,14 @@ use fluvio_sc_schema::errors::ErrorCode;
 
 use crate::consumer::RetryMode;
 use crate::{Fluvio, FluvioConfig, Offset};
-use super::{ConsumerConfigExt, ConsumerStream};
+use super::{ConsumerConfigExt, ConsumerStream, ConsumerBoxFuture};
 
 pub const SPAN_RETRY: &str = "fluvio::retry";
 pub const BACKOFF_MIN_DURATION: Duration = Duration::from_secs(1);
 pub const BACKOFF_MAX_DURATION: Duration = Duration::from_secs(30);
 pub const BACKOFF_FACTOR: f64 = 1.1;
 
-/// Type alias for a consumer stream with conditional `Send` support.
+/// Type alias for the consumer record stream.
 #[cfg(target_arch = "wasm32")]
 type BoxConsumerStream =
     Pin<Box<dyn ConsumerStream<Item = Result<ConsumerRecord, ErrorCode>> + 'static>>;
@@ -35,24 +34,26 @@ type BoxConsumerStream =
 type BoxConsumerStream =
     Pin<Box<dyn ConsumerStream<Item = Result<ConsumerRecord, ErrorCode>> + Send + 'static>>;
 
-/// Type alias for a pending future with conditional `Send` support.
+/// Type alias for the future returned by our retry logic.
 #[cfg(target_arch = "wasm32")]
-type BoxPendingFuture = Pin<
+type BoxConsumerFuture = Pin<
     Box<
         dyn Future<
-                Output = Option<
-                    Result<(ConsumerRecord, BoxConsumerStream, Option<i64>), ErrorCode>,
-                >,
+                Output = (
+                    BoxConsumerStream,
+                    Option<Result<(ConsumerRecord, Option<i64>), ErrorCode>>,
+                ),
             > + 'static,
     >,
 >;
 #[cfg(not(target_arch = "wasm32"))]
-type BoxPendingFuture = Pin<
+type BoxConsumerFuture = Pin<
     Box<
         dyn Future<
-                Output = Option<
-                    Result<(ConsumerRecord, BoxConsumerStream, Option<i64>), ErrorCode>,
-                >,
+                Output = (
+                    BoxConsumerStream,
+                    Option<Result<(ConsumerRecord, Option<i64>), ErrorCode>>,
+                ),
             > + Send
             + 'static,
     >,
@@ -67,21 +68,24 @@ pub struct ConsumerWithRetryInner {
 
 /// The internal state of our consumer.
 enum ConsumerState {
-    /// An active stream is available.
-    Current(BoxConsumerStream),
-    /// A pending future is running (e.g. while reconnecting).
-    Pending(BoxPendingFuture),
+    /// The stream is idle and ready to consume.
+    Idle,
+    /// The stream is currently processing a task.
+    Task(BoxConsumerFuture),
     /// The stream has terminated.
     Terminated,
 }
 
 /// A consumer stream that automatically retries on failure.
 ///
-/// This version uses a state machine plus a notification primitive to signal
-/// when the state changes. (See offset_flush and offset_commit below.)
+/// In this refactored version we remove the mutex by taking ownership of
+/// the consumer stream whenever we start a new retry task. When the task finishes,
+/// the stream is returned.
 pub struct ConsumerWithRetry {
     inner: ConsumerWithRetryInner,
     state: ConsumerState,
+    /// The consumer stream is stored directly (inside an Option for ownership transfer).
+    stream: Option<BoxConsumerStream>,
     notify: Arc<Notify>,
 }
 
@@ -90,70 +94,79 @@ impl ConsumerWithRetry {
         self.state = new_state;
         self.notify.notify_one();
     }
+
+    fn set_idle(&mut self) {
+        self.change_state(ConsumerState::Idle);
+        self.notify.notify_one();
+    }
+
+    fn set_terminated(&mut self) {
+        self.change_state(ConsumerState::Terminated);
+        self.notify.notify_one();
+    }
+
+    fn set_task(&mut self, task: BoxConsumerFuture) {
+        self.change_state(ConsumerState::Task(task));
+    }
 }
 
 impl Stream for ConsumerWithRetry {
     type Item = Result<ConsumerRecord, ErrorCode>;
 
-    fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-        // We use a loop so that after a state transition we immediately poll again.
-        let this = self.get_mut();
+    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         loop {
-            match &mut this.state {
+            match &mut self.state {
                 ConsumerState::Terminated => return Poll::Ready(None),
-                ConsumerState::Current(_) => {
-                    // Transition into Pending so we can take ownership of the stream.
-                    let stream = match std::mem::replace(&mut this.state, ConsumerState::Terminated)
-                    {
-                        ConsumerState::Current(s) => s,
-                        _ => unreachable!(),
-                    };
-
-                    let client = Arc::clone(&this.inner.fluvio_client);
-                    let new_state = ConsumerState::Pending(Box::pin(Self::consumer_with_retry(
-                        this.inner.clone(),
-                        client,
-                        stream,
-                    )));
-
-                    this.change_state(new_state);
-                    // Loop to poll the new pending future.
-                }
-                ConsumerState::Pending(pending) => {
-                    match pending.as_mut().poll(cx) {
-                        Poll::Ready(Some(Ok((record, new_stream, new_offset)))) => {
-                            this.inner.next_offset_to_read = new_offset;
-                            this.change_state(ConsumerState::Current(new_stream));
-                            return Poll::Ready(Some(Ok(record)));
-                        }
-                        Poll::Ready(Some(Err(e))) => {
-                            // Transition back to Idle with a dummy stream.
-                            this.notify.notify_one();
-                            return Poll::Ready(Some(Err(e)));
-                        }
-                        Poll::Ready(None) => {
-                            this.change_state(ConsumerState::Terminated);
-                            return Poll::Ready(None);
-                        }
-                        Poll::Pending => return Poll::Pending,
+                ConsumerState::Idle => {
+                    // Take ownership of the stream and start a new retry task.
+                    if let Some(stream) = self.stream.take() {
+                        let client = Arc::clone(&self.inner.fluvio_client);
+                        let future = Self::consumer_with_retry(self.inner.clone(), client, stream);
+                        self.set_task(Box::pin(future));
+                    } else {
+                        // If the stream is missing, treat as terminated.
+                        self.set_terminated();
+                        return Poll::Ready(None);
                     }
                 }
+                ConsumerState::Task(fut) => match fut.as_mut().poll(cx) {
+                    Poll::Ready((new_stream, opt_result)) => {
+                        self.stream = Some(new_stream);
+                        self.set_idle();
+                        match opt_result {
+                            Some(Ok((record, new_offset))) => {
+                                self.inner.next_offset_to_read = new_offset;
+                                return Poll::Ready(Some(Ok(record)));
+                            }
+                            Some(Err(e)) => {
+                                self.notify.notify_one();
+                                return Poll::Ready(Some(Err(e)));
+                            }
+                            None => {
+                                self.set_terminated();
+                                return Poll::Ready(None);
+                            }
+                        }
+                    }
+                    Poll::Pending => return Poll::Pending,
+                },
             }
         }
     }
 }
 
 impl ConsumerStream for ConsumerWithRetry {
-    #[cfg(not(target_arch = "wasm32"))]
-    fn offset_commit(&mut self) -> BoxFuture<'_, Result<(), ErrorCode>> {
+    fn offset_commit(&mut self) -> ConsumerBoxFuture {
         let notify = self.notify.clone();
         Box::pin(async move {
             loop {
                 match self.state {
-                    ConsumerState::Current(ref mut stream) => return stream.offset_commit().await,
-                    ConsumerState::Terminated => {
-                        warn!("offset_commit called but stream is terminated");
-                        return Ok(());
+                    ConsumerState::Idle | ConsumerState::Terminated => {
+                        if let Some(ref mut stream) = self.stream {
+                            return stream.offset_commit().await;
+                        } else {
+                            return Err(ErrorCode::Other("Stream not available".to_string()));
+                        }
                     }
                     _ => {
                         notify.notified().await;
@@ -163,35 +176,17 @@ impl ConsumerStream for ConsumerWithRetry {
         })
     }
 
-    #[cfg(target_arch = "wasm32")]
-    fn offset_commit(&mut self) -> BoxFuture<'_, Result<(), ErrorCode>> {
-        loop {
-            match self.state {
-                ConsumerState::Current(ref mut stream) => return stream.offset_commit(),
-                ConsumerState::Terminated => {
-                    warn!("offset_commit called but stream is terminated");
-                    return Box::pin(async { Ok(()) });
-                }
-                _ => {
-                    let notify = self.notify.clone();
-                    fluvio_future::task::run_block_on(async move {
-                        notify.notified().await;
-                    });
-                }
-            }
-        }
-    }
-
-    #[cfg(not(target_arch = "wasm32"))]
-    fn offset_flush(&mut self) -> BoxFuture<'_, Result<(), ErrorCode>> {
+    fn offset_flush(&mut self) -> ConsumerBoxFuture {
         let notify = self.notify.clone();
         Box::pin(async move {
             loop {
                 match self.state {
-                    ConsumerState::Current(ref mut stream) => return stream.offset_flush().await,
-                    ConsumerState::Terminated => {
-                        warn!("offset_flush called but stream is terminated");
-                        return Ok(());
+                    ConsumerState::Idle | ConsumerState::Terminated => {
+                        if let Some(ref mut stream) = self.stream {
+                            return stream.offset_flush().await;
+                        } else {
+                            return Err(ErrorCode::Other("Stream not available".to_string()));
+                        }
                     }
                     _ => {
                         notify.notified().await;
@@ -199,25 +194,6 @@ impl ConsumerStream for ConsumerWithRetry {
                 }
             }
         })
-    }
-
-    #[cfg(target_arch = "wasm32")]
-    fn offset_flush(&mut self) -> BoxFuture<'_, Result<(), ErrorCode>> {
-        loop {
-            match self.state {
-                ConsumerState::Current(ref mut stream) => return stream.offset_flush(),
-                ConsumerState::Terminated => {
-                    warn!("offset_flush called but stream is terminated");
-                    return Box::pin(async { Ok(()) });
-                }
-                _ => {
-                    let notify = self.notify.clone();
-                    fluvio_future::task::run_block_on(async move {
-                        notify.notified().await;
-                    });
-                }
-            }
-        }
     }
 }
 
@@ -234,7 +210,8 @@ impl ConsumerWithRetry {
                 next_offset_to_read: None,
                 consumer_config: config,
             },
-            state: ConsumerState::Current(boxed_stream),
+            state: ConsumerState::Idle,
+            stream: Some(boxed_stream),
             notify: Arc::new(Notify::new()),
         })
     }
@@ -247,31 +224,37 @@ impl ConsumerWithRetry {
     async fn consumer_with_retry(
         inner: ConsumerWithRetryInner,
         fluvio_client: Arc<Fluvio>,
-        mut current_stream: BoxConsumerStream,
-    ) -> Option<Result<(ConsumerRecord, BoxConsumerStream, Option<i64>), ErrorCode>> {
+        mut stream: BoxConsumerStream,
+    ) -> (
+        BoxConsumerStream,
+        Option<Result<(ConsumerRecord, Option<i64>), ErrorCode>>,
+    ) {
         let mut attempts: u32 = 0;
         let mut backoff = match create_backoff() {
             Ok(b) => b,
             Err(_) => {
-                return Some(Err(ErrorCode::Other("Error creating backoff".to_string())));
+                return (
+                    stream,
+                    Some(Err(ErrorCode::Other("Error creating backoff".to_string()))),
+                );
             }
         };
 
         loop {
             // Try to retrieve the next record.
-            if let Some(record_result) = current_stream.as_mut().next().await {
+            if let Some(record_result) = stream.as_mut().next().await {
                 match record_result {
                     Ok(record) => {
                         let new_offset = Some(record.offset + 1);
                         if attempts > 0 {
                             debug!(target: SPAN_RETRY, "Record produced successfully after reconnect");
                         }
-                        return Some(Ok((record, current_stream, new_offset)));
+                        return (stream, Some(Ok((record, new_offset))));
                     }
                     Err(e) => {
                         warn!(target: SPAN_RETRY, "Error consuming record: {}", e);
                         if let RetryMode::Disabled = inner.consumer_config.retry_mode {
-                            return Some(Err(e));
+                            return (stream, Some(Err(e)));
                         }
                     }
                 }
@@ -279,7 +262,7 @@ impl ConsumerWithRetry {
 
             // If continuous consumption is disabled, end the stream.
             if inner.consumer_config.disable_continuous {
-                return None;
+                return (stream, None);
             }
 
             // Wait before retrying.
@@ -292,7 +275,7 @@ impl ConsumerWithRetry {
                     Ok(off) => off,
                     Err(e) => {
                         warn!(target: SPAN_RETRY, "Error creating offset: {}", e);
-                        return Some(Err(ErrorCode::OffsetOutOfRange));
+                        return (stream, Some(Err(ErrorCode::OffsetOutOfRange)));
                     }
                 }
             } else {
@@ -312,7 +295,7 @@ impl ConsumerWithRetry {
                 {
                     Ok(new_stream) => {
                         backoff.reset();
-                        current_stream = Box::pin(new_stream) as BoxConsumerStream;
+                        stream = Box::pin(new_stream);
                         info!(target: SPAN_RETRY, "Created new consumer stream with offset: {:?}", inner.next_offset_to_read);
                         break;
                     }
@@ -323,10 +306,10 @@ impl ConsumerWithRetry {
 
                         match inner.consumer_config.retry_mode {
                             RetryMode::TryUntil(max) if attempts >= max => {
-                                return Some(Err(ErrorCode::MaxRetryReached));
+                                return (stream, Some(Err(ErrorCode::MaxRetryReached)));
                             }
                             RetryMode::Disabled => {
-                                return Some(Err(ErrorCode::Other(format!("{}", e))));
+                                return (stream, Some(Err(ErrorCode::Other(format!("{}", e)))));
                             }
                             _ => {} // Continue retrying.
                         }
