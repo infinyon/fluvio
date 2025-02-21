@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-controlplane-metadata"
-edition = "2021"
+edition = "2024"
 version = "0.30.1"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Metadata definition for Fluvio control plane"
