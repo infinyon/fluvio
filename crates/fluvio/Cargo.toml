@@ -1,7 +1,7 @@
 [package]
 name = "fluvio"
 version = "0.26.0"
-edition = "2021"
+edition = "2024"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 categories = ["database"]

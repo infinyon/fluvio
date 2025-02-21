@@ -3,7 +3,7 @@ name = "sink-test-connector"
 version = "0.0.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Connector that reads data from a topic and prints to stdout"
-edition = "2021"
+edition = "2024"
 publish = false
 
 
@@ -17,4 +17,3 @@ serde = { default-features = false, features = ["derive"], workspace = true }
 
 fluvio = { path = "../../crates/fluvio/", features = ["smartengine"]}
 fluvio-connector-common = { path = "../../crates/fluvio-connector-common/", features = ["derive"] }
-
