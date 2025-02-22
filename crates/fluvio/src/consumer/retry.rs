@@ -61,7 +61,7 @@ type BoxConsumerFuture = Pin<
 
 #[derive(Clone)]
 pub struct ConsumerRetryInner {
-    fluvio_client: Arc<Fluvio>,
+    fluvio_config: FluvioConfig,
     next_offset_to_read: Option<i64>,
     consumer_config: ConsumerConfigExt,
 }
@@ -120,8 +120,7 @@ impl Stream for ConsumerRetryStream {
                 ConsumerRetryState::Idle => {
                     // Take ownership of the stream and start a new retry task.
                     if let Some(stream) = self.stream.take() {
-                        let client = Arc::clone(&self.inner.fluvio_client);
-                        let future = Self::consumer_with_retry(self.inner.clone(), client, stream);
+                        let future = Self::consumer_with_retry(self.inner.clone(), stream);
                         self.set_task(Box::pin(future));
                     } else {
                         // If the stream is missing, treat as terminated.
@@ -206,7 +205,7 @@ impl ConsumerRetryStream {
 
         Ok(Self {
             inner: ConsumerRetryInner {
-                fluvio_client: Arc::new(fluvio),
+                fluvio_config,
                 next_offset_to_read: None,
                 consumer_config: config,
             },
@@ -223,7 +222,6 @@ impl ConsumerRetryStream {
     /// updated offset are returned.
     async fn consumer_with_retry(
         inner: ConsumerRetryInner,
-        fluvio_client: Arc<Fluvio>,
         mut stream: BoxConsumerStream,
     ) -> (
         BoxConsumerStream,
@@ -288,15 +286,9 @@ impl ConsumerRetryStream {
 
             // Reconnect loop: keep trying until a new stream is created.
             loop {
-                info!(target: SPAN_RETRY, "Reconnecting to stream");
-                match fluvio_client
-                    .consumer_with_config_inner(new_config.clone())
-                    .await
-                {
+                match Self::reconnect_stream(&inner, new_config.clone(), backoff.clone()).await {
                     Ok(new_stream) => {
-                        backoff.reset();
-                        stream = Box::pin(new_stream);
-                        info!(target: SPAN_RETRY, "Created new consumer stream with offset: {:?}", inner.next_offset_to_read);
+                        stream = new_stream;
                         break;
                     }
                     Err(e) => {
@@ -317,6 +309,23 @@ impl ConsumerRetryStream {
                 }
             }
         }
+    }
+
+    async fn reconnect_stream(
+        inner: &ConsumerRetryInner,
+        new_config: ConsumerConfigExt,
+        mut backoff: ExponentialBackoff,
+    ) -> Result<BoxConsumerStream> {
+        info!(target: SPAN_RETRY, "Reconnecting to stream");
+        let fluvio_client = Fluvio::connect_with_config(&inner.fluvio_config).await?;
+
+        let new_stream = fluvio_client
+            .consumer_with_config_inner(new_config.clone())
+            .await?;
+
+        backoff.reset();
+        info!(target: SPAN_RETRY, "Created new consumer stream with offset: {:?}", inner.next_offset_to_read);
+        Ok(Box::pin(new_stream))
     }
 }
 
@@ -375,7 +384,7 @@ mod tests {
 
         let mut retry_stream = ConsumerRetryStream {
             inner: ConsumerRetryInner {
-                fluvio_client: Arc::new(Fluvio::connect().await.expect("no error")),
+                fluvio_config: FluvioConfig::new("localhost:9003".to_string()),
                 next_offset_to_read: None,
                 consumer_config: ConsumerConfigExt::builder()
                     .topic("test_topic".to_string())
