@@ -18,7 +18,7 @@ use fluvio_socket::{
 use crate::admin::FluvioAdmin;
 use crate::error::anyhow_version_error;
 use crate::consumer::{
-    ConsumerConfigExt, ConsumerOffset, ConsumerStream, ConsumerWithRetry,
+    ConsumerConfigExt, ConsumerOffset, ConsumerStream, ConsumerRetryStream,
     MultiplePartitionConsumer, MultiplePartitionConsumerStream, PartitionSelectionStrategy, Record,
 };
 use crate::metrics::ClientMetrics;
@@ -339,7 +339,7 @@ impl Fluvio {
     ) -> Result<
         impl ConsumerStream<Item = std::result::Result<Record, fluvio_protocol::link::ErrorCode>>,
     > {
-        ConsumerWithRetry::new(self.fluvio_config.clone(), config).await
+        ConsumerRetryStream::new(self.fluvio_config.clone(), config).await
     }
 
     /// Creates a new [ConsumerStream] instance without retry logic.

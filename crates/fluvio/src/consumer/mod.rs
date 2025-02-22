@@ -39,7 +39,7 @@ pub use stream::{
     ConsumerBoxFuture,
 };
 pub use offset::ConsumerOffset;
-pub use retry::ConsumerWithRetry;
+pub use retry::ConsumerRetryStream;
 
 pub use fluvio_protocol::record::ConsumerRecord as Record;
 pub use fluvio_spu_schema::server::smartmodule::SmartModuleInvocation;

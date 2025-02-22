@@ -60,14 +60,14 @@ type BoxConsumerFuture = Pin<
 >;
 
 #[derive(Clone)]
-pub struct ConsumerWithRetryInner {
+pub struct ConsumerRetryInner {
     fluvio_client: Arc<Fluvio>,
     next_offset_to_read: Option<i64>,
     consumer_config: ConsumerConfigExt,
 }
 
 /// The internal state of our consumer.
-enum ConsumerState {
+enum ConsumerRetryState {
     /// The stream is idle and ready to consume.
     Idle,
     /// The stream is currently processing a task.
@@ -81,43 +81,43 @@ enum ConsumerState {
 /// In this refactored version we remove the mutex by taking ownership of
 /// the consumer stream whenever we start a new retry task. When the task finishes,
 /// the stream is returned.
-pub struct ConsumerWithRetry {
-    inner: ConsumerWithRetryInner,
-    state: ConsumerState,
+pub struct ConsumerRetryStream {
+    inner: ConsumerRetryInner,
+    state: ConsumerRetryState,
     /// The consumer stream is stored directly (inside an Option for ownership transfer).
     stream: Option<BoxConsumerStream>,
     notify: Arc<Notify>,
 }
 
-impl ConsumerWithRetry {
-    fn change_state(&mut self, new_state: ConsumerState) {
+impl ConsumerRetryStream {
+    fn change_state(&mut self, new_state: ConsumerRetryState) {
         self.state = new_state;
         self.notify.notify_one();
     }
 
     fn set_idle(&mut self) {
-        self.change_state(ConsumerState::Idle);
+        self.change_state(ConsumerRetryState::Idle);
         self.notify.notify_one();
     }
 
     fn set_terminated(&mut self) {
-        self.change_state(ConsumerState::Terminated);
+        self.change_state(ConsumerRetryState::Terminated);
         self.notify.notify_one();
     }
 
     fn set_task(&mut self, task: BoxConsumerFuture) {
-        self.change_state(ConsumerState::Task(task));
+        self.change_state(ConsumerRetryState::Task(task));
     }
 }
 
-impl Stream for ConsumerWithRetry {
+impl Stream for ConsumerRetryStream {
     type Item = Result<ConsumerRecord, ErrorCode>;
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         loop {
             match &mut self.state {
-                ConsumerState::Terminated => return Poll::Ready(None),
-                ConsumerState::Idle => {
+                ConsumerRetryState::Terminated => return Poll::Ready(None),
+                ConsumerRetryState::Idle => {
                     // Take ownership of the stream and start a new retry task.
                     if let Some(stream) = self.stream.take() {
                         let client = Arc::clone(&self.inner.fluvio_client);
@@ -129,7 +129,7 @@ impl Stream for ConsumerWithRetry {
                         return Poll::Ready(None);
                     }
                 }
-                ConsumerState::Task(fut) => match fut.as_mut().poll(cx) {
+                ConsumerRetryState::Task(fut) => match fut.as_mut().poll(cx) {
                     Poll::Ready((new_stream, opt_result)) => {
                         self.stream = Some(new_stream);
                         self.set_idle();
@@ -155,13 +155,13 @@ impl Stream for ConsumerWithRetry {
     }
 }
 
-impl ConsumerStream for ConsumerWithRetry {
+impl ConsumerStream for ConsumerRetryStream {
     fn offset_commit(&mut self) -> ConsumerBoxFuture {
         let notify = self.notify.clone();
         Box::pin(async move {
             loop {
                 match self.state {
-                    ConsumerState::Idle | ConsumerState::Terminated => {
+                    ConsumerRetryState::Idle | ConsumerRetryState::Terminated => {
                         if let Some(ref mut stream) = self.stream {
                             return stream.offset_commit().await;
                         } else {
@@ -181,7 +181,7 @@ impl ConsumerStream for ConsumerWithRetry {
         Box::pin(async move {
             loop {
                 match self.state {
-                    ConsumerState::Idle | ConsumerState::Terminated => {
+                    ConsumerRetryState::Idle | ConsumerRetryState::Terminated => {
                         if let Some(ref mut stream) = self.stream {
                             return stream.offset_flush().await;
                         } else {
@@ -197,20 +197,20 @@ impl ConsumerStream for ConsumerWithRetry {
     }
 }
 
-impl ConsumerWithRetry {
-    /// Creates a new `ConsumerWithRetry` instance.
+impl ConsumerRetryStream {
+    /// Creates a new `ConsumerRetryStream` with the given configuration.
     pub async fn new(fluvio_config: FluvioConfig, config: ConsumerConfigExt) -> Result<Self> {
         let fluvio = Fluvio::connect_with_config(&fluvio_config).await?;
         let stream = fluvio.consumer_with_config_inner(config.clone()).await?;
         let boxed_stream: BoxConsumerStream = Box::pin(stream);
 
         Ok(Self {
-            inner: ConsumerWithRetryInner {
+            inner: ConsumerRetryInner {
                 fluvio_client: Arc::new(fluvio),
                 next_offset_to_read: None,
                 consumer_config: config,
             },
-            state: ConsumerState::Idle,
+            state: ConsumerRetryState::Idle,
             stream: Some(boxed_stream),
             notify: Arc::new(Notify::new()),
         })
@@ -222,7 +222,7 @@ impl ConsumerWithRetry {
     /// reconnects. When a record is successfully produced, the new stream and
     /// updated offset are returned.
     async fn consumer_with_retry(
-        inner: ConsumerWithRetryInner,
+        inner: ConsumerRetryInner,
         fluvio_client: Arc<Fluvio>,
         mut stream: BoxConsumerStream,
     ) -> (
@@ -335,4 +335,122 @@ async fn backoff_and_wait(backoff: &mut ExponentialBackoff) {
     info!(target: SPAN_RETRY, seconds = wait_duration.as_secs(), "Starting backoff: sleeping for duration");
     let _ = sleep(wait_duration).await;
     debug!(target: SPAN_RETRY, "Resuming after backoff");
+}
+
+#[cfg(test)]
+mod tests {
+    use std::vec::IntoIter;
+
+    use fluvio_protocol::record::Batch;
+    use fluvio_smartmodule::RecordData;
+    use fluvio_types::PartitionId;
+    use futures_util::{stream::Iter, StreamExt};
+
+    use crate::consumer::{
+        MultiplePartitionConsumerStream, OffsetManagementStrategy, SinglePartitionConsumerStream,
+        StreamToServer,
+    };
+
+    use super::*;
+
+    #[fluvio_future::test]
+    async fn test_retry_stream() {
+        //given
+        let (tx1, rx1) = async_channel::unbounded();
+        let partition_stream1 = SinglePartitionConsumerStream::new(
+            records_stream(0, ["1", "3", "5"]),
+            OffsetManagementStrategy::Manual,
+            Default::default(),
+            tx1,
+        );
+        let (tx2, rx2) = async_channel::unbounded();
+        let partition_stream2 = SinglePartitionConsumerStream::new(
+            records_stream(1, ["2", "4", "6"]),
+            OffsetManagementStrategy::Manual,
+            Default::default(),
+            tx2,
+        );
+        let multi_stream =
+            MultiplePartitionConsumerStream::new([partition_stream1, partition_stream2]);
+
+        let mut retry_stream = ConsumerRetryStream {
+            inner: ConsumerRetryInner {
+                fluvio_client: Arc::new(Fluvio::connect().await.expect("no error")),
+                next_offset_to_read: None,
+                consumer_config: ConsumerConfigExt::builder()
+                    .topic("test_topic".to_string())
+                    .offset_start(Offset::beginning())
+                    .disable_continuous(true)
+                    .offset_strategy(OffsetManagementStrategy::Manual)
+                    .offset_consumer("test_consumer".to_string())
+                    .build()
+                    .expect("no error"),
+            },
+            state: ConsumerRetryState::Idle,
+            stream: Some(Box::pin(multi_stream)),
+            notify: Arc::new(Notify::new()),
+        };
+
+        //when
+        let mut result = vec![];
+        assert!(matches!(retry_stream.state, ConsumerRetryState::Idle));
+        let next = retry_stream.next().await.unwrap().unwrap();
+        result.push(next);
+
+        //then
+        assert!(matches!(retry_stream.state, ConsumerRetryState::Idle));
+        while let Some(r) = retry_stream.next().await {
+            result.push(r.unwrap());
+        }
+
+        assert_eq!(
+            result
+                .iter()
+                .map(|r| String::from_utf8_lossy(r.as_ref()).to_string())
+                .collect::<Vec<_>>(),
+            ["1", "2", "3", "4", "5", "6"]
+        );
+        assert!(matches!(retry_stream.state, ConsumerRetryState::Terminated));
+
+        retry_stream.offset_commit().await.unwrap();
+        fluvio_future::task::spawn(async move {
+            let message = rx1.recv().await;
+            if let Ok(StreamToServer::FlushManagedOffset {
+                offset: _,
+                callback,
+            }) = message
+            {
+                callback.send(ErrorCode::None).await;
+            }
+        });
+        fluvio_future::task::spawn(async move {
+            let message = rx2.recv().await;
+            if let Ok(StreamToServer::FlushManagedOffset {
+                callback,
+                offset: _,
+            }) = message
+            {
+                callback.send(ErrorCode::None).await;
+            }
+        });
+
+        assert!(retry_stream.offset_flush().await.is_ok())
+    }
+
+    fn records_stream(
+        partition: PartitionId,
+        input: impl IntoIterator<Item = &'static str>,
+    ) -> Iter<IntoIter<Result<ConsumerRecord, ErrorCode>>> {
+        let mut records: Vec<_> = input
+            .into_iter()
+            .map(|item| fluvio_protocol::record::Record::new(RecordData::from(item.as_bytes())))
+            .collect();
+        let mut batch = Batch::default();
+        batch.add_records(&mut records);
+        let consumer_records: Vec<_> = batch
+            .into_consumer_records_iter(partition)
+            .map(Ok)
+            .collect();
+        futures_util::stream::iter(consumer_records)
+    }
 }
