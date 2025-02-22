@@ -4,7 +4,6 @@ use std::time::{Duration, SystemTime};
 
 use async_channel::Sender;
 use fluvio_protocol::{link::ErrorCode, record::ConsumerRecord as Record};
-use futures_util::future::BoxFuture;
 use futures_util::stream::select_all;
 use futures_util::{future::try_join_all, ready, FutureExt};
 use futures_util::Stream;
@@ -13,14 +12,20 @@ use tracing::{info, warn};
 use super::config::OffsetManagementStrategy;
 use super::{offset::OffsetLocalStore, StreamToServer};
 
+#[cfg(not(target_arch = "wasm32"))]
+pub type ConsumerBoxFuture<'a> = futures_util::future::BoxFuture<'a, Result<(), ErrorCode>>;
+
+#[cfg(target_arch = "wasm32")]
+pub type ConsumerBoxFuture<'a> = futures_util::future::LocalBoxFuture<'a, Result<(), ErrorCode>>;
+
 /// Extension of [`Stream`] trait with offset management capabilities.
 pub trait ConsumerStream: Stream<Item = Result<Record, ErrorCode>> + Unpin {
     /// Mark the offset of the last yelded record as committed. Depending on [`OffsetManagementStrategy`]
     /// it may require a subsequent `offset_flush()` call to take any effect.
-    fn offset_commit(&mut self) -> BoxFuture<'_, Result<(), ErrorCode>>;
+    fn offset_commit(&mut self) -> ConsumerBoxFuture<'_>;
 
     /// Send the committed offset to the server. The method waits for the server's acknowledgment before it finishes.
-    fn offset_flush(&mut self) -> BoxFuture<'_, Result<(), ErrorCode>>;
+    fn offset_flush(&mut self) -> ConsumerBoxFuture<'_>;
 }
 
 pub struct MultiplePartitionConsumerStream<T> {
@@ -114,11 +119,11 @@ impl<T> ConsumerStream for futures_util::stream::TakeUntil<T, async_channel::Rec
 where
     T: ConsumerStream,
 {
-    fn offset_commit(&mut self) -> BoxFuture<'_, Result<(), ErrorCode>> {
+    fn offset_commit(&mut self) -> ConsumerBoxFuture {
         self.get_mut().offset_commit()
     }
 
-    fn offset_flush(&mut self) -> BoxFuture<'_, Result<(), ErrorCode>> {
+    fn offset_flush(&mut self) -> ConsumerBoxFuture {
         self.get_mut().offset_flush()
     }
 }
@@ -126,11 +131,11 @@ where
 impl<T: Stream<Item = Result<Record, ErrorCode>> + Unpin> ConsumerStream
     for SinglePartitionConsumerStream<T>
 {
-    fn offset_commit(&mut self) -> BoxFuture<'_, Result<(), ErrorCode>> {
+    fn offset_commit(&mut self) -> ConsumerBoxFuture {
         Box::pin(async { self.offset_mngt.commit() })
     }
 
-    fn offset_flush(&mut self) -> BoxFuture<'_, Result<(), ErrorCode>> {
+    fn offset_flush(&mut self) -> ConsumerBoxFuture {
         Box::pin(self.offset_mngt.flush())
     }
 }
@@ -138,7 +143,7 @@ impl<T: Stream<Item = Result<Record, ErrorCode>> + Unpin> ConsumerStream
 impl<T: Stream<Item = Result<Record, ErrorCode>> + Unpin> ConsumerStream
     for MultiplePartitionConsumerStream<T>
 {
-    fn offset_commit(&mut self) -> BoxFuture<'_, Result<(), ErrorCode>> {
+    fn offset_commit(&mut self) -> ConsumerBoxFuture {
         for partition in &self.offset_mgnts {
             if let Err(err) = partition.commit() {
                 return Box::pin(async { Err(err) });
@@ -148,7 +153,7 @@ impl<T: Stream<Item = Result<Record, ErrorCode>> + Unpin> ConsumerStream
         Box::pin(async { Ok(()) })
     }
 
-    fn offset_flush(&mut self) -> BoxFuture<'_, Result<(), ErrorCode>> {
+    fn offset_flush(&mut self) -> ConsumerBoxFuture {
         let futures: Vec<_> = self.offset_mgnts.iter().map(|p| p.flush()).collect();
         Box::pin(try_join_all(futures).map(|r| r.map(|_| ())))
     }
