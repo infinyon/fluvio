@@ -236,7 +236,7 @@ deduplication:
     age: 1m
   filter:
     transform:
-      uses: infinyon/dedup-filter@0.1.0
+      uses: fluvio/dedup-bloom-filter@0.1.0
 "#;
 
         //when
@@ -373,7 +373,7 @@ compression:
             },
             filter: Filter {
                 transform: Transform {
-                    uses: "infinyon/dedup-filter@0.1.0".to_string(),
+                    uses: "fluvio/dedup-bloom-filter@0.1.0".to_string(),
                     with: Default::default(),
                 },
             },
