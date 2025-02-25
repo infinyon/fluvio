@@ -553,6 +553,8 @@ mod test {
     use super::CargoSmDependSource;
     use super::FLUVIO_SMARTMODULE_REPO;
 
+    use crate::SMARTMODULE_TOML;
+
     #[test]
     fn test_default_template() {
         let template = SmdkTemplate::default().unwrap();
@@ -568,7 +570,7 @@ mod test {
 
         let mut temp_dir = temp_dir.unwrap();
         let smart_toml =
-            temp_dir.find(|entry| entry.as_ref().unwrap().file_name().eq("SmartModule.toml"));
+            temp_dir.find(|entry| entry.as_ref().unwrap().file_name().eq(SMARTMODULE_TOML));
 
         assert!(
             smart_toml.is_some(),

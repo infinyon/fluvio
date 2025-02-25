@@ -29,7 +29,13 @@ impl SmartModuleMetadata {
         use std::fs::read_to_string;
 
         let path_ref = path.as_ref();
-        let file_str: String = read_to_string(path_ref)?;
+        let file_str: String = read_to_string(path_ref).map_err(|err| {
+            let dpath = path_ref.display();
+            IoError::new(
+                err.kind(),
+                format!("reading smartmodule metadata file {dpath}, {err}"),
+            )
+        })?;
         let metadata = toml::from_str(&file_str).map_err(|err| {
             IoError::new(
                 std::io::ErrorKind::InvalidData,
