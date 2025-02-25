@@ -16,10 +16,9 @@ use hubutil::{
 };
 
 use crate::ENV_SMDK_NOWASI;
+use crate::SMARTMODULE_TOML;
 use crate::cmd::PackageCmd;
 use crate::hub::set_hubid;
-
-pub const SMARTMODULE_TOML: &str = "SmartModule.toml";
 
 /// Publish SmartModule to SmartModule Hub
 #[derive(Debug, Parser)]
