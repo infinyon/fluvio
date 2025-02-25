@@ -56,8 +56,7 @@ impl LoadCmd {
 
         // load ./SmartModule.toml relative to the project root
         let sm_toml = package_info.package_relative_path(SMARTMODULE_TOML);
-        let pkg_metadata = SmartModuleMetadata::from_toml(sm_toml.as_path())
-            .map_err(|err| anyhow::anyhow!("loading {SMARTMODULE_TOML}, {err}"))?;
+        let pkg_metadata = SmartModuleMetadata::from_toml(sm_toml.as_path())?;
         println!("Found SmartModule package: {}", pkg_metadata.package.name);
 
         // Check for empty group
