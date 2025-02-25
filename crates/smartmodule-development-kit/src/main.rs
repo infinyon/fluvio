@@ -30,5 +30,8 @@ fn main() -> Result<()> {
 
 pub(crate) fn read_bytes_from_path(path: &PathBuf) -> Result<Vec<u8>> {
     debug!(path = ?path.display(), "Loading module");
-    std::fs::read(path).map_err(|err| anyhow::anyhow!("error reading wasm file: {}", err))
+    std::fs::read(path).map_err(|err| {
+        let dpath = path.display();
+        anyhow::anyhow!("reading wasm file {dpath}, {}", err)
+    })
 }
