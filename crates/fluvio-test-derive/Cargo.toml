@@ -2,7 +2,7 @@
 name = "fluvio-test-derive"
 version = "0.0.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
-edition = "2021"
+edition = "2024"
 description = "Fluvio Test Derive Macro"
 repository = "https://github.com/infinyon/fluvio"
 license = "Apache-2.0"

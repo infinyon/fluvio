@@ -20,7 +20,7 @@ For a quick setup using `cargo-generate`, see [the SmartModule template].
 name = "fluvio-wasm-filter"
 version = "0.1.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
-edition = "2021"
+edition = "2024"
 
 [lib]
 crate-type = ['cdylib']
