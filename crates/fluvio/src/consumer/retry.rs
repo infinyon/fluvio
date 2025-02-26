@@ -8,6 +8,7 @@ use anyhow::Result;
 use adaptive_backoff::prelude::{
     Backoff, BackoffBuilder, ExponentialBackoff, ExponentialBackoffBuilder,
 };
+use fluvio_socket::ClientConfig;
 use futures_util::Stream;
 use futures_util::StreamExt;
 use tokio::sync::Notify;
@@ -64,6 +65,7 @@ pub struct ConsumerRetryInner {
     fluvio_config: FluvioConfig,
     next_offset_to_read: Option<i64>,
     consumer_config: ConsumerConfigExt,
+    client_config: Arc<ClientConfig>,
 }
 
 /// The internal state of our consumer.
@@ -198,13 +200,18 @@ impl ConsumerStream for ConsumerRetryStream {
 
 impl ConsumerRetryStream {
     /// Creates a new `ConsumerRetryStream` with the given configuration.
-    pub async fn new(fluvio_config: FluvioConfig, config: ConsumerConfigExt) -> Result<Self> {
-        let fluvio = Fluvio::connect_with_config(&fluvio_config).await?;
+    pub async fn new(
+        fluvio: &Fluvio,
+        fluvio_config: FluvioConfig,
+        config: ConsumerConfigExt,
+    ) -> Result<Self> {
+        let client_config = fluvio.client_config();
         let stream = fluvio.consumer_with_config_inner(config.clone()).await?;
         let boxed_stream: BoxConsumerStream = Box::pin(stream);
 
         Ok(Self {
             inner: ConsumerRetryInner {
+                client_config,
                 fluvio_config,
                 next_offset_to_read: None,
                 consumer_config: config,
@@ -317,7 +324,11 @@ impl ConsumerRetryStream {
         mut backoff: ExponentialBackoff,
     ) -> Result<BoxConsumerStream> {
         info!(target: SPAN_RETRY, "Reconnecting to stream");
-        let fluvio_client = Fluvio::connect_with_config(&inner.fluvio_config).await?;
+        let fluvio_client = Fluvio::connect_with_client_config(
+            inner.client_config.recreate(),
+            &inner.fluvio_config,
+        )
+        .await?;
 
         let new_stream = fluvio_client
             .consumer_with_config_inner(new_config.clone())
@@ -384,6 +395,7 @@ mod tests {
 
         let mut retry_stream = ConsumerRetryStream {
             inner: ConsumerRetryInner {
+                client_config: Arc::new(ClientConfig::with_addr("localhost:9010".to_string())),
                 fluvio_config: FluvioConfig::new("localhost:9003".to_string()),
                 next_offset_to_read: None,
                 consumer_config: ConsumerConfigExt::builder()

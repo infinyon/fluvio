@@ -102,19 +102,11 @@ impl Fluvio {
         Self::connect_with_config(&config).await
     }
 
-    /// Creates a new Fluvio client with the given connector and configuration
-    pub async fn connect_with_connector(
-        connector: DomainConnector,
+    /// Creates a new Fluvio client with the given configurations
+    pub async fn connect_with_client_config(
+        client_config: ClientConfig,
         fluvio_config: &FluvioConfig,
     ) -> Result<Self> {
-        let mut client_config = ClientConfig::new(
-            &fluvio_config.endpoint,
-            connector,
-            fluvio_config.use_spu_local_address,
-        );
-        if let Some(client_id) = &fluvio_config.client_id {
-            client_config.set_client_id(client_id.to_owned());
-        }
         let inner_client = client_config.connect().await?;
         debug!("connected to cluster");
 
@@ -145,6 +137,22 @@ impl Fluvio {
         }
     }
 
+    /// Creates a new Fluvio client with the given connector and configuration
+    pub async fn connect_with_connector(
+        connector: DomainConnector,
+        fluvio_config: &FluvioConfig,
+    ) -> Result<Self> {
+        let mut client_config = ClientConfig::new(
+            &fluvio_config.endpoint,
+            connector,
+            fluvio_config.use_spu_local_address,
+        );
+        if let Some(client_id) = &fluvio_config.client_id {
+            client_config.set_client_id(client_id.to_owned());
+        }
+        Self::connect_with_client_config(client_config, fluvio_config).await
+    }
+
     /// lazy get spu pool
     async fn spu_pool(&self) -> Result<Arc<SpuSocketPool>> {
         self.spu_pool
@@ -156,6 +164,11 @@ impl Fluvio {
             })
             .await
             .cloned()
+    }
+
+    // get client config
+    pub(crate) fn client_config(&self) -> Arc<ClientConfig> {
+        self.config.clone()
     }
 
     /// Creates a new `TopicProducer` for the given topic name
@@ -339,7 +352,7 @@ impl Fluvio {
     ) -> Result<
         impl ConsumerStream<Item = std::result::Result<Record, fluvio_protocol::link::ErrorCode>>,
     > {
-        ConsumerRetryStream::new(self.fluvio_config.clone(), config).await
+        ConsumerRetryStream::new(self, self.fluvio_config.clone(), config).await
     }
 
     /// Creates a new [ConsumerStream] instance without retry logic.

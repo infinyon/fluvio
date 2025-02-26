@@ -172,6 +172,17 @@ impl ClientConfig {
             use_spu_local_address: self.use_spu_local_address,
         }
     }
+
+    pub fn recreate(&self) -> Self {
+        Self {
+            addr: self.addr.clone(),
+            client_id: self.client_id.clone(),
+            connector: self
+                .connector
+                .new_domain(self.connector.domain().to_owned()),
+            use_spu_local_address: self.use_spu_local_address,
+        }
+    }
 }
 
 /// wrap around versions
