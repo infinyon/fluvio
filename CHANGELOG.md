@@ -2,6 +2,23 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## Platform Version 0.16.0 - 2025-02-24
+
+### Added
+
+* Make offset_commit async ([#4402](https://github.com/infinyon/fluvio/issues/4402))
+* Consumer stream should be able to reconnect ([#4394](https://github.com/infinyon/fluvio/issues/4394))
+* Add description to producer record callback ([#4404](https://github.com/infinyon/fluvio/issues/4404))
+
+### CI
+
+* Pre release fluvio 0.16.0-dev-2 ([#4408](https://github.com/infinyon/fluvio/issues/4408))
+
+### Fixed
+
+* Commit and flush retry on other states ([#4405](https://github.com/infinyon/fluvio/issues/4405))
+* Smdk error for missing Smartmodule.toml #4412 ([#4413](https://github.com/infinyon/fluvio/issues/4413))
+
 ## Platform Version 0.15.2 - 2025-02-06
 
 ### CI
