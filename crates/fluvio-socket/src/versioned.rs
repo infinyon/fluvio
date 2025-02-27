@@ -141,6 +141,10 @@ impl ClientConfig {
         self.use_spu_local_address
     }
 
+    pub fn connector(&self) -> &DomainConnector {
+        &self.connector
+    }
+
     pub fn set_client_id(&mut self, id: impl Into<String>) {
         self.client_id = id.into();
     }

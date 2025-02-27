@@ -102,11 +102,20 @@ impl Fluvio {
         Self::connect_with_config(&config).await
     }
 
-    /// Creates a new Fluvio client with the given configurations
-    pub(crate) async fn connect_with_client_config(
-        client_config: ClientConfig,
+    /// Creates a new Fluvio client with the given connector and configuration
+    pub async fn connect_with_connector(
+        connector: DomainConnector,
         fluvio_config: &FluvioClusterConfig,
     ) -> Result<Self> {
+        let mut client_config = ClientConfig::new(
+            &fluvio_config.endpoint,
+            connector.clone(),
+            fluvio_config.use_spu_local_address,
+        );
+        if let Some(client_id) = &fluvio_config.client_id {
+            client_config.set_client_id(client_id.to_owned());
+        }
+        //Self::connect_with_client_config(client_config, fluvio_config).await
         let inner_client = client_config.connect().await?;
         debug!("connected to cluster");
 
@@ -135,22 +144,6 @@ impl Fluvio {
             let platform_version = versions.platform_version().to_string();
             Err(anyhow_version_error(&platform_version))
         }
-    }
-
-    /// Creates a new Fluvio client with the given connector and configuration
-    pub async fn connect_with_connector(
-        connector: DomainConnector,
-        fluvio_config: &FluvioClusterConfig,
-    ) -> Result<Self> {
-        let mut client_config = ClientConfig::new(
-            &fluvio_config.endpoint,
-            connector,
-            fluvio_config.use_spu_local_address,
-        );
-        if let Some(client_id) = &fluvio_config.client_id {
-            client_config.set_client_id(client_id.to_owned());
-        }
-        Self::connect_with_client_config(client_config, fluvio_config).await
     }
 
     /// lazy get spu pool

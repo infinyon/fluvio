@@ -324,8 +324,8 @@ impl ConsumerRetryStream {
         mut backoff: ExponentialBackoff,
     ) -> Result<BoxConsumerStream> {
         info!(target: SPAN_RETRY, "Reconnecting to stream");
-        let fluvio_client = Fluvio::connect_with_client_config(
-            inner.client_config.recreate(),
+        let fluvio_client = Fluvio::connect_with_connector(
+            inner.client_config.connector().clone(),
             &inner.fluvio_cluster_config,
         )
         .await?;
