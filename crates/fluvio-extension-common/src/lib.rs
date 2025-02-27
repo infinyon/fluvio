@@ -89,7 +89,7 @@ pub mod target {
 
     use anyhow::Result;
 
-    use fluvio::FluvioConfig;
+    use fluvio::FluvioClusterConfig;
     use fluvio::FluvioError;
     use fluvio::Fluvio;
     use fluvio::config::ConfigFile;
@@ -135,7 +135,7 @@ pub mod target {
         }
 
         /// try to create sc config
-        pub fn load(self) -> Result<FluvioConfig> {
+        pub fn load(self) -> Result<FluvioClusterConfig> {
             let tls = self.tls.try_into()?;
 
             use fluvio::config::TlsPolicy::*;
@@ -154,13 +154,14 @@ pub mod target {
                         .into());
                     }
 
-                    let cluster = FluvioConfig::load_with_profile(&profile)?.ok_or_else(|| {
-                        IoError::new(ErrorKind::Other, "Cluster not found for profile")
-                    })?;
+                    let cluster =
+                        FluvioClusterConfig::load_with_profile(&profile)?.ok_or_else(|| {
+                            IoError::new(ErrorKind::Other, "Cluster not found for profile")
+                        })?;
                     Ok(cluster.clone())
                 }
                 (None, Some(cluster)) => {
-                    let cluster = FluvioConfig::new(cluster).with_tls(tls);
+                    let cluster = FluvioClusterConfig::new(cluster).with_tls(tls);
                     Ok(cluster)
                 }
                 (None, None) => {

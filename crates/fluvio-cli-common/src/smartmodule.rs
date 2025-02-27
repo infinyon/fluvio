@@ -9,7 +9,7 @@ use clap::Args;
 use chrono::Utc;
 use tracing::debug;
 
-use fluvio::FluvioConfig;
+use fluvio::FluvioClusterConfig;
 use fluvio_sc_schema::smartmodule::SmartModuleApiClient;
 use fluvio_smartengine::DEFAULT_SMARTENGINE_VERSION;
 use fluvio_smartengine::metrics::SmartModuleChainMetrics;
@@ -247,7 +247,7 @@ async fn build_chain(
     config: TransformationConfig,
     lookback: Option<Lookback>,
 ) -> Result<SmartModuleChainBuilder> {
-    let client_config = FluvioConfig::load()?.try_into()?;
+    let client_config = FluvioClusterConfig::load()?.try_into()?;
     let api_client = SmartModuleApiClient::connect_with_config(client_config).await?;
     let mut chain_builder = SmartModuleChainBuilder::default();
     for transform in config.transforms {

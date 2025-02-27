@@ -5,7 +5,7 @@ use std::{
 use std::time::Duration;
 
 use fluvio::consumer::{ConsumerConfigExtBuilder, OffsetManagementStrategy};
-use fluvio::{Fluvio, FluvioConfig, Offset};
+use fluvio::{Fluvio, FluvioClusterConfig, Offset};
 use fluvio_connector_package::config::{ConsumerPartitionConfig, OffsetConfig, OffsetStrategyConfig};
 use crate::{config::ConnectorConfig, Result};
 use crate::ensure_topic_exists;
@@ -16,7 +16,7 @@ pub use fluvio::consumer::ConsumerStream;
 pub async fn consumer_stream_from_config(
     config: &ConnectorConfig,
 ) -> Result<(Fluvio, impl ConsumerStream)> {
-    let mut cluster_config = FluvioConfig::load()?;
+    let mut cluster_config = FluvioClusterConfig::load()?;
     cluster_config.client_id = Some(format!("fluvio_connector_{}", &config.meta().name()));
 
     let fluvio = Fluvio::connect_with_config(&cluster_config).await?;

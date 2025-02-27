@@ -25,13 +25,13 @@ use crate::metrics::ClientMetrics;
 use crate::producer::{TopicProducerPool, TopicProducerConfig};
 use crate::sync::MetadataStores;
 use crate::spu::{SpuPool, SpuSocketPool};
-use crate::{TopicProducer, PartitionConsumer, FluvioError, FluvioConfig};
+use crate::{TopicProducer, PartitionConsumer, FluvioError, FluvioClusterConfig};
 
 /// An interface for interacting with Fluvio streaming
 pub struct Fluvio {
     socket: SharedMultiplexerSocket,
     config: Arc<ClientConfig>,
-    fluvio_config: FluvioConfig,
+    fluvio_config: FluvioClusterConfig,
     versions: Versions,
     spu_pool: OnceCell<Arc<SpuSocketPool>>,
     metadata: MetadataStores,
@@ -56,7 +56,7 @@ impl Fluvio {
     /// # }
     /// ```
     pub async fn connect() -> Result<Self> {
-        let cluster_config = FluvioConfig::load()?;
+        let cluster_config = FluvioClusterConfig::load()?;
         Self::connect_with_config(&cluster_config).await
     }
 
@@ -65,7 +65,7 @@ impl Fluvio {
     /// # Example
     ///
     /// ```no_run
-    /// # use fluvio::{Fluvio, FluvioError, FluvioConfig};
+    /// # use fluvio::{Fluvio, FluvioError, FluvioClusterConfig};
     /// use fluvio::config::ConfigFile;
     /// # async fn do_connect_with_config() -> anyhow::Result<()> {
     /// let config_file = ConfigFile::load_default_or_new()?;
@@ -74,7 +74,7 @@ impl Fluvio {
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn connect_with_config(config: &FluvioConfig) -> Result<Self> {
+    pub async fn connect_with_config(config: &FluvioClusterConfig) -> Result<Self> {
         let connector = DomainConnector::try_from(config.tls.clone())?;
         info!(
             fluvio_crate_version = env!("CARGO_PKG_VERSION"),
@@ -88,7 +88,7 @@ impl Fluvio {
     /// # Example
     ///
     /// ```no_run
-    /// # use fluvio::{Fluvio, FluvioError, FluvioConfig};
+    /// # use fluvio::{Fluvio, FluvioError, FluvioClusterConfig};
     /// use fluvio::config::ConfigFile;
     /// # async fn do_connect_with_profile_name() -> anyhow::Result<()> {
     /// let fluvio = Fluvio::connect_with_profile("local").await?;
@@ -96,16 +96,16 @@ impl Fluvio {
     /// # }
     /// ```
     pub async fn connect_with_profile(profile: &str) -> Result<Self> {
-        let config = FluvioConfig::load_with_profile(profile)?.context(format!(
+        let config = FluvioClusterConfig::load_with_profile(profile)?.context(format!(
             "Failed to load cluster config with profile `{profile}`"
         ))?;
         Self::connect_with_config(&config).await
     }
 
     /// Creates a new Fluvio client with the given configurations
-    pub async fn connect_with_client_config(
+    pub(crate) async fn connect_with_client_config(
         client_config: ClientConfig,
-        fluvio_config: &FluvioConfig,
+        fluvio_config: &FluvioClusterConfig,
     ) -> Result<Self> {
         let inner_client = client_config.connect().await?;
         debug!("connected to cluster");
@@ -140,7 +140,7 @@ impl Fluvio {
     /// Creates a new Fluvio client with the given connector and configuration
     pub async fn connect_with_connector(
         connector: DomainConnector,
-        fluvio_config: &FluvioConfig,
+        fluvio_config: &FluvioClusterConfig,
     ) -> Result<Self> {
         let mut client_config = ClientConfig::new(
             &fluvio_config.endpoint,
@@ -592,7 +592,7 @@ mod wasm_tests {
 
     #[wasm_bindgen_test]
     async fn my_test() {
-        let config = FluvioConfig::new("ws://localhost:3000");
+        let config = FluvioClusterConfig::new("ws://localhost:3000");
         let client =
             Fluvio::connect_with_connector(Box::new(FluvioWebsocketConnector::new()), &config)
                 .await;

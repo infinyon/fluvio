@@ -29,7 +29,7 @@ use k8_client::SharedK8Client;
 use k8_client::load_and_share;
 use k8_types::K8Obj;
 use k8_types::app::deployment::DeploymentSpec;
-use fluvio::{Fluvio, FluvioConfig};
+use fluvio::{Fluvio, FluvioClusterConfig};
 use fluvio::metadata::spg::SpuGroupSpec;
 use fluvio::metadata::spu::SpuSpec;
 use fluvio::config::{TlsPolicy, TlsConfig, TlsPaths, ConfigFile};
@@ -682,7 +682,7 @@ impl ClusterInstaller {
             (external_host_and_port.clone(), None)
         };
 
-        let cluster_config = FluvioConfig::new(install_host_and_port.clone())
+        let cluster_config = FluvioClusterConfig::new(install_host_and_port.clone())
             .with_tls(self.config.client_tls_policy.clone());
         pb.set_message("🔎 Discovering Fluvio SC");
         let fluvio =

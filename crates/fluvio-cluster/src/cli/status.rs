@@ -2,7 +2,7 @@ use clap::Parser;
 use colored::Colorize;
 use anyhow::{Result, anyhow};
 
-use fluvio::{Fluvio, FluvioAdmin, FluvioConfig};
+use fluvio::{Fluvio, FluvioAdmin, FluvioClusterConfig};
 use fluvio::config::ConfigFile;
 use fluvio_controlplane_metadata::partition::PartitionSpec;
 use fluvio_controlplane_metadata::{spu::SpuSpec, topic::TopicSpec};
@@ -87,7 +87,7 @@ impl StatusOpt {
 
     async fn check_sc(
         pb: &ProgressRenderer,
-        fluvio_config: &FluvioConfig,
+        fluvio_config: &FluvioClusterConfig,
         config_file: &ConfigFile,
     ) -> Result<()> {
         pb.set_message(pad_format!(format!("{} Checking {}", "📝".bold(), "SC")));
@@ -109,7 +109,7 @@ impl StatusOpt {
         }
     }
 
-    async fn check_spus(pb: &ProgressRenderer, fluvio_config: &FluvioConfig) -> Result<()> {
+    async fn check_spus(pb: &ProgressRenderer, fluvio_config: &FluvioClusterConfig) -> Result<()> {
         pb.set_message(pad_format!(format!("{} Checking {}", "📝".bold(), "SPUs")));
 
         match FluvioAdmin::connect_with_config(fluvio_config).await {
@@ -162,7 +162,10 @@ impl StatusOpt {
             .to_string()
     }
 
-    async fn check_topics(pb: &ProgressRenderer, fluvio_config: &FluvioConfig) -> Result<()> {
+    async fn check_topics(
+        pb: &ProgressRenderer,
+        fluvio_config: &FluvioClusterConfig,
+    ) -> Result<()> {
         pb.set_message(pad_format!(format!(
             "{} Checking {}",
             "📝".bold(),

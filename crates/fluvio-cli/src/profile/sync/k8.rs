@@ -5,7 +5,7 @@ use tracing::debug;
 use anyhow::{Result, anyhow};
 
 use fluvio::config::{Profile, ConfigFile};
-use fluvio::FluvioConfig;
+use fluvio::FluvioClusterConfig;
 use k8_config::K8Config;
 use k8_client::K8Client;
 use k8_client::meta_client::MetadataClient;
@@ -81,7 +81,7 @@ pub async fn set_k8_context(opt: K8Opt, external_addr: String) -> Result<Profile
             cluster.tls = opt.tls.try_into()?;
         }
         None => {
-            let mut local_cluster = FluvioConfig::new(external_addr);
+            let mut local_cluster = FluvioClusterConfig::new(external_addr);
             local_cluster.tls = opt.tls.try_into()?;
             config.add_cluster(local_cluster, profile_name.clone());
         }

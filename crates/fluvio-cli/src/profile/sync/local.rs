@@ -3,7 +3,7 @@ use std::convert::TryInto;
 use clap::Parser;
 use anyhow::Result;
 
-use fluvio::FluvioConfig;
+use fluvio::FluvioClusterConfig;
 use fluvio::config::{ConfigFile, LOCAL_PROFILE, Profile};
 
 use crate::common::tls::TlsClientOpt;
@@ -45,7 +45,7 @@ pub fn set_local_context(local_config: LocalOpt) -> Result<String> {
             cluster.tls = local_config.tls.try_into()?;
         }
         None => {
-            let mut local_cluster = FluvioConfig::new(local_addr.clone());
+            let mut local_cluster = FluvioClusterConfig::new(local_addr.clone());
             local_cluster.tls = local_config.tls.try_into()?;
             config.add_cluster(local_cluster, LOCAL_PROFILE.to_owned());
         }

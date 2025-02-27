@@ -83,7 +83,7 @@ impl ExportOpt {
 
 #[cfg(unix)]
 fn get_tls_config(
-    fluvio_config: fluvio::config::FluvioConfig,
+    fluvio_config: fluvio::config::FluvioClusterConfig,
     cert_path: Option<String>,
     key_path: Option<String>,
     remote_id: String,
@@ -149,7 +149,7 @@ fn get_tls_config(
 
 #[cfg(not(unix))]
 fn get_tls_config(
-    _fluvio_config: fluvio::config::FluvioConfig,
+    _fluvio_config: fluvio::config::FluvioClusterConfig,
     _cert_path: Option<String>,
     _key_path: Option<String>,
     _remote_id: String,
@@ -164,7 +164,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn test_get_tls_config_on_unix() {
-        let fluvio_config = fluvio::config::FluvioConfig::new("localhost:9003".to_owned());
+        let fluvio_config = fluvio::config::FluvioClusterConfig::new("localhost:9003".to_owned());
         let cert_dir = std::env::current_dir()
             .unwrap()
             .join("..")
@@ -221,7 +221,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn test_get_tls_config_no_cert_key_when_tls_on_unix() {
-        let fluvio_config = fluvio::config::FluvioConfig::new("localhost:9003".to_owned());
+        let fluvio_config = fluvio::config::FluvioClusterConfig::new("localhost:9003".to_owned());
         let cert_dir = std::env::current_dir()
             .unwrap()
             .join("..")
@@ -256,7 +256,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn test_get_tls_config_wrong_cn_on_unix() {
-        let fluvio_config = fluvio::config::FluvioConfig::new("localhost:9003".to_owned());
+        let fluvio_config = fluvio::config::FluvioClusterConfig::new("localhost:9003".to_owned());
         let cert_dir = std::env::current_dir()
             .unwrap()
             .join("..")

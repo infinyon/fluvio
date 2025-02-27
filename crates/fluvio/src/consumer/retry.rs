@@ -19,7 +19,7 @@ use fluvio_protocol::record::ConsumerRecord;
 use fluvio_sc_schema::errors::ErrorCode;
 
 use crate::consumer::RetryMode;
-use crate::{Fluvio, FluvioConfig, Offset};
+use crate::{Fluvio, FluvioClusterConfig, Offset};
 use super::{ConsumerConfigExt, ConsumerStream, ConsumerBoxFuture};
 
 pub const SPAN_RETRY: &str = "fluvio::retry";
@@ -62,7 +62,7 @@ type BoxConsumerFuture = Pin<
 
 #[derive(Clone)]
 pub struct ConsumerRetryInner {
-    fluvio_config: FluvioConfig,
+    fluvio_cluster_config: FluvioClusterConfig,
     next_offset_to_read: Option<i64>,
     consumer_config: ConsumerConfigExt,
     client_config: Arc<ClientConfig>,
@@ -202,7 +202,7 @@ impl ConsumerRetryStream {
     /// Creates a new `ConsumerRetryStream` with the given configuration.
     pub async fn new(
         fluvio: &Fluvio,
-        fluvio_config: FluvioConfig,
+        fluvio_config: FluvioClusterConfig,
         config: ConsumerConfigExt,
     ) -> Result<Self> {
         let client_config = fluvio.client_config();
@@ -212,7 +212,7 @@ impl ConsumerRetryStream {
         Ok(Self {
             inner: ConsumerRetryInner {
                 client_config,
-                fluvio_config,
+                fluvio_cluster_config: fluvio_config,
                 next_offset_to_read: None,
                 consumer_config: config,
             },
@@ -326,7 +326,7 @@ impl ConsumerRetryStream {
         info!(target: SPAN_RETRY, "Reconnecting to stream");
         let fluvio_client = Fluvio::connect_with_client_config(
             inner.client_config.recreate(),
-            &inner.fluvio_config,
+            &inner.fluvio_cluster_config,
         )
         .await?;
 
@@ -396,7 +396,7 @@ mod tests {
         let mut retry_stream = ConsumerRetryStream {
             inner: ConsumerRetryInner {
                 client_config: Arc::new(ClientConfig::with_addr("localhost:9010".to_string())),
-                fluvio_config: FluvioConfig::new("localhost:9003".to_string()),
+                fluvio_cluster_config: FluvioClusterConfig::new("localhost:9003".to_string()),
                 next_offset_to_read: None,
                 consumer_config: ConsumerConfigExt::builder()
                     .topic("test_topic".to_string())
