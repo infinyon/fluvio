@@ -21,7 +21,7 @@ use fluvio_sc_schema::objects::{
 use fluvio_sc_schema::{AdminSpec, DeletableAdminSpec, CreatableAdminSpec, TryEncodableFrom};
 use fluvio_socket::{ClientConfig, VersionedSerialSocket, SerialFrame, MultiplexerSocket};
 
-use crate::FluvioConfig;
+use crate::FluvioClusterConfig;
 use crate::config::ConfigFile;
 use crate::error::anyhow_version_error;
 use crate::metadata::objects::{ListResponse, ListRequest};
@@ -118,7 +118,7 @@ impl FluvioAdmin {
     /// # }
     /// ```
     #[instrument(skip(config))]
-    pub async fn connect_with_config(config: &FluvioConfig) -> Result<Self> {
+    pub async fn connect_with_config(config: &FluvioClusterConfig) -> Result<Self> {
         let connector = DomainConnector::try_from(config.tls.clone())?;
         let client_config =
             ClientConfig::new(&config.endpoint, connector, config.use_spu_local_address);

@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-extension-common"
-version = "0.14.4"
+version = "0.15.0"
 edition = "2021"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Fluvio extension common"

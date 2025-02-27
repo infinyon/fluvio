@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use fluvio::FluvioConfig;
+use fluvio::FluvioClusterConfig;
 use serde::{Serialize, Deserialize};
 
 const INSTALLATION_METADATA_NAME: &str = "installation";
@@ -63,7 +63,7 @@ impl std::fmt::Display for InstallationType {
 }
 
 impl InstallationType {
-    pub fn load(config: &FluvioConfig) -> Self {
+    pub fn load(config: &FluvioClusterConfig) -> Self {
         let install = config.query_metadata_by_name(INSTALLATION_METADATA_NAME);
         let cloud = config.has_metadata(CLOUD_METADATA_NAME);
 
@@ -74,21 +74,21 @@ impl InstallationType {
         }
     }
 
-    pub fn save_to(&self, config: &mut FluvioConfig) -> anyhow::Result<()> {
+    pub fn save_to(&self, config: &mut FluvioClusterConfig) -> anyhow::Result<()> {
         config.update_metadata_by_name(INSTALLATION_METADATA_NAME, self)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use fluvio::FluvioConfig;
+    use fluvio::FluvioClusterConfig;
 
     use super::*;
 
     #[test]
     fn test_installation_in_config_load_and_update() {
         //given
-        let mut config = FluvioConfig::new("test");
+        let mut config = FluvioClusterConfig::new("test");
         let installation = InstallationType::Local;
 
         //when

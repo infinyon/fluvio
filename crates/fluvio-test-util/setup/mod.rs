@@ -9,7 +9,7 @@ mod cluster {
     use anyhow::Result;
 
     use fluvio_future::timer::sleep;
-    use fluvio::{Fluvio, FluvioConfig};
+    use fluvio::{Fluvio, FluvioClusterConfig};
 
     use crate::tls::load_tls;
     use crate::test_meta::environment::{EnvironmentSetup, EnvDetail};
@@ -57,9 +57,9 @@ mod cluster {
 
             let fluvio_config = if self.option.tls {
                 let (client, _server) = load_tls(&self.option.tls_user);
-                FluvioConfig::new(cluster_status.address()).with_tls(client)
+                FluvioClusterConfig::new(cluster_status.address()).with_tls(client)
             } else {
-                FluvioConfig::new(cluster_status.address())
+                FluvioClusterConfig::new(cluster_status.address())
             };
 
             let fluvio = Fluvio::connect_with_config(&fluvio_config).await?;

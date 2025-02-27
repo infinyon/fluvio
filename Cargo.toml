@@ -163,9 +163,9 @@ x509-parser = "0.16.0"
 # External fluvio dependencies
 fluvio_ws_stream_wasm = "0.7.0"
 fluvio-command = { version = "0.2.0" }
-fluvio-future = { version = "0.7.1", default-features = false }
+fluvio-future = { version = "0.7.2", default-features = false }
 fluvio-helm = { version = "0.4.1" }
-flv-tls-proxy = { version = "0.9.0" }
+flv-tls-proxy = { version = "0.9.1" }
 flv-util = { version = "0.5.2", default-features = false }
 k8-client = { version = "13.1.0" }
 k8-config = { version = "2.3.0" }

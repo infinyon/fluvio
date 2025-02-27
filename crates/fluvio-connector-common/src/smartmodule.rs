@@ -1,4 +1,4 @@
-use fluvio::{FluvioConfig, SmartModuleInvocation, SmartModuleKind, SmartModuleExtraParams};
+use fluvio::{FluvioClusterConfig, SmartModuleInvocation, SmartModuleKind, SmartModuleExtraParams};
 
 use crate::{config::ConnectorConfig, Result};
 
@@ -14,7 +14,7 @@ pub async fn smartmodule_chain_from_config(
     }
 
     let api_client =
-        SmartModuleApiClient::connect_with_config(FluvioConfig::load()?.try_into()?).await?;
+        SmartModuleApiClient::connect_with_config(FluvioClusterConfig::load()?.try_into()?).await?;
     let mut builder = fluvio::SmartModuleChainBuilder::default();
 
     for step in transforms {

@@ -9,7 +9,7 @@ use once_cell::sync::Lazy;
 use semver::Version;
 use tracing::{debug, error, info, instrument, warn};
 
-use fluvio::{Fluvio, FluvioConfig};
+use fluvio::{Fluvio, FluvioClusterConfig};
 use fluvio_future::{
     retry::{retry, ExponentialBackoff, RetryExt},
     timer::sleep,
@@ -38,12 +38,12 @@ enum TryConnectError {
 /// try connection to SC
 #[instrument]
 pub async fn try_connect_to_sc(
-    config: &FluvioConfig,
+    config: &FluvioClusterConfig,
     platform_version: &Version,
     pb: &ProgressRenderer,
 ) -> Option<Fluvio> {
     async fn try_connect_sc(
-        fluvio_config: &FluvioConfig,
+        fluvio_config: &FluvioClusterConfig,
         expected_version: &Version,
     ) -> Result<Fluvio, TryConnectError> {
         match Fluvio::connect_with_config(fluvio_config).await {

@@ -2,7 +2,7 @@ use std::path::PathBuf;
 use clap::Parser;
 use anyhow::Result;
 
-use fluvio::FluvioConfig;
+use fluvio::FluvioClusterConfig;
 use fluvio_controlplane_metadata::smartmodule::{SmartModuleWasm, SmartModuleSpec, SmartModuleMetadata};
 use fluvio_extension_common::target::ClusterTarget;
 use fluvio::Fluvio;
@@ -95,7 +95,7 @@ impl LoadCmd {
 }
 
 async fn create(
-    config: FluvioConfig,
+    config: FluvioClusterConfig,
     spec: SmartModuleSpec,
     id: String,
     dry_run: bool,

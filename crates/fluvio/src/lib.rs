@@ -17,7 +17,7 @@ pub mod metrics;
 pub mod spu;
 
 pub use error::FluvioError;
-pub use config::FluvioConfig;
+pub use config::{FluvioClusterConfig, FluvioConfig};
 pub use producer::{
     ProducerCallback, SharedProducerCallback, ProduceCompletionBatchEvent,
     TopicProducerConfigBuilder, TopicProducerConfig, TopicProducer, TopicProducerPool, RecordKey,

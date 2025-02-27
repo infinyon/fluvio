@@ -141,6 +141,10 @@ impl ClientConfig {
         self.use_spu_local_address
     }
 
+    pub fn connector(&self) -> &DomainConnector {
+        &self.connector
+    }
+
     pub fn set_client_id(&mut self, id: impl Into<String>) {
         self.client_id = id.into();
     }
@@ -169,6 +173,17 @@ impl ClientConfig {
             addr: self.addr.clone(),
             client_id: self.client_id.clone(),
             connector,
+            use_spu_local_address: self.use_spu_local_address,
+        }
+    }
+
+    pub fn recreate(&self) -> Self {
+        Self {
+            addr: self.addr.clone(),
+            client_id: self.client_id.clone(),
+            connector: self
+                .connector
+                .new_domain(self.connector.domain().to_owned()),
             use_spu_local_address: self.use_spu_local_address,
         }
     }

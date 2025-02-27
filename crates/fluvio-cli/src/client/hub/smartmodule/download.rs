@@ -9,7 +9,7 @@ use tracing::info;
 use anyhow::Result;
 
 use fluvio::Fluvio;
-use fluvio::FluvioConfig;
+use fluvio::FluvioClusterConfig;
 use fluvio::metadata::smartmodule::SmartModuleSpec;
 use fluvio_controlplane_metadata::smartmodule::{SmartModuleMetadata, SmartModuleWasm};
 use fluvio_extension_common::Terminal;
@@ -105,7 +105,7 @@ async fn download_local(
 }
 
 // download smartmodule from pkg to cluster
-async fn download_cluster(config: FluvioConfig, pkgfile: &str) -> Result<()> {
+async fn download_cluster(config: FluvioClusterConfig, pkgfile: &str) -> Result<()> {
     println!("... checking package");
     let pm = hubutil::package_get_meta(pkgfile)
         .map_err(|_| CliError::PackageError(format!("accessing metadata in {pkgfile}")))?;
