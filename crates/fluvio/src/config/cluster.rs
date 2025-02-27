@@ -10,6 +10,10 @@ use crate::{config::TlsPolicy, FluvioError};
 
 use super::ConfigFile;
 
+//NOTE: this is to avoid breaking changes as we rename it to FluvioClusterConfig
+/// Fluvio client configuration
+pub type FluvioConfig = FluvioClusterConfig;
+
 /// Fluvio Cluster Target Configuration
 /// This is part of profile
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
