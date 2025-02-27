@@ -31,7 +31,7 @@ use crate::{TopicProducer, PartitionConsumer, FluvioError, FluvioClusterConfig};
 pub struct Fluvio {
     socket: SharedMultiplexerSocket,
     config: Arc<ClientConfig>,
-    fluvio_config: FluvioClusterConfig,
+    cluster_config: FluvioClusterConfig,
     versions: Versions,
     spu_pool: OnceCell<Arc<SpuSocketPool>>,
     metadata: MetadataStores,
@@ -105,14 +105,14 @@ impl Fluvio {
     /// Creates a new Fluvio client with the given connector and configuration
     pub async fn connect_with_connector(
         connector: DomainConnector,
-        fluvio_config: &FluvioClusterConfig,
+        cluster_config: &FluvioClusterConfig,
     ) -> Result<Self> {
         let mut client_config = ClientConfig::new(
-            &fluvio_config.endpoint,
+            &cluster_config.endpoint,
             connector.clone(),
-            fluvio_config.use_spu_local_address,
+            cluster_config.use_spu_local_address,
         );
-        if let Some(client_id) = &fluvio_config.client_id {
+        if let Some(client_id) = &cluster_config.client_id {
             client_config.set_client_id(client_id.to_owned());
         }
         //Self::connect_with_client_config(client_config, fluvio_config).await
@@ -133,7 +133,7 @@ impl Fluvio {
             Ok(Self {
                 socket,
                 config,
-                fluvio_config: fluvio_config.clone(),
+                cluster_config: cluster_config.clone(),
                 versions,
                 spu_pool,
                 metadata,
@@ -345,7 +345,7 @@ impl Fluvio {
     ) -> Result<
         impl ConsumerStream<Item = std::result::Result<Record, fluvio_protocol::link::ErrorCode>>,
     > {
-        ConsumerRetryStream::new(self, self.fluvio_config.clone(), config).await
+        ConsumerRetryStream::new(self, self.cluster_config.clone(), config).await
     }
 
     /// Creates a new [ConsumerStream] instance without retry logic.
