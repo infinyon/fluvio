@@ -2,6 +2,16 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## Platform Version 0.16.1 - 2025-02-27
+
+### CI
+
+* Release fluvio v0.16.0 ([#4415](https://github.com/infinyon/fluvio/issues/4415))
+
+### Fixed
+
+* Retry consumer with custom domain connector ([#4417](https://github.com/infinyon/fluvio/issues/4417))
+
 ## Platform Version 0.16.0 - 2025-02-24
 
 ### Added
