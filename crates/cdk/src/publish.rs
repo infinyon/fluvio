@@ -23,6 +23,7 @@ use tracing::{debug, info};
 
 use crate::cmd::PackageCmd;
 use crate::utils::build::{BuildOpts, build_connector};
+use crate::utils::verify;
 
 pub const CONNECTOR_TOML: &str = "Connector.toml";
 
@@ -180,6 +181,9 @@ pub fn package_assemble<P: AsRef<Path>>(
         Some(target),
     )?;
     println!("Package {pkgname} created");
+    if let Err(reason) = verify::connector_ipkg(&pkgname) {
+        return Err(anyhow::anyhow!("package fault: {reason}"));
+    }
     Ok(pkgname)
 }
 

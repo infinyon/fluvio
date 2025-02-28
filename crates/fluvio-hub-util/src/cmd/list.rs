@@ -10,7 +10,7 @@ use crate::HUB_API_CONN_LIST;
 
 use super::get_pkg_list;
 
-/// List all available Connectors
+/// List available Connectors
 #[derive(Debug, Parser)]
 pub struct ConnectorHubListOpts {
     #[clap(flatten)]

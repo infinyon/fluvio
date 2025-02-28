@@ -17,7 +17,7 @@ use crate::client::ClientCmd;
 /// List available SmartModules in the hub
 #[derive(Debug, Parser)]
 pub enum SmartModuleHubSubCmd {
-    /// List all available SmartModules
+    /// List available SmartModules
     #[command(name = "list")]
     List(SmartModuleHubListOpts),
 
