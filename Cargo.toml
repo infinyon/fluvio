@@ -191,7 +191,7 @@ fluvio-sc-schema = { version = "0.25.0", path = "crates/fluvio-sc-schema", defau
 fluvio-service = { path = "crates/fluvio-service" }
 fluvio-smartengine = {  version = "0.8.0", path = "crates/fluvio-smartengine", default-features = false }
 fluvio-smartmodule = { version = "0.8.0", path = "crates/fluvio-smartmodule", default-features = false }
-fluvio-socket = { version = "0.15.1", path = "crates/fluvio-socket", default-features = false }
+fluvio-socket = { version = "0.15.2", path = "crates/fluvio-socket", default-features = false }
 fluvio-spu-schema = { version = "0.17.0", path = "crates/fluvio-spu-schema", default-features  = false }
 fluvio-storage = { path = "crates/fluvio-storage" }
 fluvio-stream-dispatcher = { version = "0.13.2", path = "crates/fluvio-stream-dispatcher" }
