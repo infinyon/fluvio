@@ -5,11 +5,11 @@ use std::path::PathBuf;
 
 use async_trait::async_trait;
 use clap::Parser;
+use fluvio::FluvioAdmin;
 use tracing::info;
 use anyhow::Result;
 
 use fluvio::Fluvio;
-use fluvio::FluvioClusterConfig;
 use fluvio::metadata::smartmodule::SmartModuleSpec;
 use fluvio_controlplane_metadata::smartmodule::{SmartModuleMetadata, SmartModuleWasm};
 use fluvio_extension_common::Terminal;
@@ -50,10 +50,13 @@ impl ClientCmd for SmartModuleDownloadHubOpts {
         _out: Arc<O>,
         _fluvio: &Fluvio,
     ) -> Result<()> {
+        let config = self.target.load()?;
+        println!("trying connection to fluvio {}", config.endpoint);
+        let fluvio = Fluvio::connect_with_config(&config).await?;
+        let admin = fluvio.admin().await;
         if self.ipkg {
             // pkgname is a package file
-            let fluvio_config = self.target.load()?;
-            download_cluster(fluvio_config, &self.pkgname).await?;
+            download_cluster(&admin, &self.pkgname).await?;
             return Ok(());
         }
         let access = get_hub_access(&self.remote)?;
@@ -63,15 +66,14 @@ impl ClientCmd for SmartModuleDownloadHubOpts {
             return Ok(());
         }
 
-        let fluvio_config = self.target.load()?;
-        download_cluster(fluvio_config, &pkgfile).await?;
+        download_cluster(&admin, &pkgfile).await?;
         Ok(())
     }
 }
 
 /// download smartmodule from hub to local fs
 /// returns path of downloaded of package
-async fn download_local(
+pub async fn download_local(
     pkgname: &str,
     access: &HubAccess,
     output: Option<PathBuf>,
@@ -105,7 +107,7 @@ async fn download_local(
 }
 
 // download smartmodule from pkg to cluster
-async fn download_cluster(config: FluvioClusterConfig, pkgfile: &str) -> Result<()> {
+pub async fn download_cluster(admin: &FluvioAdmin, pkgfile: &str) -> Result<()> {
     println!("... checking package");
     let pm = hubutil::package_get_meta(pkgfile)
         .map_err(|_| CliError::PackageError(format!("accessing metadata in {pkgfile}")))?;
@@ -143,10 +145,6 @@ async fn download_cluster(config: FluvioClusterConfig, pkgfile: &str) -> Result<
         ..Default::default()
     };
 
-    println!("trying connection to fluvio {}", config.endpoint);
-    let fluvio = Fluvio::connect_with_config(&config).await?;
-
-    let admin = fluvio.admin().await;
     admin.create(sm_id, false, spec).await?;
     println!("... cluster smartmodule install complete");
     std::fs::remove_file(pkgfile)
