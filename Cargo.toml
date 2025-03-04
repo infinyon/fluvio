@@ -155,7 +155,7 @@ uuid = { version = "1.1", features = ["serde", "v4"] }
 wasm-bindgen-test = "0.3.24"
 wasi-common = { version = "29.0.1" }
 wasmtime = { version = "29.0.1" }
-wasmparser = "0.225.0"
+wasmparser = "0.226.0"
 web-time = "1.1.0"
 which = "7.0.1"
 x509-parser = "0.16.0"
