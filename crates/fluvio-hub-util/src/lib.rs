@@ -34,4 +34,3 @@ pub const HUB_API_BPKG_AUTH: &str = concatcp!(HUB_API_V, "/bpkg-auth");
 
 // CLOUD API endpoint to return hub base url
 pub const HUB_REF_ENDPOINT: &str = "/api/v1/hubref";
-
