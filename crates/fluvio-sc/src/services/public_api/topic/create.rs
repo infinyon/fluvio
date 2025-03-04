@@ -130,7 +130,7 @@ async fn validate_topic_request<C: MetadataItem>(
                 sm_name.to_string(),
                 ErrorCode::DeduplicationSmartModuleNotLoaded,
                 Some(format!(
-                    "{}\nHint: try `fluvio hub download {sm_name}` and repeat this operation",
+                    "{}\nHint: try `fluvio hub sm download {sm_name}` and repeat this operation",
                     ErrorCode::DeduplicationSmartModuleNotLoaded
                 )),
             );

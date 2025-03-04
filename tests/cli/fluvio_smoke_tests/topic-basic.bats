@@ -23,8 +23,12 @@ setup_file() {
     TOPIC_NAME_SYSTEM=$(random_string)
     export TOPIC_NAME_SYSTEM
 
-    DEDUP_FILTER_NAME="dedup-filter"
+    TOPIC_NAME_DEDUP=$(random_string)
+    export TOPIC_NAME_DEDUP
+
+    DEDUP_FILTER_NAME="dedup-bloom-filter"
     export DEDUP_FILTER_NAME
+
 
     cat <<EOF >$TOPIC_CONFIG_PATH
 version: 0.1.0
