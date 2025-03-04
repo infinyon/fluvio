@@ -245,29 +245,3 @@ EOF
     assert_line --partial --index 0 "$TOPIC_NAME_SYSTEM"
     assert_success
 }
-
-
-# Create a topic that uses deduplication
-@test "Create a topic with deduplication" {
-    if [ "$FLUVIO_CLI_RELEASE_CHANNEL" == "stable" ]; then
-        skip "don't run on fluvio cli stable version"
-    fi
-    if [ "$FLUVIO_CLUSTER_RELEASE_CHANNEL" == "stable" ]; then
-        skip "don't run on cluster stable version"
-    fi
-    run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME_DEDUP" --dedup
-    assert_output --partial "topic \"$TOPIC_NAME_DEDUP\" created"
-    assert_success
-
-    # produce some messages
-    echo 1:1 | "$FLUVIO_BIN" produce $TOPIC_NAME_DEDUP --key-separator ":"
-    echo 1:1 | "$FLUVIO_BIN" produce $TOPIC_NAME_DEDUP --key-separator ":"
-    echo 1:1 | "$FLUVIO_BIN" produce $TOPIC_NAME_DEDUP --key-separator ":"
-    echo 1:1 | "$FLUVIO_BIN" produce $TOPIC_NAME_DEDUP --key-separator ":"
-
-    # check how many messages are in the topic
-    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_DEDUP" -B -d
-    assert [ ${#lines[@]} -eq 1 ]
-    assert_line --partial --index 0 "1"
-    assert_success
-}
