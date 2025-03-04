@@ -349,10 +349,9 @@ pub fn default_cfg_path() -> Result<PathBuf> {
     Ok(hub_cfg_path)
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 #[derive(Deserialize)]
-struct ReplyHubref {
-    hub_remote: String,
+pub struct ReplyHubref {
+    pub hub_remote: String,
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -363,7 +362,8 @@ fn get_hubref() -> Option<String> {
     if fcremote == DEFAULT_CLOUD_REMOTE {
         return None; // use default
     }
-    let hubref_url = format!("{fcremote}/api/v1/hubref");
+    let hubref_path = super::HUB_REF_ENDPOINT;
+    let hubref_url = format!("{fcremote}{hubref_path}");
     let reply: anyhow::Result<String> = run_block_on(async {
         let resp = htclient::get(&hubref_url)
             .await
