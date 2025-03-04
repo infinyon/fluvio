@@ -295,6 +295,7 @@ impl ConsumerRetryStream {
             loop {
                 match Self::reconnect_stream(&inner, new_config.clone(), backoff.clone()).await {
                     Ok(new_stream) => {
+                        info!(target: SPAN_RETRY, "Created new consumer stream with offset: {:?}", new_config.offset_start);
                         stream = new_stream;
                         break;
                     }
@@ -323,7 +324,7 @@ impl ConsumerRetryStream {
         new_config: ConsumerConfigExt,
         mut backoff: ExponentialBackoff,
     ) -> Result<BoxConsumerStream> {
-        info!(target: SPAN_RETRY, "Reconnecting to stream");
+        info!(target: SPAN_RETRY, "Reconnecting to stream consumer");
         let fluvio_client = Fluvio::connect_with_connector(
             inner.client_config.connector().clone(),
             &inner.cluster_config,
@@ -335,7 +336,6 @@ impl ConsumerRetryStream {
             .await?;
 
         backoff.reset();
-        info!(target: SPAN_RETRY, "Created new consumer stream with offset: {:?}", inner.next_offset_to_read);
         Ok(Box::pin(new_stream))
     }
 }
