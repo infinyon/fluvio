@@ -1,6 +1,9 @@
 use async_trait::async_trait;
 
-use fluvio_cluster::{ClusterConfig, ClusterInstaller, ClusterUninstallConfig, StartStatus};
+use fluvio::metadata::spg::SpuConfig;
+use fluvio_cluster::{
+    ClusterConfig, ClusterInstaller, ClusterUninstallConfig, StartStatus, DEFAULT_SPU_GROUP_NAME,
+};
 
 use crate::tls::load_tls;
 use crate::test_meta::environment::{EnvironmentSetup, EnvDetail};
@@ -43,7 +46,11 @@ impl EnvironmentDriver for K8EnvironmentDriver {
 
         builder
             .proxy_addr(self.option.proxy_addr.clone())
-            .spu_replicas(self.option.spu())
+            .with_default_spu_group(
+                DEFAULT_SPU_GROUP_NAME,
+                self.option.spu(),
+                SpuConfig::default(),
+            )
             .skip_checks(self.option.skip_checks())
             .save_profile(true)
             .hide_spinner(false);

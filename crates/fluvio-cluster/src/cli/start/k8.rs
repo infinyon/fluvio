@@ -20,8 +20,11 @@ pub async fn process_k8(opt: StartOpt, platform_version: Version, upgrade: bool)
     builder
         .namespace(opt.k8_config.namespace)
         .chart_version(opt.k8_config.chart_version)
-        .group_name(opt.k8_config.group_name)
-        .spu_replicas(opt.spu)
+        .with_default_spu_group(
+            opt.k8_config.group_name,
+            opt.spu,
+            opt.spu_config.as_spu_config(),
+        )
         .save_profile(!opt.skip_profile_creation)
         .tls(client, server)
         .tls_client_secret_name(opt.k8_config.tls_client_secret_name)
@@ -29,7 +32,6 @@ pub async fn process_k8(opt: StartOpt, platform_version: Version, upgrade: bool)
         .chart_values(opt.k8_config.chart_values)
         .hide_spinner(false)
         .upgrade(upgrade)
-        .spu_config(opt.spu_config.as_spu_config())
         .with_if(opt.skip_checks, |b| b.skip_checks(true))
         .use_k8_port_forwarding(opt.k8_config.use_k8_port_forwarding)
         .use_cluster_ip(opt.k8_config.use_cluster_ip);
