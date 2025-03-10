@@ -43,7 +43,6 @@ async fn reconnect_producer(test_driver: &TestDriver, test_case: &TestCase) {
     sleep(Duration::from_secs(ACK_WAIT)).await;
     start_spu(test_driver, leader).await;
     sleep(Duration::from_secs(ACK_WAIT)).await;
-    producer.clear_errors().await;
 
     println!("sending second record");
     producer
@@ -93,7 +92,6 @@ async fn reconnect_consumer(test_driver: &TestDriver, test_case: &TestCase) {
     sleep(Duration::from_secs(ACK_WAIT)).await;
     start_spu(test_driver, leader).await;
     sleep(Duration::from_secs(ACK_WAIT)).await;
-    producer.clear_errors().await;
 
     println!("sending second record");
     producer
