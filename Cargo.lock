@@ -3291,7 +3291,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-types"
-version = "0.5.2"
+version = "0.5.3"
 dependencies = [
  "event-listener 5.4.0",
  "fluvio-future",

@@ -1,10 +1,12 @@
 use std::sync::Arc;
-use std::time::Duration;
 
 use adaptive_backoff::prelude::{
     Backoff, BackoffBuilder, ExponentialBackoff, ExponentialBackoffBuilder,
 };
 use async_lock::RwLock;
+use fluvio_types::defaults::{
+    RECONNECT_BACKOFF_FACTOR, RECONNECT_BACKOFF_MAX_DURATION, RECONNECT_BACKOFF_MIN_DURATION,
+};
 use tracing::{debug, info, instrument, error, trace};
 
 use fluvio_protocol::record::ReplicaKey;
@@ -27,10 +29,6 @@ use super::{
 };
 use super::accumulator::{BatchEvents, BatchesDeque};
 use super::event::EventHandler;
-
-pub const BACKOFF_MIN_DURATION: Duration = Duration::from_secs(1);
-pub const BACKOFF_MAX_DURATION: Duration = Duration::from_secs(30);
-pub const BACKOFF_FACTOR: f64 = 1.1;
 
 /// Struct that is responsible for sending produce requests to the SPU in a given partition.
 pub(crate) struct PartitionProducer<S>
@@ -328,9 +326,9 @@ where
 /// Creates an exponential backoff configuration.
 fn create_backoff() -> anyhow::Result<ExponentialBackoff> {
     ExponentialBackoffBuilder::default()
-        .factor(BACKOFF_FACTOR)
-        .min(BACKOFF_MIN_DURATION)
-        .max(BACKOFF_MAX_DURATION)
+        .factor(RECONNECT_BACKOFF_FACTOR)
+        .min(RECONNECT_BACKOFF_MIN_DURATION)
+        .max(RECONNECT_BACKOFF_MAX_DURATION)
         .build()
 }
 
