@@ -34,7 +34,9 @@ pub async fn get(uri: impl AsRef<str>) -> Result<Response<Vec<u8>>> {
     use std::io::Read;
 
     let uri = uri.as_ref();
-    let req = ureq::get(uri);
+    let agent = configure_ureq_proxy()?; // Create agent with proxy
+
+    let req = agent.get(uri);
     let resp = req
         .call()
         .or_any_status()
@@ -103,6 +105,29 @@ where
         .or_any_status()
         .map_err(|e| anyhow!("error: {e}"))?;
     Ok(response.into())
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+use ureq::{Agent, AgentBuilder, Proxy};
+use std::env;
+use anyhow::Context;
+
+fn configure_ureq_proxy() -> Result<Agent> {
+    let mut agent_builder = AgentBuilder::new();
+    if let Ok(proxy_str) = env::var("HTTP_PROXY").or_else(|_| env::var("http_proxy")) {
+        let proxy = Proxy::new(proxy_str).context("Failed to create HTTP proxy")?;
+        agent_builder = agent_builder.proxy(proxy);
+    }
+    if let Ok(proxy_str) = env::var("HTTPS_PROXY").or_else(|_| env::var("https_proxy")) {
+        let proxy = Proxy::new(proxy_str).context("Failed to create HTTPS proxy")?;
+        agent_builder = agent_builder.proxy(proxy);
+    }
+    if let Ok(proxy_str) = env::var("ALL_PROXY").or_else(|_| env::var("all_proxy")) {
+        let proxy = ureq::Proxy::new(proxy_str).context("Failed to create ALL Proxy")?;
+        agent_builder = agent_builder.proxy(proxy);
+    }
+
+    Ok(agent_builder.build())
 }
 
 pub trait ResponseExt {
