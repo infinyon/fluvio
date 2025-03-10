@@ -1,3 +1,4 @@
+use tracing::warn;
 use tracing::{debug, trace, instrument};
 use anyhow::Result;
 
@@ -106,7 +107,7 @@ async fn handle_fetch_partition(
     let leader_state = match ctx.leaders_state().get(&replica_id).await {
         Some(leader_state) => leader_state,
         None => {
-            debug!("Not leader for partition:");
+            warn!(?replica_id, "not able to find leader");
             partition_response.error_code = ErrorCode::NotLeaderForPartition;
             return Ok(partition_response);
         }
