@@ -113,11 +113,24 @@ downloader() {
     local _status
     local _url="$1"; shift
     local _file="$1"; shift
+    local _curl_options
+    _curl_options=(--proto '=https' --tlsv1.2 --silent --show-error --fail --location)
+
+    # Check for proxy settings
+    if [ -n "$http_proxy" ] || [ -n "$https_proxy" ] || [ -n "$HTTP_PROXY" ] || [ -n "$HTTPS_PROXY" ]; then
+      # Prefer lowercase, then uppercase, as per curl's documentation
+      local proxy_url="${http_proxy:-${https_proxy:-${HTTP_PROXY:-$HTTPS_PROXY}}}"
+
+      if [ -n "$proxy_url" ]; then
+          _curl_options+=(--proxy "$proxy_url")
+          echo "Using proxy: $proxy_url"
+      fi
+    fi
 
     # allow trap of error
     set +e
     # Use curl for downloads
-    _err=$(curl --proto '=https' --tlsv1.2 --silent --show-error --fail --location "${_url}" --output "${_file}" 2>&1)
+    _err=$(curl "${_curl_options[@]}" "${_url}" --output "${_file}" 2>&1)
     _status=$?
     set -e
 
