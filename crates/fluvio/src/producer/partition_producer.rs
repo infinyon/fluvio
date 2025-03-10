@@ -1,5 +1,9 @@
 use std::sync::Arc;
+use std::time::Duration;
 
+use adaptive_backoff::prelude::{
+    Backoff, BackoffBuilder, ExponentialBackoff, ExponentialBackoffBuilder,
+};
 use async_lock::RwLock;
 use tracing::{debug, info, instrument, error, trace};
 
@@ -23,6 +27,10 @@ use super::{
 };
 use super::accumulator::{BatchEvents, BatchesDeque};
 use super::event::EventHandler;
+
+pub const BACKOFF_MIN_DURATION: Duration = Duration::from_secs(1);
+pub const BACKOFF_MAX_DURATION: Duration = Duration::from_secs(30);
+pub const BACKOFF_FACTOR: f64 = 1.1;
 
 /// Struct that is responsible for sending produce requests to the SPU in a given partition.
 pub(crate) struct PartitionProducer<S>
@@ -159,12 +167,7 @@ where
     /// Flush all the batches that are full or have reached the linger time.
     /// If force is set to true, flush all batches regardless of linger time.
     pub(crate) async fn flush(&self, force: bool) -> Result<()> {
-        let leader = self.current_leader().await?;
-
-        let spu_socket = self
-            .spu_pool
-            .create_serial_socket_from_leader(leader)
-            .await?;
+        let spu_socket = self.connect_spu_with_reconnect().await?;
 
         let mut batches_ready = vec![];
         {
@@ -259,6 +262,27 @@ where
         Ok(())
     }
 
+    async fn connect_spu(&self) -> Result<VersionedSerialSocket> {
+        let leader = self.current_leader().await?;
+        self.spu_pool.create_serial_socket_from_leader(leader).await
+    }
+
+    async fn connect_spu_with_reconnect(&self) -> Result<VersionedSerialSocket> {
+        let mut backoff = create_backoff().map_err(|e| FluvioError::Other(e.to_string()))?;
+        loop {
+            match self.connect_spu().await {
+                Ok(socket) => {
+                    backoff.reset();
+                    return Ok(socket);
+                }
+                Err(err) => {
+                    error!("Failed to connect to leader: {}", err);
+                    backoff_and_wait(&mut backoff).await;
+                }
+            }
+        }
+    }
+
     async fn send_to_socket(
         &self,
         socket: VersionedSerialSocket,
@@ -299,4 +323,24 @@ where
         };
         Ok((response, last_offset))
     }
+}
+
+/// Creates an exponential backoff configuration.
+fn create_backoff() -> anyhow::Result<ExponentialBackoff> {
+    ExponentialBackoffBuilder::default()
+        .factor(BACKOFF_FACTOR)
+        .min(BACKOFF_MIN_DURATION)
+        .max(BACKOFF_MAX_DURATION)
+        .build()
+}
+
+/// Waits for the duration determined by the exponential backoff.
+async fn backoff_and_wait(backoff: &mut ExponentialBackoff) {
+    let wait_duration = backoff.wait();
+    info!(
+        seconds = wait_duration.as_secs(),
+        "Starting backoff: sleeping for duration"
+    );
+    let _ = sleep(wait_duration).await;
+    debug!("Resuming after backoff");
 }
