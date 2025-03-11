@@ -2,13 +2,15 @@ use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
-use std::time::Duration;
 
 use anyhow::Result;
 use adaptive_backoff::prelude::{
     Backoff, BackoffBuilder, ExponentialBackoff, ExponentialBackoffBuilder,
 };
 use fluvio_socket::ClientConfig;
+use fluvio_types::defaults::{
+    RECONNECT_BACKOFF_FACTOR, RECONNECT_BACKOFF_MAX_DURATION, RECONNECT_BACKOFF_MIN_DURATION,
+};
 use futures_util::Stream;
 use futures_util::StreamExt;
 use tokio::sync::Notify;
@@ -23,9 +25,6 @@ use crate::{Fluvio, FluvioClusterConfig, Offset};
 use super::{ConsumerConfigExt, ConsumerStream, ConsumerBoxFuture};
 
 pub const SPAN_RETRY: &str = "fluvio::retry";
-pub const BACKOFF_MIN_DURATION: Duration = Duration::from_secs(1);
-pub const BACKOFF_MAX_DURATION: Duration = Duration::from_secs(30);
-pub const BACKOFF_FACTOR: f64 = 1.1;
 
 /// Type alias for the consumer record stream.
 #[cfg(target_arch = "wasm32")]
@@ -343,9 +342,9 @@ impl ConsumerRetryStream {
 /// Creates an exponential backoff configuration.
 fn create_backoff() -> Result<ExponentialBackoff> {
     ExponentialBackoffBuilder::default()
-        .factor(BACKOFF_FACTOR)
-        .min(BACKOFF_MIN_DURATION)
-        .max(BACKOFF_MAX_DURATION)
+        .factor(RECONNECT_BACKOFF_FACTOR)
+        .min(RECONNECT_BACKOFF_MIN_DURATION)
+        .max(RECONNECT_BACKOFF_MAX_DURATION)
         .build()
 }
 
