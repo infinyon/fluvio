@@ -118,8 +118,7 @@ downloader() {
 
     # Check for proxy settings
     if [ -n "$http_proxy" ] || [ -n "$https_proxy" ] || [ -n "$HTTP_PROXY" ] || [ -n "$HTTPS_PROXY" ]; then
-      # Prefer lowercase, then uppercase, as per curl's documentation
-      local proxy_url="${http_proxy:-${https_proxy:-${HTTP_PROXY:-$HTTPS_PROXY}}}"
+      local proxy_url="${https_proxy:-${HTTPS_PROXY:-${http_proxy:-$HTTP_PROXY}}}"
 
       if [ -n "$proxy_url" ]; then
           _curl_options+=(--proxy "$proxy_url")

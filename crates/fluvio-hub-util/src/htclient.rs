@@ -114,16 +114,7 @@ use anyhow::Context;
 
 fn configure_ureq_proxy() -> Result<Agent> {
     let mut agent_builder = AgentBuilder::new();
-    if let Ok(proxy_str) = env::var("HTTP_PROXY").or_else(|_| env::var("http_proxy")) {
-        let proxy = Proxy::new(proxy_str).context("Failed to create HTTP proxy")?;
-        agent_builder = agent_builder.proxy(proxy);
-    }
-    if let Ok(proxy_str) = env::var("HTTPS_PROXY").or_else(|_| env::var("https_proxy")) {
-        let proxy = Proxy::new(proxy_str).context("Failed to create HTTPS proxy")?;
-        agent_builder = agent_builder.proxy(proxy);
-    }
-    if let Ok(proxy_str) = env::var("ALL_PROXY").or_else(|_| env::var("all_proxy")) {
-        let proxy = ureq::Proxy::new(proxy_str).context("Failed to create ALL Proxy")?;
+    if let Some(proxy) = Proxy::try_from_env() {
         agent_builder = agent_builder.proxy(proxy);
     }
 
