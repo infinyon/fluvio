@@ -197,12 +197,14 @@ mod file_replica {
         sc_api::remove::ReplicaRemovedRequest, replica::Replica,
         spu_api::update_replica::UpdateReplicaRequest,
     };
+    use fluvio_protocol::{link::ErrorCode, record::ReplicaKey};
+    use fluvio_types::{defaults::CONSUMER_STORAGE_TOPIC, PartitionId};
     use tracing::{trace, warn};
 
     use fluvio_storage::FileReplica;
     use flv_util::actions::Actions;
 
-    use crate::core::SpecChange;
+    use crate::{core::SpecChange, kv::consumer::ConsumerOffsetKey};
 
     use super::*;
 
@@ -382,7 +384,7 @@ mod file_replica {
             outputs
         }
 
-        /// reemove leader replica
+        /// remove leader replica
         #[instrument(
             skip(self,replica),
             fields(
@@ -393,12 +395,22 @@ mod file_replica {
             // try to send message to leader controller if still exists
             if let Some(previous_state) = self.leaders_state().remove(&replica.id).await {
                 previous_state.signal_topic_deleted().await;
+
                 if let Err(err) = previous_state.remove().await {
                     error!("error: {} removing replica: {}", err, replica);
                 } else {
                     debug!(
                         replica = %replica.id,
                         "leader remove was removed"
+                    );
+                }
+
+                if let Err(err) = self.delete_consumers_offset(&replica).await {
+                    error!("error: {} deleting consumers offset: {}", err, replica);
+                } else {
+                    debug!(
+                        replica = %replica.id,
+                        "consumers offset deleted"
                     );
                 }
             } else {
@@ -409,7 +421,7 @@ mod file_replica {
             ReplicaRemovedRequest::new(replica.id, true)
         }
 
-        /// reemove leader replica
+        /// remove leader replica
         #[instrument(
             skip(self,replica),
             fields(
@@ -477,6 +489,41 @@ mod file_replica {
             if let Err(err) = self.followers_state_owned().add_replica(self, new).await {
                 error!("leader switch failed: {}", err);
             }
+        }
+
+        /// Delete consumers offset for given replica
+        async fn delete_consumers_offset(&self, replica: &Replica) -> anyhow::Result<()> {
+            let consumers_replica_id =
+                ReplicaKey::new(CONSUMER_STORAGE_TOPIC, <PartitionId as Default>::default());
+            let Some(ref replica_consumer) = self.leaders_state().get(&consumers_replica_id).await
+            else {
+                return Err(ErrorCode::PartitionNotLeader.into());
+            };
+
+            let consumer_storage = self
+                .consumer_offset()
+                .get_or_insert(replica_consumer, self.follower_notifier())
+                .await?;
+
+            let consumer_offset_keys = consumer_storage
+                .list()
+                .await?
+                .into_iter()
+                .filter_map(|(key, _)| {
+                    if key.replica_id == replica.id {
+                        let key = ConsumerOffsetKey::new(key.replica_id, key.consumer_id);
+                        Some(key)
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<ConsumerOffsetKey>>();
+
+            for key in consumer_offset_keys {
+                consumer_storage.delete(&key).await?;
+            }
+
+            Ok(())
         }
     }
 }
