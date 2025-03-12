@@ -112,10 +112,26 @@ use ureq::{Agent, AgentBuilder, Proxy};
 use std::env;
 use anyhow::Context;
 
+/// Configures a `ureq::Agent` with a proxy, if one is defined in the environment.
+//  TODO: If `ureq` version is updated to 3.0.8, you can replace this function with `try_from_env` here, see more [PR #4438]
 fn configure_ureq_proxy() -> Result<Agent> {
-    let mut agent_builder = AgentBuilder::new();
-    if let Some(proxy) = Proxy::try_from_env() {
-        agent_builder = agent_builder.proxy(proxy);
+    let agent_builder = AgentBuilder::new();
+
+    let proxy_vars = [
+        ("ALL_PROXY", "all_proxy", "ALL"),
+        ("HTTPS_PROXY", "https_proxy", "HTTPS"),
+        ("HTTP_PROXY", "http_proxy", "HTTP"),
+    ];
+
+    let proxy_creation = |proxy_str: &str, proxy_type: &str| -> Result<Proxy> {
+        Proxy::new(proxy_str).with_context(|| format!("Failed to create {} proxy", proxy_type))
+    };
+
+    for &(upper_var, lower_var, proxy_type) in &proxy_vars {
+        if let Ok(proxy_str) = env::var(upper_var).or_else(|_| env::var(lower_var)) {
+            let proxy = proxy_creation(&proxy_str, proxy_type)?;
+            return Ok(agent_builder.proxy(proxy).build());
+        }
     }
 
     Ok(agent_builder.build())
