@@ -197,7 +197,7 @@ mod file_replica {
         sc_api::remove::ReplicaRemovedRequest, replica::Replica,
         spu_api::update_replica::UpdateReplicaRequest,
     };
-    use fluvio_protocol::{link::ErrorCode, record::ReplicaKey};
+    use fluvio_protocol::record::ReplicaKey;
     use fluvio_types::{defaults::CONSUMER_STORAGE_TOPIC, PartitionId};
     use tracing::{trace, warn};
 
@@ -298,9 +298,7 @@ mod file_replica {
                 match replica_action {
                     SpecChange::Add(new_replica) => {
                         if new_replica.is_being_deleted {
-                            outputs.push(ReplicaChange::Remove(
-                                self.remove_leader_replica(new_replica).await,
-                            ));
+                            self.remove_replica(&mut outputs, new_replica).await;
                         } else if new_replica.leader == local_id {
                             // we are leader
                             if let Err(err) = self
@@ -330,23 +328,11 @@ mod file_replica {
                         }
                     }
                     SpecChange::Delete(deleted_replica) => {
-                        if deleted_replica.leader == local_id {
-                            outputs.push(ReplicaChange::Remove(
-                                self.remove_leader_replica(deleted_replica).await,
-                            ));
-                        } else {
-                            self.remove_follower_replica(deleted_replica).await;
-                        }
+                        self.remove_replica(&mut outputs, deleted_replica).await;
                     }
                     SpecChange::Mod(new_replica, old_replica) => {
                         if new_replica.is_being_deleted {
-                            if new_replica.leader == local_id {
-                                outputs.push(ReplicaChange::Remove(
-                                    self.remove_leader_replica(new_replica).await,
-                                ));
-                            } else {
-                                self.remove_follower_replica(new_replica).await
-                            }
+                            self.remove_replica(&mut outputs, new_replica).await;
                         } else {
                             // check for leader change
                             if new_replica.leader != old_replica.leader {
@@ -384,6 +370,23 @@ mod file_replica {
             outputs
         }
 
+        async fn remove_replica(&self, outputs: &mut Vec<ReplicaChange>, replica: Replica) {
+            if let Err(err) = self
+                .delete_consumers_offset_if_leader_consumer(&replica)
+                .await
+            {
+                error!("error: {} deleting consumers offset: {}", err, replica);
+            }
+
+            if replica.leader == self.local_spu_id() {
+                outputs.push(ReplicaChange::Remove(
+                    self.remove_leader_replica(replica).await,
+                ));
+            } else {
+                self.remove_follower_replica(replica).await;
+            }
+        }
+
         /// remove leader replica
         #[instrument(
             skip(self,replica),
@@ -402,15 +405,6 @@ mod file_replica {
                     debug!(
                         replica = %replica.id,
                         "leader remove was removed"
-                    );
-                }
-
-                if let Err(err) = self.delete_consumers_offset(&replica).await {
-                    error!("error: {} deleting consumers offset: {}", err, replica);
-                } else {
-                    debug!(
-                        replica = %replica.id,
-                        "consumers offset deleted"
                     );
                 }
             } else {
@@ -491,13 +485,17 @@ mod file_replica {
             }
         }
 
-        /// Delete consumers offset for given replica
-        async fn delete_consumers_offset(&self, replica: &Replica) -> anyhow::Result<()> {
+        /// Delete consumers offset for given replica if it is leader consumer
+        async fn delete_consumers_offset_if_leader_consumer(
+            &self,
+            replica: &Replica,
+        ) -> anyhow::Result<()> {
             let consumers_replica_id =
                 ReplicaKey::new(CONSUMER_STORAGE_TOPIC, <PartitionId as Default>::default());
             let Some(ref replica_consumer) = self.leaders_state().get(&consumers_replica_id).await
             else {
-                return Err(ErrorCode::PartitionNotLeader.into());
+                debug!("no consumer replica found");
+                return Ok(());
             };
 
             let consumer_storage = self
