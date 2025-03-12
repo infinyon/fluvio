@@ -92,7 +92,7 @@ pub struct K8Install {
     pub namespace: String,
 
     /// k8
-    #[arg(long, default_value = "main")]
+    #[arg(long, default_value = crate::DEFAULT_SPU_GROUP_NAME)]
     pub group_name: String,
 
     /// helm chart installation name
