@@ -1,12 +1,10 @@
 use std::{collections::HashMap, path::Path};
 use std::io::{Error as IoError, ErrorKind as IoErrorKind};
 
-
 use async_trait::async_trait;
 use anyhow::{Context, Error, Result};
 use tracing::{debug, trace};
 use x509_parser::{certificate::X509Certificate, parse_x509_certificate};
-
 
 use fluvio_future::net::AsConnectionFd;
 use fluvio_future::{net::TcpStream, openssl::DefaultServerTlsStream};
