@@ -192,6 +192,8 @@ async fn handle_fetch_consumers(
         return Err(ErrorCode::PartitionNotLeader);
     };
 
+    let not_deleted_replicas = ctx.replica_localstore().read().clone();
+
     Ok(ctx
         .consumer_offset()
         .get_or_insert(replica, ctx.follower_notifier())
@@ -201,13 +203,17 @@ async fn handle_fetch_consumers(
         .await
         .map_err(|e| ErrorCode::Other(format!("unable to list consumers: {e:?}")))?
         .into_iter()
-        .map(|(key, consumer)| {
-            ConsumerOffsetResponse::new(
-                key.consumer_id,
-                key.replica_id,
-                consumer.offset,
-                consumer.modified_time,
-            )
+        .filter_map(|(key, consumer)| {
+            if not_deleted_replicas.contains_key(&key.replica_id) {
+                Some(ConsumerOffsetResponse::new(
+                    key.consumer_id,
+                    key.replica_id,
+                    consumer.offset,
+                    consumer.modified_time,
+                ))
+            } else {
+                None
+            }
         })
         .collect())
 }
