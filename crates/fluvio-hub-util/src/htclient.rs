@@ -34,7 +34,9 @@ pub async fn get(uri: impl AsRef<str>) -> Result<Response<Vec<u8>>> {
     use std::io::Read;
 
     let uri = uri.as_ref();
-    let req = ureq::get(uri);
+    let agent = configure_ureq_proxy()?; // Create agent with proxy
+
+    let req = agent.get(uri);
     let resp = req
         .call()
         .or_any_status()
@@ -103,6 +105,36 @@ where
         .or_any_status()
         .map_err(|e| anyhow!("error: {e}"))?;
     Ok(response.into())
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+use ureq::{Agent, AgentBuilder, Proxy};
+use std::env;
+use anyhow::Context;
+
+/// Configures a `ureq::Agent` with a proxy, if one is defined in the environment.
+//  TODO: If `ureq` version is updated to 3.0.8, you can replace this function with `try_from_env` here, see more [PR #4438]
+fn configure_ureq_proxy() -> Result<Agent> {
+    let agent_builder = AgentBuilder::new();
+
+    let proxy_vars = [
+        ("ALL_PROXY", "all_proxy", "ALL"),
+        ("HTTPS_PROXY", "https_proxy", "HTTPS"),
+        ("HTTP_PROXY", "http_proxy", "HTTP"),
+    ];
+
+    let proxy_creation = |proxy_str: &str, proxy_type: &str| -> Result<Proxy> {
+        Proxy::new(proxy_str).with_context(|| format!("Failed to create {} proxy", proxy_type))
+    };
+
+    for &(upper_var, lower_var, proxy_type) in &proxy_vars {
+        if let Ok(proxy_str) = env::var(upper_var).or_else(|_| env::var(lower_var)) {
+            let proxy = proxy_creation(&proxy_str, proxy_type)?;
+            return Ok(agent_builder.proxy(proxy).build());
+        }
+    }
+
+    Ok(agent_builder.build())
 }
 
 pub trait ResponseExt {
