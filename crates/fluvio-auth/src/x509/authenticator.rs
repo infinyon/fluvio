@@ -1,10 +1,10 @@
 use std::{collections::HashMap, path::Path};
 use std::io::{Error as IoError, ErrorKind as IoErrorKind};
 
+use async_trait::async_trait;
+use anyhow::{Context, Error, Result};
 use tracing::{debug, trace};
 use x509_parser::{certificate::X509Certificate, parse_x509_certificate};
-use async_trait::async_trait;
-use anyhow::{Context, Error};
 
 use fluvio_future::net::AsConnectionFd;
 use fluvio_future::{net::TcpStream, openssl::DefaultServerTlsStream};
@@ -126,7 +126,7 @@ impl Authenticator for X509Authenticator {
         &self,
         incoming_tls_stream: &DefaultServerTlsStream,
         target_tcp_stream: &TcpStream,
-    ) -> Result<bool, IoError> {
+    ) -> Result<bool> {
         let principal = Self::principal_from_tls_stream(incoming_tls_stream)
             .map_err(|err| std::io::Error::new(std::io::ErrorKind::Other, err))?;
         let scopes = self.scope_bindings.get_scopes(&principal);
