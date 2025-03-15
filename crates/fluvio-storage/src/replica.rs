@@ -1,7 +1,7 @@
 use std::cmp::min;
 use std::{fmt, mem};
 use std::sync::Arc;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicI64, AtomicU64, Ordering};
 
 use tracing::{debug, trace, warn, instrument, info};
 use async_trait::async_trait;
@@ -16,8 +16,7 @@ use fluvio_protocol::record::{Offset, ReplicaKey, Size, Size64};
 use fluvio_protocol::record::{Batch, BatchRecords};
 use fluvio_protocol::record::RecordSet;
 
-use crate::checkpoint::HW_CHECKPOINT_FILE_NAME;
-use crate::{OffsetInfo, checkpoint::CheckPoint};
+use crate::OffsetInfo;
 use crate::segments::SharedSegments;
 use crate::segment::MutableSegment;
 use crate::config::{ReplicaConfig, SharedReplicaConfig, StorageConfig};
@@ -36,8 +35,8 @@ pub struct FileReplica {
     partition: Size,
     option: Arc<SharedReplicaConfig>,
     active_segment: MutableSegment,
+    hw: AtomicI64,
     prev_segments: Arc<SharedSegments>,
-    commit_checkpoint: CheckPoint,
     cleaner: Arc<Cleaner>,
     size: Arc<ReplicaSize>,
     append_failure: bool, // if this is true, last append failed, should not append again
@@ -77,7 +76,7 @@ impl ReplicaStorage for FileReplica {
 
     #[inline(always)]
     fn get_hw(&self) -> Offset {
-        self.commit_checkpoint.get_offset()
+        self.hw.load(Ordering::SeqCst)
     }
 
     /// offset mark that beginning of uncommitted
@@ -180,7 +179,7 @@ impl ReplicaStorage for FileReplica {
                 old_offset,
                 offset
             );
-            self.commit_checkpoint.write(offset);
+            self.hw.store(offset, Ordering::SeqCst);
             Ok(true)
         }
     }
@@ -255,23 +254,23 @@ impl FileReplica {
 
         let last_base_offset = active_segment.get_base_offset();
 
-        let mut commit_checkpoint = CheckPoint::create(
-            shared_config.clone(),
-            HW_CHECKPOINT_FILE_NAME,
-            last_base_offset,
-        )
-        .await?;
+        //let mut commit_checkpoint = CheckPoint::create(
+        //    shared_config.clone(),
+        //    HW_CHECKPOINT_FILE_NAME,
+        //    last_base_offset,
+        //)
+        //.await?;
 
         // ensure checkpoint is valid
-        let hw = commit_checkpoint.get_offset();
-        let leo = active_segment.get_end_offset();
-        if hw > leo {
-            info!(
-                hw,
-                leo, "high watermark is greater than log end offset, resetting to leo"
-            );
-            commit_checkpoint.write(leo);
-        }
+        //let hw = commit_checkpoint.get_offset();
+        //let leo = active_segment.get_end_offset();
+        //if hw > leo {
+        //    info!(
+        //        hw,
+        //        leo, "high watermark is greater than log end offset, resetting to leo"
+        //    );
+        //    commit_checkpoint.write(leo);
+        //}
 
         let size = Arc::new(ReplicaSize::default());
         size.store_active(active_segment.occupied_memory());
@@ -292,7 +291,8 @@ impl FileReplica {
             partition,
             active_segment,
             prev_segments: segments,
-            commit_checkpoint,
+            //commit_checkpoint,
+            hw: AtomicI64::new(last_base_offset),
             cleaner,
             size,
             append_failure: false,

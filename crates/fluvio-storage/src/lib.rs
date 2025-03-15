@@ -1,6 +1,5 @@
 pub mod batch;
 pub mod batch_header;
-pub mod checkpoint;
 mod error;
 pub mod records;
 mod index;
