@@ -55,7 +55,7 @@ pub struct SpuOpt {
         long,
         value_name = "integer",
         env = "FLV_PEER_MAX_BYTES",
-        default_value = "1000000"
+        default_value = "4200000000"
     )]
     pub peer_max_bytes: u32,
 
