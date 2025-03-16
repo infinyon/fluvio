@@ -189,9 +189,7 @@ mod inner {
 
             // starts initial sync
             debug!("performing initial offset sync to leader");
-            let replicas = FollowerGroup::filter_from(&self.states, self.leader).await;
-            self.sync_all_offsets_to_leader(&mut sink, &replicas)
-                .await?;
+            self.sync_all_offsets_to_leader(&mut sink).await?;
 
             let mut counter: i32 = 0;
 
@@ -203,7 +201,7 @@ mod inner {
                 select! {
                     _ = &mut timer => {
                         debug!("timer fired - kickoff sync offsets to leader");
-                        self.sync_all_offsets_to_leader(&mut sink,&replicas).await?;
+                        self.sync_all_offsets_to_leader(&mut sink).await?;
                         timer= sleep(Duration::from_secs(LEADER_RECONCILIATION_INTERVAL_SEC));
                     },
 
@@ -212,9 +210,7 @@ mod inner {
                             debug!("terminate signal");
                             return Ok(true);
                         }
-                        // if sync counter changes, then we need to re-compute replicas and send offsets again
-                        let replicas = FollowerGroup::filter_from(&self.states,self.leader).await;
-                        self.sync_all_offsets_to_leader(&mut sink,&replicas).await?;
+                        self.sync_all_offsets_to_leader(&mut sink).await?;
                     }
 
 
@@ -386,8 +382,8 @@ mod inner {
         async fn sync_all_offsets_to_leader(
             &self,
             sink: &mut FluvioSink,
-            spu_replicas: &FollowerGroup,
         ) -> Result<(), SocketError> {
+            let spu_replicas = FollowerGroup::filter_from(&self.states, self.leader).await;
             self.send_offsets_to_leader(sink, spu_replicas.replica_offsets())
                 .await
         }
