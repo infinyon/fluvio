@@ -101,12 +101,12 @@ impl FollowerHandler {
                                 }
                             }
                         } else {
-                            debug!("error decoding req, terminating");
+                            error!("error decoding req, terminating");
                             break;
                         }
 
                     } else {
-                        debug!("no more msg, end");
+                        error!("no more msg, end2");
                         break;
                     }
 
@@ -115,7 +115,7 @@ impl FollowerHandler {
             }
         }
 
-        debug!("closing");
+        error!("closing");
 
         Ok(())
     }
@@ -188,7 +188,7 @@ impl FollowerHandler {
             } else {
                 // if we didn't find it replica that means leader doesn't have upto date replicas.
                 // we need to send back
-                warn!(%replica_key,"no such replica");
+                error!(%replica_key,"no such replica");
                 rejects.push(replica_key.clone());
             }
         }

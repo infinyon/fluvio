@@ -194,7 +194,7 @@ impl ScDispatcher<FileReplica> {
         if requests.is_empty() {
             trace!("sending empty status");
         } else {
-            trace!(requests = ?requests, "sending status back to sc");
+            info!(requests = ?requests, "sending status back to sc");
         }
         let message = RequestMessage::new_request(UpdateLrsRequest::new(requests));
 

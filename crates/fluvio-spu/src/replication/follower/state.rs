@@ -4,7 +4,7 @@ use std::collections::{HashMap, hash_map::Entry};
 use std::ops::{Deref, DerefMut};
 
 use fluvio_controlplane::replica::Replica;
-use tracing::{debug, warn, instrument};
+use tracing::{debug, info, instrument, warn};
 use async_lock::RwLock;
 use anyhow::Result;
 
@@ -89,7 +89,7 @@ impl FollowersState<FileReplica> {
                 Ok(None)
             }
             Entry::Vacant(entry) => {
-                debug!(
+                info!(
                     replica = %replica.id,
                     "creating new follower state"
                 );
@@ -244,21 +244,65 @@ where
     }
 
     /// try to write records
-    /// ensure records has correct baseoffset
+    /// ensure records has correct baseoffset or we handle appropriately
     async fn write_recordsets<R: BatchRecords>(&self, records: &mut RecordSet<R>) -> Result<bool> {
         let storage_leo = self.leo();
-        if records.base_offset() != storage_leo {
-            // this could happened if records were sent from leader before hw was sync
+        let incoming_base = records.base_offset();
+
+        // Exact match - ideal case
+        if incoming_base == storage_leo {
+            self.write_record_set(records, false).await?;
+            return Ok(true);
+        }
+
+        // Case 1: Leader is trying to send data that would create a gap
+        if incoming_base > storage_leo {
+            // This is a real error - we're missing data
             warn!(
                 storage_leo,
-                incoming_base_offset = records.base_offset(),
-                "follower leo is not same as base offset, skipping write"
+                incoming_base_offset = incoming_base,
+                "follower leo is less than base offset, possible data gap"
             );
-            Ok(false)
-        } else {
-            self.write_record_set(records, false).await?;
-            Ok(true)
+            return Ok(false);
         }
+
+        // Case 2: Leader is sending records we might already have
+        // This can happen during leader election or follower reconnection
+        // Check if the data would be completely redundant
+        let last_offset_in_batch = records.last_offset();
+
+        if let Some(last) = last_offset_in_batch {
+            if last <= storage_leo {
+                // These are all records we already have
+                debug!(
+                    storage_leo,
+                    incoming_base_offset = incoming_base,
+                    last_offset = last,
+                    "leader sent records already in follower's log"
+                );
+                return Ok(true); // Tell caller we handled it successfully
+            } else {
+                // This batch contains some records we have and some we need
+                // We could implement partial write here, but for now log a warning
+                // and skip the write - follower will report current LEO and leader should
+                // retry with correct offset
+                debug!(
+                    storage_leo,
+                    incoming_base_offset = incoming_base,
+                    last_offset = last,
+                    "leader sent partially overlapping records, reporting current LEO instead"
+                );
+                return Ok(true); // This will cause follower to report current LEO to leader
+            }
+        }
+
+        // If we get here, something else is wrong - no offsets in batch?
+        warn!(
+            storage_leo,
+            incoming_base_offset = incoming_base,
+            "records batch has no last_offset, skipping write"
+        );
+        Ok(false)
     }
 
     /// convert to offset request

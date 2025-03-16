@@ -37,8 +37,10 @@ impl FollowerGroups {
             // don't have leader, so we need to create new one
             let notification = GroupNotification::shared();
             if let Some(old_notification) = leaders.insert(leader, notification.clone()) {
+                warn!("old notification exists, shutting down");
                 old_notification.shutdown();
             } else {
+                warn!(leader, "starting new follower controller");
                 FollowGroupController::run(
                     leader,
                     ctx.spu_localstore_owned(),
@@ -53,9 +55,9 @@ impl FollowerGroups {
     /// remove
     pub async fn remove(&self, leader: SpuId) {
         let mut leaders = self.0.write().await;
-        debug!("no more replica for leader, removing it");
+        warn!("no more replica for leader, removing it");
         if let Some(old_leader) = leaders.remove(&leader) {
-            debug!(leader, "more more replicas, shutting down");
+            warn!(leader, "more more replicas, shutting down");
             old_leader.shutdown();
         } else {
             error!(leader, "was not found");
@@ -146,12 +148,14 @@ mod inner {
             let mut backoff = ExponentialBackoffBuilder::default()
                 .min(Duration::from_secs(1))
                 .max(Duration::from_secs(300))
+                .factor(1.1_f64)
                 .build()
                 .unwrap();
 
             loop {
+                info!("starting follower controller loop");
                 if self.group.is_end() {
-                    debug!("end");
+                    error!("end");
                     break;
                 }
 
@@ -170,7 +174,7 @@ mod inner {
                 warn!("lost connection to leader, sleeping 5 seconds and will retry it");
 
                 if self.group.is_end() {
-                    debug!("end");
+                    error!("end2");
                     break;
                 }
 
@@ -188,7 +192,7 @@ mod inner {
             let mut event_listener = self.group.events.change_listener();
 
             // starts initial sync
-            debug!("performing initial offset sync to leader");
+            info!("performing initial offset sync to leader");
             self.sync_all_offsets_to_leader(&mut sink).await?;
 
             let mut counter: i32 = 0;
@@ -196,7 +200,7 @@ mod inner {
             let mut timer = sleep(Duration::from_secs(LEADER_RECONCILIATION_INTERVAL_SEC));
 
             loop {
-                debug!(counter, "waiting request from leader");
+                info!(counter, "waiting request from leader");
 
                 select! {
                     _ = &mut timer => {
@@ -207,12 +211,11 @@ mod inner {
 
                     offset_value = event_listener.listen() => {
                         if offset_value == -1 {
-                            debug!("terminate signal");
+                            error!("terminate signal");
                             return Ok(true);
                         }
                         self.sync_all_offsets_to_leader(&mut sink).await?;
                     }
-
 
                     api_msg = api_stream.next() => {
                         if let Some(req_msg_res) = api_msg {
@@ -221,13 +224,13 @@ mod inner {
                             match req_msg {
                                 FollowerPeerRequest::SyncRecords(sync_request)=> self.sync_from_leader(&mut sink,sync_request.request).await?,
                                  FollowerPeerRequest::RejectedOffsetRequest(requests) => {
-                                     debug!(fail_req = ?requests,"leader rejected these requests");
+                                     error!(fail_req = ?requests,"leader rejected these requests");
                                      timer= sleep(Duration::from_secs(*SHORT_RECONCILLATION));
                                  },
                              }
 
                         } else {
-                            debug!("leader socket has terminated");
+                            error!("leader socket has terminated");
                             return Ok(false);
                         }
                     }
@@ -396,7 +399,7 @@ mod inner {
             offsets: UpdateOffsetRequest,
         ) -> Result<(), SocketError> {
             let local_spu = self.config.id();
-            debug!(local_spu, "sending offsets to leader");
+            info!(local_spu, "sending offsets to leader");
             let req_msg = RequestMessage::new_request(offsets)
                 .set_client_id(format!("follower spu: {local_spu}"));
 
@@ -449,6 +452,7 @@ mod inner {
         }
 
         pub fn shutdown(&self) {
+            warn!("shutting down controller");
             self.events.update(-1);
         }
 
