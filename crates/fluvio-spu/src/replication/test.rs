@@ -29,6 +29,7 @@ const HOST: &str = "127.0.0.1";
 const MAX_WAIT_LEADER: u64 = 300;
 const MAX_WAIT_FOLLOWER: u64 = 100;
 const WAIT_TERMINATE: u64 = 1000;
+const REJECT_WAIT: u64 = 11;
 
 const LEADER: SpuId = 5001;
 const FOLLOWER1: SpuId = 5002;
@@ -120,11 +121,15 @@ impl TestConfig {
 
     /// generate test replica with assigned SPU
     fn replica(&self) -> Replica {
+        self.replica_inner(TOPIC.to_owned())
+    }
+
+    fn replica_inner(&self, topic: String) -> Replica {
         let mut followers = vec![LEADER];
         for i in 0..self.followers {
             followers.push(self.follower_id(i));
         }
-        Replica::new((TOPIC, 0), self.base_id, followers)
+        Replica::new((topic, 0), self.base_id, followers)
     }
 
     pub fn leader_addr(&self) -> String {
@@ -151,7 +156,13 @@ impl TestConfig {
         &self,
     ) -> (DefaultSharedGlobalContext, LeaderReplicaState<FileReplica>) {
         let replica = self.replica();
+        self.leader_replica_inner(replica).await
+    }
 
+    pub async fn leader_replica_inner(
+        &self,
+        replica: Replica,
+    ) -> (DefaultSharedGlobalContext, LeaderReplicaState<FileReplica>) {
         let gctx = self.leader_ctx().await;
         gctx.replica_localstore().sync_all(vec![replica.clone()]);
 
@@ -770,4 +781,83 @@ async fn test_replica_state_cleans_up_offset_producers() {
         .await;
     let publishers = shared_publishers.lock().await;
     assert!(publishers.len() == 1);
+}
+
+/// Test 2 replicas but one replica is rejected, and than both is sync
+#[fluvio_future::test(ignore)]
+async fn test_sync_2_replicas_but_one_reject() {
+    let builder = TestConfig::builder()
+        .followers(2_u16)
+        .base_port(13060_u16)
+        .generate("replication_dispatch_in_sequence");
+    let replica_test1 = builder.replica();
+    let (leader_gctx, leader_replica) = builder.leader_replica().await;
+    let spu_server = create_internal_server(builder.leader_addr(), leader_gctx.clone()).run();
+
+    let follower_gctx = builder.follower_ctx(0).await;
+    let mut replicas = vec![replica_test1.clone()];
+    follower_gctx
+        .replica_localstore()
+        .sync_all(replicas.clone().to_vec());
+    follower_gctx
+        .followers_state_owned()
+        .add_replica(&follower_gctx, replica_test1.clone())
+        .await
+        .expect("create");
+
+    sleep(Duration::from_millis(*MAX_WAIT_REPLICATION)).await;
+    let replica_test2 = builder.replica_inner("test2".to_owned());
+    replicas.push(replica_test2.clone());
+    follower_gctx
+        .replica_localstore()
+        .sync_all(replicas.clone().to_vec());
+    follower_gctx
+        .followers_state_owned()
+        .add_replica(&follower_gctx, replica_test2.clone())
+        .await
+        .expect("create");
+
+    leader_replica
+        .write_record_set(
+            &mut create_raw_recordset(2),
+            leader_gctx.follower_notifier(),
+        )
+        .await
+        .expect("write");
+
+    assert_eq!(leader_replica.leo(), 2);
+
+    sleep(Duration::from_millis(*MAX_WAIT_REPLICATION)).await;
+    let actions = leader_gctx
+        .apply_replica_update(UpdateReplicaRequest::with_all(1, replicas.clone()))
+        .await;
+    assert!(actions.is_empty());
+
+    let (leader_gctx2, leader_replica2) = builder.leader_replica_inner(replica_test2.clone()).await;
+
+    sleep(Duration::from_secs(REJECT_WAIT)).await;
+
+    leader_replica2
+        .write_record_set(
+            &mut create_raw_recordset(2),
+            leader_gctx2.follower_notifier(),
+        )
+        .await
+        .expect("write");
+    leader_replica
+        .write_record_set(
+            &mut create_raw_recordset(2),
+            leader_gctx.follower_notifier(),
+        )
+        .await
+        .expect("write");
+
+    sleep(Duration::from_millis(WAIT_TERMINATE)).await;
+
+    assert_eq!(leader_replica.leo(), 4);
+    assert_eq!(leader_replica2.leo(), 2);
+
+    sleep(Duration::from_millis(WAIT_TERMINATE)).await;
+
+    spu_server.notify();
 }
