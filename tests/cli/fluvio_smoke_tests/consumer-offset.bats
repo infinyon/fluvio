@@ -88,8 +88,21 @@ setup_file() {
     assert_output --partial "consumer \"$CONSUMER_NAME\" on topic \"$TOPIC_NAME\" and partition \"1\" deleted"
 }
 
-teardown_file() {
+@test "Delete topic must delete consumers" {
+    if [ "$FLUVIO_CLI_RELEASE_CHANNEL" == "stable" ]; then
+        skip "don't run on fluvio cli stable version"
+    fi
+    if [ "$FLUVIO_CLUSTER_RELEASE_CHANNEL" == "stable" ]; then
+        skip "don't run on cluster stable version"
+    fi
+
+    CONSUMER_NAME=$(random_string)
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" --consumer "$CONSUMER_NAME" -B -d
+    assert_success
+
     run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME"
+    assert_output --partial "topic \"$TOPIC_NAME\" deleted"
+
+    run timeout 15s "$FLUVIO_BIN" consumer list
+    assert_output --partial "No consumers found"
 }
-
-
