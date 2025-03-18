@@ -79,7 +79,7 @@ impl Fluvio {
         #[cfg(not(any(feature = "openssl", feature = "rustls")))]
         if crate::config::TlsPolicy::Disabled != config.tls {
             return Err(anyhow::anyhow!(
-                "Error: TLS is not supported in this build, but the cluster config requires tls.\nPlease enable the `openssh`feature."
+                "Error: TLS is not supported in this build, but the cluster config requires tls.\nPlease enable the `openssl` feature."
             ));
         }
 
