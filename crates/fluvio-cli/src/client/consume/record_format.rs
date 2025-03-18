@@ -8,7 +8,7 @@ use std::collections::BTreeMap;
 use comfy_table::Table;
 use anyhow::{anyhow, Result};
 
-use fluvio::{metadata::tableformat::TableFormatColumnConfig};
+use fluvio::metadata::tableformat::TableFormatColumnConfig;
 use fluvio_extension_common::{bytes_to_hex_dump, hex_dump_separator};
 use fluvio_smartmodule::RecordData;
 
