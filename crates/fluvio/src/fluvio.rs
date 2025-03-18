@@ -16,11 +16,11 @@ use fluvio_socket::{
 };
 
 use crate::admin::FluvioAdmin;
-use crate::error::anyhow_version_error;
 use crate::consumer::{
     ConsumerConfigExt, ConsumerOffset, ConsumerStream, ConsumerRetryStream,
     MultiplePartitionConsumer, MultiplePartitionConsumerStream, PartitionSelectionStrategy, Record,
 };
+use crate::error::anyhow_version_error;
 use crate::metrics::ClientMetrics;
 use crate::producer::{TopicProducerPool, TopicProducerConfig};
 use crate::sync::MetadataStores;
@@ -75,6 +75,14 @@ impl Fluvio {
     /// # }
     /// ```
     pub async fn connect_with_config(config: &FluvioClusterConfig) -> Result<Self> {
+        // if crate tls is not configured and the profile has tls, return an error
+        #[cfg(not(any(feature = "openssl", feature = "rustls")))]
+        if crate::config::TlsPolicy::Disabled != config.tls {
+            return Err(anyhow::anyhow!(
+                "Error: TLS is not supported in this build, but the cluster config requires tls.\nPlease enable the `openssh`feature."
+            ));
+        }
+
         let connector = DomainConnector::try_from(config.tls.clone())?;
         info!(
             fluvio_crate_version = env!("CARGO_PKG_VERSION"),
