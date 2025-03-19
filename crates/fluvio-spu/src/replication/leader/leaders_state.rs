@@ -1,6 +1,7 @@
 use std::ops::Deref;
 use async_lock::RwLock;
 use fluvio_controlplane::replica::Replica;
+use fluvio_types::defaults::CONSUMER_REPLICA_KEY;
 use std::collections::HashMap;
 
 use tracing::{error, instrument};
@@ -61,6 +62,10 @@ impl<S> ReplicaLeadersState<S> {
     ) -> Option<SharedLeaderState<S>> {
         let mut writer = self.write().await;
         writer.insert(replica, state)
+    }
+
+    pub async fn is_consumer_offset_leader(&self) -> Option<LeaderReplicaState<S>> {
+        self.get(&CONSUMER_REPLICA_KEY.into()).await
     }
 }
 

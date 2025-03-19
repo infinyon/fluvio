@@ -57,6 +57,7 @@ pub const STORAGE_MAX_REQUEST_SIZE: u32 = 33_554_432;
 pub const SPU_SMARTENGINE_STORE_MAX_BYTES: usize = 1_073_741_824; //1Gb
 
 pub const CONSUMER_STORAGE_TOPIC: &str = "consumer-offset";
+pub const CONSUMER_REPLICA_KEY: (&str, u32) = (CONSUMER_STORAGE_TOPIC, 0);
 
 // Reconnect Backoff
 pub const RECONNECT_BACKOFF_FACTOR: f64 = 1.1;

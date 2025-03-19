@@ -11,7 +11,8 @@ use fluvio_spu_schema::server::consumer_offset::UpdateConsumerOffsetRequest;
 use fluvio_spu_schema::server::consumer_offset::UpdateConsumerOffsetResponse;
 use fluvio_spu_schema::server::consumer_offset::ConsumerOffset as ConsumerOffsetResponse;
 use fluvio_storage::FileReplica;
-use fluvio_types::{PartitionId, defaults::CONSUMER_STORAGE_TOPIC};
+use fluvio_types::defaults::CONSUMER_REPLICA_KEY;
+use fluvio_types::PartitionId;
 use tracing::debug;
 use tracing::error;
 use tracing::instrument;
@@ -113,14 +114,14 @@ async fn handle_update(
     let Some(publisher) = conn_ctx.stream_publishers().get_publisher(session_id).await else {
         return Err(ErrorCode::FetchSessionNotFoud);
     };
-    let consumers_replica_id =
-        ReplicaKey::new(CONSUMER_STORAGE_TOPIC, <PartitionId as Default>::default());
 
     let Some(consumer) = publisher.consumer else {
         return Err(ErrorCode::Other("stream without consumer id".to_string()));
     };
 
-    if let Some(ref replica) = ctx.leaders_state().get(&consumers_replica_id).await {
+    let consumer_replica_key = CONSUMER_REPLICA_KEY.into();
+
+    if let Some(ref replica) = ctx.leaders_state().get(&consumer_replica_key).await {
         trace!(
             consumer.consumer_id,
             offset,
@@ -147,7 +148,7 @@ async fn handle_update(
         );
         update_offset_in_peer(
             ctx,
-            &consumers_replica_id,
+            &consumer_replica_key,
             publisher.topic,
             publisher.partition,
             consumer.consumer_id,
@@ -164,9 +165,7 @@ async fn handle_delete(
     target_replica: ReplicaKey,
     consumer_id: String,
 ) -> std::result::Result<(), ErrorCode> {
-    let consumers_replica_id =
-        ReplicaKey::new(CONSUMER_STORAGE_TOPIC, <PartitionId as Default>::default());
-    let Some(ref replica) = ctx.leaders_state().get(&consumers_replica_id).await else {
+    let Some(ref replica) = ctx.leaders_state().get(&CONSUMER_REPLICA_KEY.into()).await else {
         return Err(ErrorCode::PartitionNotLeader);
     };
 
@@ -186,9 +185,7 @@ async fn handle_delete(
 async fn handle_fetch_consumers(
     ctx: DefaultSharedGlobalContext,
 ) -> std::result::Result<Vec<ConsumerOffsetResponse>, ErrorCode> {
-    let consumers_replica_id =
-        ReplicaKey::new(CONSUMER_STORAGE_TOPIC, <PartitionId as Default>::default());
-    let Some(ref replica) = ctx.leaders_state().get(&consumers_replica_id).await else {
+    let Some(ref replica) = ctx.leaders_state().get(&CONSUMER_REPLICA_KEY.into()).await else {
         return Err(ErrorCode::PartitionNotLeader);
     };
 
@@ -239,7 +236,7 @@ async fn update_offset_for_leader(
 
 async fn update_offset_in_peer(
     ctx: DefaultSharedGlobalContext,
-    consumers_replica_id: &ReplicaKey,
+    consumer_replica_key: &ReplicaKey,
     topic: String,
     partition: PartitionId,
     consumer_id: String,
@@ -252,7 +249,7 @@ async fn update_offset_in_peer(
         offset,
     );
 
-    let response = send_private_request_to_leader(&ctx, consumers_replica_id, update_req)
+    let response = send_private_request_to_leader(&ctx, consumer_replica_key, update_req)
         .await
         .context("update offset in peer")
         .map_err(|e| ErrorCode::Other(e.to_string()))?;

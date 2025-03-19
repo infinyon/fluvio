@@ -197,14 +197,12 @@ mod file_replica {
         sc_api::remove::ReplicaRemovedRequest, replica::Replica,
         spu_api::update_replica::UpdateReplicaRequest,
     };
-    use fluvio_protocol::record::ReplicaKey;
-    use fluvio_types::{defaults::CONSUMER_STORAGE_TOPIC, PartitionId};
     use tracing::{trace, warn};
 
     use fluvio_storage::FileReplica;
     use flv_util::actions::Actions;
 
-    use crate::{core::SpecChange, kv::consumer::ConsumerOffsetKey};
+    use crate::core::SpecChange;
 
     use super::*;
 
@@ -371,16 +369,16 @@ mod file_replica {
         }
 
         async fn remove_replica(&self, outputs: &mut Vec<ReplicaChange>, replica: Replica) {
-            if let Err(err) = self.delete_consumers_offset(&replica).await {
-                error!("error: {} deleting consumers offset: {}", err, replica);
-            }
-
             if replica.leader == self.local_spu_id() {
                 outputs.push(ReplicaChange::Remove(
-                    self.remove_leader_replica(replica).await,
+                    self.remove_leader_replica(replica.clone()).await,
                 ));
             } else {
-                self.remove_follower_replica(replica).await;
+                self.remove_follower_replica(replica.clone()).await;
+            }
+
+            if let Err(err) = self.delete_consumers_offset(&replica).await {
+                error!("error: {} deleting consumers offset: {}", err, replica);
             }
         }
 
@@ -484,11 +482,9 @@ mod file_replica {
 
         /// Delete consumers offset for given replica if it is leader consumer
         async fn delete_consumers_offset(&self, replica: &Replica) -> anyhow::Result<()> {
-            let consumers_replica_id =
-                ReplicaKey::new(CONSUMER_STORAGE_TOPIC, <PartitionId as Default>::default());
-            let Some(ref replica_consumer) = self.leaders_state().get(&consumers_replica_id).await
+            let Some(ref replica_consumer) = self.leaders_state().is_consumer_offset_leader().await
             else {
-                debug!("no consumer replica found");
+                debug!("cannot delete consumer offset, no leader found");
                 return Ok(());
             };
 
@@ -497,23 +493,9 @@ mod file_replica {
                 .get_or_insert(replica_consumer, self.follower_notifier())
                 .await?;
 
-            let consumer_offset_keys = consumer_storage
-                .list()
-                .await?
-                .into_iter()
-                .filter_map(|(key, _)| {
-                    if key.replica_id == replica.id {
-                        let key = ConsumerOffsetKey::new(key.replica_id, key.consumer_id);
-                        Some(key)
-                    } else {
-                        None
-                    }
-                })
-                .collect::<Vec<ConsumerOffsetKey>>();
+            consumer_storage.delete_by_replica_key(&replica.id).await?;
 
-            for key in consumer_offset_keys {
-                consumer_storage.delete(&key).await?;
-            }
+            debug!(?replica, "consumer offset deleted");
 
             Ok(())
         }
