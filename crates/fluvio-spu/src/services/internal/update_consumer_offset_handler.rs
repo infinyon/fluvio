@@ -7,7 +7,7 @@ use fluvio_protocol::{
     record::Offset,
 };
 use fluvio_storage::FileReplica;
-use fluvio_types::{PartitionId, defaults::CONSUMER_STORAGE_TOPIC};
+use fluvio_types::defaults::CONSUMER_REPLICA_KEY;
 use tracing::{instrument, trace};
 
 use crate::{
@@ -29,18 +29,15 @@ pub(crate) async fn handle_update_consumer_offset_request(
         replica_id,
     } = req_msg.request;
 
-    let consumers_replica_id =
-        ReplicaKey::new(CONSUMER_STORAGE_TOPIC, <PartitionId as Default>::default());
-
-    let error_code = if let Some(ref replica) = ctx.leaders_state().get(&consumers_replica_id).await
-    {
-        match update_offset(ctx, replica, replica_id, consumer_id, offset).await {
-            Ok(_) => ErrorCode::None,
-            Err(e) => ErrorCode::Other(e.to_string()),
-        }
-    } else {
-        ErrorCode::PartitionNotLeader
-    };
+    let error_code =
+        if let Some(ref replica) = ctx.leaders_state().get(&CONSUMER_REPLICA_KEY.into()).await {
+            match update_offset(ctx, replica, replica_id, consumer_id, offset).await {
+                Ok(_) => ErrorCode::None,
+                Err(e) => ErrorCode::Other(e.to_string()),
+            }
+        } else {
+            ErrorCode::PartitionNotLeader
+        };
     trace!(offset, ?error_code, "consumer offset update result");
     let response = UpdateConsumerOffsetResponse { error_code };
     Ok(

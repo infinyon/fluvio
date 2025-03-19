@@ -106,3 +106,46 @@ setup_file() {
     run timeout 15s "$FLUVIO_BIN" consumer list
     assert_output --partial "No consumers found"
 }
+
+# This is a regression test for issue #4455
+# Check that is not using the old consumer offset with a higher start(4)
+# to a new topic that doesn't even have 4 records.
+@test "Delete topic must delete consumers and allow to create the same topic and consumer again" {
+    if [ "$FLUVIO_CLI_RELEASE_CHANNEL" == "stable" ]; then
+	skip "don't run on fluvio cli stable version"
+    fi
+    if [ "$FLUVIO_CLUSTER_RELEASE_CHANNEL" == "stable" ]; then
+	skip "don't run on cluster stable version"
+    fi
+
+    run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME" -p 2 -r 2
+    assert_output --partial "topic \"$TOPIC_NAME\" created"
+
+    echo 1:1 | "$FLUVIO_BIN" produce $TOPIC_NAME --key-separator ":"
+    echo 2:2 | "$FLUVIO_BIN" produce $TOPIC_NAME --key-separator ":"
+    echo 1:1 | "$FLUVIO_BIN" produce $TOPIC_NAME --key-separator ":"
+    echo 2:2 | "$FLUVIO_BIN" produce $TOPIC_NAME --key-separator ":"
+
+    CONSUMER_NAME=$(random_string)
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" --consumer "$CONSUMER_NAME" -B -d
+    assert_success
+
+    run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME"
+    assert_output --partial "topic \"$TOPIC_NAME\" deleted"
+
+    run timeout 15s "$FLUVIO_BIN" consumer list
+    assert_output --partial "No consumers found"
+
+    run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME" -p 2 -r 2
+    assert_output --partial "topic \"$TOPIC_NAME\" created"
+
+    echo 1:1 | "$FLUVIO_BIN" produce $TOPIC_NAME --key-separator ":"
+    echo 2:2 | "$FLUVIO_BIN" produce $TOPIC_NAME --key-separator ":"
+
+    CONSUMER_NAME=$(random_string)
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" --consumer "$CONSUMER_NAME" -B -d
+    assert_success # this should not panic
+
+    run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME"
+    assert_output --partial "topic \"$TOPIC_NAME\" deleted"
+}

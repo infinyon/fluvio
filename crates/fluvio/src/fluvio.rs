@@ -2,6 +2,7 @@ use std::convert::TryFrom;
 use std::sync::Arc;
 
 use anyhow::{Context, Result};
+use fluvio_types::defaults::CONSUMER_REPLICA_KEY;
 use semver::Version;
 use tokio::sync::OnceCell;
 use tracing::{debug, info};
@@ -422,15 +423,13 @@ impl Fluvio {
 
     /// Returns all consumers offsets that currently available in the cluster.
     pub async fn consumer_offsets(&self) -> Result<Vec<ConsumerOffset>> {
-        use fluvio_protocol::{link::ErrorCode, record::ReplicaKey};
+        use fluvio_protocol::link::ErrorCode;
         use crate::spu::SpuDirectory;
 
         let spu_pool = self.spu_pool().await?;
-        let consumers_replica_id = ReplicaKey::new(
-            fluvio_types::defaults::CONSUMER_STORAGE_TOPIC,
-            <PartitionId as Default>::default(),
-        );
-        let socket = spu_pool.create_serial_socket(&consumers_replica_id).await?;
+        let socket = spu_pool
+            .create_serial_socket(&CONSUMER_REPLICA_KEY.into())
+            .await?;
         let response = socket
             .send_receive(fluvio_spu_schema::server::consumer_offset::FetchConsumerOffsetsRequest)
             .await?;
@@ -453,16 +452,14 @@ impl Fluvio {
         consumer_id: impl Into<String>,
         replica_id: impl Into<fluvio_protocol::record::ReplicaKey>,
     ) -> Result<()> {
-        use fluvio_protocol::{link::ErrorCode, record::ReplicaKey};
+        use fluvio_protocol::link::ErrorCode;
 
         use crate::spu::SpuDirectory;
 
         let spu_pool = self.spu_pool().await?;
-        let consumers_replica_id = ReplicaKey::new(
-            fluvio_types::defaults::CONSUMER_STORAGE_TOPIC,
-            <PartitionId as Default>::default(),
-        );
-        let socket = spu_pool.create_serial_socket(&consumers_replica_id).await?;
+        let socket = spu_pool
+            .create_serial_socket(&CONSUMER_REPLICA_KEY.into())
+            .await?;
         let response = socket
             .send_receive(
                 fluvio_spu_schema::server::consumer_offset::DeleteConsumerOffsetRequest {

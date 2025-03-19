@@ -7,7 +7,7 @@ use std::{
 
 use anyhow::Result;
 use async_lock::RwLock;
-use tracing::trace;
+use tracing::{debug, trace};
 
 use fluvio_kv_storage::KVStorage;
 use fluvio_protocol::{record::ReplicaKey, Encoder, Decoder};
@@ -169,6 +169,30 @@ impl SharableConsumerOffsetStorage {
         self.0.write().await.delete(key).await
     }
 
+    pub(crate) async fn delete_by_replica_key(&self, replica: &ReplicaKey) -> Result<()> {
+        let mut write = self.0.write().await;
+
+        let keys_to_delete: Vec<_> = write
+            .kv
+            .entries()
+            .await?
+            .into_iter()
+            .filter_map(|(key, _)| {
+                if key.replica_id == *replica {
+                    Some(key)
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        for key in keys_to_delete {
+            debug!(?key, "deleted consumer offsets");
+            write.delete(&key).await?;
+        }
+
+        Ok(())
+    }
     pub async fn put(
         &self,
         key: impl Into<ConsumerOffsetKey>,
@@ -245,6 +269,47 @@ mod tests {
 
         leader.remove().await.expect("removed");
         //then
+    }
+
+    #[fluvio_future::test]
+    async fn test_delete_by_replica_key() {
+        //given
+        let leader = create_offset_replica("test_delete_by_replica_key").await;
+        let notifier = FollowerNotifier::shared();
+        let storage = SharedConsumerOffsetStorages::default();
+        let shared_storage = storage
+            .get_or_insert(&leader, &notifier)
+            .await
+            .expect("storage");
+
+        let key1 = ConsumerOffsetKey::new(("topic1", 0), "consumer1");
+        let key2 = ConsumerOffsetKey::new(("topic1", 0), "consumer2");
+        let key3 = ConsumerOffsetKey::new(("topic1", 0), "consumer3");
+
+        shared_storage
+            .put(key1.clone(), ConsumerOffset::new(1))
+            .await
+            .expect("put record1");
+        shared_storage
+            .put(key2.clone(), ConsumerOffset::new(2))
+            .await
+            .expect("put record2");
+        shared_storage
+            .put(key3.clone(), ConsumerOffset::new(3))
+            .await
+            .expect("put record3");
+
+        //when
+        shared_storage
+            .delete_by_replica_key(&("topic1", 0).into())
+            .await
+            .expect("delete");
+
+        //then
+        let list = shared_storage.list().await.expect("list");
+        assert_eq!(list.len(), 0);
+
+        leader.remove().await.expect("removed");
     }
 
     async fn create_offset_replica(dir: impl AsRef<Path>) -> LeaderReplicaState<FileReplica> {

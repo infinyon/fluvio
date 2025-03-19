@@ -7,7 +7,7 @@ use fluvio_protocol::{
     link::ErrorCode,
 };
 use fluvio_storage::FileReplica;
-use fluvio_types::{PartitionId, defaults::CONSUMER_STORAGE_TOPIC};
+use fluvio_types::defaults::CONSUMER_REPLICA_KEY;
 use tracing::{instrument, debug};
 
 use crate::{
@@ -28,11 +28,8 @@ pub(crate) async fn handle_fetch_consumer_offset_request(
         replica_id,
     } = req_msg.request;
 
-    let consumers_replica_id =
-        ReplicaKey::new(CONSUMER_STORAGE_TOPIC, <PartitionId as Default>::default());
-
     let (consumer, error_code) =
-        if let Some(ref replica) = ctx.leaders_state().get(&consumers_replica_id).await {
+        if let Some(ref replica) = ctx.leaders_state().get(&CONSUMER_REPLICA_KEY.into()).await {
             match get_offset(ctx, replica, replica_id, consumer_id).await {
                 Ok(offset) => (offset, ErrorCode::None),
                 Err(e) => (None, ErrorCode::Other(e.to_string())),

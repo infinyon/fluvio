@@ -1,5 +1,6 @@
 use std::io::Error as IoError;
 
+use fluvio_types::defaults::CONSUMER_REPLICA_KEY;
 use tracing::{debug, error};
 use tracing::{trace, instrument};
 
@@ -10,7 +11,7 @@ use fluvio_spu_schema::server::fetch_offset::FetchOffsetsResponse;
 use fluvio_spu_schema::server::fetch_offset::FetchOffsetPartitionResponse;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_protocol::link::ErrorCode;
-use fluvio_types::{PartitionId, defaults::CONSUMER_STORAGE_TOPIC};
+use fluvio_types::PartitionId;
 
 use crate::core::DefaultSharedGlobalContext;
 use crate::kv::consumer::ConsumerOffsetKey;
@@ -85,9 +86,8 @@ async fn fetch_consumer_offset(
     partition: PartitionId,
     consumer_id: &str,
 ) -> Result<Option<i64>, ErrorCode> {
-    let consumers_replica_id =
-        ReplicaKey::new(CONSUMER_STORAGE_TOPIC, <PartitionId as Default>::default());
-    if let Some(leader) = ctx.leaders_state().get(&consumers_replica_id).await {
+    let consumer_replica_key = CONSUMER_REPLICA_KEY.into();
+    if let Some(leader) = ctx.leaders_state().get(&consumer_replica_key).await {
         let consumers = ctx
             .consumer_offset()
             .get_or_insert(&leader, ctx.follower_notifier())
@@ -103,7 +103,7 @@ async fn fetch_consumer_offset(
     } else {
         fetch_consumer_offset_from_peer(
             ctx,
-            &consumers_replica_id,
+            &consumer_replica_key,
             topic.to_string(),
             partition,
             consumer_id.to_string(),
@@ -114,7 +114,7 @@ async fn fetch_consumer_offset(
 
 async fn fetch_consumer_offset_from_peer(
     ctx: &DefaultSharedGlobalContext,
-    consumers_replica_id: &ReplicaKey,
+    consumer_replica_key: &ReplicaKey,
     topic: String,
     partition: PartitionId,
     consumer_id: String,
@@ -122,7 +122,7 @@ async fn fetch_consumer_offset_from_peer(
     debug!(consumer_id, "fetch consumer from peer");
 
     let fetch_req = FetchConsumerOffsetRequest::new(topic, partition, consumer_id);
-    let response = send_private_request_to_leader(ctx, consumers_replica_id, fetch_req)
+    let response = send_private_request_to_leader(ctx, consumer_replica_key, fetch_req)
         .await
         .map_err(|e| ErrorCode::Other(e.to_string()))?;
 
