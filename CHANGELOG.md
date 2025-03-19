@@ -2,6 +2,39 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## Platform Version 0.17.0-dev-1 - 2025-03-19
+
+### Added
+
+* Add deduplicate parameter to create topic using cli ([#4386](https://github.com/infinyon/fluvio/issues/4386))
+* Change debug to warn for leader not found error and add replica id ([#4440](https://github.com/infinyon/fluvio/issues/4440))
+* Make dedup count required ([#4443](https://github.com/infinyon/fluvio/issues/4443))
+* Make SPG creation optional in crate API ([#4432](https://github.com/infinyon/fluvio/issues/4432))
+* Add proxy on  fvm install ([#4438](https://github.com/infinyon/fluvio/issues/4438))
+
+### CI
+
+* Pos release fluvio 0.16.1 ([#4424](https://github.com/infinyon/fluvio/issues/4424))
+* Pre release fluvio 0.17.0-dev-1
+
+### Changed
+
+* Update referenced sdf version ([#4425](https://github.com/infinyon/fluvio/issues/4425))
+
+### Fixed
+
+* Cdk, additional validation on `cdk publish` ([#4423](https://github.com/infinyon/fluvio/issues/4423))
+* Reconnect log with right offset ([#4430](https://github.com/infinyon/fluvio/issues/4430))
+* Reconnect producer when spu is down ([#4441](https://github.com/infinyon/fluvio/issues/4441))
+* Delete consumer after topic delete ([#4448](https://github.com/infinyon/fluvio/issues/4448))
+* Recalculate replicas on timeout and rejection ([#4450](https://github.com/infinyon/fluvio/issues/4450))
+* Return tls cluster connect error when built w/o tls ([#4456](https://github.com/infinyon/fluvio/issues/4456))
+* Hard delete consumer after topic delete ([#4459](https://github.com/infinyon/fluvio/issues/4459))
+
+### Other
+
+* Export ReplyHubref{} and HUB_REF_ENDPOINT ([#4431](https://github.com/infinyon/fluvio/issues/4431))
+
 ## Platform Version 0.16.1 - 2025-02-27
 
 ### CI
