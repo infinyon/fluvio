@@ -1,5 +1,6 @@
 use std::fmt;
 
+use tracing::info;
 use tracing::{debug, error, warn};
 use futures_util::stream::StreamExt;
 use tracing::instrument;
@@ -95,18 +96,17 @@ impl FollowerHandler {
                     if let Some(msg) = api_msg {
                         if let Ok(req_message) = msg {
                             match req_message {
-
                                 LeaderPeerRequest::UpdateOffsets(request) => {
                                     self.update_from_follower(request.request,&mut sink).await?;
                                 }
                             }
                         } else {
-                            debug!("error decoding req, terminating");
+                            error!("error decoding req, terminating");
                             break;
                         }
 
                     } else {
-                        debug!("no more msg, end");
+                        error!("no more msg, terminating");
                         break;
                     }
 
@@ -115,7 +115,7 @@ impl FollowerHandler {
             }
         }
 
-        debug!("closing");
+        info!("closing connection");
 
         Ok(())
     }
