@@ -44,6 +44,7 @@ pub trait SpuDirectory {
 }
 
 /// connection pool to spu
+#[derive(Clone)]
 pub struct SpuSocketPool {
     config: Arc<ClientConfig>,
     pub(crate) metadata: MetadataStores,
