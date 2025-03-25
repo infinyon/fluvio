@@ -153,8 +153,8 @@ ureq = { version = "=2.9.7", default-features = false, features = ["tls", "http-
 url = "2.5"
 uuid = { version = "1.1", features = ["serde", "v4"] }
 wasm-bindgen-test = "0.3.24"
-wasi-common = { version = "30.0.2" }
-wasmtime = { version = "30.0.2" }
+wasi-common = { version = "31.0.0" }
+wasmtime = { version = "31.0.0" }
 wasmparser = "0.227.1"
 web-time = "1.1.0"
 which = "7.0.1"
