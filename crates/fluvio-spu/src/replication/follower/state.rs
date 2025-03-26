@@ -4,7 +4,7 @@ use std::collections::{HashMap, hash_map::Entry};
 use std::ops::{Deref, DerefMut};
 
 use fluvio_controlplane::replica::Replica;
-use tracing::{debug, warn, instrument};
+use tracing::{debug, info, instrument, warn};
 use async_lock::RwLock;
 use anyhow::Result;
 
@@ -89,7 +89,7 @@ impl FollowersState<FileReplica> {
                 Ok(None)
             }
             Entry::Vacant(entry) => {
-                debug!(
+                info!(
                     replica = %replica.id,
                     "creating new follower state"
                 );

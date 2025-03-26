@@ -1,7 +1,7 @@
 use std::cmp::min;
 use std::{fmt, mem};
 use std::sync::Arc;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicI64, AtomicU64, Ordering};
 
 use tracing::{debug, trace, warn, instrument, info};
 use async_trait::async_trait;
@@ -16,8 +16,7 @@ use fluvio_protocol::record::{Offset, ReplicaKey, Size, Size64};
 use fluvio_protocol::record::{Batch, BatchRecords};
 use fluvio_protocol::record::RecordSet;
 
-use crate::checkpoint::HW_CHECKPOINT_FILE_NAME;
-use crate::{OffsetInfo, checkpoint::CheckPoint};
+use crate::OffsetInfo;
 use crate::segments::SharedSegments;
 use crate::segment::MutableSegment;
 use crate::config::{ReplicaConfig, SharedReplicaConfig, StorageConfig};
@@ -36,8 +35,8 @@ pub struct FileReplica {
     partition: Size,
     option: Arc<SharedReplicaConfig>,
     active_segment: MutableSegment,
+    hw: AtomicI64,
     prev_segments: Arc<SharedSegments>,
-    commit_checkpoint: CheckPoint,
     cleaner: Arc<Cleaner>,
     size: Arc<ReplicaSize>,
     append_failure: bool, // if this is true, last append failed, should not append again
@@ -77,7 +76,7 @@ impl ReplicaStorage for FileReplica {
 
     #[inline(always)]
     fn get_hw(&self) -> Offset {
-        self.commit_checkpoint.get_offset()
+        self.hw.load(Ordering::SeqCst)
     }
 
     /// offset mark that beginning of uncommitted
@@ -180,7 +179,8 @@ impl ReplicaStorage for FileReplica {
                 old_offset,
                 offset
             );
-            self.commit_checkpoint.write(offset);
+            self.hw.store(offset, Ordering::SeqCst);
+
             Ok(true)
         }
     }
@@ -255,24 +255,6 @@ impl FileReplica {
 
         let last_base_offset = active_segment.get_base_offset();
 
-        let mut commit_checkpoint = CheckPoint::create(
-            shared_config.clone(),
-            HW_CHECKPOINT_FILE_NAME,
-            last_base_offset,
-        )
-        .await?;
-
-        // ensure checkpoint is valid
-        let hw = commit_checkpoint.get_offset();
-        let leo = active_segment.get_end_offset();
-        if hw > leo {
-            info!(
-                hw,
-                leo, "high watermark is greater than log end offset, resetting to leo"
-            );
-            commit_checkpoint.write(leo);
-        }
-
         let size = Arc::new(ReplicaSize::default());
         size.store_active(active_segment.occupied_memory());
 
@@ -285,6 +267,7 @@ impl FileReplica {
 
         let max_request_size = shared_config.max_request_size.get_consistent() as usize;
         let max_segment_size = shared_config.segment_max_bytes.get_consistent() as usize;
+        let hw = AtomicI64::new(0);
 
         Ok(Self {
             option: shared_config,
@@ -292,7 +275,7 @@ impl FileReplica {
             partition,
             active_segment,
             prev_segments: segments,
-            commit_checkpoint,
+            hw,
             cleaner,
             size,
             append_failure: false,
@@ -376,7 +359,7 @@ impl FileReplica {
                 )));
             }
         } else {
-            debug!(start_offset, active_base_offset, "not in active sgments");
+            debug!(start_offset, active_base_offset, "not in active segments");
             self.prev_segments
                 .find_slice(start_offset, max_offset)
                 .await?
@@ -592,14 +575,14 @@ mod tests {
 
         assert_eq!(replica.get_log_start_offset(), START_OFFSET);
         assert_eq!(replica.get_leo(), START_OFFSET);
-        assert_eq!(replica.get_hw(), START_OFFSET);
+        assert_eq!(replica.get_hw(), 0);
 
         replica
             .write_batch(&mut create_batch())
             .await
             .expect("send");
         assert_eq!(replica.get_leo(), START_OFFSET + 2); // 2 batches
-        assert_eq!(replica.get_hw(), START_OFFSET); // hw should not change since we have not committed them
+        assert_eq!(replica.get_hw(), 0); // hw should not change since we have not committed them
 
         replica
             .update_high_watermark(10)
@@ -751,7 +734,7 @@ mod tests {
         assert_eq!(replica.get_log_start_offset(), START_OFFSET);
         let replica_dir = &option.base_dir.join("test-1");
         let dir_contents = fs::read_dir(replica_dir).expect("read_dir");
-        assert_eq!(dir_contents.count(), 5, "should be 5 files");
+        assert_eq!(dir_contents.count(), 4, "should be 4 files");
 
         let seg2_file = replica_dir.join(TEST_SE2_NAME);
         let bytes = read_bytes_from_file(seg2_file).expect("file read");
@@ -795,7 +778,7 @@ mod tests {
 
         // restore replica
         let replica = create_replica("test", 0, option).await;
-        assert_eq!(replica.get_hw(), 2);
+        assert_eq!(replica.get_hw(), 0);
     }
 
     const TEST_STORAGE_SIZE_DIR: &str = "test_storage_size";
@@ -1164,11 +1147,18 @@ mod tests {
             .await
             .expect("write");
 
+        // as hw is unsycned, we set it manually
+        replica
+            .update_high_watermark(START_OFFSET)
+            .await
+            .expect("high watermaerk");
+
         // make sure we can read
         let orig_slice = replica
             .read_all_uncommitted_records(FileReplica::PREFER_MAX_LEN)
             .await
             .expect("read");
+
         let orig_slice_len = orig_slice.file_slice.unwrap().len();
         info!(orig_slice_len, "original file slice len");
         drop(replica);
@@ -1197,7 +1187,11 @@ mod tests {
         assert_eq!(invalid_fs_len, original_fs_len + 3);
 
         // reopen replica
-        let replica2 = create_replica("test", START_OFFSET, option.clone()).await;
+        let mut replica2 = create_replica("test", START_OFFSET, option.clone()).await;
+        replica2
+            .update_high_watermark(START_OFFSET)
+            .await
+            .expect("high watermaerk");
 
         // make sure we can read original batches
         let slice = replica2

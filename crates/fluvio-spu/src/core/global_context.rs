@@ -197,7 +197,7 @@ mod file_replica {
         sc_api::remove::ReplicaRemovedRequest, replica::Replica,
         spu_api::update_replica::UpdateReplicaRequest,
     };
-    use tracing::{trace, warn};
+    use tracing::{info, trace, warn};
 
     use fluvio_storage::FileReplica;
     use flv_util::actions::Actions;
@@ -299,6 +299,7 @@ mod file_replica {
                             self.remove_replica(&mut outputs, new_replica).await;
                         } else if new_replica.leader == local_id {
                             // we are leader
+                            info!(replica = %new_replica.id, "adding leader replica");
                             if let Err(err) = self
                                 .leaders_state()
                                 .add_leader_replica(
@@ -312,6 +313,7 @@ mod file_replica {
                             }
                         } else {
                             // add follower if we are in follower list
+                            info!(replica = %new_replica.id, "adding follower replica");
                             if new_replica.replicas.contains(&local_id) {
                                 if let Err(err) = self
                                     .followers_state_owned()
