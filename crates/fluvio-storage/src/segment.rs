@@ -4,7 +4,7 @@ use std::ops::Deref;
 use std::sync::Arc;
 use std::time::Duration;
 
-use tracing::{debug, trace, instrument, info, error};
+use tracing::{debug, error, info, instrument, trace, warn};
 use anyhow::Result;
 
 use fluvio_future::fs::remove_file;
@@ -110,13 +110,13 @@ where
         // let file = file_util::open(file_path).await?;
         Ok(FileBatchStream::open(&file_path).await?)
     }
-
     /// get file slice from offset to end of segment
     #[instrument(skip(self))]
     pub async fn records_slice(
         &self,
         start_offset: Offset,
         max_offset_opt: Option<Offset>,
+        max_len: Option<u32>,
     ) -> Result<Option<AsyncFileSlice>, ErrorCode> {
         match self
             .find_offset_position(start_offset)
@@ -124,47 +124,79 @@ where
             .map_err(|err| ErrorCode::Other(format!("offset error: {err:#?}")))?
         {
             Some(start_pos) => {
-                let batch = start_pos.batch;
-                let pos = start_pos.pos;
-                debug!(
-                    batch_offset = batch.base_offset,
-                    batch_len = batch.batch_len,
-                    "found start pos",
+                let start_pos_in_file = start_pos.pos;
+                let mut current_pos = start_pos_in_file;
+                let mut total_len: Size = 0;
+
+                let effective_max_offset = max_offset_opt.unwrap_or(self.get_end_offset());
+
+                info!(
+                    start_offset,
+                    start_pos_in_file, effective_max_offset, "reading records slice"
                 );
-                match max_offset_opt {
-                    Some(max_offset) => {
-                        // max_offset comes from HW, which could be greater than current segment end.
-                        let effective_max_offset = std::cmp::min(max_offset, self.get_end_offset());
-                        // check if max offset same as segment end
-                        if effective_max_offset == self.get_end_offset() {
-                            debug!("effective max offset is same as end offset, reading to end");
-                            Ok(Some(self.msg_log.as_file_slice(pos).map_err(|err| {
-                                ErrorCode::Other(format!("msg as file slice: {err:#?}"))
-                            })?))
-                        } else {
-                            debug!(effective_max_offset, max_offset);
-                            match self
-                                .find_offset_position(effective_max_offset)
-                                .await
-                                .map_err(|err| {
-                                    ErrorCode::Other(format!("offset error: {err:#?}"))
-                                })? {
-                                Some(end_pos) => Ok(Some(
-                                    self.msg_log
-                                        .as_file_slice_from_to(pos, end_pos.pos - pos)
-                                        .map_err(|err| {
-                                            ErrorCode::Other(format!("msg slice: {err:#?}"))
-                                        })?,
-                                )),
-                                None => Err(ErrorCode::Other(format!(
-                                    "max offset position: {effective_max_offset} not found"
-                                ))),
-                            }
+
+                let mut header_stream = self
+                    .open_batch_header_stream(start_pos_in_file)
+                    .await
+                    .map_err(|err| {
+                        ErrorCode::Other(format!("failed to open batch header stream: {err:#?}"))
+                    })?;
+                let mut count = 0;
+
+                while let Some(batch_pos) = header_stream.try_next().await.map_err(|err| {
+                    ErrorCode::Other(format!("failed reading batch header: {err:#?}"))
+                })? {
+                    let pos = batch_pos.get_pos();
+                    let batch = batch_pos.inner();
+                    // let size = (pos - start_pos_in_file) as u32;
+                    let size = batch.batch_len;
+                    let batch_last_offset = batch.get_last_offset();
+
+                    if let Some(max_allowed) = max_len {
+                        if count > 0 && (total_len + size as u32) > max_allowed {
+                            warn!(max_allowed, total_len, "max len reached, returning");
+                            break;
                         }
                     }
-                    None => Ok(Some(self.msg_log.as_file_slice(start_pos.pos).map_err(
-                        |err| ErrorCode::Other(format!("msg slice error: {err:#?}")),
-                    )?)),
+
+                    count += 1;
+
+                    total_len += (size) as Size;
+                    current_pos = pos;
+
+                    if batch_last_offset >= effective_max_offset {
+                        warn!(
+                            batch_last_offset,
+                            effective_max_offset, "reached max offset"
+                        );
+                        break;
+                    }
+
+                    info!(
+                        batch_last_offset,
+                        size, total_len, count, current_pos, "batch_pos"
+                    );
+                }
+
+                if total_len > 0 {
+                    if current_pos > start_pos_in_file {
+                        Ok(Some(
+                            self.msg_log
+                                .as_file_slice_from_to(
+                                    start_pos_in_file,
+                                    current_pos - start_pos_in_file,
+                                )
+                                .map_err(|err| ErrorCode::Other(format!("msg slice: {err:#?}")))?,
+                        ))
+                    } else {
+                        Ok(Some(
+                            self.msg_log
+                                .as_file_slice(start_pos_in_file)
+                                .map_err(|err| ErrorCode::Other(format!("msg slice: {err:#?}")))?,
+                        ))
+                    }
+                } else {
+                    Ok(None)
                 }
             }
             None => {
@@ -674,7 +706,7 @@ mod tests {
         assert_eq!(seg_sink.get_end_offset(), 50);
 
         let _records = seg_sink
-            .records_slice(44, Some(52))
+            .records_slice(44, Some(52), None)
             .await
             .expect(
                 "failed to get records using max offset larger than current end offset in segment",

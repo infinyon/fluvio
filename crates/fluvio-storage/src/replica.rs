@@ -365,7 +365,7 @@ impl FileReplica {
                 )));
             } else if let Some(slice) = self
                 .active_segment
-                .records_slice(start_offset, max_offset)
+                .records_slice(start_offset, max_offset, Some(max_len))
                 .await?
             {
                 slice
@@ -378,7 +378,7 @@ impl FileReplica {
         } else {
             debug!(start_offset, active_base_offset, "not in active sgments");
             self.prev_segments
-                .find_slice(start_offset, max_offset)
+                .find_slice(start_offset, max_offset, Some(max_len))
                 .await?
                 .ok_or_else(|| ErrorCode::OffsetEvicted {
                     offset: start_offset,
@@ -389,7 +389,8 @@ impl FileReplica {
         let limited_slice = AsyncFileSlice::new(
             file_slice.fd(),
             file_slice.position(),
-            min(file_slice.len(), max_len as u64),
+            // file_slice.len(),
+            min(max_len as u64, file_slice.len()),
         );
 
         debug!(

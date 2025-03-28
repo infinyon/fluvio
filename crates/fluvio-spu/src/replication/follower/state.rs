@@ -247,17 +247,29 @@ where
     /// ensure records has correct baseoffset
     async fn write_recordsets<R: BatchRecords>(&self, records: &mut RecordSet<R>) -> Result<bool> {
         let storage_leo = self.leo();
-        if records.base_offset() != storage_leo {
-            // this could happened if records were sent from leader before hw was sync
-            warn!(
-                storage_leo,
-                incoming_base_offset = records.base_offset(),
-                "follower leo is not same as base offset, skipping write"
-            );
-            Ok(false)
-        } else {
-            self.write_record_set(records, false).await?;
-            Ok(true)
+        let incoming_base_offset = records.base_offset();
+
+        match storage_leo.cmp(&incoming_base_offset) {
+            std::cmp::Ordering::Less => {
+                warn!(
+                    storage_leo,
+                    incoming_base_offset,
+                    "Follower's LEO is behind leader's base offset, skipping write."
+                );
+                Ok(false)
+            }
+            std::cmp::Ordering::Greater => {
+                warn!(
+                    storage_leo,
+                    incoming_base_offset,
+                    "Leader sent an earlier base offset. Skipping write until HW sync."
+                );
+                Ok(false)
+            }
+            std::cmp::Ordering::Equal => {
+                self.write_record_set(records, false).await?;
+                Ok(true)
+            }
         }
     }
 

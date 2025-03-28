@@ -124,10 +124,14 @@ impl SharedSegments {
         &self,
         start_offset: Offset,
         max_offset: Option<Offset>,
+        max_len: Option<u32>,
     ) -> Result<Option<AsyncFileSlice>, ErrorCode> {
         let reader = self.read().await;
         if let Some((_offset, segment)) = reader.find_segment(start_offset) {
-            if let Some(slice) = segment.records_slice(start_offset, max_offset).await? {
+            if let Some(slice) = segment
+                .records_slice(start_offset, max_offset, max_len)
+                .await?
+            {
                 Ok(Some(slice))
             } else {
                 Err(ErrorCode::Other(format!(
