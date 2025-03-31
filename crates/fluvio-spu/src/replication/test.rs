@@ -15,7 +15,7 @@ use fluvio_future::timer::sleep;
 use flv_util::fixture::ensure_clean_dir;
 use fluvio_types::SpuId;
 use fluvio_controlplane_metadata::spu::{IngressAddr, IngressPort, SpuSpec};
-use fluvio_protocol::fixture::create_raw_recordset;
+use fluvio_protocol::fixture::{create_raw_recordset, create_raw_recordset_inner};
 
 use crate::core::{DefaultSharedGlobalContext, GlobalContext};
 use crate::config::SpuConfig;
@@ -56,6 +56,8 @@ pub(crate) struct TestConfig {
     base_dir: PathBuf,
     #[builder(setter(into), default = "9000")]
     base_port: u16,
+    #[builder(setter(into), default = "2_097_152")]
+    batch_size: u32,
 }
 
 impl TestConfig {
@@ -76,6 +78,7 @@ impl TestConfig {
         assert!(follower_index < self.followers);
         let mut config = SpuConfig::default();
         config.log.base_dir.clone_from(&self.base_dir);
+        config.log.max_batch_size = self.batch_size;
         config.replication.min_in_sync_replicas = self.in_sync_replica;
         config.id = self.follower_id(follower_index);
         config
@@ -856,6 +859,84 @@ async fn test_sync_2_replicas_but_one_reject() {
 
     assert_eq!(leader_replica.leo(), 4);
     assert_eq!(leader_replica2.leo(), 2);
+
+    sleep(Duration::from_millis(WAIT_TERMINATE)).await;
+
+    spu_server.notify();
+}
+
+#[fluvio_future::test(ignore)]
+async fn test_sync_larger_records() {
+    let num_records = 5;
+    let builder = TestConfig::builder()
+        .followers(1_u16)
+        .base_port(13070_u16)
+        .generate("sync_larger_records");
+
+    let leader_gctx = builder.leader_ctx().await;
+
+    let spu_server = create_internal_server(builder.leader_addr(), leader_gctx.clone()).run();
+
+    let replica = builder.replica();
+
+    let actions = leader_gctx
+        .apply_replica_update(UpdateReplicaRequest::with_all(1, vec![replica.clone()]))
+        .await;
+    assert!(actions.is_empty());
+
+    // give leader controller time to startup
+    sleep(Duration::from_millis(MAX_WAIT_LEADER)).await;
+
+    let leader = leader_gctx
+        .leaders_state()
+        .get(&replica.id)
+        .await
+        .expect("replica");
+    assert!(leader_gctx
+        .followers_state()
+        .get(&replica.id)
+        .await
+        .is_none());
+    // should be new
+    assert_eq!(leader.leo(), 0);
+    assert_eq!(leader.hw(), 0);
+
+    // create a raw record with 512kb
+    let record_test: Vec<u8> = vec![10; 512 * 1024];
+
+    // write a batch with 5 records with 512kb, total of 2.5MB
+    leader
+        .write_record_set(
+            &mut create_raw_recordset_inner(num_records, &record_test),
+            leader_gctx.follower_notifier(),
+        )
+        .await
+        .expect("write");
+
+    assert_eq!(leader.leo(), num_records as i64);
+    assert_eq!(leader.hw(), 0);
+
+    let follower_gctx = builder.follower_ctx(0).await;
+    let actions = follower_gctx
+        .apply_replica_update(UpdateReplicaRequest::with_all(1, vec![replica.clone()]))
+        .await;
+    assert!(actions.is_empty());
+    let follower = follower_gctx
+        .followers_state()
+        .get(&replica.id)
+        .await
+        .expect("follower");
+    assert_eq!(follower.leader(), LEADER);
+    assert_eq!(follower.leo(), 0);
+    assert_eq!(follower.hw(), 0);
+
+    // wait until follower sync up with leader
+    sleep(Duration::from_millis(*MAX_WAIT_REPLICATION)).await;
+    assert_eq!(follower.leo(), num_records as i64);
+
+    // hw has been replicated
+    assert_eq!(follower.hw(), num_records as i64);
+    assert_eq!(leader.hw(), num_records as i64);
 
     sleep(Duration::from_millis(WAIT_TERMINATE)).await;
 

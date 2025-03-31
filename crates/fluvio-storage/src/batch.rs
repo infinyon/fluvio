@@ -270,6 +270,7 @@ mod tests {
     use std::env::temp_dir;
     use std::path::PathBuf;
 
+    use fluvio_protocol::fixture::TEST_RECORD;
     use flv_util::fixture::ensure_new_dir;
     use fluvio_protocol::fixture::create_batch;
     use fluvio_protocol::fixture::create_batch_with_producer;
@@ -327,7 +328,7 @@ mod tests {
             .await
             .expect("write");
         active_segment
-            .append_batch(&mut create_batch_with_producer(25, 2))
+            .append_batch(&mut create_batch_with_producer(25, 2, TEST_RECORD))
             .await
             .expect("batch");
 

@@ -2901,7 +2901,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.12.1"
+version = "0.12.2"
 dependencies = [
  "bytes",
  "cfg-if",
