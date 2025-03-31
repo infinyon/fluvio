@@ -51,6 +51,7 @@ impl FluvioService for InternalService {
                 let request = &req_msg.request;
                 let follower_id = request.spu_id;
                 let leader_spu_id = request.leader_spu_id;
+                let max_bytes = request.max_bytes;
                 debug!(
                     follower_id,
                     "received fetch stream"

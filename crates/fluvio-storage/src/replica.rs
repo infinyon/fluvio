@@ -3,7 +3,7 @@ use std::{fmt, mem};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use tracing::{debug, trace, warn, instrument, info};
+use tracing::{debug, error, info, instrument, trace, warn};
 use async_trait::async_trait;
 use anyhow::Result;
 
@@ -355,7 +355,7 @@ impl FileReplica {
 
         let active_base_offset = self.active_segment.get_base_offset();
         let file_slice = if start_offset >= active_base_offset {
-            debug!(start_offset, active_base_offset, "is in active segment");
+            info!(start_offset, active_base_offset, "is in active segment");
             if start_offset == leo {
                 trace!("start offset is same as end offset, skipping");
                 return Ok(slice);
@@ -370,13 +370,18 @@ impl FileReplica {
             {
                 slice
             } else {
+                error!(
+                    start_offset,
+                    max_offset = ?max_offset,
+                    "no records found in active segment"
+                );
                 return Err(ErrorCode::Other(format!(
                     "no records found in active replica, start: {}, max: {:#?}, active: {:#?}",
                     start_offset, max_offset, self.active_segment
                 )));
             }
         } else {
-            debug!(start_offset, active_base_offset, "not in active sgments");
+            info!(start_offset, active_base_offset, "not in active segments");
             self.prev_segments
                 .find_slice(start_offset, max_offset, Some(max_len))
                 .await?
@@ -389,8 +394,8 @@ impl FileReplica {
         let limited_slice = AsyncFileSlice::new(
             file_slice.fd(),
             file_slice.position(),
-            // file_slice.len(),
             min(max_len as u64, file_slice.len()),
+            // file_slice.len(),
         );
 
         debug!(

@@ -14,7 +14,7 @@ use tracing::instrument;
 use async_lock::RwLock;
 use anyhow::{Result, Context};
 
-use fluvio_protocol::record::{RecordSet, Offset, ReplicaKey, RawRecords, Batch};
+use fluvio_protocol::record::{Batch, Offset, RawRecords, RecordSet, ReplicaKey};
 use fluvio_controlplane_metadata::partition::{PartitionMirrorConfig, PartitionStatus, ReplicaStatus};
 use fluvio_storage::{FileReplica, ReplicaStorage, OffsetInfo, ReplicaStorageConfig};
 use fluvio_types::{
@@ -276,7 +276,11 @@ where
                             partition_response.hw = slice.end.hw;
                             partition_response.leo = slice.end.leo;
                             if let Some(file_slice) = slice.file_slice {
-                                partition_response.records = file_slice.into();
+                                // let a = file_slice.into();
+                                let a = file_slice.into();
+                                // let b = a.len();
+                                // info!(?a, "read records");
+                                partition_response.records = a;
                             }
                         }
                         Err(err) => {

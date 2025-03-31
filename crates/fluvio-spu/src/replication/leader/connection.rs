@@ -1,5 +1,6 @@
 use std::fmt;
 
+use tracing::info;
 use tracing::{debug, error, warn};
 use futures_util::stream::StreamExt;
 use tracing::instrument;
@@ -135,7 +136,10 @@ impl FollowerHandler {
         let mut sync_request = FileSyncRequest::default();
         let leaders = self.ctx.leaders_state();
 
+        info!(%self.follower_id, "found {} replicas", replicas.len());
+
         for replica in replicas {
+            info!(%replica, "do replica");
             if let Some(leader) = leaders.get(&replica).await {
                 if let Some(topic_response) = leader
                     .follower_updates(&self.follower_id, self.max_bytes)
@@ -156,6 +160,7 @@ impl FollowerHandler {
         } else {
             let request = RequestMessage::new_request(sync_request)
                 .set_client_id(format!("leader: {}", self.ctx.local_spu_id()));
+            info!("sending out sync request: {:?}", request);
             sink.encode_file_slices(&request, request.header.api_version())
                 .await?;
         }

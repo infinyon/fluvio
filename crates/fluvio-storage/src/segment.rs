@@ -1,3 +1,4 @@
+use std::cmp::min;
 use std::fmt;
 use std::io::Error as IoError;
 use std::ops::Deref;
@@ -110,9 +111,10 @@ where
         // let file = file_util::open(file_path).await?;
         Ok(FileBatchStream::open(&file_path).await?)
     }
+
     /// get file slice from offset to end of segment
     #[instrument(skip(self))]
-    pub async fn records_slice(
+    pub async fn records_slice_2(
         &self,
         start_offset: Offset,
         max_offset_opt: Option<Offset>,
@@ -172,10 +174,10 @@ where
                         break;
                     }
 
-                    info!(
-                        batch_last_offset,
-                        size, total_len, count, current_pos, "batch_pos"
-                    );
+                    // info!(
+                    //     batch_last_offset,
+                    //     size, total_len, count, current_pos, "batch_pos"
+                    // );
                 }
 
                 if total_len > 0 {
@@ -197,6 +199,84 @@ where
                     }
                 } else {
                     Ok(None)
+                }
+            }
+            None => {
+                debug!(start_offset, "offset position not found");
+                Ok(None)
+            }
+        }
+    }
+
+    /// get file slice from offset to end of segment
+    #[instrument(skip(self))]
+    pub async fn records_slice(
+        &self,
+        start_offset: Offset,
+        max_offset_opt: Option<Offset>,
+        max_bytes: Option<Size>,
+    ) -> Result<Option<AsyncFileSlice>, ErrorCode> {
+        match self
+            .find_offset_position(start_offset)
+            .await
+            .map_err(|err| ErrorCode::Other(format!("offset error: {err:#?}")))?
+        {
+            Some(start_pos) => {
+                let batch = start_pos.batch;
+                let pos = start_pos.pos;
+                debug!(
+                    batch_offset = batch.base_offset,
+                    batch_len = batch.batch_len,
+                    "found start pos",
+                );
+                match max_offset_opt {
+                    Some(max_offset) => {
+                        // max_offset comes from HW, which could be greater than current segment end.
+                        let effective_max_offset = std::cmp::min(max_offset, self.get_end_offset());
+                        // check if max offset same as segment end
+                        if effective_max_offset == self.get_end_offset() {
+                            debug!("effective max offset is same as end offset, reading to end");
+                            Ok(Some(self.msg_log.as_file_slice(pos).map_err(|err| {
+                                ErrorCode::Other(format!("msg as file slice: {err:#?}"))
+                            })?))
+                        } else {
+                            debug!(effective_max_offset, max_offset);
+                            match self
+                                .find_offset_position(effective_max_offset)
+                                .await
+                                .map_err(|err| {
+                                    ErrorCode::Other(format!("offset error: {err:#?}"))
+                                })? {
+                                Some(end_pos) => {
+                                    if end_pos.pos > pos {
+                                        let len = min(max_bytes.unwrap_or(u32::max_value()), end_pos.pos - pos);
+                                        Ok(Some(
+                                            self.msg_log
+                                                .as_file_slice_from_to(pos, len)
+                                                .map_err(|err| {
+                                                    ErrorCode::Other(format!("msg slice: {err:#?}"))
+                                                })?,
+                                        ))
+                                    } else {
+                                        error!(effective_max_offset, "max offset is same as start pos");
+                                        Ok(Some(
+                                            self.msg_log
+                                                .as_file_slice(pos)
+                                                .map_err(|err| {
+                                                    ErrorCode::Other(format!("msg slice: {err:#?}"))
+                                                })?,
+                                        ))
+                                    }
+                                }
+                                None => Err(ErrorCode::Other(format!(
+                                    "max offset position: {effective_max_offset} not found"
+                                ))),
+                            }
+                        }
+                    }
+                    None => Ok(Some(self.msg_log.as_file_slice(start_pos.pos).map_err(
+                        |err| ErrorCode::Other(format!("msg slice error: {err:#?}")),
+                    )?)),
                 }
             }
             None => {

@@ -1,7 +1,7 @@
 use std::io::Error as IoError;
 use std::convert::TryInto;
 
-use tracing::trace;
+use tracing::{info, trace};
 
 use fluvio_protocol::bytes::Buf;
 use fluvio_protocol::Decoder;
@@ -35,9 +35,27 @@ impl ApiMessage for FollowerPeerRequest {
         trace!("decoding with header: {:#?}", header);
         let version = header.api_version();
         match header.api_key().try_into()? {
-            FollowerPeerApiEnum::SyncRecords => Ok(FollowerPeerRequest::SyncRecords(
-                RequestMessage::new(header, DefaultSyncRequest::decode_from(src, version)?),
-            )),
+            FollowerPeerApiEnum::SyncRecords => {
+                info!("decoding sync records header: {:#?}", header);
+
+
+                let len = src.remaining();
+                info!("decoding sync records len: {len}");
+
+
+                match DefaultSyncRequest::decode_from(src, version) {
+                    Ok(request) => {
+                        trace!("decoding sync records request: {:#?}", request);
+                        Ok(FollowerPeerRequest::SyncRecords(RequestMessage::new(
+                            header, request,
+                        )))
+                    }
+                    Err(e) => {
+                        info!("failed to decode sync records request: {:#?}", e);
+                        Err(e)
+                    }
+                }
+            }
             FollowerPeerApiEnum::RejectedOffsetRequest => {
                 Ok(FollowerPeerRequest::RejectedOffsetRequest(
                     RequestMessage::new(header, RejectOffsetRequest::decode_from(src, version)?),

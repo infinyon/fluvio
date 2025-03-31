@@ -10,6 +10,8 @@ use std::str::Utf8Error;
 use bytes::Bytes;
 use bytes::BytesMut;
 use content_inspector::{inspect, ContentType};
+use fluvio_future::file_slice::AsyncFileSlice;
+use tracing::info;
 use tracing::{trace, warn};
 use once_cell::sync::Lazy;
 
@@ -324,6 +326,13 @@ impl<R: BatchRecords> Decoder for RecordSet<R> {
                             count,
                             "not enough bytes for decoding batch from recordset"
                         );
+                        let len_batch = self.batches.len();
+                        trace!(
+                            len_batch,
+                            "aaa decoded {} batches from record set",
+                            len_batch
+                        );
+
                         return Ok(());
                     }
                     _ => {
@@ -334,6 +343,9 @@ impl<R: BatchRecords> Decoder for RecordSet<R> {
             }
             count += 1;
         }
+
+        let len_batch = self.batches.len();
+        trace!(len_batch, "decoded {} batches from record set", len_batch);
 
         Ok(())
     }

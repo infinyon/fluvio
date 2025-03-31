@@ -164,7 +164,7 @@ mod inner {
                             break;
                         }
                     }
-                    Err(err) => error!("err: {}", err),
+                    Err(err) => error!("err sync leader: {}", err),
                 }
 
                 warn!("lost connection to leader, sleeping 5 seconds and will retry it");
@@ -216,18 +216,26 @@ mod inner {
 
                     api_msg = api_stream.next() => {
                         if let Some(req_msg_res) = api_msg {
-                            let req_msg = req_msg_res?;
 
-                            match req_msg {
-                                FollowerPeerRequest::SyncRecords(sync_request)=> self.sync_from_leader(&mut sink,sync_request.request).await?,
-                                 FollowerPeerRequest::RejectedOffsetRequest(requests) => {
-                                     debug!(fail_req = ?requests,"leader rejected these requests");
-                                     timer= sleep(Duration::from_secs(*SHORT_RECONCILLATION));
-                                 },
-                             }
-
+                            match req_msg_res {
+                                Ok(req_msg) => {
+                                    match req_msg {
+                                        FollowerPeerRequest::SyncRecords(sync_request)=> {
+                                            info!(%self.leader, "sync records from leader!!");
+                                            self.sync_from_leader(&mut sink,sync_request.request).await?},
+                                         FollowerPeerRequest::RejectedOffsetRequest(requests) => {
+                                             info!(fail_req = ?requests,"leader rejected these requests");
+                                             timer= sleep(Duration::from_secs(*SHORT_RECONCILLATION));
+                                         },
+                                     }
+                                }
+                                Err(err) => {
+                                    error!("error decoding req, terminating: {}", err);
+                                    return Ok(false);
+                                }
+                            }
                         } else {
-                            debug!("leader socket has terminated");
+                            info!("leader socket has terminated");
                             return Ok(false);
                         }
                     }
@@ -259,12 +267,15 @@ mod inner {
         ) -> Result<(), SocketError> {
             let mut offsets = UpdateOffsetRequest::default();
 
+            info!(%self.leader, "syncing from leader, with {} topics", req.topics.len());
             for topic_request in &mut req.topics {
+                info!(%topic_request.name, "syncing topic");
                 let topic = &topic_request.name;
                 for p in &mut topic_request.partitions {
+                    info!(%topic, %p.partition, "syncing partition");
                     let rep_id = p.partition;
                     let replica_key = ReplicaKey::new(topic.clone(), rep_id);
-                    debug!(
+                    info!(
                     replica = %replica_key,
                     leader_hw=p.hw,
                     leader_leo=p.leo,
@@ -275,10 +286,10 @@ mod inner {
                         match replica.update_from_leader(&mut p.records, p.hw).await {
                             Ok(changes) => {
                                 if changes {
-                                    debug!("changes occur, need to send back offset");
+                                    info!("changes occur, need to send back offset");
                                     offsets.replicas.push(replica.as_offset_request());
                                 } else {
-                                    debug!("no changes");
+                                    info!("no changes");
                                 }
                             }
                             Err(err) => {
@@ -320,7 +331,7 @@ mod inner {
 
                 match FluvioSocket::connect(&leader_endpoint).await {
                     Ok(mut socket) => {
-                        debug!("connected to leader");
+                        info!("connected to leader");
 
                         match self.send_fetch_stream_request(&mut socket).await {
                             Ok(Some(spu)) => {
@@ -362,10 +373,12 @@ mod inner {
             socket: &mut FluvioSocket,
         ) -> Result<Option<SpuId>, SocketError> {
             let local_spu_id = self.local_spu_id();
-            debug!("sending fetch stream for leader",);
+            info!("sending fetch stream for leader",);
+            let max_bytes = self.config.peer_max_bytes as i32;
             let fetch_request = FetchStreamRequest {
                 spu_id: local_spu_id,
                 leader_spu_id: self.leader,
+                max_bytes,
                 ..Default::default()
             };
             let mut message = RequestMessage::new_request(fetch_request);
@@ -375,7 +388,7 @@ mod inner {
 
             let response = socket.send(&message).await?;
             trace!(?response, "follower: fetch stream response",);
-            debug!("follower: established peer to peer channel to leader",);
+            info!("follower: established peer to peer channel to leader",);
             Ok(response.response.spu_id)
         }
 
@@ -384,8 +397,24 @@ mod inner {
             sink: &mut FluvioSink,
         ) -> Result<(), SocketError> {
             let spu_replicas = FollowerGroup::filter_from(&self.states, self.leader).await;
-            self.send_offsets_to_leader(sink, spu_replicas.replica_offsets())
-                .await
+            info!(
+                %self.leader,
+                "syncing all offsets to leader {:?}", spu_replicas.replica_offsets()
+            );
+            let a = self
+                .send_offsets_to_leader(sink, spu_replicas.replica_offsets())
+                .await;
+
+            match a {
+                Ok(_) => {
+                    info!("all offsets sent to leader");
+                    Ok(())
+                }
+                Err(err) => {
+                    error!("error sending all offsets to leader: {}", err);
+                    Err(err)
+                }
+            }
         }
 
         /// send offset to leader
@@ -396,11 +425,20 @@ mod inner {
             offsets: UpdateOffsetRequest,
         ) -> Result<(), SocketError> {
             let local_spu = self.config.id();
-            debug!(local_spu, "sending offsets to leader");
+            info!(local_spu, "sending offsets to leader");
             let req_msg = RequestMessage::new_request(offsets)
                 .set_client_id(format!("follower spu: {local_spu}"));
 
-            sink.send_request(&req_msg).await
+            match sink.send_request(&req_msg).await {
+                Ok(_) => {
+                    info!("offsets sent to leader");
+                    Ok(())
+                }
+                Err(err) => {
+                    error!("error sending offsets to leader: {}", err);
+                    Err(err)
+                }
+            }
         }
     }
 

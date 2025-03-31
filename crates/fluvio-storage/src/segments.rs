@@ -134,6 +134,7 @@ impl SharedSegments {
             {
                 Ok(Some(slice))
             } else {
+                error!("slice not found in start_offset: {start_offset}, segment: {segment:#?} ");
                 Err(ErrorCode::Other(format!(
                     "slice not found in start_offset: {start_offset}, segment: {segment:#?} "
                 )))

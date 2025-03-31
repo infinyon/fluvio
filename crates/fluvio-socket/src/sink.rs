@@ -115,6 +115,7 @@ mod file {
 
     use fluvio_protocol::store::{FileWrite, StoreValue};
     use fluvio_future::zero_copy::ZeroCopy;
+    use tracing::info;
 
     use super::*;
 
@@ -128,11 +129,11 @@ mod file {
         where
             T: FileWrite,
         {
-            trace!("encoding file slices version: {}", version);
+            info!("encoding file slices version: {}", version);
             let mut buf = BytesMut::with_capacity(1000);
             let mut data: Vec<StoreValue> = vec![];
             msg.file_encode(&mut buf, &mut data, version)?;
-            trace!("encoded buffer len: {}", buf.len());
+            info!("encoded buffer len: {}", buf.len());
             // add remainder
             data.push(StoreValue::Bytes(buf.freeze()));
             self.write_store_values(data).await
@@ -143,7 +144,7 @@ mod file {
             &mut self,
             values: Vec<StoreValue>,
         ) -> Result<usize, SocketError> {
-            trace!("writing store values to socket values: {}", values.len());
+            info!("writing store values to socket values: {}", values.len());
 
             let mut total_bytes_written = 0usize;
 
@@ -164,7 +165,7 @@ mod file {
                         if f_slice.is_empty() {
                             trace!("empty slice, skipping");
                         } else {
-                            trace!(
+                            info!(
                                 "writing file slice pos: {} len: {} to socket",
                                 f_slice.position(),
                                 f_slice.len()

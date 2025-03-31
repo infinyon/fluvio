@@ -8,6 +8,7 @@ use std::marker::PhantomData;
 
 use bytes::BytesMut;
 use fluvio_types::PartitionId;
+use tracing::info;
 use tracing::trace;
 
 use fluvio_protocol::store::StoreValue;
@@ -24,6 +25,7 @@ use super::api_key::FollowerPeerApiEnum;
 pub type FileSyncRequest = SyncRequest<FileRecordSet>;
 pub type DefaultSyncRequest = SyncRequest<RecordSet<RawRecords>>;
 pub type PeerFilePartitionResponse = PeerFetchablePartitionResponse<FileRecordSet>;
+// pub type PeerFilePartitionResponse = PeerFetchablePartitionResponse<RecordSet<RawRecords>>;
 pub type PeerFileTopicResponse = PeerFetchableTopicResponse<FileRecordSet>;
 
 /// used for sending records and commits
@@ -78,7 +80,7 @@ impl FileWrite for FileSyncRequest {
     }
 }
 
-#[derive(Encoder, Decoder, Default, Debug)]
+#[derive(Encoder, Decoder, Default, Debug, Clone)]
 pub struct PeerFetchableTopicResponse<R>
 where
     R: Encoder + Decoder + Default + Debug,
@@ -101,7 +103,7 @@ where
     }
 }
 
-#[derive(Encoder, Decoder, Default, Debug)]
+#[derive(Encoder, Decoder, Default, Debug, Clone)]
 pub struct PeerFetchablePartitionResponse<R>
 where
     R: Encoder + Decoder + Default + Debug,
@@ -148,11 +150,17 @@ impl FileWrite for PeerFilePartitionResponse {
         version: Version,
     ) -> Result<(), IoError> {
         trace!("file encoding fetch partition response");
+        info!("encoding partition: {}", self.partition);
         self.partition.encode(src, version)?;
+        info!("encoding error: {}", self.error);
         self.error.encode(src, version)?;
+        info!("encoding hw: {}", self.hw);
         self.hw.encode(src, version)?;
+        info!("encoding leo: {}", self.leo);
         self.leo.encode(src, version)?;
+        info!("encoding records");
         self.records.file_encode(src, data, version)?;
+        info!("done encoding records");
         Ok(())
     }
 }

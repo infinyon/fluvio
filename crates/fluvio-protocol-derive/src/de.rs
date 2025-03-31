@@ -263,7 +263,7 @@ fn generate_decode_enum_impl(
         _ => {
             return Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidData,
-                format!("Unknown {} type {}", stringify!(#enum_ident), typ)
+                format!("2 Unknown {} type {}", stringify!(#enum_ident), typ)
             ));
         }
     });
@@ -363,7 +363,7 @@ fn generate_try_enum_from_kf_enum(
     variant_expr.push(quote! {
         _ => return Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidData,
-                format!("Unknown {} type {}", stringify!(#enum_ident), typ)
+                format!("1 Unknown {} type {}", stringify!(#enum_ident), typ)
             ))
     });
 
