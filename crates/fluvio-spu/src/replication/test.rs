@@ -227,8 +227,9 @@ impl TestConfigBuilder {
 ///    
 #[fluvio_future::test(ignore)]
 async fn test_just_leader() {
+    let port = portpicker::pick_unused_port().expect("No free ports left");
     let builder = TestConfig::builder()
-        .base_port(13000_u16)
+        .base_port(port)
         .generate("just_leader");
 
     let (leader_gctx, leader_replica) = builder.leader_replica().await;
@@ -269,9 +270,10 @@ async fn test_just_leader() {
 /// Replicating with existing records
 #[fluvio_future::test(ignore)]
 async fn test_replication2_existing() {
+    let port = portpicker::pick_unused_port().expect("No free ports left");
     let builder = TestConfig::builder()
         .followers(1_u16)
-        .base_port(13010_u16)
+        .base_port(port)
         .generate("replication2_existing");
 
     let (leader_gctx, leader_replica) = builder.leader_replica().await;
@@ -336,9 +338,10 @@ async fn test_replication2_existing() {
 ///    
 #[fluvio_future::test(ignore)]
 async fn test_replication2_new_records() {
+    let port = portpicker::pick_unused_port().expect("No free ports left");
     let builder = TestConfig::builder()
         .followers(1_u16)
-        .base_port(13020_u16)
+        .base_port(port)
         .generate("replication2_new");
 
     let (leader_gctx, leader_replica) = builder.leader_replica().await;
@@ -409,9 +412,10 @@ async fn test_replication2_new_records() {
 /// test with 3 SPU
 #[fluvio_future::test(ignore)]
 async fn test_replication3_existing() {
+    let port = portpicker::pick_unused_port().expect("No free ports left");
     let builder = TestConfig::builder()
         .followers(2_u16)
-        .base_port(13030_u16)
+        .base_port(port)
         .generate("replication3_existing");
 
     let (leader_gctx, leader_replica) = builder.leader_replica().await;
@@ -470,9 +474,10 @@ async fn test_replication3_existing() {
 ///    
 #[fluvio_future::test(ignore)]
 async fn test_replication3_new_records() {
+    let port = portpicker::pick_unused_port().expect("No free ports left");
     let builder = TestConfig::builder()
         .followers(2_u16)
-        .base_port(13040_u16)
+        .base_port(port)
         .generate("replication3_new");
 
     let (leader_gctx, leader_replica) = builder.leader_replica().await;
@@ -543,9 +548,10 @@ async fn test_replication3_new_records() {
 ///    
 #[fluvio_future::test(ignore)]
 async fn test_replication2_promote() {
+    let port = portpicker::pick_unused_port().expect("No free ports left");
     let builder = TestConfig::builder()
         .followers(1_u16)
-        .base_port(13050_u16)
+        .base_port(port)
         .generate("replication2_promote");
 
     let (leader_gctx, leader_replica) = builder.leader_replica().await;
@@ -603,9 +609,10 @@ async fn test_replication2_promote() {
 /// receiving request from SC
 #[fluvio_future::test(ignore)]
 async fn test_replication_dispatch_in_sequence() {
+    let port = portpicker::pick_unused_port().expect("No free ports left");
     let builder = TestConfig::builder()
         .followers(1_u16)
-        .base_port(13060_u16)
+        .base_port(port)
         .generate("replication_dispatch_in_sequence");
 
     let leader_gctx = builder.leader_ctx().await;
@@ -679,9 +686,10 @@ async fn test_replication_dispatch_in_sequence() {
 #[fluvio_future::test(ignore)]
 async fn test_replication_dispatch_out_of_sequence() {
     //std::env::set_var("FLV_SHORT_RECONCILLATION", "1");
+    let port = portpicker::pick_unused_port().expect("No free ports left");
     let builder = TestConfig::builder()
         .followers(1_u16)
-        .base_port(13070_u16)
+        .base_port(port)
         .generate("replication_dispatch_out_of_sequence");
 
     let replica = builder.replica();
@@ -753,8 +761,9 @@ async fn test_replication_dispatch_out_of_sequence() {
 
 #[fluvio_future::test()]
 async fn test_replica_state_cleans_up_offset_producers() {
+    let port = portpicker::pick_unused_port().expect("No free ports left");
     let builder = TestConfig::builder()
-        .base_port(13000_u16)
+        .base_port(port)
         .generate("just_leader");
 
     let (_leader_gctx, leader_replica) = builder.leader_replica().await;
@@ -789,9 +798,10 @@ async fn test_replica_state_cleans_up_offset_producers() {
 /// Test 2 replicas but one replica is rejected, and than both is sync
 #[fluvio_future::test(ignore)]
 async fn test_sync_2_replicas_but_one_reject() {
+    let port = portpicker::pick_unused_port().expect("No free ports left");
     let builder = TestConfig::builder()
         .followers(2_u16)
-        .base_port(13060_u16)
+        .base_port(port)
         .generate("replication_dispatch_in_sequence");
     let replica_test1 = builder.replica();
     let (leader_gctx, leader_replica) = builder.leader_replica().await;
@@ -868,9 +878,10 @@ async fn test_sync_2_replicas_but_one_reject() {
 #[fluvio_future::test(ignore)]
 async fn test_sync_larger_records() {
     let num_records = 5;
+    let port = portpicker::pick_unused_port().expect("No free ports left");
     let builder = TestConfig::builder()
         .followers(1_u16)
-        .base_port(13070_u16)
+        .base_port(port)
         .generate("sync_larger_records");
 
     let leader_gctx = builder.leader_ctx().await;
