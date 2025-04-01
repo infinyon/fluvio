@@ -3121,6 +3121,7 @@ dependencies = [
  "mimalloc",
  "once_cell",
  "portpicker",
+ "rand",
  "serde",
  "serde_json",
  "sysinfo",

@@ -10,6 +10,7 @@ use std::str::Utf8Error;
 use bytes::Bytes;
 use bytes::BytesMut;
 use content_inspector::{inspect, ContentType};
+use tracing::debug;
 use tracing::{trace, warn};
 use once_cell::sync::Lazy;
 
@@ -317,7 +318,7 @@ impl<R: BatchRecords> Decoder for RecordSet<R> {
                 Ok(_) => self.batches.push(batch),
                 Err(err) => match err.kind() {
                     ErrorKind::UnexpectedEof => {
-                        warn!(
+                        debug!(
                             len,
                             remaining = buf.remaining(),
                             version,

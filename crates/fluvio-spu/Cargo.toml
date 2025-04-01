@@ -71,6 +71,7 @@ derive_builder =  { workspace = true }
 serde_json = { workspace = true }
 flate2 = { workspace = true }
 portpicker = { workspace = true }
+rand = { workspace = true }
 
 flv-util = { workspace = true, features = ["fixture"] }
 fluvio-future = { workspace = true,features = ["fixture", "subscriber"] }
