@@ -56,8 +56,6 @@ pub(crate) struct TestConfig {
     base_dir: PathBuf,
     #[builder(setter(into), default = "9000")]
     base_port: u16,
-    #[builder(setter(into), default = "2_097_152")]
-    batch_size: u32,
 }
 
 impl TestConfig {
@@ -78,7 +76,6 @@ impl TestConfig {
         assert!(follower_index < self.followers);
         let mut config = SpuConfig::default();
         config.log.base_dir.clone_from(&self.base_dir);
-        config.log.max_batch_size = self.batch_size;
         config.replication.min_in_sync_replicas = self.in_sync_replica;
         config.id = self.follower_id(follower_index);
         config

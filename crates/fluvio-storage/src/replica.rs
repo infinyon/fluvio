@@ -197,7 +197,7 @@ impl ReplicaStorage for FileReplica {
 }
 
 impl FileReplica {
-    pub const PREFER_MAX_LEN: u32 = 1000000; // 1MB as limit
+    pub const PREFER_MAX_LEN: u32 = 33_554_432;
 
     /// Construct a new replica with specified topic and partition.
     /// It can start with arbitrary offset.  However, for normal replica,

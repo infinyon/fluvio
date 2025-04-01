@@ -370,10 +370,14 @@ where
         } else {
             self.batch_len as usize - BATCH_HEADER_SIZE
         };
-        trace!("decoding batch records with len {}", rec_len);
+        trace!(rec_len, "decoding batch records with len");
         // not checking remaining bytes, because we do it in the record set
         let mut buf = src.take(rec_len);
-        self.records.decode(&mut buf, version)?;
+
+        if buf.remaining() > 0 {
+            self.records.decode(&mut buf, version)?;
+        }
+
         trace!("decoding batch records done");
         Ok(())
     }
