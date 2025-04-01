@@ -2901,7 +2901,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.12.1"
+version = "0.12.2"
 dependencies = [
  "bytes",
  "cfg-if",
@@ -3121,6 +3121,7 @@ dependencies = [
  "mimalloc",
  "once_cell",
  "portpicker",
+ "rand",
  "serde",
  "serde_json",
  "sysinfo",

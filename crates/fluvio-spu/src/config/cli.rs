@@ -15,6 +15,7 @@ use clap::Parser;
 use fluvio_types::print_cli_err;
 use fluvio_types::SpuId;
 use fluvio_future::openssl::TlsAcceptor;
+use fluvio_types::defaults::SPU_PEER_MAX_BYTES;
 
 use super::SpuConfig;
 
@@ -55,7 +56,7 @@ pub struct SpuOpt {
         long,
         value_name = "integer",
         env = "FLV_PEER_MAX_BYTES",
-        default_value = "1000000"
+        default_value_t = SPU_PEER_MAX_BYTES
     )]
     pub peer_max_bytes: u32,
 

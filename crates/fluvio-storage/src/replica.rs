@@ -197,7 +197,7 @@ impl ReplicaStorage for FileReplica {
 }
 
 impl FileReplica {
-    pub const PREFER_MAX_LEN: u32 = 1000000; // 1MB as limit
+    pub const PREFER_MAX_LEN: u32 = 33_554_432;
 
     /// Construct a new replica with specified topic and partition.
     /// It can start with arbitrary offset.  However, for normal replica,
@@ -515,6 +515,7 @@ mod tests {
 
     use fluvio_future::fs::remove_dir_all;
     use fluvio_future::timer::sleep;
+    use fluvio_protocol::fixture::TEST_RECORD;
     use futures_lite::AsyncWriteExt;
     use tracing::debug;
     use tracing::info;
@@ -1124,7 +1125,7 @@ mod tests {
         .await
         .expect("replica created");
 
-        let mut batch = create_batch_with_producer(12, 5);
+        let mut batch = create_batch_with_producer(12, 5, TEST_RECORD);
         for i in 1..=20 {
             //at least 20*5*8 bytes to store these records
             replica.write_batch(&mut batch).await.expect("batch sent");
