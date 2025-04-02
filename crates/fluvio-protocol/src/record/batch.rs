@@ -360,6 +360,7 @@ where
     {
         trace!("decoding batch");
         self.decode_from_file_buf(src, version)?;
+        trace!("decoding batch header");
         let rec_len = if self.header.has_schema() {
             let mut sid = SCHEMA_ID_NULL;
             sid.decode(src, version)?;
@@ -369,19 +370,15 @@ where
         } else {
             self.batch_len as usize - BATCH_HEADER_SIZE
         };
+        trace!(rec_len, "decoding batch records with len");
+        // not checking remaining bytes, because we do it in the record set
         let mut buf = src.take(rec_len);
-        if buf.remaining() < rec_len {
-            return Err(Error::new(
-                std::io::ErrorKind::UnexpectedEof,
-                format!(
-                    "not enough buf records, expected: {}, found: {}",
-                    rec_len,
-                    buf.remaining()
-                ),
-            ));
+
+        if buf.remaining() > 0 {
+            self.records.decode(&mut buf, version)?;
         }
 
-        self.records.decode(&mut buf, version)?;
+        trace!("decoding batch records done");
         Ok(())
     }
 }

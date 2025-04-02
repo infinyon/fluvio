@@ -473,7 +473,7 @@ mod tests {
     use fluvio_protocol::record::{Batch, MemoryRecords};
     use fluvio_protocol::record::Size;
     use fluvio_protocol::Decoder;
-    use fluvio_protocol::fixture::create_batch_with_producer;
+    use fluvio_protocol::fixture::{create_batch_with_producer, TEST_RECORD};
     use fluvio_protocol::fixture::create_batch;
     use fluvio_protocol::fixture::read_bytes_from_file;
 
@@ -513,7 +513,7 @@ mod tests {
 
         // batch of 1
         active_segment
-            .append_batch(&mut create_batch_with_producer(100, 1))
+            .append_batch(&mut create_batch_with_producer(100, 1, TEST_RECORD))
             .await
             .expect("write");
         assert_eq!(active_segment.get_end_offset(), 21);
@@ -560,7 +560,7 @@ mod tests {
             .expect("segment");
 
         active_segment
-            .append_batch(&mut create_batch_with_producer(100, 4))
+            .append_batch(&mut create_batch_with_producer(100, 4, TEST_RECORD))
             .await
             .expect("batch");
 
