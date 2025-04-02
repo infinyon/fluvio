@@ -212,7 +212,8 @@ impl Drop for ProducerPool {
 ///
 /// A `TopicProducer` allows you to send events to the specific
 /// topic it was initialized for. Once you have a `TopicProducer`,
-/// you can send events to the topic, choosing which partition /// each event should be delivered to.
+/// you can send events to the topic, choosing which partition
+/// each event should be delivered to.
 #[derive(Clone)]
 pub struct TopicProducer<S>
 where

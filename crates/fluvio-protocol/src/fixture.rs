@@ -59,19 +59,27 @@ impl BatchProducer {
 }
 
 pub fn create_batch() -> Batch {
-    create_batch_with_producer(12, 2)
+    create_batch_with_producer(12, 2, TEST_RECORD)
 }
 
 pub fn create_recordset(num_records: u16) -> RecordSet {
     let records = RecordSet::default();
-    records.add(create_batch_with_producer(12, num_records))
+    records.add(create_batch_with_producer(12, num_records, TEST_RECORD))
 }
 
 #[cfg(feature = "compress")]
 pub fn create_raw_recordset(num_records: u16) -> RecordSet<crate::record::RawRecords> {
+    create_raw_recordset_inner(num_records, TEST_RECORD)
+}
+
+#[cfg(feature = "compress")]
+pub fn create_raw_recordset_inner(
+    num_records: u16,
+    record_bytes: &[u8],
+) -> RecordSet<crate::record::RawRecords> {
     let records = RecordSet::default();
     records.add(
-        create_batch_with_producer(12, num_records)
+        create_batch_with_producer(12, num_records, record_bytes)
             .try_into()
             .expect("converted from memory records to raw"),
     )
@@ -80,7 +88,7 @@ pub fn create_raw_recordset(num_records: u16) -> RecordSet<crate::record::RawRec
 pub const TEST_RECORD: &[u8] = &[10, 20];
 
 /// create batches with produce and records count
-pub fn create_batch_with_producer(producer: i64, records: u16) -> Batch {
+pub fn create_batch_with_producer(producer: i64, records: u16, record_bytes: &[u8]) -> Batch {
     let mut batches = Batch::default();
     let header = batches.get_mut_header();
     header.magic = 2;
@@ -89,7 +97,7 @@ pub fn create_batch_with_producer(producer: i64, records: u16) -> Batch {
 
     for _ in 0..records {
         let mut record = Record::default();
-        let bytes: Vec<u8> = TEST_RECORD.to_owned();
+        let bytes: Vec<u8> = record_bytes.to_owned();
         record.value = bytes.into();
         batches.add_record(record);
     }
