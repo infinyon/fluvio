@@ -2,6 +2,24 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## Platform Version 0.17.0-dev-3 - 2025-04-02
+
+### Changed
+
+* Update wasmtime ([#4469](https://github.com/infinyon/fluvio/issues/4469))
+* Update README.md ([#4470](https://github.com/infinyon/fluvio/issues/4470))
+
+### Fixed
+
+* Replication stuck when syncing large batches ([#4474](https://github.com/infinyon/fluvio/issues/4474))
+* Re-export PartitionId from fluvio package. ([#4481](https://github.com/infinyon/fluvio/issues/4481))
+* Derive clone on SpuSocketPool ([#4480](https://github.com/infinyon/fluvio/issues/4480))
+
+### Other
+
+* Comment doc for TopicProducer ([#4468](https://github.com/infinyon/fluvio/issues/4468))
+* Set SPU_PEER_MAX_BYTES to 10mb ([#4479](https://github.com/infinyon/fluvio/issues/4479))
+
 ## Platform Version 0.17.0-dev-2 - 2025-03-19
 
 ### Added
