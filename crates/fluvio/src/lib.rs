@@ -41,7 +41,7 @@ pub use crate::fluvio::Fluvio;
 
 pub use fluvio_compression::Compression;
 
-use fluvio_types::PartitionId;
+pub use fluvio_types::PartitionId;
 use tracing::instrument;
 
 /// The minimum VERSION of the Fluvio Platform that this client is compatible with.
