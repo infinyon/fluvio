@@ -128,6 +128,10 @@ where
             .unwrap_or_else(|_| "".to_owned());
         debug!(%peer_addr, "Handling request");
 
+        stream.set_nodelay(true).unwrap_or_else(|err| {
+            error!("Error setting nodelay: {}", err);
+        });
+
         let socket = {
             let fd = stream.as_raw_fd();
             FluvioSocket::from_stream(Box::new(stream.clone()), Box::new(stream), fd)

@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-socket"
-version = "0.15.2"
+version = "0.15.3"
 edition = "2021"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Provide TCP socket wrapper for fluvio protocol"
@@ -31,6 +31,7 @@ pin-project = { workspace = true }
 thiserror = { workspace = true }
 semver = { workspace = true }
 nix = { workspace = true, features = ["uio"]}
+libc = { workspace = true }
 
 # Fluvio dependencies
 fluvio-future = { workspace = true, features = ["net", "task", "retry"] }
