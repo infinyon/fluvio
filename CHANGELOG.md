@@ -2,6 +2,12 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## Platform Version 0.17.1 - 2025-04-03
+
+### Fixed
+
+* Compilation for hub utils for WASM ([#4485](https://github.com/infinyon/fluvio/issues/4485))
+
 ## Platform Version 0.17.0 - 2025-04-02
 
 ### Added
