@@ -2,25 +2,7 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
-## Platform Version 0.17.0-dev-3 - 2025-04-02
-
-### Changed
-
-* Update wasmtime ([#4469](https://github.com/infinyon/fluvio/issues/4469))
-* Update README.md ([#4470](https://github.com/infinyon/fluvio/issues/4470))
-
-### Fixed
-
-* Replication stuck when syncing large batches ([#4474](https://github.com/infinyon/fluvio/issues/4474))
-* Re-export PartitionId from fluvio package. ([#4481](https://github.com/infinyon/fluvio/issues/4481))
-* Derive clone on SpuSocketPool ([#4480](https://github.com/infinyon/fluvio/issues/4480))
-
-### Other
-
-* Comment doc for TopicProducer ([#4468](https://github.com/infinyon/fluvio/issues/4468))
-* Set SPU_PEER_MAX_BYTES to 10mb ([#4479](https://github.com/infinyon/fluvio/issues/4479))
-
-## Platform Version 0.17.0-dev-2 - 2025-03-19
+## Platform Version 0.17.0 - 2025-04-02
 
 ### Added
 
@@ -30,17 +12,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Make SPG creation optional in crate API ([#4432](https://github.com/infinyon/fluvio/issues/4432))
 * Add proxy on  fvm install ([#4438](https://github.com/infinyon/fluvio/issues/4438))
 
-### CI
-
-* Pos release fluvio 0.16.1 ([#4424](https://github.com/infinyon/fluvio/issues/4424))
-* Pre release fluvio 0.17.0-dev-1
-
 ### Changed
 
+* Update wasmtime ([#4469](https://github.com/infinyon/fluvio/issues/4469))
+* Update README.md ([#4470](https://github.com/infinyon/fluvio/issues/4470))
 * Update referenced sdf version ([#4425](https://github.com/infinyon/fluvio/issues/4425))
 
 ### Fixed
 
+* Replication stuck when syncing large batches ([#4474](https://github.com/infinyon/fluvio/issues/4474))
+* Re-export PartitionId from fluvio package. ([#4481](https://github.com/infinyon/fluvio/issues/4481))
+* Derive clone on SpuSocketPool ([#4480](https://github.com/infinyon/fluvio/issues/4480))
 * Cdk, additional validation on `cdk publish` ([#4423](https://github.com/infinyon/fluvio/issues/4423))
 * Reconnect log with right offset ([#4430](https://github.com/infinyon/fluvio/issues/4430))
 * Reconnect producer when spu is down ([#4441](https://github.com/infinyon/fluvio/issues/4441))
@@ -51,7 +33,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Other
 
+* Comment doc for TopicProducer ([#4468](https://github.com/infinyon/fluvio/issues/4468))
+* Set SPU_PEER_MAX_BYTES to 10mb ([#4479](https://github.com/infinyon/fluvio/issues/4479))
 * Export ReplyHubref{} and HUB_REF_ENDPOINT ([#4431](https://github.com/infinyon/fluvio/issues/4431))
+
+### CI
+
+* Pos release fluvio 0.16.1 ([#4424](https://github.com/infinyon/fluvio/issues/4424))
+* Pre release fluvio 0.17.0-dev-1
+
 
 ## Platform Version 0.16.1 - 2025-02-27
 
