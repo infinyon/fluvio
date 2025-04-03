@@ -773,7 +773,7 @@ async fn test_replica_state_cleans_up_offset_producers() {
 
     {
         let publishers = shared_publishers.lock().await;
-        assert!(publishers.len() == 0);
+        assert!(publishers.is_empty());
     }
 
     // Add 10 publishers and let them drop, should correspond to replica_state::CLEANUP_FREQUENCY

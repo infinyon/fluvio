@@ -1,5 +1,5 @@
 use std::{
-    iter::repeat,
+    iter::repeat_n,
     ops::AddAssign,
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
@@ -77,7 +77,7 @@ async fn produce_records(client: &Fluvio, topic: &str, partitions: usize) -> Res
         let result = producer.send(RecordKey::NULL, i.to_string()).await?;
         results.push(result);
     }
-    let mut counts = repeat(-1).take(partitions).collect::<Vec<_>>();
+    let mut counts = repeat_n(-1, partitions).collect::<Vec<_>>();
     for result in results.into_iter() {
         let record = result.wait().await?;
         let index = &mut counts[record.partition_id() as usize];
@@ -105,7 +105,7 @@ async fn test_strategy_none(client: &Fluvio, topic: &str, partitions: usize) -> 
                 .build()?,
         )
         .await?;
-    let mut counts = repeat(-1).take(partitions).collect::<Vec<_>>();
+    let mut counts = repeat_n(-1, partitions).collect::<Vec<_>>();
     for _ in 0..RECORDS_COUNT {
         ensure_read(&mut stream, &mut counts).await?;
     }
@@ -117,7 +117,7 @@ async fn test_strategy_none(client: &Fluvio, topic: &str, partitions: usize) -> 
 async fn test_strategy_manual(client: &Fluvio, topic: &str, partitions: usize) -> Result<()> {
     let consumer_id = format!("test_strategy_manual_{}", now());
     let config = manual_startegy_config(topic, &consumer_id, partitions)?;
-    let mut counts = repeat(-1).take(partitions).collect::<Vec<_>>();
+    let mut counts = repeat_n(-1, partitions).collect::<Vec<_>>();
 
     for chunk in (0..RECORDS_COUNT).collect::<Vec<_>>().chunks(5) {
         // reading 20 times by 5 records each
@@ -154,7 +154,7 @@ async fn test_strategy_manual(client: &Fluvio, topic: &str, partitions: usize) -
     {
         let mut stream = client.consumer_with_config(config).await?;
 
-        let mut counts = repeat(-1).take(partitions).collect::<Vec<_>>();
+        let mut counts = repeat_n(-1, partitions).collect::<Vec<_>>();
         for _ in 0..partitions {
             ensure_read(&mut stream, &mut counts).await?;
         }
@@ -165,7 +165,7 @@ async fn test_strategy_manual(client: &Fluvio, topic: &str, partitions: usize) -
 async fn test_strategy_auto(client: &Fluvio, topic: &str, partitions: usize) -> Result<()> {
     let consumer_id = format!("test_strategy_auto_{}", now());
     let config = auto_startegy_config(topic, &consumer_id, partitions)?;
-    let mut counts = repeat(-1).take(partitions).collect::<Vec<_>>();
+    let mut counts = repeat_n(-1, partitions).collect::<Vec<_>>();
     for chunk in (0..RECORDS_COUNT).collect::<Vec<_>>().chunks(20) {
         // reading 20 times by 5 records each
         let mut stream = client.consumer_with_config(config.clone()).await?;
@@ -200,7 +200,7 @@ async fn test_strategy_auto(client: &Fluvio, topic: &str, partitions: usize) -> 
     {
         let mut stream = client.consumer_with_config(config).await?;
 
-        let mut counts = repeat(-1).take(partitions).collect::<Vec<_>>();
+        let mut counts = repeat_n(-1, partitions).collect::<Vec<_>>();
         for _ in 0..partitions {
             ensure_read(&mut stream, &mut counts).await?;
         }
@@ -217,7 +217,7 @@ async fn test_strategy_auto_periodic_flush(
     let mut config = auto_startegy_config(topic, &consumer_id, partitions)?;
     config.offset_flush = Duration::from_secs(2);
     let mut stream = client.consumer_with_config(config.clone()).await?;
-    let mut counts = repeat(-1).take(partitions).collect::<Vec<_>>();
+    let mut counts = repeat_n(-1, partitions).collect::<Vec<_>>();
     // read some records
     for _ in 0..30 {
         ensure_read(&mut stream, &mut counts).await?;
