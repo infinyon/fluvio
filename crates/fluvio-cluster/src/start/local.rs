@@ -523,7 +523,7 @@ impl LocalInstaller {
             .config
             .sc_pub_addr
             .split(':')
-            .last()
+            .next_back()
             .unwrap_or(LOCAL_SC_PORT)
             .parse()?;
 
