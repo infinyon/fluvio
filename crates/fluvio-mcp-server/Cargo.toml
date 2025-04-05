@@ -1,0 +1,44 @@
+[package]
+name = "fluvio-mcp-server"
+version = "0.0.0"
+edition = "2021"
+description = "MCP Server for Fluvio"
+repository = "https://github.com/infinyon/fluvio"
+license = "Apache-2.0"
+publish = false
+
+[[bin]]
+name = "fmcp"
+path = "src/main.rs"
+doc = false
+
+
+[dependencies]
+anyhow = { workspace = true }
+async-lock = { workspace = true }
+async-trait = { workspace = true }
+bon = { workspace = true }
+clap = { workspace = true, features = [
+    "std",
+    "derive",
+    "help",
+    "usage",
+    "error-context",
+    "env",
+    "wrap_help",
+    "suggestions",
+], default-features = false }
+futures-util = { workspace = true }
+poem-mcpserver = { workspace = true, features = ["sse"] }
+schemars = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+
+fluvio = { workspace = true }
+fluvio-sc-schema = { workspace = true, features = ["use_serde"] }
+fluvio-future = { workspace = true, features = [
+    "subscriber",
+    "task",
+    "tokio1",
+] }
