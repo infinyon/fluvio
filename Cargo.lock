@@ -2349,7 +2349,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.26.2"
+version = "0.26.3"
 dependencies = [
  "adaptive_backoff",
  "anyhow",
