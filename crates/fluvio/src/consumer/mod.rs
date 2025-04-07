@@ -61,7 +61,7 @@ pub type BoxConsumerStream =
 pub type BoxConsumerStream =
     Pin<Box<dyn ConsumerStream<Item = Result<ConsumerRecord, ErrorCode>> + Send + 'static>>;
 
-/// Type alias for the future returned by our retry logic.
+/// Type alias to access consume stream as a future.
 #[cfg(target_arch = "wasm32")]
 type BoxConsumerFuture = Pin<
     Box<
