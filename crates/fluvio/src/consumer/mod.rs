@@ -5,6 +5,8 @@ mod stream;
 mod offset;
 mod retry;
 
+use std::future::Future;
+use std::pin::Pin;
 use std::sync::Arc;
 
 use anyhow::Result;
@@ -40,6 +42,7 @@ pub use stream::{
 };
 pub use offset::ConsumerOffset;
 pub use retry::ConsumerRetryStream;
+pub use fluvio_protocol::record::ConsumerRecord;
 
 pub use fluvio_protocol::record::ConsumerRecord as Record;
 pub use fluvio_spu_schema::server::smartmodule::SmartModuleInvocation;
@@ -49,6 +52,39 @@ pub use fluvio_spu_schema::server::smartmodule::SmartModuleContextData;
 pub use fluvio_smartmodule::dataplane::smartmodule::SmartModuleExtraParams;
 
 const STREAM_TO_SERVER_CHANNEL_SIZE: usize = 100;
+
+/// Type alias for the consumer record stream.
+#[cfg(target_arch = "wasm32")]
+pub type BoxConsumerStream =
+    Pin<Box<dyn ConsumerStream<Item = Result<ConsumerRecord, ErrorCode>> + 'static>>;
+#[cfg(not(target_arch = "wasm32"))]
+pub type BoxConsumerStream =
+    Pin<Box<dyn ConsumerStream<Item = Result<ConsumerRecord, ErrorCode>> + Send + 'static>>;
+
+/// Type alias to access consume stream as a future.
+#[cfg(target_arch = "wasm32")]
+type BoxConsumerFuture = Pin<
+    Box<
+        dyn Future<
+                Output = (
+                    BoxConsumerStream,
+                    Option<Result<(ConsumerRecord, Option<i64>), ErrorCode>>,
+                ),
+            > + 'static,
+    >,
+>;
+#[cfg(not(target_arch = "wasm32"))]
+type BoxConsumerFuture = Pin<
+    Box<
+        dyn Future<
+                Output = (
+                    BoxConsumerStream,
+                    Option<Result<(ConsumerRecord, Option<i64>), ErrorCode>>,
+                ),
+            > + Send
+            + 'static,
+    >,
+>;
 
 /// An interface for consuming events from a particular partition
 ///

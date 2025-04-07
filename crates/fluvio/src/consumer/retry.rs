@@ -1,4 +1,3 @@
-use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
@@ -22,42 +21,11 @@ use fluvio_sc_schema::errors::ErrorCode;
 
 use crate::consumer::RetryMode;
 use crate::{Fluvio, FluvioClusterConfig, Offset};
-use super::{ConsumerConfigExt, ConsumerStream, ConsumerBoxFuture};
+use super::{
+    BoxConsumerFuture, BoxConsumerStream, ConsumerBoxFuture, ConsumerConfigExt, ConsumerStream,
+};
 
 pub const SPAN_RETRY: &str = "fluvio::retry";
-
-/// Type alias for the consumer record stream.
-#[cfg(target_arch = "wasm32")]
-type BoxConsumerStream =
-    Pin<Box<dyn ConsumerStream<Item = Result<ConsumerRecord, ErrorCode>> + 'static>>;
-#[cfg(not(target_arch = "wasm32"))]
-type BoxConsumerStream =
-    Pin<Box<dyn ConsumerStream<Item = Result<ConsumerRecord, ErrorCode>> + Send + 'static>>;
-
-/// Type alias for the future returned by our retry logic.
-#[cfg(target_arch = "wasm32")]
-type BoxConsumerFuture = Pin<
-    Box<
-        dyn Future<
-                Output = (
-                    BoxConsumerStream,
-                    Option<Result<(ConsumerRecord, Option<i64>), ErrorCode>>,
-                ),
-            > + 'static,
-    >,
->;
-#[cfg(not(target_arch = "wasm32"))]
-type BoxConsumerFuture = Pin<
-    Box<
-        dyn Future<
-                Output = (
-                    BoxConsumerStream,
-                    Option<Result<(ConsumerRecord, Option<i64>), ErrorCode>>,
-                ),
-            > + Send
-            + 'static,
-    >,
->;
 
 #[derive(Clone)]
 pub struct ConsumerRetryInner {
