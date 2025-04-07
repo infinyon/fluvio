@@ -173,8 +173,8 @@ impl ConsumerRetryStream {
         config: ConsumerConfigExt,
     ) -> Result<Self> {
         let client_config = fluvio.client_config();
-        let boxed_stream: BoxConsumerStream =
-            Box::pin(fluvio.consumer_with_config_inner(config.clone()).await?);
+        let stream = fluvio.consumer_with_config_inner(config.clone()).await?;
+        let boxed_stream: BoxConsumerStream = Box::pin(stream);
 
         Ok(Self {
             inner: ConsumerRetryInner {

@@ -357,8 +357,8 @@ impl Fluvio {
         ConsumerRetryStream::new(self, self.cluster_config.clone(), config).await
     }
 
-    /// Creates boxed consumer stream.  
-    /// This is useful when consumer stream needs to be stored in the struct
+    /// Create boxed consume stream with config.
+    /// This is usedful for storing stream in a struct
     pub async fn boxed_consumer_with_config(
         &self,
         config: ConsumerConfigExt,
