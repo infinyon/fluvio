@@ -450,6 +450,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-wasm-filter-odd-key"
+version = "0.0.0"
+dependencies = [
+ "fluvio-smartmodule 0.8.0",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "fluvio-wasm-filter-regex"
 version = "0.0.0"
 dependencies = [
