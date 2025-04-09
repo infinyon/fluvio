@@ -55,7 +55,7 @@ pub async fn handle_offset_request(
                     match fetch_consumer_offset(&ctx, topic, *partition, consumer_id).await {
                         Ok(Some(consumer_offset)) => {
                             debug!(consumer_id, consumer_offset, "consumer offset");
-                            partition_response.start_offset = consumer_offset + 1;
+                            partition_response.consumer_offset = Some(consumer_offset + 1);
                         }
                         Ok(None) => {
                             debug!(consumer_id, "no consumer offset");
