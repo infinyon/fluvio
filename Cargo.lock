@@ -2349,7 +2349,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.26.3"
+version = "0.27.0"
 dependencies = [
  "adaptive_backoff",
  "anyhow",
@@ -3132,7 +3132,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-spu-schema"
-version = "0.17.0"
+version = "0.18.0"
 dependencies = [
  "bytes",
  "derive_builder",

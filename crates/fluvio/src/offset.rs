@@ -21,11 +21,19 @@ impl OffsetInner {
         match self {
             Self::Absolute(offset) => *offset,
             Self::FromBeginning(offset) => {
-                let resolved = offsets.start_offset + offset;
+                let resolved = if let Some(consumer_offset) = offsets.consumer_offset {
+                    consumer_offset + offset
+                } else {
+                    offsets.start_offset + offset
+                };
                 resolved.clamp(offsets.start_offset, offsets.last_stable_offset)
             }
             Self::FromEnd(offset) => {
-                let resolved = offsets.last_stable_offset - offset;
+                let resolved = if let Some(consumer_offset) = offsets.consumer_offset {
+                    consumer_offset - offset
+                } else {
+                    offsets.last_stable_offset - offset
+                };
                 resolved.clamp(offsets.start_offset, offsets.last_stable_offset)
             }
         }
@@ -345,6 +353,7 @@ mod tests {
             partition_index: 0,
             start_offset: 0,
             last_stable_offset: 10,
+            consumer_offset: None,
         };
 
         let offset_inner = OffsetInner::FromBeginning(3);
@@ -359,6 +368,7 @@ mod tests {
             partition_index: 0,
             start_offset: 5,
             last_stable_offset: 10,
+            consumer_offset: None,
         };
 
         let offset_inner = OffsetInner::FromBeginning(3);
@@ -373,6 +383,7 @@ mod tests {
             partition_index: 0,
             start_offset: 0,
             last_stable_offset: 10,
+            consumer_offset: None,
         };
 
         let offset_inner = OffsetInner::FromBeginning(15);
@@ -387,6 +398,7 @@ mod tests {
             partition_index: 0,
             start_offset: 5,
             last_stable_offset: 10,
+            consumer_offset: None,
         };
 
         let offset_inner = OffsetInner::FromBeginning(15);
@@ -401,6 +413,7 @@ mod tests {
             partition_index: 0,
             start_offset: 0,
             last_stable_offset: 10,
+            consumer_offset: None,
         };
 
         let offset_inner = OffsetInner::FromEnd(3);
@@ -415,6 +428,7 @@ mod tests {
             partition_index: 0,
             start_offset: 6,
             last_stable_offset: 10,
+            consumer_offset: None,
         };
 
         let offset_inner = OffsetInner::FromEnd(6);
@@ -429,6 +443,7 @@ mod tests {
             partition_index: 0,
             start_offset: 0,
             last_stable_offset: 10,
+            consumer_offset: None,
         };
 
         let offset_inner = OffsetInner::FromEnd(100);
