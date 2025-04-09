@@ -41,6 +41,7 @@ pub struct BaseTestCmd {
     pub raw: bool,
 
     /// Key to use with the test record(s)
+    #[arg(long, requires = "TestInput")]
     pub key: Option<String>,
 
     /// Print records in "[key] value" format, with "[null]" for no key

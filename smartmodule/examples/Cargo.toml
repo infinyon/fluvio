@@ -12,6 +12,7 @@ members = [
     "filter_look_back_with_timestamps",
     "filter_with_param",
     "filter_odd",
+    "filter_odd_key",
     "filter_json",
     "filter_regex",
     "filter_with_param_v1",

@@ -988,7 +988,7 @@ smdk_via_stdin() {
     assert_output --partial "[null]"
     assert_success
 
-    run $SMDK_BIN test --text '444' --lookback-last '1' --record '222' --record '333' --key-value my-key
+    run $SMDK_BIN test --text '444' --lookback-last '1' --record '222' --record '333' --key-value --key my-key
     assert_output --partial "[my-key]"
     assert_success
 }
@@ -1069,4 +1069,23 @@ smdk_via_stdin() {
     assert_output --partial "\"Banana\"_$DATE_NOW_YEAR-$DATE_NOW_MONTH-$DATE_NOW_DAY"
     assert_output --partial "\"Cranberry\"_$DATE_NOW_YEAR-$DATE_NOW_MONTH-$DATE_NOW_DAY"
     assert_success
+}
+
+@test "Test key value on filter-odd-key" {
+    # Test with smartmodule example with Array Map with Timestamp
+    cd "$(pwd)/smartmodule/examples/filter_odd_key/"
+
+    # Build
+    run $SMDK_BIN build
+    refute_output --partial "could not compile"
+
+    # Test, only odd keys should be returned
+    run $SMDK_BIN test --verbose --text "abc" --key "1" --key-value
+    refute_output --partial "abc"
+    run $SMDK_BIN test --verbose --text "abc" --key "2" --key-value
+    assert_output --partial "abc"
+    run $SMDK_BIN test --verbose --text "abc" --key "3" --key-value
+    refute_output --partial "abc"
+    run $SMDK_BIN test --verbose --text "abc" --key "4" --key-value
+    assert_output --partial "abc"
 }
