@@ -9,7 +9,7 @@ use clap::Parser;
 
 use fluvio::consumer::OffsetManagementStrategy;
 use fluvio_test_derive::fluvio_test;
-use option::{ConsumerOffsetsTestOption, ConsumerOffsetsTestCase};
+use option::{ConsumerOffsetsTestCase, ConsumerOffsetsTestOption};
 
 #[fluvio_test(async)]
 pub async fn consumer_offsets(
@@ -31,12 +31,6 @@ pub async fn consumer_offsets(
 
     test_driver.connect().await.expect("connected");
     let client = test_driver.client();
-    utils::produce_records(client, &topic_name, partitions)
-        .await
-        .expect("produced records");
-    utils::wait_for_offsets_topic_provisined(client)
-        .await
-        .expect("offsets topic");
 
     match option.strategy {
         OffsetManagementStrategy::None => {
@@ -46,10 +40,16 @@ pub async fn consumer_offsets(
                 .expect("test_strategy_none");
         }
         OffsetManagementStrategy::Manual => {
-            println!("running test_strategy_manual");
-            manual::test_strategy_manual(client, &topic_name, partitions)
-                .await
-                .expect("test_strategy_manual");
+            manual::run_manual_test(
+                client,
+                &topic_name,
+                partitions,
+                option
+                    .offset_start
+                    .expect("offset start parameter required"),
+            )
+            .await
+            .expect("run_manual_test");
         }
         OffsetManagementStrategy::Auto => match option.offset_flush {
             Some(flush) => {
