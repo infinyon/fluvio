@@ -32,6 +32,7 @@ fork = "0.2"
 sysinfo = { workspace = true }
 signal-hook = "0.3.13"
 indicatif = { workspace = true }
+humantime = { workspace = true }
 
 tracing = { workspace = true }
 

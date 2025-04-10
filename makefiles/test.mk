@@ -126,8 +126,16 @@ consumer-offsets-test: TEST_ARG_EXTRA=--local $(EXTRA_ARG)
 consumer-offsets-test: DEFAULT_SPU=1
 consumer-offsets-test: REPL=1
 consumer-offsets-test: test-setup
-	$(TEST_BIN) consumer_offsets  ${TEST_ARG_COMMON} --partition 1 --topic-name consumer-offset-single
-	$(TEST_BIN) consumer_offsets  ${TEST_ARG_COMMON} --partition 5 --topic-name consumer-offset-multiple
+	$(TEST_BIN) consumer_offsets  ${TEST_ARG_COMMON} --partition 1 --topic-name consumer-offset-single-none -- --strategy none
+	$(TEST_BIN) consumer_offsets  ${TEST_ARG_COMMON} --partition 5 --topic-name consumer-offset-multiple-none -- --strategy none
+	$(TEST_BIN) consumer_offsets  ${TEST_ARG_COMMON} --partition 1 --topic-name consumer-offset-single-manual -- --strategy manual
+	$(TEST_BIN) consumer_offsets  ${TEST_ARG_COMMON} --partition 5 --topic-name consumer-offset-multiple-manual -- --strategy manual
+	$(TEST_BIN) consumer_offsets  ${TEST_ARG_COMMON} --partition 1 --topic-name consumer-offset-single-manual-end -- --strategy manual --offset-start end
+	$(TEST_BIN) consumer_offsets  ${TEST_ARG_COMMON} --partition 5 --topic-name consumer-offset-multiple-manual-end -- --strategy manual --offset-start end
+	$(TEST_BIN) consumer_offsets  ${TEST_ARG_COMMON} --partition 1 --topic-name consumer-offset-single-auto -- --strategy auto
+	$(TEST_BIN) consumer_offsets  ${TEST_ARG_COMMON} --partition 5 --topic-name consumer-offset-multiple-auto -- --strategy auto
+	$(TEST_BIN) consumer_offsets  ${TEST_ARG_COMMON} --partition 1 --topic-name consumer-offset-single-auto-flush -- --strategy auto --offset-flush 2s
+	$(TEST_BIN) consumer_offsets  ${TEST_ARG_COMMON} --partition 5 --topic-name consumer-offset-multiple-auto-flush -- --strategy auto --offset-flush 2s
 
 # test rbac with user1 who doesn't have topic creation permission
 # assumes cluster is set
