@@ -3243,6 +3243,7 @@ dependencies = [
  "futures",
  "futures-lite",
  "hdrhistogram",
+ "humantime",
  "indicatif",
  "inventory",
  "md-5",
