@@ -114,7 +114,7 @@ pub struct FetchOffsetPartitionResponse {
     /// Last readable offset
     pub last_stable_offset: i64,
 
-    /// Consumer offset
+    /// Last committed consumer offset
     #[fluvio(min_version = 24)]
     pub consumer_offset: Option<i64>,
 }

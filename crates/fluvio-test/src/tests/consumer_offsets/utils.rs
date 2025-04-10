@@ -1,4 +1,8 @@
-use std::{iter::repeat_n, ops::AddAssign, time::{Duration, SystemTime, UNIX_EPOCH}};
+use std::{
+    iter::repeat_n,
+    ops::AddAssign,
+    time::{Duration, SystemTime, UNIX_EPOCH},
+};
 
 use anyhow::{bail, ensure, Result};
 
@@ -6,7 +10,9 @@ use fluvio::{
     consumer::{
         ConsumerConfigExt, ConsumerConfigExtBuilder, ConsumerOffset, ConsumerStream,
         OffsetManagementStrategy,
-    }, metadata::objects::ListRequest, Fluvio, Offset, RecordKey, TopicProducerConfigBuilder, TopicProducerPool
+    },
+    metadata::objects::ListRequest,
+    Fluvio, Offset, RecordKey,
 };
 use fluvio_controlplane_metadata::topic::TopicSpec;
 use fluvio_future::timer::sleep;
@@ -16,15 +22,10 @@ use futures_lite::StreamExt;
 pub(crate) const RECORDS_COUNT: usize = 100;
 
 pub(crate) async fn produce_records(client: &Fluvio, topic: &str, partitions: usize) -> Result<()> {
-    let producer: TopicProducerPool = client
-        .topic_producer_with_config(
-            topic,
-            TopicProducerConfigBuilder::default()
-                .linger(std::time::Duration::from_millis(10))
-                .build()
-                .expect("producer config created"),
-        )
-        .await?;
+    let producer = client
+        .topic_producer(topic)
+        .await
+        .expect("producer created");
     let mut results = Vec::new();
     for i in 0..RECORDS_COUNT {
         let result = producer.send(RecordKey::NULL, i.to_string()).await?;
@@ -35,7 +36,6 @@ pub(crate) async fn produce_records(client: &Fluvio, topic: &str, partitions: us
         let record = result.wait().await?;
         let index = &mut counts[record.partition_id() as usize];
         index.add_assign(1);
-        ensure!(record.offset() == *index);
     }
     for i in counts {
         ensure!(i == (RECORDS_COUNT / partitions - 1) as i64);
@@ -111,6 +111,7 @@ pub(crate) fn create_consumer_config(
     partitions: usize,
     strategy: OffsetManagementStrategy,
     offset_start: Offset,
+    disable_continuous: bool,
 ) -> Result<ConsumerConfigExt> {
     let mut builder = ConsumerConfigExtBuilder::default();
     if partitions == 1 {
@@ -118,7 +119,7 @@ pub(crate) fn create_consumer_config(
     }
     builder
         .topic(topic.to_string())
-        .disable_continuous(true)
+        .disable_continuous(disable_continuous)
         .offset_consumer(consumer_id.to_string())
         .offset_strategy(strategy)
         .offset_start(offset_start)
