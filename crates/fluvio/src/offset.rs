@@ -353,7 +353,7 @@ mod tests {
             partition_index: 0,
             start_offset: 0,
             last_stable_offset: 10,
-            consumer_offset: None,
+            ..Default::default()
         };
 
         let offset_inner = OffsetInner::FromBeginning(3);
@@ -368,7 +368,7 @@ mod tests {
             partition_index: 0,
             start_offset: 5,
             last_stable_offset: 10,
-            consumer_offset: None,
+            ..Default::default()
         };
 
         let offset_inner = OffsetInner::FromBeginning(3);
@@ -383,7 +383,7 @@ mod tests {
             partition_index: 0,
             start_offset: 0,
             last_stable_offset: 10,
-            consumer_offset: None,
+            ..Default::default()
         };
 
         let offset_inner = OffsetInner::FromBeginning(15);
@@ -398,7 +398,7 @@ mod tests {
             partition_index: 0,
             start_offset: 5,
             last_stable_offset: 10,
-            consumer_offset: None,
+            ..Default::default()
         };
 
         let offset_inner = OffsetInner::FromBeginning(15);
@@ -413,7 +413,7 @@ mod tests {
             partition_index: 0,
             start_offset: 0,
             last_stable_offset: 10,
-            consumer_offset: None,
+            ..Default::default()
         };
 
         let offset_inner = OffsetInner::FromEnd(3);
@@ -428,7 +428,7 @@ mod tests {
             partition_index: 0,
             start_offset: 6,
             last_stable_offset: 10,
-            consumer_offset: None,
+            ..Default::default()
         };
 
         let offset_inner = OffsetInner::FromEnd(6);
@@ -443,11 +443,68 @@ mod tests {
             partition_index: 0,
             start_offset: 0,
             last_stable_offset: 10,
-            consumer_offset: None,
+            ..Default::default()
         };
 
         let offset_inner = OffsetInner::FromEnd(100);
         let absolute = offset_inner.resolve(&offsets);
         assert_eq!(absolute, 0);
+    }
+
+    #[test]
+    fn test_consumer_offset_end() {
+        let offsets = FetchOffsetPartitionResponse {
+            error_code: Default::default(),
+            partition_index: 0,
+            start_offset: 5,
+            last_stable_offset: 100,
+            consumer_offset: Some(10),
+        };
+        let offset_inner = OffsetInner::FromEnd(0);
+        let absolute = offset_inner.resolve(&offsets);
+        assert_eq!(absolute, 10);
+    }
+
+    #[test]
+    fn test_consumer_offset_from_end() {
+        let offsets = FetchOffsetPartitionResponse {
+            error_code: Default::default(),
+            partition_index: 0,
+            start_offset: 5,
+            last_stable_offset: 100,
+            consumer_offset: Some(10),
+        };
+        let offset_inner = OffsetInner::FromEnd(3);
+        let absolute = offset_inner.resolve(&offsets);
+        assert_eq!(absolute, 7);
+    }
+
+    #[test]
+    fn test_consumer_offset_from_beginning() {
+        let offsets = FetchOffsetPartitionResponse {
+            error_code: Default::default(),
+            partition_index: 0,
+            start_offset: 5,
+            last_stable_offset: 10,
+            consumer_offset: Some(7),
+        };
+
+        let offset_inner = OffsetInner::FromBeginning(0);
+        let absolute = offset_inner.resolve(&offsets);
+        assert_eq!(absolute, 7);
+    }
+
+    #[test]
+    fn test_consumer_offset_beginning() {
+        let offsets = FetchOffsetPartitionResponse {
+            error_code: Default::default(),
+            partition_index: 0,
+            start_offset: 5,
+            last_stable_offset: 10,
+            consumer_offset: Some(7),
+        };
+        let offset_inner = OffsetInner::FromBeginning(3);
+        let absolute = offset_inner.resolve(&offsets);
+        assert_eq!(absolute, 10);
     }
 }

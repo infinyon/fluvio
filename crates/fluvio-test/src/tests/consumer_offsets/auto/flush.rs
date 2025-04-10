@@ -4,7 +4,9 @@ use anyhow::{ensure, Result};
 use fluvio::{consumer::OffsetManagementStrategy, Fluvio, Offset};
 use fluvio_future::timer::sleep;
 
-use crate::tests::consumer_offsets::utils::{create_consumer_config, ensure_read, find_consumer, now};
+use crate::tests::consumer_offsets::utils::{
+    self, create_consumer_config, ensure_read, find_consumer, now,
+};
 
 pub async fn test_strategy_auto_periodic_flush(
     client: &Fluvio,
@@ -12,6 +14,12 @@ pub async fn test_strategy_auto_periodic_flush(
     partitions: usize,
     flush_period: Duration,
 ) -> Result<()> {
+    utils::produce_records(client, topic, partitions)
+        .await
+        .expect("produced records");
+    utils::wait_for_offsets_topic_provisined(client)
+        .await
+        .expect("offsets topic");
     let consumer_id = format!("test_strategy_auto_periodic_flush_{}", now());
     let offset_start = Offset::beginning();
     let mut config = create_consumer_config(
@@ -20,6 +28,7 @@ pub async fn test_strategy_auto_periodic_flush(
         partitions,
         OffsetManagementStrategy::Auto,
         offset_start,
+        true,
     )?;
     config.offset_flush = flush_period;
     let mut stream = client.consumer_with_config(config.clone()).await?;

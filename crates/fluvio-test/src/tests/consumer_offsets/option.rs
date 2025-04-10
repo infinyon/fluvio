@@ -29,6 +29,9 @@ pub struct ConsumerOffsetsTestOption {
 pub enum TestOffsetStart {
     #[default]
     Beginning,
+    FromBeginning,
+    Absolute,
+    FromEnd,
     End,
 }
 
@@ -39,6 +42,9 @@ impl FromStr for TestOffsetStart {
         match s {
             "beginning" => Ok(TestOffsetStart::Beginning),
             "end" => Ok(TestOffsetStart::End),
+            "from-beginning" => Ok(TestOffsetStart::FromBeginning),
+            "from-end" => Ok(TestOffsetStart::FromEnd),
+            "absolute" => Ok(TestOffsetStart::Absolute),
             _ => bail!("Invalid offset start value"),
         }
     }

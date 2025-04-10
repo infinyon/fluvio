@@ -6,9 +6,16 @@ use fluvio::{
     Fluvio, Offset,
 };
 
-use crate::tests::consumer_offsets::utils::{ensure_read, RECORDS_COUNT};
+use crate::tests::consumer_offsets::utils::{self, ensure_read, RECORDS_COUNT};
 
 pub async fn test_strategy_none(client: &Fluvio, topic: &str, partitions: usize) -> Result<()> {
+    utils::produce_records(client, topic, partitions)
+        .await
+        .expect("produced records");
+    utils::wait_for_offsets_topic_provisined(client)
+        .await
+        .expect("offsets topic");
+
     let mut builder = ConsumerConfigExtBuilder::default();
     for partition in 0..partitions {
         builder.partition(partition as u32);
