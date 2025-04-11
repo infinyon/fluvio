@@ -18,7 +18,7 @@ use fluvio_future::timer::sleep;
 use fluvio_protocol::record::ConsumerRecord;
 use fluvio_sc_schema::errors::ErrorCode;
 
-use crate::consumer::{OffsetManagementStrategy, RetryMode};
+use crate::consumer::RetryMode;
 use crate::{Fluvio, FluvioClusterConfig, Offset};
 use super::{
     BoxConsumerFuture, BoxConsumerStream, ConsumerBoxFuture, ConsumerConfigExt, ConsumerStream,
@@ -54,24 +54,6 @@ pub struct ConsumerRetryStream {
     state: ConsumerRetryState,
     /// The consumer stream is stored directly (inside an Option for ownership transfer).
     stream: Option<BoxConsumerStream>,
-}
-
-impl Drop for ConsumerRetryStream {
-    fn drop(&mut self) {
-        if let OffsetManagementStrategy::Auto = self.inner.consumer_config.offset_strategy {
-            debug!("dropping ConsumerRetryStream");
-            if let Some(mut stream) = self.stream.take() {
-                debug!("Dropping stream");
-                fluvio_future::task::run_block_on(async move {
-                    stream.offset_commit().await.unwrap();
-                    stream.offset_flush().await.unwrap();
-                    debug!("Stream dropped");
-                });
-            } else {
-                debug!("Stream already dropped");
-            }
-        }
-    }
 }
 
 impl ConsumerRetryStream {
