@@ -110,7 +110,10 @@ impl<T: Stream<Item = Result<Record, ErrorCode>> + Unpin> Stream
                 self_mut.offset_mngt.update(last.offset);
                 std::task::Poll::Ready(Some(Ok(last)))
             }
-            other => std::task::Poll::Ready(other),
+            other => {
+                self_mut.offset_mngt.run_auto_flush();
+                std::task::Poll::Ready(other)
+            }
         }
     }
 }
@@ -181,22 +184,29 @@ impl OffsetManagement {
             OffsetManagement::Manual { offset_store } => {
                 offset_store.update(offset);
             }
-            OffsetManagement::Auto {
-                flush_period,
-                offset_store,
-                last_flush_time,
-            } => {
+            OffsetManagement::Auto { offset_store, .. } => {
                 offset_store.commit();
                 offset_store.update(offset);
-                if Duration::from_secs(
-                    now_timestamp_secs() - last_flush_time.load(Ordering::Relaxed),
-                ) >= *flush_period
-                {
-                    if let Err(err) = offset_store.try_flush() {
-                        warn!("auto flush failed: {err:?}");
-                    }
-                    last_flush_time.store(now_timestamp_secs(), Ordering::Relaxed);
+
+                self.run_auto_flush();
+            }
+        };
+    }
+
+    fn run_auto_flush(&self) {
+        if let OffsetManagement::Auto {
+            flush_period,
+            offset_store,
+            last_flush_time,
+        } = self
+        {
+            if Duration::from_secs(now_timestamp_secs() - last_flush_time.load(Ordering::Relaxed))
+                >= *flush_period
+            {
+                if let Err(err) = offset_store.try_flush() {
+                    warn!("auto flush failed: {err:?}");
                 }
+                last_flush_time.store(now_timestamp_secs(), Ordering::Relaxed);
             }
         };
     }

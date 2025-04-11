@@ -12,14 +12,13 @@ use fluvio_types::defaults::{
 };
 use futures_util::Stream;
 use futures_util::StreamExt;
-use tokio::sync::Notify;
 use tracing::{debug, info, warn};
 
 use fluvio_future::timer::sleep;
 use fluvio_protocol::record::ConsumerRecord;
 use fluvio_sc_schema::errors::ErrorCode;
 
-use crate::consumer::RetryMode;
+use crate::consumer::{OffsetManagementStrategy, RetryMode};
 use crate::{Fluvio, FluvioClusterConfig, Offset};
 use super::{
     BoxConsumerFuture, BoxConsumerStream, ConsumerBoxFuture, ConsumerConfigExt, ConsumerStream,
@@ -55,23 +54,37 @@ pub struct ConsumerRetryStream {
     state: ConsumerRetryState,
     /// The consumer stream is stored directly (inside an Option for ownership transfer).
     stream: Option<BoxConsumerStream>,
-    notify: Arc<Notify>,
+}
+
+impl Drop for ConsumerRetryStream {
+    fn drop(&mut self) {
+        if let OffsetManagementStrategy::Auto = self.inner.consumer_config.offset_strategy {
+            debug!("dropping ConsumerRetryStream");
+            if let Some(mut stream) = self.stream.take() {
+                debug!("Dropping stream");
+                fluvio_future::task::run_block_on(async move {
+                    stream.offset_commit().await.unwrap();
+                    stream.offset_flush().await.unwrap();
+                    debug!("Stream dropped");
+                });
+            } else {
+                debug!("Stream already dropped");
+            }
+        }
+    }
 }
 
 impl ConsumerRetryStream {
     fn change_state(&mut self, new_state: ConsumerRetryState) {
         self.state = new_state;
-        self.notify.notify_one();
     }
 
     fn set_idle(&mut self) {
         self.change_state(ConsumerRetryState::Idle);
-        self.notify.notify_one();
     }
 
     fn set_terminated(&mut self) {
         self.change_state(ConsumerRetryState::Terminated);
-        self.notify.notify_one();
     }
 
     fn set_task(&mut self, task: BoxConsumerFuture) {
@@ -107,7 +120,6 @@ impl Stream for ConsumerRetryStream {
                                 return Poll::Ready(Some(Ok(record)));
                             }
                             Some(Err(e)) => {
-                                self.notify.notify_one();
                                 return Poll::Ready(Some(Err(e)));
                             }
                             None => {
@@ -125,41 +137,23 @@ impl Stream for ConsumerRetryStream {
 
 impl ConsumerStream for ConsumerRetryStream {
     fn offset_commit(&mut self) -> ConsumerBoxFuture {
-        let notify = self.notify.clone();
         Box::pin(async move {
-            loop {
-                match self.state {
-                    ConsumerRetryState::Idle | ConsumerRetryState::Terminated => {
-                        if let Some(ref mut stream) = self.stream {
-                            return stream.offset_commit().await;
-                        } else {
-                            return Err(ErrorCode::Other("Stream not available".to_string()));
-                        }
-                    }
-                    _ => {
-                        notify.notified().await;
-                    }
-                }
+            if let Some(ref mut stream) = self.stream {
+                stream.offset_commit().await
+            } else {
+                warn!(target: SPAN_RETRY, "Stream is already dropped");
+                Ok(())
             }
         })
     }
 
     fn offset_flush(&mut self) -> ConsumerBoxFuture {
-        let notify = self.notify.clone();
         Box::pin(async move {
-            loop {
-                match self.state {
-                    ConsumerRetryState::Idle | ConsumerRetryState::Terminated => {
-                        if let Some(ref mut stream) = self.stream {
-                            return stream.offset_flush().await;
-                        } else {
-                            return Err(ErrorCode::Other("Stream not available".to_string()));
-                        }
-                    }
-                    _ => {
-                        notify.notified().await;
-                    }
-                }
+            if let Some(ref mut stream) = self.stream {
+                stream.offset_flush().await
+            } else {
+                warn!(target: SPAN_RETRY, "Stream is already dropped");
+                Ok(())
             }
         })
     }
@@ -185,7 +179,6 @@ impl ConsumerRetryStream {
             },
             state: ConsumerRetryState::Idle,
             stream: Some(boxed_stream),
-            notify: Arc::new(Notify::new()),
         })
     }
 
@@ -376,7 +369,6 @@ mod tests {
             },
             state: ConsumerRetryState::Idle,
             stream: Some(Box::pin(multi_stream)),
-            notify: Arc::new(Notify::new()),
         };
 
         //when
