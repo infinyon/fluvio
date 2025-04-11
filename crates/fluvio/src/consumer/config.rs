@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{str::FromStr, time::Duration};
 
 use anyhow::Result;
 use derive_builder::Builder;
@@ -41,7 +41,7 @@ impl ConsumerConfigBuilder {
     }
 }
 
-#[derive(Debug, Default, Copy, Clone, PartialEq)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
 pub enum OffsetManagementStrategy {
     /// Offsets are not saved
     #[default]
@@ -51,6 +51,21 @@ pub enum OffsetManagementStrategy {
     /// Before yielding a new record to the caller, the previous record is committed and flushed if the configured interval is passed.
     /// Additionally, the commit and the flush are triggered when the stream object gets dropped.
     Auto,
+}
+
+impl FromStr for OffsetManagementStrategy {
+    type Err = FluvioError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "none" => Ok(OffsetManagementStrategy::None),
+            "manual" => Ok(OffsetManagementStrategy::Manual),
+            "auto" => Ok(OffsetManagementStrategy::Auto),
+            _ => Err(FluvioError::ConsumerConfig(format!(
+                "Invalid offset management strategy: {s}"
+            ))),
+        }
+    }
 }
 
 #[derive(Debug, Default, Clone, PartialEq)]
