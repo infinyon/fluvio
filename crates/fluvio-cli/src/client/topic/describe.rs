@@ -42,11 +42,16 @@ impl DescribeTopicsOpt {
         debug!("describe topic: {}, {:?}", topic, output_type);
 
         let admin = fluvio.admin().await;
-        let topics = admin.list::<TopicSpec, _>(vec![topic.clone()]).await?;
-        let list_filters = ListFilters::from(topic.as_str());
+
+        let topics_with_system = admin
+            .list_with_config::<TopicSpec, String>(
+                ListRequest::new(ListFilters::from(topic.as_str()), true).system(self.system),
+            )
+            .await?;
+
         let partitions = admin
             .list_with_config::<PartitionSpec, String>(
-                ListRequest::new(list_filters, self.system).system(self.system),
+                ListRequest::new(ListFilters::from(topic.as_str()), true).system(self.system),
             )
             .await?;
 
@@ -62,7 +67,7 @@ impl DescribeTopicsOpt {
                 }
             })
             .collect::<Vec<_>>();
-        display::describe_topics(topics, output_type.clone(), out.clone()).await?;
+        display::describe_topics(topics_with_system, output_type.clone(), out.clone()).await?;
         display_partition::format_partition_response_output(out, filtered_partitions, output_type)?;
         Ok(())
     }
