@@ -8,10 +8,15 @@ mod retry;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
+use std::time::Duration;
 
 use anyhow::Result;
 use async_channel::Sender;
-use fluvio_spu_schema::server::consumer_offset::UpdateConsumerOffsetRequest;
+use fluvio_future::timer::sleep;
+use fluvio_socket::VersionedSerialSocket;
+use fluvio_spu_schema::server::consumer_offset::{
+    GetConsumerOffsetRequest, UpdateConsumerOffsetRequest,
+};
 use tracing::{debug, error, trace, instrument, info, warn};
 use futures_util::stream::{Stream, select_all};
 use once_cell::sync::Lazy;
@@ -20,7 +25,9 @@ use futures_util::stream::{StreamExt, once, iter};
 use futures_util::FutureExt;
 
 use fluvio_types::PartitionId;
-use fluvio_types::defaults::{FLUVIO_CLIENT_MAX_FETCH_BYTES, FLUVIO_MAX_SIZE_TOPIC_NAME};
+use fluvio_types::defaults::{
+    CONSUMER_REPLICA_KEY, FLUVIO_CLIENT_MAX_FETCH_BYTES, FLUVIO_MAX_SIZE_TOPIC_NAME,
+};
 use fluvio_spu_schema::server::stream_fetch::{
     DefaultStreamFetchRequest, DefaultStreamFetchResponse, CHAIN_SMARTMODULE_API,
     OFFSET_MANAGEMENT_API,
@@ -394,9 +401,27 @@ where
 
         let replica = ReplicaKey::new(&self.topic, self.partition);
         let mut serial_socket = self.pool.create_serial_socket(&replica).await?;
-        let offsets = fetch_offsets(&mut serial_socket, &replica, consumer_id.clone()).await?;
 
-        let start_absolute_offset = offset.resolve(&offsets).await?;
+        let consumer_offset = if let Some(ref consumer_id) = consumer_id {
+            let consumer_offset_socket = self.create_serial_socket_retry().await?;
+            let response = consumer_offset_socket
+                .send_receive(GetConsumerOffsetRequest::new(
+                    (self.topic.to_owned(), self.partition).into(),
+                    consumer_id,
+                ))
+                .await?;
+            if response.error_code != ErrorCode::None {
+                error!("Error getting consumer offset: {:#?}", response.error_code);
+                return Err(response.error_code.into());
+            }
+            response.consumer.map(|c| c.offset + 1)
+        } else {
+            None
+        };
+
+        let offsets = fetch_offsets(&mut serial_socket, &replica).await?;
+
+        let start_absolute_offset = offset.resolve(&offsets, consumer_offset).await?;
         let end_absolute_offset = offsets.last_stable_offset;
         let record_count = end_absolute_offset - start_absolute_offset;
 
@@ -548,6 +573,31 @@ where
         };
 
         Ok((stream, start_absolute_offset, server_sender))
+    }
+
+    async fn create_serial_socket_retry(&self) -> Result<VersionedSerialSocket> {
+        let mut attempts = 0;
+        loop {
+            match self
+                .pool
+                .create_serial_socket(&CONSUMER_REPLICA_KEY.into())
+                .await
+            {
+                Ok(socket) => return Ok(socket),
+                Err(err) => {
+                    error!("Failed to create consumer offset socket: {:#?}", err);
+                    sleep(Duration::from_secs(1)).await;
+                    attempts += 1;
+
+                    if attempts >= 30 {
+                        return Err(ErrorCode::Other(
+                            "Failed to create consumer offset socket".to_string(),
+                        )
+                        .into());
+                    }
+                }
+            };
+        }
     }
 
     #[instrument(skip(self, config))]

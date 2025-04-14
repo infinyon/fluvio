@@ -10,6 +10,9 @@ use fluvio_spu_schema::server::consumer_offset::FetchConsumerOffsetsResponse;
 use fluvio_spu_schema::server::consumer_offset::UpdateConsumerOffsetRequest;
 use fluvio_spu_schema::server::consumer_offset::UpdateConsumerOffsetResponse;
 use fluvio_spu_schema::server::consumer_offset::ConsumerOffset as ConsumerOffsetResponse;
+use fluvio_spu_schema::server::consumer_offset::Consumer;
+use fluvio_spu_schema::server::consumer_offset::GetConsumerOffsetRequest;
+use fluvio_spu_schema::server::consumer_offset::GetConsumerOffsetResponse;
 use fluvio_storage::FileReplica;
 use fluvio_types::defaults::CONSUMER_REPLICA_KEY;
 use fluvio_types::PartitionId;
@@ -259,4 +262,43 @@ async fn update_offset_in_peer(
         return Err(response.error_code);
     }
     Ok(())
+}
+
+#[instrument(skip(req_msg, ctx))]
+pub(crate) async fn handle_get_consumer_offset_request(
+    req_msg: RequestMessage<GetConsumerOffsetRequest>,
+    ctx: DefaultSharedGlobalContext,
+) -> Result<ResponseMessage<GetConsumerOffsetResponse>> {
+    let GetConsumerOffsetRequest {
+        consumer_id,
+        replica_id,
+    } = req_msg.request;
+
+    let Some(ref replica) = ctx.leaders_state().get(&CONSUMER_REPLICA_KEY.into()).await else {
+        return Err(ErrorCode::PartitionNotLeader.into());
+    };
+
+    let (consumer, error_code) = match get_offset(ctx, replica, replica_id, consumer_id).await {
+        Ok(offset) => (offset, ErrorCode::None),
+        Err(e) => (None, ErrorCode::Other(e.to_string())),
+    };
+
+    debug!(?consumer, ?error_code, "consumer offset fetch result");
+    let consumer = consumer.map(|c| Consumer::new(c.offset));
+    let response = GetConsumerOffsetResponse::new(error_code, consumer);
+    Ok(RequestMessage::<GetConsumerOffsetRequest>::response_with_header(&req_msg.header, response))
+}
+
+async fn get_offset(
+    ctx: DefaultSharedGlobalContext,
+    replica: &LeaderReplicaState<FileReplica>,
+    target_replica: ReplicaKey,
+    consumer_id: String,
+) -> Result<Option<ConsumerOffset>> {
+    let consumers = ctx
+        .consumer_offset()
+        .get_or_insert(replica, ctx.follower_notifier())
+        .await?;
+    let key = ConsumerOffsetKey::new(target_replica, consumer_id);
+    consumers.get(&key).await
 }

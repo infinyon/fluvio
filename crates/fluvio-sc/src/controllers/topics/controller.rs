@@ -196,9 +196,11 @@ where
 
         let mut interval_secs = INTERVAL_STEP;
 
+        sleep(Duration::from_secs(2)).await;
+
         loop {
-            sleep(Duration::from_secs(interval_secs)).await;
             self.ensure_offsets_topic_exists().await;
+            sleep(Duration::from_secs(interval_secs)).await;
             interval_secs = min(MAX_INTERVAL, interval_secs.add(INTERVAL_STEP));
         }
     }
