@@ -12,9 +12,12 @@ use anyhow::Result;
 
 use fluvio::Fluvio;
 use fluvio::metadata::topic::TopicSpec;
-
+use fluvio_controlplane_metadata::partition::PartitionSpec;
+use fluvio_sc_schema::objects::{ListFilters, ListRequest};
 use crate::common::output::Terminal;
 use crate::common::OutputFormat;
+use crate::client::partition::list::display as display_partition;
+
 
 // -----------------------------------
 // CLI Options
@@ -28,6 +31,9 @@ pub struct DescribeTopicsOpt {
 
     #[clap(flatten)]
     output: OutputFormat,
+
+    #[arg(long, short, required = false)]
+    system: bool,
 }
 
 impl DescribeTopicsOpt {
@@ -37,9 +43,25 @@ impl DescribeTopicsOpt {
         debug!("describe topic: {}, {:?}", topic, output_type);
 
         let admin = fluvio.admin().await;
-        let topics = admin.list::<TopicSpec, _>(vec![topic]).await?;
+        let topics = admin.list::<TopicSpec, _>(vec![topic.clone()]).await?;
+        let list_filters = ListFilters::from(topic.as_str());
+        let partitions = admin
+            .list_with_config::<PartitionSpec, String>(ListRequest::new(list_filters, self.system).system(self.system))
+            .await?;
 
-        display::describe_topics(topics, output_type, out).await?;
+        let filtered_partitions = partitions.clone()
+            .into_iter()
+            .filter(|partition| {
+                if let Some(index) = partition.name.rfind('-') {
+                    let base_name = &partition.name[..index];
+                    base_name == topic
+                } else {
+                    partition.name == topic
+                }
+            })
+            .collect::<Vec<_>>();
+        display::describe_topics(topics, output_type.clone(), out.clone()).await?;
+        display_partition::format_partition_response_output(out, filtered_partitions, output_type)?;
         Ok(())
     }
 }
