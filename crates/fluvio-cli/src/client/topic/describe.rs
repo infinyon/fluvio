@@ -18,7 +18,6 @@ use crate::common::output::Terminal;
 use crate::common::OutputFormat;
 use crate::client::partition::list::display as display_partition;
 
-
 // -----------------------------------
 // CLI Options
 // -----------------------------------
@@ -46,10 +45,13 @@ impl DescribeTopicsOpt {
         let topics = admin.list::<TopicSpec, _>(vec![topic.clone()]).await?;
         let list_filters = ListFilters::from(topic.as_str());
         let partitions = admin
-            .list_with_config::<PartitionSpec, String>(ListRequest::new(list_filters, self.system).system(self.system))
+            .list_with_config::<PartitionSpec, String>(
+                ListRequest::new(list_filters, self.system).system(self.system),
+            )
             .await?;
 
-        let filtered_partitions = partitions.clone()
+        let filtered_partitions = partitions
+            .clone()
             .into_iter()
             .filter(|partition| {
                 if let Some(index) = partition.name.rfind('-') {
