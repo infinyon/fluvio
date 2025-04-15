@@ -10,12 +10,15 @@ use fluvio_controlplane::spu_api::update_smartmodule::SmartModule;
 use fluvio_controlplane_metadata::smartmodule::{
     SmartModuleSpec, SmartModuleWasm, SmartModuleWasmFormat,
 };
+use fluvio_socket::AsyncResponse;
+use fluvio_spu_schema::server::stream_fetch::StreamFetchRequest;
 use fluvio_protocol::{
     fixture::BatchProducer,
     record::{RecordData, Record, RecordSet, Batch, RawRecords},
     ByteBuf,
 };
 use fluvio_storage::{FileReplica, ReplicaStorage};
+use futures_util::StreamExt;
 
 use crate::{core::GlobalContext, services::auth::SpuAuthGlobalContext};
 
@@ -23,6 +26,7 @@ use super::{create_public_server, SpuPublicServer};
 
 mod stream_fetch;
 mod produce;
+mod consumer_offset;
 
 /// create records that can be filtered
 fn create_filter_records(records: u16) -> RecordSet {
@@ -120,4 +124,24 @@ fn create_public_server_with_root_auth(
     let auth_global_ctx =
         SpuAuthGlobalContext::new(ctx.clone(), Arc::new(RootAuthorization::new()));
     create_public_server(addr.to_owned(), auth_global_ctx.clone())
+}
+
+async fn read_records(
+    mut stream: AsyncResponse<StreamFetchRequest<RecordSet<RawRecords>>>,
+    count: usize,
+) -> anyhow::Result<Vec<String>> {
+    let mut res = Vec::with_capacity(count);
+    while res.len() < count {
+        let response = stream
+            .next()
+            .await
+            .ok_or(anyhow::anyhow!("expected item"))??;
+        let partition = &response.partition;
+        assert_eq!(partition.records.batches.len(), 1);
+        let batch = &partition.records.batches[0];
+        for record in batch.memory_records()? {
+            res.push(String::from_utf8_lossy(record.value().as_ref()).to_string());
+        }
+    }
+    Ok(res)
 }
