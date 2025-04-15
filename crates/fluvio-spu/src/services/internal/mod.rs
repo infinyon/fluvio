@@ -15,7 +15,6 @@ use crate::core::DefaultSharedGlobalContext;
 
 pub use self::fetch_stream_request::FetchStreamRequest;
 pub use self::fetch_stream_request::FetchStreamResponse;
-#[allow(unused_imports)]
 pub use self::fetch_consumer_offset_request::FetchConsumerOffsetRequest;
 pub use self::update_consumer_offset_request::UpdateConsumerOffsetRequest;
 pub use self::api::SPUPeerApiEnum;

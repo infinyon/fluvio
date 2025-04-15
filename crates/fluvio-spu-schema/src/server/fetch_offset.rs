@@ -24,6 +24,11 @@ use super::SpuServerApiKey;
 pub struct FetchOffsetsRequest {
     /// Each topic in the request.
     pub topics: Vec<FetchOffsetTopic>,
+
+    /// The consumer id (DEPRECATED)
+    #[deprecated(note = "to get consumer offest use `GetConsumerOffsetRequest` instead")]
+    #[fluvio(min_version = 23, max_version = 23)]
+    pub consumer_id: Option<String>,
 }
 
 impl Request for FetchOffsetsRequest {
@@ -42,6 +47,7 @@ impl FetchOffsetsRequest {
                     partition_index: partition,
                 }],
             }],
+            ..Default::default()
         }
     }
 }
