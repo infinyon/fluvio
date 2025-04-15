@@ -8,8 +8,10 @@ mod retry;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
-use std::time::Duration;
 
+use adaptive_backoff::prelude::{
+    Backoff, BackoffBuilder, ExponentialBackoff, ExponentialBackoffBuilder,
+};
 use anyhow::Result;
 use async_channel::Sender;
 use fluvio_future::timer::sleep;
@@ -27,6 +29,7 @@ use futures_util::FutureExt;
 use fluvio_types::PartitionId;
 use fluvio_types::defaults::{
     CONSUMER_REPLICA_KEY, FLUVIO_CLIENT_MAX_FETCH_BYTES, FLUVIO_MAX_SIZE_TOPIC_NAME,
+    RECONNECT_BACKOFF_FACTOR, RECONNECT_BACKOFF_MAX_DURATION, RECONNECT_BACKOFF_MIN_DURATION,
 };
 use fluvio_spu_schema::server::stream_fetch::{
     DefaultStreamFetchRequest, DefaultStreamFetchResponse, CHAIN_SMARTMODULE_API,
@@ -59,6 +62,7 @@ pub use fluvio_spu_schema::server::smartmodule::SmartModuleContextData;
 pub use fluvio_smartmodule::dataplane::smartmodule::SmartModuleExtraParams;
 
 const STREAM_TO_SERVER_CHANNEL_SIZE: usize = 100;
+const MAX_ATTEMPTS_CONSUMER_OFFSET: usize = 30;
 
 /// Type alias for the consumer record stream.
 #[cfg(target_arch = "wasm32")]
@@ -577,6 +581,7 @@ where
 
     async fn create_serial_socket_retry(&self) -> Result<VersionedSerialSocket> {
         let mut attempts = 0;
+        let mut backoff = create_backoff()?;
         loop {
             match self
                 .pool
@@ -586,10 +591,11 @@ where
                 Ok(socket) => return Ok(socket),
                 Err(err) => {
                     error!("Failed to create consumer offset socket: {:#?}", err);
-                    sleep(Duration::from_secs(1)).await;
+
+                    backoff_and_wait(&mut backoff).await;
                     attempts += 1;
 
-                    if attempts >= 30 {
+                    if attempts >= MAX_ATTEMPTS_CONSUMER_OFFSET {
                         return Err(ErrorCode::Other(
                             "Failed to create consumer offset socket".to_string(),
                         )
@@ -963,6 +969,21 @@ impl<T> StreamToServerCallback<T> {
             }
         }
     }
+}
+
+/// Creates an exponential backoff configuration.
+fn create_backoff() -> Result<ExponentialBackoff> {
+    ExponentialBackoffBuilder::default()
+        .factor(RECONNECT_BACKOFF_FACTOR)
+        .min(RECONNECT_BACKOFF_MIN_DURATION)
+        .max(RECONNECT_BACKOFF_MAX_DURATION)
+        .build()
+}
+
+/// Waits for the duration determined by the exponential backoff.
+async fn backoff_and_wait(backoff: &mut ExponentialBackoff) {
+    let wait_duration = backoff.wait();
+    let _ = sleep(wait_duration).await;
 }
 
 #[cfg(test)]
