@@ -234,7 +234,7 @@ mod tests {
         assert_eq!(filtered_topic_1.len(), 1);
         assert_eq!(filtered_topic_1[0].name, "topic-1");
         assert_eq!(filtered_topic_1[0].spec.leader, 0);
-        assert_eq!(filtered_topic_1[0].spec.system, false);
+        assert!(!filtered_topic_1[0].spec.system);
         assert_eq!(filtered_topic_1[0].status, PartitionStatus::default());
     }
 
@@ -253,7 +253,7 @@ mod tests {
         assert_eq!(filtered_topic_2.len(), 1);
         assert_eq!(filtered_topic_2[0].name, "topic-2");
         assert_eq!(filtered_topic_2[0].spec.leader, 0);
-        assert_eq!(filtered_topic_2[0].spec.system, false);
+        assert!(filtered_topic_2[0].spec.system);
         assert_eq!(filtered_topic_2[0].status, PartitionStatus::default());
     }
 
