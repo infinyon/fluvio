@@ -66,7 +66,7 @@ fn filter_partition_by_topic(
     topic: String,
     partitions: Vec<Metadata<PartitionSpec>>,
 ) -> Vec<Metadata<PartitionSpec>> {
-    let filtered_partitions = partitions
+    partitions
         .clone()
         .into_iter()
         .filter(|partition| {
@@ -77,8 +77,7 @@ fn filter_partition_by_topic(
                 partition.name == topic
             }
         })
-        .collect::<Vec<_>>();
-    filtered_partitions
+        .collect::<Vec<_>>()
 }
 mod display {
 
