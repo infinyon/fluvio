@@ -230,8 +230,6 @@ mod tests {
                 status: PartitionStatus::default(),
             }];
 
-        // partition_metadata_vec.push(partition_metadata);
-
         let filtered_topic_1 =
             filter_partition_by_topic("topic".to_string(), partition_with_topic_1.clone());
         assert_eq!(filtered_topic_1.len(), 1);
@@ -250,8 +248,6 @@ mod tests {
                 spec: PartitionSpec::new(0, vec![0, 1]),
                 status: PartitionStatus::default(),
             }];
-
-        // partition_metadata_vec.push(partition_metadata);
 
         let filtered_topic_2 =
             filter_partition_by_topic("topic".to_string(), partition_with_topic_2.clone());
