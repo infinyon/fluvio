@@ -3018,7 +3018,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartengine"
-version = "0.8.5"
+version = "0.8.6"
 dependencies = [
  "anyhow",
  "cfg-if",
@@ -3038,7 +3038,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartmodule"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "criterion",
  "eyre",

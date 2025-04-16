@@ -154,7 +154,8 @@ mod t_smartmodule_metrics {
             &vec!["module1".to_string(), "module2".to_string()]
         );
 
-        let _out = serde_json::to_string(&metrics).expect("serialize");
+        let out = serde_json::to_string(&metrics).expect("serialize");
+        println!("metrics2: {:?}", out);
     }
 
     #[test]
