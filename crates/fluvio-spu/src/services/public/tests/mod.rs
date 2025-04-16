@@ -5,6 +5,8 @@ use std::{
 
 use chrono::Utc;
 use flate2::{bufread::GzEncoder, Compression};
+use futures_util::StreamExt;
+
 use fluvio_auth::root::RootAuthorization;
 use fluvio_controlplane::spu_api::update_smartmodule::SmartModule;
 use fluvio_controlplane_metadata::smartmodule::{
@@ -18,7 +20,6 @@ use fluvio_protocol::{
     ByteBuf,
 };
 use fluvio_storage::{FileReplica, ReplicaStorage};
-use futures_util::StreamExt;
 
 use crate::{core::GlobalContext, services::auth::SpuAuthGlobalContext};
 
