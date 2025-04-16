@@ -6,6 +6,7 @@ use std::path::{PathBuf, Path};
 use std::str::FromStr;
 use std::time::Duration;
 
+use schemars::JsonSchema;
 use serde::de::{Visitor, SeqAccess};
 use serde::ser::{SerializeMap, SerializeSeq};
 use tracing::debug;
@@ -291,7 +292,7 @@ pub struct ConsumerParameters {
     pub offset: Option<ConsumerOffsetConfig>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, JsonSchema)]
 pub struct ProducerParameters {
     #[serde(with = "humantime_serde")]
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -1016,7 +1017,7 @@ mod tests {
           version: 0.1.0
           name: my-test-mqtt
           type: mqtt-source
-          topic: 
+          topic:
             meta:
               name: my-mqtt
         "#;
@@ -1240,7 +1241,7 @@ mod tests {
 
         let with_multiple_partitions: ConsumerParameters = serde_yaml::from_str(
             r#"
-            partition: 
+            partition:
                 - 120
                 - 230
         "#,
