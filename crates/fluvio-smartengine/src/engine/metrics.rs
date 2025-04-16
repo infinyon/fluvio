@@ -59,7 +59,6 @@ impl SmartModuleChainMetrics {
 
     pub fn add_bytes_in(&self, value: u64) {
         self.bytes_in.fetch_add(value, DEFAULT_ORDERING);
-        self.invocation_count.fetch_add(1, DEFAULT_ORDERING); // todo remove side effect and make explicit at call sites
     }
 
     pub fn add_invocation_count(&self, value: u64) {
@@ -154,7 +153,8 @@ mod t_smartmodule_metrics {
             &vec!["module1".to_string(), "module2".to_string()]
         );
 
-        let _out = serde_json::to_string(&metrics).expect("serialize");
+        let out = serde_json::to_string(&metrics).expect("serialize");
+        println!("metrics2: {:?}", out);
     }
 
     #[test]

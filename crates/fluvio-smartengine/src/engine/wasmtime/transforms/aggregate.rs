@@ -123,9 +123,13 @@ mod test {
         let engine = SmartEngine::new();
         let mut chain_builder = SmartModuleChainBuilder::default();
 
+        let sm = read_wasm_module(SM_AGGEGRATE);
         chain_builder.add_smart_module(
-            SmartModuleConfig::builder().build().unwrap(),
-            read_wasm_module(SM_AGGEGRATE),
+            SmartModuleConfig::builder()
+                .smartmodule_names(&[sm.0])
+                .build()
+                .unwrap(),
+            sm.1,
         );
 
         let mut chain = chain_builder
@@ -218,14 +222,16 @@ mod test {
         let engine = SmartEngine::new();
         let mut chain_builder = SmartModuleChainBuilder::default();
 
+        let sm = read_wasm_module(SM_AGGEGRATE);
         chain_builder.add_smart_module(
             SmartModuleConfig::builder()
+                .smartmodule_names(&[sm.0])
                 .initial_data(SmartModuleInitialData::with_aggregate(
                     "a".to_string().as_bytes().to_vec(),
                 ))
                 .build()
                 .unwrap(),
-            read_wasm_module(SM_AGGEGRATE),
+            sm.1,
         );
 
         let mut chain = chain_builder

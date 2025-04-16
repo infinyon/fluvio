@@ -2452,9 +2452,11 @@ async fn test_stream_metrics() {
         let metrics_sm = ctx.metrics().smartmodule_metrics();
         assert_eq!(metrics_sm.len(), 1);
 
-        if let Some(filter_metrics) = metrics_sm.get(FLUVIO_WASM_FILTER) {
+        println!("metrics: {:#?}", metrics_sm);
+
+        if let Some(filter_metrics) = metrics_sm.get("adhoc") {
             assert_eq!(filter_metrics.bytes_in(), 24);
-            assert_eq!(filter_metrics.records_out(), 1);
+            assert_eq!(filter_metrics.records_out(), 2);
             assert_eq!(filter_metrics.invocation_count(), 1);
         } else {
             panic!("SmartModule metrics not found for {FLUVIO_WASM_FILTER}");

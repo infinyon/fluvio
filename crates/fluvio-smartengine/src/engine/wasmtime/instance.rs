@@ -62,8 +62,15 @@ impl SmartModuleInstance {
         input: SmartModuleInput,
         store: &mut WasmState,
     ) -> Result<SmartModuleOutput> {
+        // pre metrics
+        let raw_len = input.raw_bytes().len();
+        self.ctx.metrics().add_bytes_in(raw_len as u64);
+        self.ctx.metrics().add_invocation_count(1);
         let start_time = self.ctx.metrics_time_start();
+
         let out = self.transform.process(input, &mut self.ctx, store);
+
+        // post metrics
         self.ctx.metrics_time_elapsed(start_time, store);
         if let Ok(ref output) = out {
             let num_recs = output.successes.len() as u64;

@@ -161,6 +161,7 @@ impl SmartModuleChainInstance {
                 }
             }
         }
+        self.metrics_reset();
         out
     }
 
@@ -186,17 +187,8 @@ impl SmartModuleChainInstance {
             let mut next_input = input;
 
             for instance in instances {
-                // pass raw inputs to transform instance
-                // each raw input may result in multiple records
-                // let time = std::time::Instant::now();
                 self.store.top_up_fuel();
                 let output = instance.process(next_input, &mut self.store)?;
-                // let fuel_used = self.store.get_used_fuel();
-                // debug!(fuel_used, "fuel used");
-                // instance.metric.add_bytes_in(raw_len as u64);
-                // instance.metric.add_fuel_used(fuel_used, time.elapsed());
-                // let records_out = output.successes.len();
-                // instance.metric.add_records_out(records_out as u64);
                 if let Some(ref smerr) = output.error {
                     // encountered error, we stop processing and return partial output
                     tracing::error!(err=?smerr);
@@ -209,18 +201,12 @@ impl SmartModuleChainInstance {
                 }
             }
 
-            // TODO Metrics
-            // let time = std::time::Instant::now();
             self.store.top_up_fuel();
             let output = last.process(next_input, &mut self.store)?;
             if let Some(ref smerr) = output.error {
                 tracing::error!(err=?smerr);
             }
-            // let fuel_used = self.store.get_used_fuel();
-            // debug!(fuel_used, "fuel used");
-            // metric.add_fuel_used(fuel_used, time.elapsed());
             let records_out = output.successes.len();
-            // metric.add_records_out(records_out as u64);
             debug!(records_out, "sm records out");
             Ok(output)
         } else {
@@ -256,6 +242,7 @@ impl SmartModuleChainInstance {
 
                 debug!(fuel_used, "fuel used");
                 metrics.add_fuel_used(fuel_used, time.elapsed());
+                metrics.add_invocation_count(1);
                 result?;
             }
         }
@@ -293,7 +280,6 @@ mod chaining_test {
 
     use super::super::{
         SmartEngine, SmartModuleChainBuilder, SmartModuleConfig, SmartModuleInitialData,
-        metrics::SmartModuleChainMetrics,
     };
 
     const SM_FILTER_INIT: &str = "fluvio_smartmodule_filter_init";
@@ -308,17 +294,23 @@ mod chaining_test {
         let engine = SmartEngine::new();
         let mut chain_builder = SmartModuleChainBuilder::default();
 
+        let sm = read_wasm_module(SM_FILTER_INIT);
         chain_builder.add_smart_module(
             SmartModuleConfig::builder()
+                .smartmodule_names(&[sm.0])
                 .param("key", "a")
                 .build()
                 .unwrap(),
-            read_wasm_module(SM_FILTER_INIT),
+            sm.1,
         );
 
+        let sm = read_wasm_module(SM_MAP);
         chain_builder.add_smart_module(
-            SmartModuleConfig::builder().build().unwrap(),
-            read_wasm_module(SM_MAP),
+            SmartModuleConfig::builder()
+                .smartmodule_names(&[sm.0])
+                .build()
+                .unwrap(),
+            sm.1,
         );
 
         let mut chain = chain_builder
@@ -367,22 +359,26 @@ mod chaining_test {
         let engine = SmartEngine::new();
         let mut chain_builder = SmartModuleChainBuilder::default();
 
+        let sm = read_wasm_module(SM_FILTER_INIT);
         chain_builder.add_smart_module(
             SmartModuleConfig::builder()
+                .smartmodule_names(&[sm.0])
                 .param("key", "a")
                 .build()
                 .unwrap(),
-            read_wasm_module(SM_FILTER_INIT),
+            sm.1,
         );
 
+        let sm = read_wasm_module(SM_AGGEGRATE);
         chain_builder.add_smart_module(
             SmartModuleConfig::builder()
+                .smartmodule_names(&[sm.0])
                 .initial_data(SmartModuleInitialData::with_aggregate(
                     "zero".to_string().as_bytes().to_vec(),
                 ))
                 .build()
                 .unwrap(),
-            read_wasm_module(SM_AGGEGRATE),
+            sm.1,
         );
 
         let mut chain = chain_builder
@@ -390,6 +386,7 @@ mod chaining_test {
             .expect("failed to build chain");
         assert_eq!(chain.instances().len(), 2);
 
+        // when
         let input = vec![
             Record::new("apple"),
             Record::new("fruit"),
@@ -435,12 +432,14 @@ mod chaining_test {
         let engine = SmartEngine::new();
         let mut chain_builder = SmartModuleChainBuilder::default();
 
+        let sm = read_wasm_module(SM_FILTER_LOOK_BACK);
         chain_builder.add_smart_module(
             SmartModuleConfig::builder()
+                .smartmodule_names(&[sm.0])
                 .lookback(Some(Lookback::Last(1)))
                 .build()
                 .unwrap(),
-            read_wasm_module(SM_FILTER_LOOK_BACK),
+            sm.1,
         );
 
         let mut chain = chain_builder
@@ -466,7 +465,6 @@ mod chaining_test {
         assert_eq!(output.successes[0].value().to_string(), "3");
         let metrics = chain.metrics_export();
         assert_eq!(metrics.len(), 1);
-
         let module_metrics = metrics
             .get("fluvio_smartmodule_filter_lookback")
             .expect("module metrics");
@@ -480,14 +478,15 @@ mod chaining_test {
         //given
         let engine = SmartEngine::new();
         let mut chain_builder = SmartModuleChainBuilder::default();
-        let metrics = SmartModuleChainMetrics::new(&[]);
 
+        let sm = read_wasm_module(SM_FILTER_LOOK_BACK);
         chain_builder.add_smart_module(
             SmartModuleConfig::builder()
+                .smartmodule_names(&[sm.0])
                 .lookback(Some(Lookback::Last(1)))
                 .build()
                 .unwrap(),
-            read_wasm_module(SM_FILTER_LOOK_BACK),
+            sm.1,
         );
 
         let mut chain = chain_builder
@@ -513,6 +512,8 @@ mod chaining_test {
                 record_value: "wrong str".to_string().into()
             }
         );
+        let sm_metrics = chain.metrics_export();
+        let metrics = sm_metrics.get(SM_FILTER_LOOK_BACK).expect("module metrics");
         assert!(metrics.fuel_used() > 0);
         assert_eq!(metrics.invocation_count(), 1);
     }
@@ -548,16 +549,17 @@ mod chaining_test {
         let mut chain_builder = SmartModuleChainBuilder::default();
         let max_memory = 1_000; // 1 kb
 
+        let sm = read_wasm_module(SM_FILTER_LOOK_BACK);
         chain_builder.add_smart_module(
             SmartModuleConfig::builder()
+                .smartmodule_names(&[sm.0])
                 .lookback(Some(Lookback::Last(1)))
                 .build()
                 .unwrap(),
-            read_wasm_module(SM_FILTER_LOOK_BACK),
+            sm.1,
         );
         chain_builder.set_store_memory_limit(max_memory);
 
-        // when
         let res = chain_builder.initialize(&engine);
 
         // then
@@ -585,12 +587,14 @@ mod chaining_test {
         let mut chain_builder = SmartModuleChainBuilder::default();
         let max_memory = 1_000_000 * 2; // 2mb
 
+        let sm = read_wasm_module(SM_FILTER_LOOK_BACK);
         chain_builder.add_smart_module(
             SmartModuleConfig::builder()
+                .smartmodule_names(&[sm.0])
                 .lookback(Some(Lookback::Last(1000)))
                 .build()
                 .unwrap(),
-            read_wasm_module(SM_FILTER_LOOK_BACK),
+            sm.1,
         );
         chain_builder.set_store_memory_limit(max_memory);
 
@@ -629,9 +633,13 @@ mod chaining_test {
         let mut chain_builder = SmartModuleChainBuilder::default();
         let max_memory = 1_000_000 * 2; // 2mb
 
+        let sm = read_wasm_module(SM_FILTER_LOOK_BACK);
         chain_builder.add_smart_module(
-            SmartModuleConfig::builder().build().unwrap(),
-            read_wasm_module(SM_FILTER_LOOK_BACK),
+            SmartModuleConfig::builder()
+                .smartmodule_names(&[sm.0])
+                .build()
+                .unwrap(),
+            sm.1,
         );
         chain_builder.set_store_memory_limit(max_memory);
 

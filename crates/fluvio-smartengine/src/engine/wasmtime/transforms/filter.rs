@@ -21,9 +21,13 @@ mod test {
         let engine = SmartEngine::new();
         let mut chain_builder = SmartModuleChainBuilder::default();
 
+        let sm = read_wasm_module(SM_FILTER);
         chain_builder.add_smart_module(
-            SmartModuleConfig::builder().build().unwrap(),
-            read_wasm_module(SM_FILTER),
+            SmartModuleConfig::builder()
+                .smartmodule_names(&[sm.0])
+                .build()
+                .unwrap(),
+            sm.1,
         );
 
         let mut chain = chain_builder
@@ -61,9 +65,13 @@ mod test {
         let engine = SmartEngine::new();
         let mut chain_builder = SmartModuleChainBuilder::default();
 
+        let sm = read_wasm_module(SM_FILTER_INIT);
         chain_builder.add_smart_module(
-            SmartModuleConfig::builder().build().unwrap(),
-            read_wasm_module(SM_FILTER_INIT),
+            SmartModuleConfig::builder()
+                .smartmodule_names(&[sm.0])
+                .build()
+                .unwrap(),
+            sm.1,
         );
 
         assert_eq!(
@@ -81,12 +89,14 @@ mod test {
         let engine = SmartEngine::new();
         let mut chain_builder = SmartModuleChainBuilder::default();
 
+        let sm = read_wasm_module(SM_FILTER_INIT);
         chain_builder.add_smart_module(
             SmartModuleConfig::builder()
+                .smartmodule_names(&[sm.0])
                 .param("key", "a")
                 .build()
                 .unwrap(),
-            read_wasm_module(SM_FILTER_INIT),
+            sm.1,
         );
 
         let mut chain = chain_builder
@@ -126,12 +136,14 @@ mod test {
 
         // build 2nd chain with different parameter
         let mut chain_builder = SmartModuleChainBuilder::default();
+        let sm = read_wasm_module(SM_FILTER_INIT);
         chain_builder.add_smart_module(
             SmartModuleConfig::builder()
+                .smartmodule_names(&[sm.0])
                 .param("key", "b")
                 .build()
                 .unwrap(),
-            read_wasm_module(SM_FILTER_INIT),
+            sm.1,
         );
 
         let mut chain = chain_builder
