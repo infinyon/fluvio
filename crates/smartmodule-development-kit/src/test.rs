@@ -41,13 +41,24 @@ impl TestCmd {
                         package_info.target_wasm32_wasi_path()?
                     }
                 };
-                build_chain_ad_hoc(crate::read_bytes_from_path(&wasm_file)?, params, lookback)
+                let sm_name = wasm_file
+                    .file_name()
+                    .expect("wasm file name")
+                    .to_string_lossy()
+                    .to_string();
+                build_chain_ad_hoc(
+                    &sm_name,
+                    crate::read_bytes_from_path(&wasm_file)?,
+                    params,
+                    lookback,
+                )
             }))
             .await
     }
 }
 
 fn build_chain_ad_hoc(
+    name: &str,
     wasm: Vec<u8>,
     params: Vec<(String, String)>,
     lookback: Option<Lookback>,
@@ -56,6 +67,7 @@ fn build_chain_ad_hoc(
     let params: BTreeMap<_, _> = params.into_iter().collect();
     Ok(SmartModuleChainBuilder::from((
         SmartModuleConfig::builder()
+            .smartmodule_names(&[name.to_owned()])
             .params(params.into())
             .lookback(lookback)
             .build()?,
