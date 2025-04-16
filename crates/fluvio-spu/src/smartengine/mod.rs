@@ -14,8 +14,7 @@ mod chain;
 
 #[cfg(feature = "smartengine")]
 pub(crate) use fluvio_smartengine::{
-    EngineError, Lookback, SmartModuleChainBuilder, metrics::SmartModuleChainMetrics, SmartEngine,
-    SmartModuleChainInstance, Version,
+    EngineError, Lookback, SmartModuleChainBuilder, SmartEngine, SmartModuleChainInstance, Version,
 };
 
 // Stub structures to support a null smartengine config

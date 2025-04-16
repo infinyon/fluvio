@@ -32,6 +32,7 @@ impl ClientMetrics {
     }
 
     #[cfg(feature = "smartengine")]
+    #[allow(dead_code)]
     pub(crate) fn chain_metrics(&self) -> &fluvio_smartengine::metrics::SmartModuleChainMetrics {
         &self.smartmodule
     }

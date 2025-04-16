@@ -1,24 +1,32 @@
 use std::{
-    sync::atomic::{AtomicU64, Ordering},
+    collections::HashMap,
+    sync::{
+        atomic::{AtomicU64, Ordering},
+        RwLock, // Add RwLock or you could use dashmap for better performance
+    },
     ops::AddAssign,
 };
 
 use fluvio_protocol::record::Batch;
+use fluvio_smartengine::metrics::SmartModuleChainMetrics;
 use fluvio_spu_schema::fetch::FilePartitionResponse;
 use serde::Serialize;
-
-use crate::smartengine::SmartModuleChainMetrics;
 
 #[derive(Default, Debug, Serialize)]
 pub(crate) struct SpuMetrics {
     inbound: Activity,
     outbound: Activity,
-    smartmodule: SmartModuleChainMetrics,
+    #[serde(skip)] // Skip serializing the RwLock wrapper
+    smartmodule_metrics: RwLock<HashMap<String, SmartModuleChainMetrics>>,
 }
 
 impl SpuMetrics {
     pub(crate) fn new() -> Self {
-        Self::default()
+        Self {
+            inbound: Activity::default(),
+            outbound: Activity::default(),
+            smartmodule_metrics: RwLock::new(HashMap::new()),
+        }
     }
 
     pub fn inbound(&self) -> &Activity {
@@ -29,8 +37,26 @@ impl SpuMetrics {
         &self.outbound
     }
 
-    pub fn chain_metrics(&self) -> &SmartModuleChainMetrics {
-        &self.smartmodule
+    pub fn smartmodule_metrics(&self) -> HashMap<String, SmartModuleChainMetrics> {
+        // Return a copy of the metrics to avoid holding the lock
+        self.smartmodule_metrics.read().unwrap().clone()
+    }
+
+    pub fn update_smartmodule_metrics(
+        &self,
+        smartmodule_name: &str,
+        metrics: &SmartModuleChainMetrics,
+    ) {
+        // Acquire write lock to modify the HashMap
+        let mut metrics_map = self.smartmodule_metrics.write().unwrap();
+
+        // if the smartmodule already exists, take metrics and accumulate
+        // otherwise, insert new metrics
+        if let Some(existing_metrics) = metrics_map.get_mut(smartmodule_name) {
+            existing_metrics.append(metrics);
+        } else {
+            metrics_map.insert(smartmodule_name.to_string(), metrics.clone());
+        }
     }
 }
 
