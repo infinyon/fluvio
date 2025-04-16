@@ -1,5 +1,6 @@
 use std::fmt::{self, Debug};
 use std::future::Future;
+use std::collections::HashMap;
 
 use anyhow::Result;
 use fluvio_smartmodule::Record;
@@ -74,6 +75,7 @@ impl SmartModuleChainBuilder {
                 config.params,
                 version,
                 config.lookback,
+                &config.smartmodule_names,
             )?;
             let init = SmartModuleInit::try_instantiate(&ctx, &mut state)?;
             let look_back = SmartModuleLookBack::try_instantiate(&ctx, &mut state)?;
@@ -128,18 +130,54 @@ impl SmartModuleChainInstance {
         &self.instances
     }
 
+    /// split the metrics among each smartmodule in the chain export
+    pub fn metrics_export(&self) -> HashMap<String, SmartModuleChainMetrics> {
+        let mut out = HashMap::<String, SmartModuleChainMetrics>::new();
+        for instance in self.instances.iter() {
+            let metrics = instance.metrics();
+            // depending on the number of smartmodules, split the metrics among each
+            // smartmodule in the output
+            let num_modules = metrics.smartmodule_names().len();
+
+            // fractional metric
+            let mfrac = SmartModuleChainMetrics::new(&[]);
+            mfrac.add_bytes_in(metrics.bytes_in() / num_modules as u64);
+            mfrac.add_records_out(metrics.records_out() / num_modules as u64);
+            mfrac.add_records_err(metrics.records_err() / num_modules as u64);
+            let frac_ms = metrics.cpu_ms() / num_modules as u64;
+            let frac_duration = std::time::Duration::from_millis(frac_ms);
+            mfrac.add_fuel_used(metrics.fuel_used() / num_modules as u64, frac_duration);
+            mfrac.add_invocation_count(metrics.invocation_count() / num_modules as u64);
+
+            for name in metrics.smartmodule_names() {
+                // if the name exists in the output, add the metrics to it
+                // otherwise, create a new entry
+                if let Some(existing_metrics) = out.get(name) {
+                    existing_metrics.append(&mfrac);
+                } else {
+                    let mfrac_w_name = SmartModuleChainMetrics::new(&[name.to_string()]);
+                    mfrac_w_name.append(&mfrac);
+                    out.insert(name.to_string(), mfrac_w_name);
+                }
+            }
+        }
+        out
+    }
+
+    pub fn metrics_reset(&self) {
+        for instance in self.instances.iter() {
+            instance.metrics().reset();
+        }
+    }
+
     /// A single record is processed thru all smartmodules in the chain.
     /// The output of one smartmodule is the input of the next smartmodule.
     /// A single record may result in multiple records.
     /// The output of the last smartmodule is added to the output of the chain.
-    pub fn process(
-        &mut self,
-        input: SmartModuleInput,
-        metric: &SmartModuleChainMetrics,
-    ) -> Result<SmartModuleOutput> {
+    pub fn process(&mut self, input: SmartModuleInput) -> Result<SmartModuleOutput> {
         let raw_len = input.raw_bytes().len();
         debug!(raw_len, "sm raw input");
-        metric.add_bytes_in(raw_len as u64);
+        // metric.add_bytes_in(raw_len as u64);
 
         let base_offset = input.base_offset();
         let base_timestamp = input.base_timestamp();
@@ -150,13 +188,15 @@ impl SmartModuleChainInstance {
             for instance in instances {
                 // pass raw inputs to transform instance
                 // each raw input may result in multiple records
-                let time = std::time::Instant::now();
+                // let time = std::time::Instant::now();
                 self.store.top_up_fuel();
                 let output = instance.process(next_input, &mut self.store)?;
-                let fuel_used = self.store.get_used_fuel();
-                debug!(fuel_used, "fuel used");
-                metric.add_fuel_used(fuel_used, time.elapsed());
-
+                // let fuel_used = self.store.get_used_fuel();
+                // debug!(fuel_used, "fuel used");
+                // instance.metric.add_bytes_in(raw_len as u64);
+                // instance.metric.add_fuel_used(fuel_used, time.elapsed());
+                // let records_out = output.successes.len();
+                // instance.metric.add_records_out(records_out as u64);
                 if let Some(ref smerr) = output.error {
                     // encountered error, we stop processing and return partial output
                     tracing::error!(err=?smerr);
@@ -169,17 +209,18 @@ impl SmartModuleChainInstance {
                 }
             }
 
-            let time = std::time::Instant::now();
+            // TODO Metrics
+            // let time = std::time::Instant::now();
             self.store.top_up_fuel();
             let output = last.process(next_input, &mut self.store)?;
             if let Some(ref smerr) = output.error {
                 tracing::error!(err=?smerr);
             }
-            let fuel_used = self.store.get_used_fuel();
-            debug!(fuel_used, "fuel used");
-            metric.add_fuel_used(fuel_used, time.elapsed());
+            // let fuel_used = self.store.get_used_fuel();
+            // debug!(fuel_used, "fuel used");
+            // metric.add_fuel_used(fuel_used, time.elapsed());
             let records_out = output.successes.len();
-            metric.add_records_out(records_out as u64);
+            // metric.add_records_out(records_out as u64);
             debug!(records_out, "sm records out");
             Ok(output)
         } else {
@@ -190,11 +231,7 @@ impl SmartModuleChainInstance {
         }
     }
 
-    pub async fn look_back<F, R>(
-        &mut self,
-        read_fn: F,
-        metrics: &SmartModuleChainMetrics,
-    ) -> Result<()>
+    pub async fn look_back<F, R>(&mut self, read_fn: F) -> Result<()>
     where
         R: Future<Output = Result<Vec<Record>>>,
         F: Fn(Lookback) -> R,
@@ -202,6 +239,7 @@ impl SmartModuleChainInstance {
         debug!("look_back on chain with {} instances", self.instances.len());
 
         for instance in self.instances.iter_mut() {
+            let metrics = instance.metrics();
             if let Some(lookback) = instance.lookback() {
                 debug!("look_back on instance");
                 let records: Vec<Record> = read_fn(lookback).await?;
@@ -209,6 +247,7 @@ impl SmartModuleChainInstance {
                     SmartModuleInput::try_from_records(records, instance.version())?;
 
                 let time = std::time::Instant::now();
+
                 metrics.add_bytes_in(input.raw_bytes().len() as u64);
                 self.store.top_up_fuel();
 
@@ -233,6 +272,7 @@ mod test {
     #[test]
     fn test_param() {
         let config = SmartModuleConfig::builder()
+            .smartmodule_names(&["test".to_string()])
             .param("key", "apple")
             .build()
             .unwrap();
@@ -267,7 +307,6 @@ mod chaining_test {
     fn test_chain_filter_map() {
         let engine = SmartEngine::new();
         let mut chain_builder = SmartModuleChainBuilder::default();
-        let metrics = SmartModuleChainMetrics::default();
 
         chain_builder.add_smart_module(
             SmartModuleConfig::builder()
@@ -292,7 +331,6 @@ mod chaining_test {
             .process(
                 SmartModuleInput::try_from_records(input, DEFAULT_SMARTENGINE_VERSION)
                     .expect("input"),
-                &metrics,
             )
             .expect("process");
         assert_eq!(output.successes.len(), 0); // no records passed
@@ -306,13 +344,17 @@ mod chaining_test {
             .process(
                 SmartModuleInput::try_from_records(input, DEFAULT_SMARTENGINE_VERSION)
                     .expect("input"),
-                &metrics,
             )
             .expect("process");
         assert_eq!(output.successes.len(), 2); // one record passed
         assert_eq!(output.successes[0].value.as_ref(), b"APPLE");
         assert_eq!(output.successes[1].value.as_ref(), b"BANANA");
-        assert!(metrics.fuel_used() > 0);
+        let fuel_used = chain
+            .instances()
+            .iter()
+            .map(|i| i.metrics().fuel_used())
+            .sum::<u64>();
+        assert!(fuel_used > 0);
         chain.store.top_up_fuel();
         assert_eq!(chain.store.get_used_fuel(), 0);
     }
@@ -324,7 +366,6 @@ mod chaining_test {
     fn test_chain_filter_aggregate() {
         let engine = SmartEngine::new();
         let mut chain_builder = SmartModuleChainBuilder::default();
-        let metrics = SmartModuleChainMetrics::default();
 
         chain_builder.add_smart_module(
             SmartModuleConfig::builder()
@@ -358,7 +399,6 @@ mod chaining_test {
             .process(
                 SmartModuleInput::try_from_records(input, DEFAULT_SMARTENGINE_VERSION)
                     .expect("input"),
-                &metrics,
             )
             .expect("process");
         assert_eq!(output.successes.len(), 2); // one record passed
@@ -370,7 +410,6 @@ mod chaining_test {
             .process(
                 SmartModuleInput::try_from_records(input, DEFAULT_SMARTENGINE_VERSION)
                     .expect("input"),
-                &metrics,
             )
             .expect("process");
         assert_eq!(output.successes.len(), 0); // one record passed
@@ -380,7 +419,6 @@ mod chaining_test {
             .process(
                 SmartModuleInput::try_from_records(input, DEFAULT_SMARTENGINE_VERSION)
                     .expect("input"),
-                &metrics,
             )
             .expect("process");
         assert_eq!(output.successes.len(), 1); // one record passed
@@ -396,7 +434,6 @@ mod chaining_test {
         //given
         let engine = SmartEngine::new();
         let mut chain_builder = SmartModuleChainBuilder::default();
-        let metrics = SmartModuleChainMetrics::default();
 
         chain_builder.add_smart_module(
             SmartModuleConfig::builder()
@@ -411,13 +448,10 @@ mod chaining_test {
             .expect("failed to build chain");
 
         // when
-        fluvio_future::task::run_block_on(chain.look_back(
-            |lookback| {
-                assert_eq!(lookback, Lookback::Last(1));
-                async { Ok(vec![Record::new("2")]) }
-            },
-            &metrics,
-        ))
+        fluvio_future::task::run_block_on(chain.look_back(|lookback| {
+            assert_eq!(lookback, Lookback::Last(1));
+            async { Ok(vec![Record::new("2")]) }
+        }))
         .expect("chain look_back");
 
         // then
@@ -426,13 +460,18 @@ mod chaining_test {
             .process(
                 SmartModuleInput::try_from_records(input, DEFAULT_SMARTENGINE_VERSION)
                     .expect("input"),
-                &metrics,
             )
             .expect("process");
         assert_eq!(output.successes.len(), 1); // one record passed
         assert_eq!(output.successes[0].value().to_string(), "3");
-        assert!(metrics.fuel_used() > 0);
-        assert_eq!(metrics.invocation_count(), 2);
+        let metrics = chain.metrics_export();
+        assert_eq!(metrics.len(), 1);
+
+        let module_metrics = metrics
+            .get("fluvio_smartmodule_filter_lookback")
+            .expect("module metrics");
+        assert!(module_metrics.fuel_used() > 0);
+        assert_eq!(module_metrics.invocation_count(), 2);
     }
 
     #[ignore]
@@ -441,7 +480,7 @@ mod chaining_test {
         //given
         let engine = SmartEngine::new();
         let mut chain_builder = SmartModuleChainBuilder::default();
-        let metrics = SmartModuleChainMetrics::default();
+        let metrics = SmartModuleChainMetrics::new(&[]);
 
         chain_builder.add_smart_module(
             SmartModuleConfig::builder()
@@ -456,13 +495,10 @@ mod chaining_test {
             .expect("failed to build chain");
 
         // when
-        let res = fluvio_future::task::run_block_on(chain.look_back(
-            |lookback| {
-                assert_eq!(lookback, Lookback::Last(1));
-                async { Ok(vec![Record::new("wrong str")]) }
-            },
-            &metrics,
-        ));
+        let res = fluvio_future::task::run_block_on(chain.look_back(|lookback| {
+            assert_eq!(lookback, Lookback::Last(1));
+            async { Ok(vec![Record::new("wrong str")]) }
+        }));
 
         // then
         assert!(res.is_err());
@@ -495,9 +531,9 @@ mod chaining_test {
         let record = vec![Record::new("input")];
         let input = SmartModuleInput::try_from_records(record, DEFAULT_SMARTENGINE_VERSION)
             .expect("valid input record");
-        let metrics = SmartModuleChainMetrics::default();
+
         //when
-        let output = chain.process(input, &metrics).expect("process failed");
+        let output = chain.process(input).expect("process failed");
 
         //then
         assert_eq!(output.successes.len(), 1);
@@ -547,7 +583,6 @@ mod chaining_test {
         //given
         let engine = SmartEngine::new();
         let mut chain_builder = SmartModuleChainBuilder::default();
-        let metrics = SmartModuleChainMetrics::default();
         let max_memory = 1_000_000 * 2; // 2mb
 
         chain_builder.add_smart_module(
@@ -564,13 +599,10 @@ mod chaining_test {
             .expect("failed to build chain");
 
         // when
-        let res = fluvio_future::task::run_block_on(chain.look_back(
-            |_| {
-                let res = (0..1000).map(|_| Record::new([0u8; 1_000])).collect();
-                async { Ok(res) }
-            },
-            &metrics,
-        ));
+        let res = fluvio_future::task::run_block_on(chain.look_back(|_| {
+            let res = (0..1000).map(|_| Record::new([0u8; 1_000])).collect();
+            async { Ok(res) }
+        }));
 
         // then
         assert!(res.is_err());
@@ -595,7 +627,6 @@ mod chaining_test {
         //given
         let engine = SmartEngine::new();
         let mut chain_builder = SmartModuleChainBuilder::default();
-        let metrics = SmartModuleChainMetrics::default();
         let max_memory = 1_000_000 * 2; // 2mb
 
         chain_builder.add_smart_module(
@@ -612,7 +643,6 @@ mod chaining_test {
         let input: Vec<Record> = (0..1000).map(|_| Record::new([0u8; 1_000])).collect();
         let res = chain.process(
             SmartModuleInput::try_from_records(input, DEFAULT_SMARTENGINE_VERSION).expect("input"),
-            &metrics,
         );
 
         // then

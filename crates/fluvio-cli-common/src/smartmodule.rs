@@ -12,7 +12,6 @@ use tracing::debug;
 use fluvio::FluvioClusterConfig;
 use fluvio_sc_schema::smartmodule::SmartModuleApiClient;
 use fluvio_smartengine::DEFAULT_SMARTENGINE_VERSION;
-use fluvio_smartengine::metrics::SmartModuleChainMetrics;
 use fluvio_smartengine::transformation::TransformationConfig;
 use fluvio_smartengine::{
     SmartEngine, SmartModuleChainBuilder, SmartModuleConfig, SmartModuleChainInstance, Lookback,
@@ -138,15 +137,13 @@ impl BaseTestCmd {
         };
         debug!(len = &test_data.len(), "input data");
 
-        let metrics = SmartModuleChainMetrics::default();
-
         let test_records: Vec<Record> = test_data.into();
         let mut sm_input =
             SmartModuleInput::try_from_records(test_records, DEFAULT_SMARTENGINE_VERSION)?;
 
         sm_input.set_base_timestamp(Utc::now().timestamp_millis());
 
-        let output = chain.process(sm_input, &metrics)?;
+        let output = chain.process(sm_input)?;
 
         if self.verbose {
             println!("{:?} records outputted", output.successes.len());
@@ -165,7 +162,7 @@ impl BaseTestCmd {
             } else {
                 output_record.value.as_str()?.to_string()
             };
-
+            // TODO: metrics check records too
             println!("{output_value}");
         }
 
@@ -179,23 +176,20 @@ async fn look_back(chain: &mut SmartModuleChainInstance, records: Vec<String>) -
         .map(|r| Record::new(r.as_str()))
         .collect();
     chain
-        .look_back(
-            |lookback| {
-                let n = match lookback {
-                    fluvio_smartengine::Lookback::Last(n) => n,
-                    fluvio_smartengine::Lookback::Age { age: _, last } => last,
-                };
-                let res = Ok(records
-                    .clone()
-                    .into_iter()
-                    .rev()
-                    .take(n as usize)
-                    .rev()
-                    .collect());
-                async { res }
-            },
-            &Default::default(),
-        )
+        .look_back(|lookback| {
+            let n = match lookback {
+                fluvio_smartengine::Lookback::Last(n) => n,
+                fluvio_smartengine::Lookback::Age { age: _, last } => last,
+            };
+            let res = Ok(records
+                .clone()
+                .into_iter()
+                .rev()
+                .take(n as usize)
+                .rev()
+                .collect());
+            async { res }
+        })
         .await
 }
 
