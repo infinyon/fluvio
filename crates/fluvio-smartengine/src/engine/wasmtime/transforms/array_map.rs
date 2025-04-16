@@ -20,9 +20,13 @@ mod test {
         let engine = SmartEngine::new();
         let mut chain_builder = SmartModuleChainBuilder::default();
 
+        let sm = read_wasm_module(SM_ARRAY_MAP);
         chain_builder.add_smart_module(
-            SmartModuleConfig::builder().build().unwrap(),
-            read_wasm_module(SM_ARRAY_MAP),
+            SmartModuleConfig::builder()
+                .smartmodule_names(&[sm.0])
+                .build()
+                .unwrap(),
+            sm.1,
         );
 
         let mut chain = chain_builder

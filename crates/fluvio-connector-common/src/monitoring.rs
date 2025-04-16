@@ -1,4 +1,4 @@
-use std::{io::Error as IoError, sync::Arc};
+use std::{io::Error as IoError, sync::Arc, collections::HashMap};
 
 use futures_util::{AsyncWriteExt, StreamExt};
 
@@ -7,19 +7,61 @@ use fluvio_future::task::spawn;
 use fluvio_future::net::unix::UnixListener;
 use tracing::{error, info, trace};
 use serde::Serialize;
+use fluvio_smartengine::metrics::SmartModuleChainMetrics;
 
 const SOCKET_PATH: &str = "/tmp/fluvio-connector.sock";
 
-#[derive(Default, Debug, Serialize)]
+#[derive(Debug, Serialize)]
 pub struct ConnectorMetrics {
     #[serde(flatten)]
     fluvio_metrics: Arc<ClientMetrics>,
-    // We can add here more metrics specific to the connector
+    // Added field to capture per-SmartModule metrics
+    #[serde(default, skip_serializing_if = "HashMap::is_empty")]
+    smartmodule_metrics: HashMap<String, SmartModuleChainMetrics>,
+}
+
+impl Default for ConnectorMetrics {
+    fn default() -> Self {
+        Self {
+            fluvio_metrics: Arc::new(ClientMetrics::new()),
+            smartmodule_metrics: HashMap::new(),
+        }
+    }
 }
 
 impl ConnectorMetrics {
     pub fn new(fluvio_metrics: Arc<ClientMetrics>) -> Self {
-        Self { fluvio_metrics }
+        Self {
+            fluvio_metrics,
+            smartmodule_metrics: HashMap::new(),
+        }
+    }
+
+    // Add method to update smartmodule metrics
+    pub fn update_smartmodule_metrics(
+        &mut self,
+        smartmodule_name: &str,
+        metrics: &SmartModuleChainMetrics,
+    ) {
+        if let Some(existing_metrics) = self.smartmodule_metrics.get_mut(smartmodule_name) {
+            existing_metrics.append(metrics);
+        } else {
+            self.smartmodule_metrics
+                .insert(smartmodule_name.to_string(), metrics.clone());
+        }
+    }
+
+    // Get metrics for a specific smartmodule
+    pub fn get_smartmodule_metrics(
+        &self,
+        smartmodule_name: &str,
+    ) -> Option<&SmartModuleChainMetrics> {
+        self.smartmodule_metrics.get(smartmodule_name)
+    }
+
+    // Get all smartmodule metrics
+    pub fn smartmodule_metrics(&self) -> &HashMap<String, SmartModuleChainMetrics> {
+        &self.smartmodule_metrics
     }
 }
 
