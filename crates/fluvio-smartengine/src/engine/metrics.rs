@@ -59,7 +59,6 @@ impl SmartModuleChainMetrics {
 
     pub fn add_bytes_in(&self, value: u64) {
         self.bytes_in.fetch_add(value, DEFAULT_ORDERING);
-        self.invocation_count.fetch_add(1, DEFAULT_ORDERING); // todo remove side effect and make explicit at call sites
     }
 
     pub fn add_invocation_count(&self, value: u64) {

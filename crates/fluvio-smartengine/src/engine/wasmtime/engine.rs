@@ -161,6 +161,7 @@ impl SmartModuleChainInstance {
                 }
             }
         }
+        self.metrics_reset();
         out
     }
 
@@ -186,17 +187,8 @@ impl SmartModuleChainInstance {
             let mut next_input = input;
 
             for instance in instances {
-                // pass raw inputs to transform instance
-                // each raw input may result in multiple records
-                // let time = std::time::Instant::now();
                 self.store.top_up_fuel();
                 let output = instance.process(next_input, &mut self.store)?;
-                // let fuel_used = self.store.get_used_fuel();
-                // debug!(fuel_used, "fuel used");
-                // instance.metric.add_bytes_in(raw_len as u64);
-                // instance.metric.add_fuel_used(fuel_used, time.elapsed());
-                // let records_out = output.successes.len();
-                // instance.metric.add_records_out(records_out as u64);
                 if let Some(ref smerr) = output.error {
                     // encountered error, we stop processing and return partial output
                     tracing::error!(err=?smerr);
@@ -209,18 +201,12 @@ impl SmartModuleChainInstance {
                 }
             }
 
-            // TODO Metrics
-            // let time = std::time::Instant::now();
             self.store.top_up_fuel();
             let output = last.process(next_input, &mut self.store)?;
             if let Some(ref smerr) = output.error {
                 tracing::error!(err=?smerr);
             }
-            // let fuel_used = self.store.get_used_fuel();
-            // debug!(fuel_used, "fuel used");
-            // metric.add_fuel_used(fuel_used, time.elapsed());
             let records_out = output.successes.len();
-            // metric.add_records_out(records_out as u64);
             debug!(records_out, "sm records out");
             Ok(output)
         } else {
