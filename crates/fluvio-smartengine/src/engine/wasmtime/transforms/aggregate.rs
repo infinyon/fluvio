@@ -92,6 +92,7 @@ impl SmartModuleTransform for SmartModuleAggregate {
         }
 
         let output: SmartModuleAggregateOutput = ctx.read_output(store)?;
+
         self.accumulator = output.accumulator;
         Ok(output.base)
     }
@@ -105,13 +106,10 @@ impl SmartModuleTransform for SmartModuleAggregate {
 mod test {
 
     use fluvio_protocol::record::Record;
-    use fluvio_smartmodule::{
-        dataplane::smartmodule::{SmartModuleInput},
-    };
+    use fluvio_smartmodule::dataplane::smartmodule::SmartModuleInput;
 
     use crate::engine::{
         SmartEngine, SmartModuleChainBuilder, SmartModuleConfig, SmartModuleInitialData,
-        metrics::SmartModuleChainMetrics,
     };
     use crate::engine::config::DEFAULT_SMARTENGINE_VERSION;
 
@@ -139,14 +137,11 @@ mod test {
             super::AGGREGATE_FN_NAME
         );
 
-        let metrics = SmartModuleChainMetrics::default();
-
         let input = vec![Record::new("a")];
         let output = chain
             .process(
                 SmartModuleInput::try_from_records(input, DEFAULT_SMARTENGINE_VERSION)
                     .expect("input"),
-                &metrics,
             )
             .expect("process");
         assert_eq!(output.successes.len(), 1);
@@ -169,7 +164,6 @@ mod test {
             .process(
                 SmartModuleInput::try_from_records(input, DEFAULT_SMARTENGINE_VERSION)
                     .expect("input"),
-                &metrics,
             )
             .expect("process");
         assert_eq!(output.successes.len(), 1); // generate 3 records
@@ -192,7 +186,6 @@ mod test {
             .process(
                 SmartModuleInput::try_from_records(input, DEFAULT_SMARTENGINE_VERSION)
                     .expect("input"),
-                &metrics,
             )
             .expect("process");
         assert_eq!(output.successes.len(), 0);
@@ -213,7 +206,6 @@ mod test {
             .process(
                 SmartModuleInput::try_from_records(input, DEFAULT_SMARTENGINE_VERSION)
                     .expect("input"),
-                &metrics,
             )
             .expect("process");
         assert_eq!(output.successes.len(), 1); // generate 3 records
@@ -240,14 +232,12 @@ mod test {
             .initialize(&engine)
             .expect("failed to build chain");
 
-        let metrics = SmartModuleChainMetrics::default();
         // new record should accumulate
         let input = vec![Record::new("b")];
         let output = chain
             .process(
                 SmartModuleInput::try_from_records(input, DEFAULT_SMARTENGINE_VERSION)
                     .expect("input"),
-                &metrics,
             )
             .expect("process");
         assert_eq!(output.successes.len(), 1); // generate 3 records

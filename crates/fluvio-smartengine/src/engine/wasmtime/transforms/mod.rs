@@ -8,7 +8,7 @@ mod simple_transform;
 
 mod instance {
 
-    use anyhow::{Result};
+    use anyhow::Result;
     use wasmtime::AsContextMut;
 
     use crate::engine::{error::EngineError, SmartModuleInitialData};
