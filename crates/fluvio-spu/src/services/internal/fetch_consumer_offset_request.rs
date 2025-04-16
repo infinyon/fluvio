@@ -23,6 +23,7 @@ impl Request for FetchConsumerOffsetRequest {
 }
 
 impl FetchConsumerOffsetRequest {
+    #[allow(dead_code)]
     pub fn new(
         topic: impl Into<String>,
         partition: PartitionId,

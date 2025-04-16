@@ -9,9 +9,16 @@ use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 
+use adaptive_backoff::prelude::{
+    Backoff, BackoffBuilder, ExponentialBackoff, ExponentialBackoffBuilder,
+};
 use anyhow::Result;
 use async_channel::Sender;
-use fluvio_spu_schema::server::consumer_offset::UpdateConsumerOffsetRequest;
+use fluvio_future::timer::sleep;
+use fluvio_socket::VersionedSerialSocket;
+use fluvio_spu_schema::server::consumer_offset::{
+    FetchConsumerOffsetsRequest, UpdateConsumerOffsetRequest,
+};
 use tracing::{debug, error, trace, instrument, info, warn};
 use futures_util::stream::{Stream, select_all};
 use once_cell::sync::Lazy;
@@ -20,7 +27,10 @@ use futures_util::stream::{StreamExt, once, iter};
 use futures_util::FutureExt;
 
 use fluvio_types::PartitionId;
-use fluvio_types::defaults::{FLUVIO_CLIENT_MAX_FETCH_BYTES, FLUVIO_MAX_SIZE_TOPIC_NAME};
+use fluvio_types::defaults::{
+    CONSUMER_REPLICA_KEY, FLUVIO_CLIENT_MAX_FETCH_BYTES, FLUVIO_MAX_SIZE_TOPIC_NAME,
+    RECONNECT_BACKOFF_FACTOR, RECONNECT_BACKOFF_MAX_DURATION, RECONNECT_BACKOFF_MIN_DURATION,
+};
 use fluvio_spu_schema::server::stream_fetch::{
     DefaultStreamFetchRequest, DefaultStreamFetchResponse, CHAIN_SMARTMODULE_API,
     OFFSET_MANAGEMENT_API,
@@ -52,6 +62,7 @@ pub use fluvio_spu_schema::server::smartmodule::SmartModuleContextData;
 pub use fluvio_smartmodule::dataplane::smartmodule::SmartModuleExtraParams;
 
 const STREAM_TO_SERVER_CHANNEL_SIZE: usize = 100;
+const MAX_ATTEMPTS_CONSUMER_OFFSET: usize = 30;
 
 /// Type alias for the consumer record stream.
 #[cfg(target_arch = "wasm32")]
@@ -394,9 +405,32 @@ where
 
         let replica = ReplicaKey::new(&self.topic, self.partition);
         let mut serial_socket = self.pool.create_serial_socket(&replica).await?;
-        let offsets = fetch_offsets(&mut serial_socket, &replica, consumer_id.clone()).await?;
 
-        let start_absolute_offset = offset.resolve(&offsets).await?;
+        let consumer_offset = if let Some(ref consumer_id) = consumer_id {
+            let consumer_offset_socket = self.create_serial_socket_retry().await?;
+            let response = consumer_offset_socket
+                .send_receive(FetchConsumerOffsetsRequest::with_opts(
+                    Some((self.topic.to_owned(), self.partition).into()),
+                    Some(consumer_id.clone()),
+                ))
+                .await?;
+            if response.error_code != ErrorCode::None {
+                error!("Error getting consumer offset: {:#?}", response.error_code);
+                return Err(response.error_code.into());
+            }
+
+            response
+                .consumers
+                .iter()
+                .map(|consumer| consumer.offset + 1)
+                .next()
+        } else {
+            None
+        };
+
+        let offsets = fetch_offsets(&mut serial_socket, &replica).await?;
+
+        let start_absolute_offset = offset.resolve(&offsets, consumer_offset).await?;
         let end_absolute_offset = offsets.last_stable_offset;
         let record_count = end_absolute_offset - start_absolute_offset;
 
@@ -548,6 +582,33 @@ where
         };
 
         Ok((stream, start_absolute_offset, server_sender))
+    }
+
+    async fn create_serial_socket_retry(&self) -> Result<VersionedSerialSocket> {
+        let mut attempts = 0;
+        let mut backoff = create_backoff()?;
+        loop {
+            match self
+                .pool
+                .create_serial_socket(&CONSUMER_REPLICA_KEY.into())
+                .await
+            {
+                Ok(socket) => return Ok(socket),
+                Err(err) => {
+                    error!("Failed to create consumer offset socket: {:#?}", err);
+
+                    backoff_and_wait(&mut backoff).await;
+                    attempts += 1;
+
+                    if attempts >= MAX_ATTEMPTS_CONSUMER_OFFSET {
+                        return Err(ErrorCode::Other(
+                            "Failed to create consumer offset socket".to_string(),
+                        )
+                        .into());
+                    }
+                }
+            };
+        }
     }
 
     #[instrument(skip(self, config))]
@@ -913,6 +974,21 @@ impl<T> StreamToServerCallback<T> {
             }
         }
     }
+}
+
+/// Creates an exponential backoff configuration.
+fn create_backoff() -> Result<ExponentialBackoff> {
+    ExponentialBackoffBuilder::default()
+        .factor(RECONNECT_BACKOFF_FACTOR)
+        .min(RECONNECT_BACKOFF_MIN_DURATION)
+        .max(RECONNECT_BACKOFF_MAX_DURATION)
+        .build()
+}
+
+/// Waits for the duration determined by the exponential backoff.
+async fn backoff_and_wait(backoff: &mut ExponentialBackoff) {
+    let wait_duration = backoff.wait();
+    let _ = sleep(wait_duration).await;
 }
 
 #[cfg(test)]

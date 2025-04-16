@@ -126,8 +126,21 @@ consumer-offsets-test: TEST_ARG_EXTRA=--local $(EXTRA_ARG)
 consumer-offsets-test: DEFAULT_SPU=1
 consumer-offsets-test: REPL=1
 consumer-offsets-test: test-setup
-	$(TEST_BIN) consumer_offsets  ${TEST_ARG_COMMON} --partition 1 --topic-name consumer-offset-single
-	$(TEST_BIN) consumer_offsets  ${TEST_ARG_COMMON} --partition 5 --topic-name consumer-offset-multiple
+	# auto offsets
+	$(TEST_BIN) consumer_offsets  ${TEST_ARG_COMMON} --partition 1 --topic-name single-none -- --strategy none
+	$(TEST_BIN) consumer_offsets  ${TEST_ARG_COMMON} --partition 5 --topic-name none-multiple -- --strategy none
+	# manual offset
+	$(TEST_BIN) consumer_offsets  ${TEST_ARG_COMMON} --partition 5 --topic-name manual-multiple-beginning -- --strategy manual
+	$(TEST_BIN) consumer_offsets  ${TEST_ARG_COMMON} --partition 1 --topic-name manual-beginning -- --strategy manual --offset-start beginning
+	$(TEST_BIN) consumer_offsets  ${TEST_ARG_COMMON} --partition 1 --topic-name manual-end -- --strategy manual --offset-start end
+	$(TEST_BIN) consumer_offsets  ${TEST_ARG_COMMON} --partition 1 --topic-name manual-from-end -- --strategy manual --offset-start from-end
+	$(TEST_BIN) consumer_offsets  ${TEST_ARG_COMMON} --partition 1 --topic-name manual-from-beginning -- --strategy manual --offset-start from-beginning
+	$(TEST_BIN) consumer_offsets  ${TEST_ARG_COMMON} --partition 1 --topic-name manual-from-absolute -- --strategy manual --offset-start absolute
+	# auto offset
+	$(TEST_BIN) consumer_offsets  ${TEST_ARG_COMMON} --partition 1 --topic-name single-auto -- --strategy auto
+	$(TEST_BIN) consumer_offsets  ${TEST_ARG_COMMON} --partition 5 --topic-name multiple-auto -- --strategy auto
+	$(TEST_BIN) consumer_offsets  ${TEST_ARG_COMMON} --partition 1 --topic-name single-auto-flush -- --strategy auto --offset-flush 2s
+	$(TEST_BIN) consumer_offsets  ${TEST_ARG_COMMON} --partition 5 --topic-name multiple-auto-flush -- --strategy auto --offset-flush 2s
 
 # test rbac with user1 who doesn't have topic creation permission
 # assumes cluster is set

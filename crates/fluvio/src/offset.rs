@@ -17,15 +17,23 @@ pub(crate) enum OffsetInner {
 }
 
 impl OffsetInner {
-    fn resolve(&self, offsets: &FetchOffsetPartitionResponse) -> i64 {
+    fn resolve(&self, offsets: &FetchOffsetPartitionResponse, consumer_offset: Option<i64>) -> i64 {
         match self {
             Self::Absolute(offset) => *offset,
             Self::FromBeginning(offset) => {
-                let resolved = offsets.start_offset + offset;
+                let resolved = if let Some(consumer_offset) = consumer_offset {
+                    consumer_offset + offset
+                } else {
+                    offsets.start_offset + offset
+                };
                 resolved.clamp(offsets.start_offset, offsets.last_stable_offset)
             }
             Self::FromEnd(offset) => {
-                let resolved = offsets.last_stable_offset - offset;
+                let resolved = if let Some(consumer_offset) = consumer_offset {
+                    consumer_offset - offset
+                } else {
+                    offsets.last_stable_offset - offset
+                };
                 resolved.clamp(offsets.start_offset, offsets.last_stable_offset)
             }
         }
@@ -291,8 +299,9 @@ impl Offset {
     pub(crate) async fn resolve(
         &self,
         offsets: &FetchOffsetPartitionResponse,
+        consumer_offset: Option<i64>,
     ) -> Result<i64, FluvioError> {
-        let offset = self.inner.resolve(offsets);
+        let offset = self.inner.resolve(offsets, consumer_offset);
 
         // Offset should never be less than 0, even for absolute
         let offset = offset.max(0);
@@ -303,7 +312,6 @@ impl Offset {
 pub(crate) async fn fetch_offsets(
     client: &mut VersionedSerialSocket,
     replica: &ReplicaKey,
-    consumer_id: Option<String>,
 ) -> Result<FetchOffsetPartitionResponse, FluvioError> {
     debug!("fetching offset for replica: {}", replica);
 
@@ -311,7 +319,6 @@ pub(crate) async fn fetch_offsets(
         .send_receive(FetchOffsetsRequest::new(
             replica.topic.to_owned(),
             replica.partition,
-            consumer_id,
         ))
         .await?;
 
@@ -337,9 +344,10 @@ pub(crate) async fn fetch_offsets(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use fluvio_spu_schema::server::fetch_offset::FetchOffsetPartitionResponse;
 
     #[test]
-    fn test_offset_beginning() {
+    fn test_offset_beginning_without_consumer_offset() {
         let offsets = FetchOffsetPartitionResponse {
             error_code: Default::default(),
             partition_index: 0,
@@ -348,12 +356,12 @@ mod tests {
         };
 
         let offset_inner = OffsetInner::FromBeginning(3);
-        let absolute = offset_inner.resolve(&offsets);
+        let absolute = offset_inner.resolve(&offsets, None);
         assert_eq!(absolute, 3);
     }
 
     #[test]
-    fn test_offset_beginning_start_nonzero() {
+    fn test_offset_beginning_without_consumer_offset_start_nonzero() {
         let offsets = FetchOffsetPartitionResponse {
             error_code: Default::default(),
             partition_index: 0,
@@ -362,12 +370,12 @@ mod tests {
         };
 
         let offset_inner = OffsetInner::FromBeginning(3);
-        let absolute = offset_inner.resolve(&offsets);
+        let absolute = offset_inner.resolve(&offsets, None);
         assert_eq!(absolute, 8);
     }
 
     #[test]
-    fn test_offset_beginning_end_short() {
+    fn test_offset_beginning_without_consumer_offset_end_short() {
         let offsets = FetchOffsetPartitionResponse {
             error_code: Default::default(),
             partition_index: 0,
@@ -376,12 +384,12 @@ mod tests {
         };
 
         let offset_inner = OffsetInner::FromBeginning(15);
-        let absolute = offset_inner.resolve(&offsets);
+        let absolute = offset_inner.resolve(&offsets, None);
         assert_eq!(absolute, 10);
     }
 
     #[test]
-    fn test_offset_beginning_end_short_nonzero() {
+    fn test_offset_beginning_without_consumer_offset_end_short_nonzero() {
         let offsets = FetchOffsetPartitionResponse {
             error_code: Default::default(),
             partition_index: 0,
@@ -390,12 +398,12 @@ mod tests {
         };
 
         let offset_inner = OffsetInner::FromBeginning(15);
-        let absolute = offset_inner.resolve(&offsets);
+        let absolute = offset_inner.resolve(&offsets, None);
         assert_eq!(absolute, 10);
     }
 
     #[test]
-    fn test_offset_end() {
+    fn test_offset_end_without_consumer_offset() {
         let offsets = FetchOffsetPartitionResponse {
             error_code: Default::default(),
             partition_index: 0,
@@ -404,12 +412,12 @@ mod tests {
         };
 
         let offset_inner = OffsetInner::FromEnd(3);
-        let absolute = offset_inner.resolve(&offsets);
+        let absolute = offset_inner.resolve(&offsets, None);
         assert_eq!(absolute, 7);
     }
 
     #[test]
-    fn test_offset_end_start_nonzero() {
+    fn test_offset_end_without_consumer_offset_start_nonzero() {
         let offsets = FetchOffsetPartitionResponse {
             error_code: Default::default(),
             partition_index: 0,
@@ -418,12 +426,12 @@ mod tests {
         };
 
         let offset_inner = OffsetInner::FromEnd(6);
-        let absolute = offset_inner.resolve(&offsets);
+        let absolute = offset_inner.resolve(&offsets, None);
         assert_eq!(absolute, 6);
     }
 
     #[test]
-    fn test_offset_end_short() {
+    fn test_offset_end_without_consumer_offset_short() {
         let offsets = FetchOffsetPartitionResponse {
             error_code: Default::default(),
             partition_index: 0,
@@ -432,7 +440,84 @@ mod tests {
         };
 
         let offset_inner = OffsetInner::FromEnd(100);
-        let absolute = offset_inner.resolve(&offsets);
+        let absolute = offset_inner.resolve(&offsets, None);
+        assert_eq!(absolute, 0);
+    }
+
+    // New tests covering use of the consumer_offset parameter
+
+    #[test]
+    fn test_offset_absolute_with_consumer_offset() {
+        let offsets = FetchOffsetPartitionResponse {
+            error_code: Default::default(),
+            partition_index: 0,
+            start_offset: 0,
+            last_stable_offset: 10,
+        };
+
+        let offset_inner = OffsetInner::Absolute(4);
+        // consumer_offset is ignored for Absolute offsets
+        let absolute = offset_inner.resolve(&offsets, Some(100));
+        assert_eq!(absolute, 4);
+    }
+
+    #[test]
+    fn test_offset_beginning_with_consumer_offset() {
+        let offsets = FetchOffsetPartitionResponse {
+            error_code: Default::default(),
+            partition_index: 0,
+            start_offset: 0,
+            last_stable_offset: 15,
+        };
+
+        let offset_inner = OffsetInner::FromBeginning(3);
+        // With a consumer_offset of 10, calculation is 10 + 3 = 13.
+        let absolute = offset_inner.resolve(&offsets, Some(10));
+        assert_eq!(absolute, 13);
+    }
+
+    #[test]
+    fn test_offset_beginning_with_consumer_offset_clamp() {
+        let offsets = FetchOffsetPartitionResponse {
+            error_code: Default::default(),
+            partition_index: 0,
+            start_offset: 10,
+            last_stable_offset: 22,
+        };
+
+        let offset_inner = OffsetInner::FromBeginning(5);
+        // With a consumer_offset of 20, calculation is 20 + 5 = 25, but clamped to 22.
+        let absolute = offset_inner.resolve(&offsets, Some(20));
+        assert_eq!(absolute, 22);
+    }
+
+    #[test]
+    fn test_offset_end_with_consumer_offset() {
+        let offsets = FetchOffsetPartitionResponse {
+            error_code: Default::default(),
+            partition_index: 0,
+            start_offset: 0,
+            last_stable_offset: 15,
+        };
+
+        let offset_inner = OffsetInner::FromEnd(3);
+        // With a consumer_offset of 10, calculation is 10 - 3 = 7.
+        let absolute = offset_inner.resolve(&offsets, Some(10));
+        assert_eq!(absolute, 7);
+    }
+
+    #[test]
+    fn test_offset_end_with_consumer_offset_clamp() {
+        let offsets = FetchOffsetPartitionResponse {
+            error_code: Default::default(),
+            partition_index: 0,
+            start_offset: 0,
+            last_stable_offset: 15,
+        };
+
+        let offset_inner = OffsetInner::FromEnd(10);
+        // With a consumer_offset of 5, calculation is 5 - 10 = -5, which is clamped to 0.
+        let absolute = offset_inner.resolve(&offsets, Some(5));
         assert_eq!(absolute, 0);
     }
 }
