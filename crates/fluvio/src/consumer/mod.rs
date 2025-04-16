@@ -17,7 +17,7 @@ use async_channel::Sender;
 use fluvio_future::timer::sleep;
 use fluvio_socket::VersionedSerialSocket;
 use fluvio_spu_schema::server::consumer_offset::{
-    GetConsumerOffsetRequest, UpdateConsumerOffsetRequest,
+    FetchConsumerOffsetsRequest, UpdateConsumerOffsetRequest,
 };
 use tracing::{debug, error, trace, instrument, info, warn};
 use futures_util::stream::{Stream, select_all};
@@ -409,16 +409,21 @@ where
         let consumer_offset = if let Some(ref consumer_id) = consumer_id {
             let consumer_offset_socket = self.create_serial_socket_retry().await?;
             let response = consumer_offset_socket
-                .send_receive(GetConsumerOffsetRequest::new(
-                    (self.topic.to_owned(), self.partition).into(),
-                    consumer_id,
+                .send_receive(FetchConsumerOffsetsRequest::with_opts(
+                    Some((self.topic.to_owned(), self.partition).into()),
+                    Some(consumer_id.clone()),
                 ))
                 .await?;
             if response.error_code != ErrorCode::None {
                 error!("Error getting consumer offset: {:#?}", response.error_code);
                 return Err(response.error_code.into());
             }
-            response.consumer.map(|c| c.offset + 1)
+
+            response
+                .consumers
+                .iter()
+                .map(|consumer| consumer.offset + 1)
+                .next()
         } else {
             None
         };

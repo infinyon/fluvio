@@ -10,9 +10,6 @@ use fluvio_spu_schema::server::consumer_offset::FetchConsumerOffsetsResponse;
 use fluvio_spu_schema::server::consumer_offset::UpdateConsumerOffsetRequest;
 use fluvio_spu_schema::server::consumer_offset::UpdateConsumerOffsetResponse;
 use fluvio_spu_schema::server::consumer_offset::ConsumerOffset as ConsumerOffsetResponse;
-use fluvio_spu_schema::server::consumer_offset::Consumer;
-use fluvio_spu_schema::server::consumer_offset::GetConsumerOffsetRequest;
-use fluvio_spu_schema::server::consumer_offset::GetConsumerOffsetResponse;
 use fluvio_storage::FileReplica;
 use fluvio_types::defaults::CONSUMER_REPLICA_KEY;
 use fluvio_types::PartitionId;
@@ -89,7 +86,7 @@ pub(crate) async fn handle_fetch_consumer_offsets_request(
     req_msg: RequestMessage<FetchConsumerOffsetsRequest>,
     ctx: DefaultSharedGlobalContext,
 ) -> Result<ResponseMessage<FetchConsumerOffsetsResponse>, IoError> {
-    let (consumers, error_code) = match handle_fetch_consumers(ctx).await {
+    let (consumers, error_code) = match handle_fetch_consumers(&req_msg, ctx).await {
         Ok(consumers) => (consumers, ErrorCode::None),
         Err(error_code) => (Vec::new(), error_code),
     };
@@ -186,6 +183,7 @@ async fn handle_delete(
 }
 
 async fn handle_fetch_consumers(
+    req_msg: &RequestMessage<FetchConsumerOffsetsRequest>,
     ctx: DefaultSharedGlobalContext,
 ) -> std::result::Result<Vec<ConsumerOffsetResponse>, ErrorCode> {
     let Some(ref replica) = ctx.leaders_state().get(&CONSUMER_REPLICA_KEY.into()).await else {
@@ -193,17 +191,34 @@ async fn handle_fetch_consumers(
     };
 
     let not_deleted_replicas = ctx.replica_localstore().read().clone();
-
-    Ok(ctx
+    let all_consumers = ctx
         .consumer_offset()
         .get_or_insert(replica, ctx.follower_notifier())
         .await
         .map_err(|e| ErrorCode::Other(e.to_string()))?
         .list()
         .await
-        .map_err(|e| ErrorCode::Other(format!("unable to list consumers: {e:?}")))?
+        .map_err(|e| ErrorCode::Other(format!("unable to list consumers: {e:?}")))?;
+
+    let response = all_consumers
         .into_iter()
         .filter_map(|(key, consumer)| {
+            // filter by replica_id and consumer_id
+            if let Some(ref filter_opts) = req_msg.request.filter_opts {
+                if let Some(ref replica_id) = filter_opts.replica_id {
+                    if key.replica_id != *replica_id {
+                        return None;
+                    }
+                }
+
+                if let Some(ref consumer_id) = filter_opts.consumer_id {
+                    if key.consumer_id != *consumer_id {
+                        return None;
+                    }
+                }
+            }
+
+            // filter by not deleted replicas
             if not_deleted_replicas.contains_key(&key.replica_id) {
                 Some(ConsumerOffsetResponse::new(
                     key.consumer_id,
@@ -215,7 +230,9 @@ async fn handle_fetch_consumers(
                 None
             }
         })
-        .collect())
+        .collect();
+
+    Ok(response)
 }
 
 async fn update_offset_for_leader(
@@ -262,43 +279,4 @@ async fn update_offset_in_peer(
         return Err(response.error_code);
     }
     Ok(())
-}
-
-#[instrument(skip(req_msg, ctx))]
-pub(crate) async fn handle_get_consumer_offset_request(
-    req_msg: RequestMessage<GetConsumerOffsetRequest>,
-    ctx: DefaultSharedGlobalContext,
-) -> Result<ResponseMessage<GetConsumerOffsetResponse>> {
-    let GetConsumerOffsetRequest {
-        consumer_id,
-        replica_id,
-    } = req_msg.request;
-
-    let Some(ref replica) = ctx.leaders_state().get(&CONSUMER_REPLICA_KEY.into()).await else {
-        return Err(ErrorCode::PartitionNotLeader.into());
-    };
-
-    let (consumer, error_code) = match get_offset(ctx, replica, replica_id, consumer_id).await {
-        Ok(offset) => (offset, ErrorCode::None),
-        Err(e) => (None, ErrorCode::Other(e.to_string())),
-    };
-
-    debug!(?consumer, ?error_code, "consumer offset fetch result");
-    let consumer = consumer.map(|c| Consumer::new(c.offset));
-    let response = GetConsumerOffsetResponse::new(error_code, consumer);
-    Ok(RequestMessage::<GetConsumerOffsetRequest>::response_with_header(&req_msg.header, response))
-}
-
-async fn get_offset(
-    ctx: DefaultSharedGlobalContext,
-    replica: &LeaderReplicaState<FileReplica>,
-    target_replica: ReplicaKey,
-    consumer_id: String,
-) -> Result<Option<ConsumerOffset>> {
-    let consumers = ctx
-        .consumer_offset()
-        .get_or_insert(replica, ctx.follower_notifier())
-        .await?;
-    let key = ConsumerOffsetKey::new(target_replica, consumer_id);
-    consumers.get(&key).await
 }

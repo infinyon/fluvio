@@ -22,8 +22,7 @@ use super::SpuServerApiKey;
 use super::fetch_offset::FetchOffsetsRequest;
 use super::stream_fetch::FileStreamFetchRequest;
 use super::consumer_offset::{
-    GetConsumerOffsetRequest, UpdateConsumerOffsetRequest, DeleteConsumerOffsetRequest,
-    FetchConsumerOffsetsRequest,
+    UpdateConsumerOffsetRequest, DeleteConsumerOffsetRequest, FetchConsumerOffsetsRequest,
 };
 use super::update_offset::UpdateOffsetsRequest;
 use super::mirror::StartMirrorRequest;
@@ -41,7 +40,6 @@ pub enum SpuServerRequest {
     UpdateOffsetsRequest(RequestMessage<UpdateOffsetsRequest>),
     UpdateConsumerOffsetRequest(RequestMessage<UpdateConsumerOffsetRequest>),
     DeleteConsumerOffsetRequest(RequestMessage<DeleteConsumerOffsetRequest>),
-    GetConsumerOffsetRequest(RequestMessage<GetConsumerOffsetRequest>),
     FetchConsumerOffsetsRequest(RequestMessage<FetchConsumerOffsetsRequest>),
     StartMirrorRequest(RequestMessage<StartMirrorRequest>),
 }
@@ -58,9 +56,6 @@ impl fmt::Display for SpuServerRequest {
             Self::UpdateConsumerOffsetRequest(_) => write!(f, "UpdateConsumerOffsetRequest"),
             Self::DeleteConsumerOffsetRequest(_) => write!(f, "DeleteConsumerOffsetRequest"),
             Self::FetchConsumerOffsetsRequest(_) => write!(f, "FetchConsumerOffsetsRequest"),
-            Self::GetConsumerOffsetRequest(_) => {
-                write!(f, "GetConsumerOffsetRequest")
-            }
             Self::StartMirrorRequest(_) => write!(f, "StartMirrorRequest"),
         }
     }
@@ -104,9 +99,6 @@ impl ApiMessage for SpuServerRequest {
                 api_decode!(Self, FetchConsumerOffsetsRequest, src, header)
             }
             SpuServerApiKey::StartMirror => api_decode!(Self, StartMirrorRequest, src, header),
-            SpuServerApiKey::GetConsumerOffset => {
-                api_decode!(Self, GetConsumerOffsetRequest, src, header)
-            }
         }
     }
 }

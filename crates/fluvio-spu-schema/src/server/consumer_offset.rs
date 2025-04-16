@@ -1,5 +1,3 @@
-use std::fmt;
-
 use fluvio_protocol::api::Request;
 use fluvio_protocol::record::{Offset, ReplicaKey};
 use fluvio_protocol::{Encoder, Decoder};
@@ -64,8 +62,28 @@ pub struct DeleteConsumerOffsetResponse {
     pub error_code: ErrorCode,
 }
 
+#[derive(Encoder, Decoder, Default, Debug)]
+pub struct FilterOpts {
+    pub replica_id: Option<ReplicaKey>,
+    pub consumer_id: Option<String>,
+}
+
 #[derive(Decoder, Encoder, Default, Debug)]
-pub struct FetchConsumerOffsetsRequest;
+pub struct FetchConsumerOffsetsRequest {
+    #[fluvio(min_version = 24)]
+    pub filter_opts: Option<FilterOpts>,
+}
+
+impl FetchConsumerOffsetsRequest {
+    pub fn with_opts(replica_id: Option<ReplicaKey>, consumer_id: Option<String>) -> Self {
+        Self {
+            filter_opts: Some(FilterOpts {
+                replica_id,
+                consumer_id,
+            }),
+        }
+    }
+}
 
 impl Request for FetchConsumerOffsetsRequest {
     const API_KEY: u16 = SpuServerApiKey::FetchConsumerOffsets as u16;
@@ -100,62 +118,5 @@ impl ConsumerOffset {
             offset,
             modified_time,
         }
-    }
-}
-
-#[derive(Decoder, Encoder, Default, Debug)]
-pub struct GetConsumerOffsetRequest {
-    pub replica_id: ReplicaKey,
-    pub consumer_id: String,
-}
-
-impl Request for GetConsumerOffsetRequest {
-    const API_KEY: u16 = SpuServerApiKey::GetConsumerOffset as u16;
-    const DEFAULT_API_VERSION: i16 = COMMON_VERSION;
-    type Response = GetConsumerOffsetResponse;
-}
-
-impl GetConsumerOffsetRequest {
-    pub fn new(replica_id: ReplicaKey, consumer_id: impl Into<String>) -> Self {
-        Self {
-            replica_id,
-            consumer_id: consumer_id.into(),
-        }
-    }
-}
-
-#[derive(Encoder, Decoder, Default, Debug)]
-pub struct GetConsumerOffsetResponse {
-    pub error_code: ErrorCode,
-    pub consumer: Option<Consumer>,
-}
-
-#[derive(Encoder, Decoder, Default, Debug)]
-pub struct Consumer {
-    pub offset: i64,
-}
-
-impl GetConsumerOffsetResponse {
-    pub fn new(error_code: ErrorCode, consumer: Option<Consumer>) -> Self {
-        Self {
-            error_code,
-            consumer,
-        }
-    }
-}
-
-impl Consumer {
-    pub fn new(offset: i64) -> Self {
-        Self { offset }
-    }
-}
-
-impl fmt::Display for GetConsumerOffsetResponse {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "error: {:#?}, consumer: {:?}",
-            self.error_code, self.consumer
-        )
     }
 }

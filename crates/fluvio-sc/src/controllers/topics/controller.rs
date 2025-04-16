@@ -197,7 +197,7 @@ where
         let mut interval_secs = 1;
 
         loop {
-            debug!("sleeping for {} seconds", interval_secs);
+            debug!(interval_secs, "sleeping for");
             sleep(Duration::from_secs(interval_secs)).await;
             self.ensure_offsets_topic_exists().await;
             interval_secs = min(MAX_INTERVAL, interval_secs.add(INTERVAL_STEP));

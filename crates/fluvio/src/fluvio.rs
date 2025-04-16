@@ -441,7 +441,11 @@ impl Fluvio {
             .create_serial_socket(&CONSUMER_REPLICA_KEY.into())
             .await?;
         let response = socket
-            .send_receive(fluvio_spu_schema::server::consumer_offset::FetchConsumerOffsetsRequest)
+            .send_receive(
+                fluvio_spu_schema::server::consumer_offset::FetchConsumerOffsetsRequest {
+                    ..Default::default()
+                },
+            )
             .await?;
         if response.error_code != ErrorCode::None {
             anyhow::bail!(

@@ -23,7 +23,6 @@ pub enum SpuServerApiKey {
     UpdateConsumerOffset = 1006,
     DeleteConsumerOffset = 1007,
     FetchConsumerOffsets = 1008,
-    GetConsumerOffset = 1009,
 
     StartMirror = 2000,
 }

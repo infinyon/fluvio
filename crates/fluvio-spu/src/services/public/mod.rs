@@ -35,7 +35,6 @@ use crate::services::auth::SpuAuthServiceContext;
 use crate::services::public::consumer_handler::handle_delete_consumer_offset_request;
 use crate::services::public::consumer_handler::handle_fetch_consumer_offsets_request;
 use crate::services::public::consumer_handler::handle_update_consumer_offset_request;
-use crate::services::public::consumer_handler::handle_get_consumer_offset_request;
 use self::api_versions::handle_api_version_request;
 use self::produce_handler::handle_produce_request;
 use self::fetch_handler::handle_fetch_request;
@@ -150,14 +149,6 @@ where
                                 shared_sink,
                                 "FetchOffsetsRequest"
                             ),
-                            SpuServerRequest::GetConsumerOffsetRequest(request) => {
-                                call_service!(
-                                    request,
-                                    handle_get_consumer_offset_request(request, context.clone(),),
-                                    shared_sink,
-                                    "GetConsumerOffsetRequest"
-                                )
-                            }
                             SpuServerRequest::FileStreamFetchRequest(request) => {
                                 StreamFetchHandler::start(
                                     request,

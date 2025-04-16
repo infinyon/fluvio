@@ -2,7 +2,7 @@ use std::{env::temp_dir, time::Duration};
 
 use fluvio_controlplane::replica::Replica;
 use fluvio_protocol::link::ErrorCode;
-use fluvio_spu_schema::server::consumer_offset::GetConsumerOffsetRequest;
+use fluvio_spu_schema::server::consumer_offset::FetchConsumerOffsetsRequest;
 use fluvio_types::defaults::CONSUMER_REPLICA_KEY;
 use tracing::debug;
 
@@ -38,7 +38,10 @@ async fn test_get_consumer_offset() {
         MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
 
     let topic = "test";
-    let target_replica = (topic.to_owned(), 0);
+    let target_replica_key = (topic.to_owned(), 0);
+    let target_replica = Replica::new(target_replica_key.clone(), 5001, vec![5001]);
+    ctx.replica_localstore()
+        .sync_all(vec![target_replica.clone()]);
 
     let consumer_id = "test_consumer";
 
@@ -67,19 +70,22 @@ async fn test_get_consumer_offset() {
         .await
         .expect("consumer offset replica");
 
-    let key = ConsumerOffsetKey::new(target_replica.clone(), consumer_id);
+    let key = ConsumerOffsetKey::new(target_replica_key.clone(), consumer_id);
     let consumer = ConsumerOffset::new(5);
     consumer_offset.put(key, consumer).await.expect("put");
 
-    let get_consumer_offset_request =
-        GetConsumerOffsetRequest::new(target_replica.into(), consumer_id.to_owned());
+    let get_consumer_offset_request = FetchConsumerOffsetsRequest::with_opts(
+        Some(target_replica_key.into()),
+        Some(consumer_id.to_owned()),
+    );
 
     let response = client_socket
         .send_and_receive(RequestMessage::new_request(get_consumer_offset_request))
         .await
         .expect("send");
 
-    assert_eq!(response.consumer.expect("consumer").offset, 5);
+    assert_eq!(response.consumers.len(), 1);
+    assert_eq!(response.consumers[0].offset, 5);
     assert_eq!(response.error_code, ErrorCode::None);
 
     server_end_event.notify();
