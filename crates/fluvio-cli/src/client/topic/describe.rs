@@ -12,9 +12,11 @@ use anyhow::Result;
 
 use fluvio::Fluvio;
 use fluvio::metadata::topic::TopicSpec;
-
+use fluvio_controlplane_metadata::partition::PartitionSpec;
+use fluvio_sc_schema::objects::{ListFilters, ListRequest, Metadata};
 use crate::common::output::Terminal;
 use crate::common::OutputFormat;
+use crate::client::partition::list::display as display_partition;
 
 // -----------------------------------
 // CLI Options
@@ -28,6 +30,9 @@ pub struct DescribeTopicsOpt {
 
     #[clap(flatten)]
     output: OutputFormat,
+
+    #[arg(long, short, required = false)]
+    system: bool,
 }
 
 impl DescribeTopicsOpt {
@@ -37,13 +42,43 @@ impl DescribeTopicsOpt {
         debug!("describe topic: {}, {:?}", topic, output_type);
 
         let admin = fluvio.admin().await;
-        let topics = admin.list::<TopicSpec, _>(vec![topic]).await?;
 
-        display::describe_topics(topics, output_type, out).await?;
+        let topics_with_system = admin
+            .list_with_config::<TopicSpec, String>(
+                ListRequest::new(ListFilters::from(topic.as_str()), true).system(self.system),
+            )
+            .await?;
+
+        let partitions = admin
+            .list_with_config::<PartitionSpec, String>(
+                ListRequest::new(ListFilters::from(topic.as_str()), true).system(self.system),
+            )
+            .await?;
+
+        let filtered_partitions = filter_partition_by_topic(topic, partitions);
+        display::describe_topics(topics_with_system, output_type.clone(), out.clone()).await?;
+        display_partition::format_partition_response_output(out, filtered_partitions, output_type)?;
         Ok(())
     }
 }
 
+fn filter_partition_by_topic(
+    topic: String,
+    partitions: Vec<Metadata<PartitionSpec>>,
+) -> Vec<Metadata<PartitionSpec>> {
+    partitions
+        .clone()
+        .into_iter()
+        .filter(|partition| {
+            if let Some(index) = partition.name.rfind('-') {
+                let base_name = &partition.name[..index];
+                base_name == topic
+            } else {
+                partition.name == topic
+            }
+        })
+        .collect::<Vec<_>>()
+}
 mod display {
 
     use fluvio::metadata::topic::ReplicaSpec;
@@ -175,5 +210,63 @@ mod display {
 
             key_values
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use fluvio_controlplane_metadata::partition::PartitionStatus;
+    use super::*;
+    use fluvio_sc_schema::partition::PartitionSpec;
+
+    #[test]
+    fn test_filter_partition_by_topic_1() {
+        // partition 1
+        let partition_with_topic_1: Vec<Metadata<PartitionSpec>> =
+            vec![Metadata::<PartitionSpec> {
+                name: "topic-1".to_string(),
+                spec: PartitionSpec::new(0, vec![0, 1]),
+                status: PartitionStatus::default(),
+            }];
+
+        let filtered_topic_1 =
+            filter_partition_by_topic("topic".to_string(), partition_with_topic_1.clone());
+        assert_eq!(filtered_topic_1.len(), 1);
+        assert_eq!(filtered_topic_1[0].name, "topic-1");
+        assert_eq!(filtered_topic_1[0].spec.leader, 0);
+        assert_eq!(filtered_topic_1[0].status, PartitionStatus::default());
+    }
+
+    #[test]
+    fn test_filter_partition_by_topic_2() {
+        // partition 2
+        let partition_with_topic_2: Vec<Metadata<PartitionSpec>> =
+            vec![Metadata::<PartitionSpec> {
+                name: "topic-2".to_string(),
+                spec: PartitionSpec::new(0, vec![0, 1]),
+                status: PartitionStatus::default(),
+            }];
+
+        let filtered_topic_2 =
+            filter_partition_by_topic("topic".to_string(), partition_with_topic_2.clone());
+        assert_eq!(filtered_topic_2.len(), 1);
+        assert_eq!(filtered_topic_2[0].name, "topic-2");
+        assert_eq!(filtered_topic_2[0].spec.leader, 0);
+        assert_eq!(filtered_topic_2[0].status, PartitionStatus::default());
+    }
+
+    #[test]
+    fn test_filter_partition_by_kv_topic() {
+        let partition_with_kv_topic: Vec<Metadata<PartitionSpec>> =
+            vec![Metadata::<PartitionSpec> {
+                name: "kv-topic-2".to_string(),
+                spec: PartitionSpec::new(0, vec![0, 1]),
+                status: PartitionStatus::default(),
+            }];
+
+        // result should be empty
+        let filtered_kv_topic =
+            filter_partition_by_topic("topic".to_string(), partition_with_kv_topic.clone());
+        assert_eq!(filtered_kv_topic.len(), 0);
     }
 }
