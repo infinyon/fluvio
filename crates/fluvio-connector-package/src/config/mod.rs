@@ -296,6 +296,7 @@ pub struct ConsumerParameters {
 pub struct ProducerParameters {
     #[serde(with = "humantime_serde")]
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[schemars(with = "Option::<String>")]
     pub linger: Option<Duration>,
 
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -308,9 +309,10 @@ pub struct ProducerParameters {
         skip_serializing_if = "Option::is_none",
         default
     )]
+    #[schemars(skip)]
     pub batch_size: Option<ByteSize>,
 }
-#[derive(Default, Debug, Clone, PartialEq, Eq, Deserialize, Serialize, Hash)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, Deserialize, Serialize, Hash, JsonSchema)]
 pub struct SecretConfig {
     /// The name of the secret. It can only contain alphanumeric ASCII characters and underscores. It cannot start with a number.
     name: SecretName,
@@ -326,7 +328,8 @@ impl SecretConfig {
     }
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, Hash, JsonSchema)]
+#[schemars(with = "String")]
 pub struct SecretName {
     inner: String,
 }
