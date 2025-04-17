@@ -242,6 +242,7 @@ impl SmartModuleChainInstance {
 
                 debug!(fuel_used, "fuel used");
                 metrics.add_fuel_used(fuel_used, time.elapsed());
+                metrics.add_invocation_count(1);
                 result?;
             }
         }
@@ -279,7 +280,6 @@ mod chaining_test {
 
     use super::super::{
         SmartEngine, SmartModuleChainBuilder, SmartModuleConfig, SmartModuleInitialData,
-        metrics::SmartModuleChainMetrics,
     };
 
     const SM_FILTER_INIT: &str = "fluvio_smartmodule_filter_init";
@@ -488,7 +488,6 @@ mod chaining_test {
         //given
         let engine = SmartEngine::new();
         let mut chain_builder = SmartModuleChainBuilder::default();
-        let metrics = SmartModuleChainMetrics::new(&[]);
 
         let sm = read_wasm_module(SM_FILTER_LOOK_BACK);
         chain_builder.add_smart_module(
@@ -523,6 +522,8 @@ mod chaining_test {
                 record_value: "wrong str".to_string().into()
             }
         );
+        let sm_metrics = chain.metrics_export();
+        let metrics = sm_metrics.get(SM_FILTER_LOOK_BACK).expect("module metrics");
         assert!(metrics.fuel_used() > 0);
         assert_eq!(metrics.invocation_count(), 1);
     }
