@@ -3060,7 +3060,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-socket"
-version = "0.15.2"
+version = "0.15.3"
 dependencies = [
  "async-channel 1.9.0",
  "async-lock",
@@ -3073,6 +3073,7 @@ dependencies = [
  "fluvio-protocol",
  "fluvio-types",
  "futures-util",
+ "libc",
  "nix",
  "once_cell",
  "pin-project",
