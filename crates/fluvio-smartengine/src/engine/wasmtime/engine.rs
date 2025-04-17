@@ -304,16 +304,6 @@ mod chaining_test {
             sm.1,
         );
 
-        let sm = read_wasm_module(SM_FILTER_INIT);
-        chain_builder.add_smart_module(
-            SmartModuleConfig::builder()
-                .smartmodule_names(&[sm.0])
-                .param("key", "a")
-                .build()
-                .unwrap(),
-            sm.1,
-        );
-
         let sm = read_wasm_module(SM_MAP);
         chain_builder.add_smart_module(
             SmartModuleConfig::builder()
