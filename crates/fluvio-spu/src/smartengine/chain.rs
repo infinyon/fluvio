@@ -69,11 +69,11 @@ pub(crate) fn build_chain(
         debug!("param: {:#?}", invocation.params);
         chain_builder.add_smart_module(
             SmartModuleConfig::builder()
+                .smartmodule_names(sm_names)
                 .params(invocation.params)
                 .version(version)
                 .lookback(lookback)
                 .initial_data(initial_data)
-                .smartmodule_names(sm_names)
                 .build()
                 .map_err(|err| ErrorCode::SmartModuleInvalid {
                     error: err.to_string(),
