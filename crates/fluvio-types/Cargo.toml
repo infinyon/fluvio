@@ -11,12 +11,13 @@ license = "Apache-2.0"
 events = ["event-listener"]
 
 [dependencies]
-event-listener = { workspace = true,  optional = true }
+event-listener = { workspace = true, optional = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
+schemars = { workspace = true }
 serde = { workspace = true, features = ["derive"], default-features = false }
 toml = { workspace = true, features = ["display", "preserve_order", "parse"] }
 
 [dev-dependencies]
 fluvio-future = { workspace = true, features = ["fixture", "subscriber"] }
-tokio = { workspace = true,  features = ["macros"] }
+tokio = { workspace = true, features = ["macros"] }
