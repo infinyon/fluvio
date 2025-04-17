@@ -51,7 +51,7 @@ pub async fn handle_offset_request(
                 partition_response.last_stable_offset = hw;
 
                 // This is only for compatibility with older clients
-                // now we're usign `GetConsumerOffsetRequest` to fetch consumer offset
+                // now we're usign `FetchConsumerOffsetsRequest` to fetch consumer offset
                 #[allow(deprecated)]
                 if let Some(ref consumer_id) = request.consumer_id {
                     debug!(consumer_id, "fetch consumer offset");
