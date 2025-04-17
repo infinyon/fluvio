@@ -40,7 +40,7 @@ pub struct FileReplica {
     commit_checkpoint: CheckPoint,
     cleaner: Arc<Cleaner>,
     size: Arc<ReplicaSize>,
-    append_failure: bool, // if this is true, last append failed, should not append again
+    error_msg: Option<String>,
     max_request_size: usize,
     max_segment_size: usize,
 }
@@ -295,7 +295,7 @@ impl FileReplica {
             commit_checkpoint,
             cleaner,
             size,
-            append_failure: false,
+            error_msg: None,
             max_request_size,
             max_segment_size,
         })
@@ -405,10 +405,11 @@ impl FileReplica {
 
     #[instrument(skip(self, item))]
     async fn write_batch<R: BatchRecords>(&mut self, item: &mut Batch<R>) -> Result<()> {
-        if self.append_failure {
-            return Err(
-                StorageError::Other("last append failed, disabling append".to_owned()).into(),
-            );
+        if let Some(err_msg) = &self.error_msg {
+            return Err(StorageError::Other(format!(
+                "last append failed, disabling append. Err: {err_msg}"
+            ))
+            .into());
         }
 
         match self.active_segment.append_batch(item).await {
@@ -421,30 +422,32 @@ impl FileReplica {
                         match self.active_segment.append_batch(item).await {
                             Ok(true) => {}
                             Ok(false) => {
-                                warn!("failed to append even after rollver");
-                                self.append_failure = true;
-                                return Err(StorageError::Other(
-                                    "failed to append even after rollver".to_owned(),
-                                )
-                                .into());
+                                let warn_msg = "failed to append even after rollver".to_string();
+                                warn!(warn_msg);
+                                self.error_msg = Some(warn_msg.clone());
+                                return Err(StorageError::Other(warn_msg).into());
                             }
                             Err(err) => {
-                                warn!("failed to append after rollver: {:#?}", err);
-                                self.append_failure = true;
+                                let warn_msg =
+                                    format!("failed to append after rollver: {:#?}", err);
+                                warn!(warn_msg);
+                                self.error_msg = Some(warn_msg);
                                 return Err(err);
                             }
                         }
                     }
                     Err(err) => {
-                        warn!("failed to rollver: {:#?}", err);
-                        self.append_failure = true;
+                        let warn_msg = format!("failed to rollver: {:#?}", err);
+                        warn!(warn_msg);
+                        self.error_msg = Some(warn_msg);
                         return Err(err);
                     }
                 }
             }
             Err(err) => {
-                warn!("failed to write to active segment: {:#?}", err);
-                self.append_failure = true;
+                let warn_msg = format!("failed to write to active segment: {:#?}", err);
+                warn!(warn_msg);
+                self.error_msg = Some(format!("failed to write to active segment: {:#?}", err));
                 return Err(err);
             }
         }
