@@ -2712,7 +2712,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-controlplane-metadata"
-version = "0.30.3"
+version = "0.30.4"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
@@ -3020,7 +3020,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartengine"
-version = "0.8.5"
+version = "0.8.6"
 dependencies = [
  "anyhow",
  "cfg-if",
@@ -3313,7 +3313,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-types"
-version = "0.5.3"
+version = "0.5.4"
 dependencies = [
  "event-listener 5.4.0",
  "fluvio-future",
