@@ -195,7 +195,7 @@ impl ConsumerRetryStream {
     /// reconnects. When a record is successfully produced, the new stream and
     /// updated offset are returned.
     async fn consumer_with_retry(
-        inner: ConsumerRetryInner,
+        mut inner: ConsumerRetryInner,
         mut stream: BoxConsumerStream,
     ) -> (
         BoxConsumerStream,
@@ -222,6 +222,13 @@ impl ConsumerRetryStream {
                             debug!(target: SPAN_RETRY, "Record produced successfully after reconnect");
                         }
                         return (stream, Some(Ok((record, new_offset))));
+                    }
+                    Err(ErrorCode::OffsetEvicted {
+                        next_available,
+                        offset,
+                    }) => {
+                        warn!(target: SPAN_RETRY, "Offset evicted: {}. Next available: {}", offset, next_available);
+                        inner.next_offset_to_read = Some(next_available);
                     }
                     Err(e) => {
                         warn!(target: SPAN_RETRY, "Error consuming record: {}", e);
