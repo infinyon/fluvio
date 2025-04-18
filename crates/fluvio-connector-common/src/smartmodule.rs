@@ -25,6 +25,7 @@ pub async fn smartmodule_chain_from_config(
             .wasm
             .as_raw_wasm()?;
 
+        // this ::from adds the smartmodule_name to the config
         let config = fluvio::SmartModuleConfig::from(step.clone());
         builder.add_smart_module(config, wasm);
     }
