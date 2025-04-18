@@ -20,6 +20,7 @@ pub(crate) fn create_smartmodule(
     params: BTreeMap<String, String>,
 ) -> SmartModuleInvocation {
     SmartModuleInvocation {
+        name: name.to_string(),
         wasm: SmartModuleInvocationWasm::Predefined(name.to_string()),
         kind: SmartModuleKind::Generic(ctx),
         params: params.into(),
@@ -39,6 +40,11 @@ pub(crate) fn create_smartmodule_from_path(
     encoder.read_to_end(&mut buffer)?;
 
     Ok(SmartModuleInvocation {
+        name: path
+            .file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or("unknown")
+            .to_string(),
         wasm: SmartModuleInvocationWasm::AdHoc(buffer),
         kind: SmartModuleKind::Generic(ctx),
         params: params.into(),
@@ -49,10 +55,17 @@ pub(crate) fn create_smartmodule_from_path(
 pub(crate) fn create_smartmodule_list(
     config: TransformationConfig,
 ) -> Result<Vec<SmartModuleInvocation>> {
+    let name = config
+        .transforms
+        .iter()
+        .map(|t| t.uses.clone())
+        .collect::<Vec<_>>()
+        .join(",");
     Ok(config
         .transforms
         .into_iter()
         .map(|t| SmartModuleInvocation {
+            name: name.clone(),
             wasm: SmartModuleInvocationWasm::Predefined(t.uses),
             kind: SmartModuleKind::Generic(Default::default()),
             params: SmartModuleExtraParams::new(

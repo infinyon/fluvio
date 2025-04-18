@@ -57,9 +57,13 @@ async fn start_monitoring(ctx: DefaultSharedGlobalContext) -> Result<(), IoError
                 }
             };
 
-            // format a metrics object
+            // format a metrics object with all available metrics
             let out_metrics = json!({
-                "spu": ctx.metrics().smartmodule_metrics(),
+                "spu": {
+                    "inbound": ctx.metrics().inbound(),
+                    "outbound": ctx.metrics().outbound(),
+                    "smartmodule": ctx.metrics().smartmodule_metrics(),
+                }
             });
 
             let bytes = serde_json::to_vec_pretty(&out_metrics)?;

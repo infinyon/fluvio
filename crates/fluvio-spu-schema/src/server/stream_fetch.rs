@@ -197,6 +197,7 @@ mod tests {
 
     #[test]
     fn test_encode_stream_fetch_request_last_version() {
+        let name = "test-adhoc";
         let mut dest = Vec::new();
         let mut params = SmartModuleExtraParams::default();
         params.set_lookback(Some(Lookback::last(1)));
@@ -205,6 +206,7 @@ mod tests {
             partition: 3,
             smartmodules: vec![
                 (SmartModuleInvocation {
+                    name: name.to_string(),
                     wasm: SmartModuleInvocationWasm::AdHoc(vec![0xde, 0xad, 0xbe, 0xef]),
                     kind: SmartModuleKind::Filter,
                     params,
@@ -226,6 +228,7 @@ mod tests {
 
     #[test]
     fn test_encode_stream_fetch_request_prev_version() {
+        let name = "test-adhoc";
         let mut dest = Vec::new();
         let mut params = SmartModuleExtraParams::default();
         params.set_lookback(Some(Lookback::last(1)));
@@ -234,6 +237,7 @@ mod tests {
             partition: 3,
             smartmodules: vec![
                 (SmartModuleInvocation {
+                    name: name.to_string(),
                     wasm: SmartModuleInvocationWasm::AdHoc(vec![0xde, 0xad, 0xbe, 0xef]),
                     kind: SmartModuleKind::Filter,
                     params,

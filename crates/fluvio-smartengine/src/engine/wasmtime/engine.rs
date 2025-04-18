@@ -24,6 +24,9 @@ use super::transforms::create_transform;
 // 1 GB
 const DEFAULT_STORE_MEMORY_LIMIT: usize = 1_000_000_000;
 
+// tracing target
+const TTGT_SMARTMODULE_CALL: &str = "fluvio_smartengine::smartmodule::call";
+
 #[derive(Clone)]
 pub struct SmartEngine(Engine);
 
@@ -177,8 +180,7 @@ impl SmartModuleChainInstance {
     /// The output of the last smartmodule is added to the output of the chain.
     pub fn process(&mut self, input: SmartModuleInput) -> Result<SmartModuleOutput> {
         let raw_len = input.raw_bytes().len();
-        debug!(raw_len, "sm raw input");
-        // metric.add_bytes_in(raw_len as u64);
+        tracing::trace!(target = TTGT_SMARTMODULE_CALL, raw_len, "sm raw input");
 
         let base_offset = input.base_offset();
         let base_timestamp = input.base_timestamp();
@@ -207,7 +209,11 @@ impl SmartModuleChainInstance {
                 tracing::error!(err=?smerr);
             }
             let records_out = output.successes.len();
-            debug!(records_out, "sm records out");
+            tracing::trace!(
+                target = TTGT_SMARTMODULE_CALL,
+                records_out,
+                "sm records out"
+            );
             Ok(output)
         } else {
             #[allow(deprecated)]

@@ -107,6 +107,7 @@ fn resolve_invocation<R: ReplicaStorage>(
             .map_err(|err| ErrorCode::Other(format!("error parsing SmartModule name: {err}")))?
         {
             Ok(SmartModuleInvocation {
+                name: name.clone(),
                 wasm: SmartModuleInvocationWasm::AdHoc(smartmodule.spec.wasm.payload.into()),
                 ..invocation
             })

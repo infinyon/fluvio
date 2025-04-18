@@ -47,6 +47,11 @@ impl SpuMetrics {
         smartmodule_name: &str,
         metrics: &SmartModuleChainMetrics,
     ) {
+        tracing::debug!(
+            "Updating smartmodule metrics for {}: {:?}",
+            smartmodule_name,
+            metrics
+        );
         // Acquire write lock to modify the HashMap
         let mut metrics_map = self.smartmodule_metrics.write().unwrap();
 
