@@ -10,7 +10,6 @@ use fluvio_types::defaults::{
 use fluvio_types::SpuId;
 use fluvio_types::{PartitionId, PartitionCount, ReplicationFactor, IgnoreRackAssignment};
 use fluvio_protocol::{Encoder, Decoder};
-use schemars::JsonSchema;
 
 use crate::partition::{HomePartitionConfig, PartitionMirrorConfig, RemotePartitionConfig};
 
@@ -601,7 +600,7 @@ impl From<(PartitionCount, ReplicationFactor)> for TopicSpec {
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
-    derive(JsonSchema)
+    derive(schemars::JsonSchema)
 )]
 pub struct PartitionMap {
     pub id: PartitionId,
@@ -992,7 +991,7 @@ pub struct TopicStorageConfig {
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
-    derive(JsonSchema)
+    derive(schemars::JsonSchema)
 )]
 pub enum CompressionAlgorithm {
     #[fluvio(tag = 0)]

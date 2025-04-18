@@ -2,7 +2,6 @@ use std::time::Duration;
 
 use derive_builder::Builder;
 use fluvio_types::{ReplicationFactor, TopicName, PartitionCount, IgnoreRackAssignment};
-use schemars::JsonSchema;
 
 use crate::topic::{
     ReplicaSpec, TopicReplicaParam, SegmentBasedPolicy, CleanupPolicy, TopicStorageConfig,
@@ -19,7 +18,7 @@ const DEFAULT_VERSION: &str = "0.1.0";
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
-    derive(JsonSchema),
+    derive(schemars::JsonSchema),
     serde(rename_all = "kebab-case")
 )]
 pub struct TopicConfig {
@@ -53,7 +52,7 @@ pub struct TopicConfig {
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
-    derive(JsonSchema),
+    derive(schemars::JsonSchema),
     serde(rename_all = "kebab-case")
 )]
 pub struct MetaConfig {
@@ -64,7 +63,7 @@ pub struct MetaConfig {
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
-    derive(JsonSchema),
+    derive(schemars::JsonSchema),
     serde(rename_all = "kebab-case")
 )]
 pub struct PartitionConfig {
@@ -104,7 +103,7 @@ pub struct PartitionConfig {
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
-    derive(JsonSchema),
+    derive(schemars::JsonSchema),
     serde(rename_all = "kebab-case")
 )]
 pub struct RetentionConfig {
@@ -131,7 +130,7 @@ pub struct RetentionConfig {
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
-    derive(JsonSchema),
+    derive(schemars::JsonSchema),
     serde(rename_all = "kebab-case")
 )]
 pub struct CompressionConfig {
