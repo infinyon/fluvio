@@ -129,6 +129,7 @@ rayon = "1.10.0"
 rand_xoshiro = "0.6.0"
 regex = "1.7"
 reqwest = "0.12"
+schemars = { version = "0.8.22" }
 semver = "1.0.13"
 serde = { version = "1.0", default-features = false }
 serde_json = "1.0.60"

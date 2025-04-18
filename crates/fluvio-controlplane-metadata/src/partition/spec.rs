@@ -122,6 +122,7 @@ pub struct PartitionConfig {
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
+    derive(schemars::JsonSchema),
     serde(rename_all = "camelCase")
 )]
 pub enum PartitionMirrorConfig {
@@ -201,6 +202,7 @@ impl std::fmt::Display for PartitionMirrorConfig {
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
+    derive(schemars::JsonSchema),
     serde(rename_all = "camelCase")
 )]
 pub struct HomePartitionConfig {
@@ -225,6 +227,7 @@ impl std::fmt::Display for HomePartitionConfig {
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
+    derive(schemars::JsonSchema),
     serde(rename_all = "camelCase")
 )]
 pub struct RemotePartitionConfig {

@@ -10,6 +10,7 @@ use serde::{
     Deserialize, Serialize, Deserializer,
     de::{Visitor, self, SeqAccess, MapAccess},
 };
+use schemars::JsonSchema;
 
 #[derive(Debug, Default, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct TransformationConfig {
@@ -46,7 +47,7 @@ impl<T: Deref<Target = str>> TryFrom<Vec<T>> for TransformationConfig {
     }
 }
 
-#[derive(Debug, Default, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema)]
 pub struct TransformationStep {
     pub uses: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -55,12 +56,13 @@ pub struct TransformationStep {
     pub with: BTreeMap<String, JsonString>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct Lookback {
     #[serde(default)]
     pub last: u64,
     #[serde(default, with = "humantime_serde")]
+    #[schemars(with = "Option::<String>")]
     pub age: Option<Duration>,
 }
 
@@ -93,7 +95,7 @@ impl From<Lookback> for fluvio_smartmodule::dataplane::smartmodule::Lookback {
     }
 }
 
-#[derive(Default, Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Default, Clone, Debug, PartialEq, Eq, Serialize, JsonSchema)]
 pub struct JsonString(String);
 
 impl From<JsonString> for String {
@@ -262,7 +264,7 @@ mod tests {
             config.transforms[1].with,
             BTreeMap::from([(
                 "mapping".to_string(),
-                JsonString("{\"table\":\"topic_message_demo\",\"map-columns\":{\"fact\":{\"json-key\":\"fact\",\"value\":{\"type\":\"text\",\"required\":true}},\"record\":{\"json-key\":\"$\",\"value\":{\"type\":\"jsonb\",\"required\":true}}}}".to_string()) 
+                JsonString("{\"table\":\"topic_message_demo\",\"map-columns\":{\"fact\":{\"json-key\":\"fact\",\"value\":{\"type\":\"text\",\"required\":true}},\"record\":{\"json-key\":\"$\",\"value\":{\"type\":\"jsonb\",\"required\":true}}}}".to_string())
             )])
         );
     }

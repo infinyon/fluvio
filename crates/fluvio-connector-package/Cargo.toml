@@ -14,11 +14,20 @@ default = ["toml"]
 anyhow = { workspace = true }
 bytesize = { workspace = true }
 humantime-serde = { workspace = true }
-minijinja = { version = "2.6", default-features = false, features = ["custom_syntax", "fuel", "serde"] }
+minijinja = { version = "2.6", default-features = false, features = [
+    "custom_syntax",
+    "fuel",
+    "serde",
+] }
 openapiv3 = { version = "2.0", default-features = false }
+schemars = { workspace = true }
 serde = { workspace = true, features = ["derive"], default-features = false }
 serde_yaml = { workspace = true }
-toml = { workspace = true , optional = true, features = ["display", "parse", "preserve_order"] }
+toml = { workspace = true, optional = true, features = [
+    "display",
+    "parse",
+    "preserve_order",
+] }
 tracing = { workspace = true }
 
 # fluvio dependencies

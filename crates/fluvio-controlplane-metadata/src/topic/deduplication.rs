@@ -7,6 +7,7 @@ use fluvio_protocol::{Encoder, Decoder};
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
+    derive(schemars::JsonSchema),
     serde(rename_all = "kebab-case")
 )]
 pub struct Deduplication {
@@ -18,6 +19,7 @@ pub struct Deduplication {
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
+    derive(schemars::JsonSchema),
     serde(rename_all = "kebab-case")
 )]
 pub struct Bounds {
@@ -29,7 +31,8 @@ pub struct Bounds {
             default,
             skip_serializing_if = "Option::is_none",
             with = "humantime_serde"
-        )
+        ),
+        schemars(with = "String")
     )]
     pub age: Option<Duration>,
 }
@@ -38,6 +41,7 @@ pub struct Bounds {
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
+    derive(schemars::JsonSchema),
     serde(rename_all = "kebab-case")
 )]
 pub struct Filter {
@@ -48,6 +52,7 @@ pub struct Filter {
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
+    derive(schemars::JsonSchema),
     serde(rename_all = "kebab-case")
 )]
 pub struct Transform {

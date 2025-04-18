@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-smartengine"
-version = "0.8.5"
+version = "0.8.6"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -18,24 +18,25 @@ default = ["engine"]
 
 
 [dependencies]
-tracing ={ workspace = true }
+tracing = { workspace = true }
 thiserror = { workspace = true }
 anyhow = { workspace = true }
-serde = { workspace = true,  features = ['derive'] }
+schemars = { workspace = true }
+serde = { workspace = true, features = ['derive'] }
 serde_json = { workspace = true, optional = true }
 serde_yaml = { workspace = true, default-features = false, optional = true }
 cfg-if = { workspace = true }
 derive_builder = { workspace = true }
-wasi-common = { workspace = true,  optional = true }
-wasmtime = { workspace = true,  optional = true }
+wasi-common = { workspace = true, optional = true }
+wasmtime = { workspace = true, optional = true }
 humantime-serde = { workspace = true, optional = true }
 
 fluvio-future = { workspace = true, default-features = false }
-fluvio-protocol = { workspace = true, features = [
-    "record",
-] }
+fluvio-protocol = { workspace = true, features = ["record"] }
 fluvio-smartmodule = { workspace = true, default-features = false }
 
 [dev-dependencies]
-fluvio-future = { workspace = true, default-features = false, features = ["task"] }
+fluvio-future = { workspace = true, default-features = false, features = [
+    "task",
+] }
 serde_json = { workspace = true }
