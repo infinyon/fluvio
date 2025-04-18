@@ -73,8 +73,8 @@ impl SmartModuleInstance {
         // post metrics
         self.ctx.metrics_time_elapsed(start_time, store);
         if let Ok(ref output) = out {
-            let num_recs = output.successes.len() as u64;
-            self.ctx.metrics().add_records_out(num_recs);
+            // let num_recs = output.successes.len() as u64;
+            // self.ctx.metrics().add_records_out(num_recs);
 
             if let Some(_err) = output.error.as_ref() {
                 self.ctx.metrics().add_records_err(1);

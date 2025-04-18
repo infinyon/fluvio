@@ -376,6 +376,7 @@ mod tests {
     #[test]
     fn test_encode_produce_request() {
         //given
+        let name = "adhoc-test";
         let mut dest = Vec::new();
         let params = SmartModuleExtraParams::default();
         let value = DefaultProduceRequest {
@@ -384,6 +385,7 @@ mod tests {
             timeout: Duration::from_secs(1),
             topics: vec![],
             smartmodules: vec![SmartModuleInvocation {
+                name: name.to_string(),
                 wasm: SmartModuleInvocationWasm::AdHoc(vec![0xde, 0xad, 0xbe, 0xef]),
                 kind: SmartModuleKind::Filter,
                 params,
@@ -444,6 +446,7 @@ mod tests {
     #[test]
     fn test_encode_produce_request_last_version() {
         //given
+        let name = "adhoc-test";
         let mut dest = Vec::new();
         let mut params = SmartModuleExtraParams::default();
         params.set_lookback(Some(Lookback::last(1)));
@@ -453,6 +456,7 @@ mod tests {
             timeout: Duration::from_secs(1),
             topics: vec![],
             smartmodules: vec![SmartModuleInvocation {
+                name: name.to_string(),
                 wasm: SmartModuleInvocationWasm::AdHoc(vec![0xde, 0xad, 0xbe, 0xef]),
                 kind: SmartModuleKind::Filter,
                 params,
@@ -477,6 +481,7 @@ mod tests {
     #[test]
     fn test_encode_produce_request_prev_version() {
         //given
+        let name = "adhoc-test";
         let mut dest = Vec::new();
         let mut params = SmartModuleExtraParams::default();
         params.set_lookback(Some(Lookback::age(Duration::from_secs(20), Some(1))));
@@ -486,6 +491,7 @@ mod tests {
             timeout: Duration::from_secs(1),
             topics: vec![],
             smartmodules: vec![SmartModuleInvocation {
+                name: name.to_string(),
                 wasm: SmartModuleInvocationWasm::AdHoc(vec![0xde, 0xad, 0xbe, 0xef]),
                 kind: SmartModuleKind::Filter,
                 params,

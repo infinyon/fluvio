@@ -18,6 +18,7 @@ use fluvio_smartmodule::dataplane::smartmodule::SmartModuleExtraParams;
 /// It also carries any data that is required for specific invocations of SmartModules.
 #[derive(Debug, Default, Clone, Encoder, Decoder)]
 pub struct SmartModuleInvocation {
+    pub name: String,
     pub wasm: SmartModuleInvocationWasm,
     pub kind: SmartModuleKind,
     pub params: SmartModuleExtraParams,

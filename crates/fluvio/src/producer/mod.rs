@@ -531,8 +531,12 @@ where
                     let current_time = Utc::now().timestamp_millis();
 
                     sm_input.set_base_timestamp(current_time);
-
                     let output = sm_chain.process(sm_input).map_err(|e| FluvioError::Other(format!("SmartEngine - {e:?}")))?;
+
+                    // update_smartmodule metrics needs to access the sm_chain
+                    // w/ a read lock so we need to drop the write lock first
+                    drop(sm_chain);
+                    self.update_smartmodule_metrics().await?;
                     entries = output.successes;
                 }
             } else {
@@ -574,6 +578,18 @@ where
     /// Return a shared instance of `ClientMetrics`
     pub fn metrics(&self) -> Arc<ClientMetrics> {
         self.metrics.clone()
+    }
+
+    /// Updates the ClientMetrics with metrics from the SmartModule chain, if it exists.
+    #[cfg(feature = "smartengine")]
+    pub async fn update_smartmodule_metrics(&self) -> Result<()> {
+        if let Some(sm_chain) = &self.sm_chain {
+            let sm_chain = sm_chain.read().await;
+            let sm_metrics = sm_chain.metrics_export();
+            let metrics = &self.inner.metrics;
+            metrics.metrics_append(&sm_metrics);
+        }
+        Ok(())
     }
 }
 
