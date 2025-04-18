@@ -92,6 +92,7 @@ impl SmartModuleTransform for SmartModuleAggregate {
         }
 
         let output: SmartModuleAggregateOutput = ctx.read_output(store)?;
+
         self.accumulator = output.accumulator;
         Ok(output.base)
     }
@@ -105,13 +106,10 @@ impl SmartModuleTransform for SmartModuleAggregate {
 mod test {
 
     use fluvio_protocol::record::Record;
-    use fluvio_smartmodule::{
-        dataplane::smartmodule::{SmartModuleInput},
-    };
+    use fluvio_smartmodule::dataplane::smartmodule::SmartModuleInput;
 
     use crate::engine::{
         SmartEngine, SmartModuleChainBuilder, SmartModuleConfig, SmartModuleInitialData,
-        metrics::SmartModuleChainMetrics,
     };
     use crate::engine::config::DEFAULT_SMARTENGINE_VERSION;
 
@@ -125,9 +123,13 @@ mod test {
         let engine = SmartEngine::new();
         let mut chain_builder = SmartModuleChainBuilder::default();
 
+        let sm = read_wasm_module(SM_AGGEGRATE);
         chain_builder.add_smart_module(
-            SmartModuleConfig::builder().build().unwrap(),
-            read_wasm_module(SM_AGGEGRATE),
+            SmartModuleConfig::builder()
+                .smartmodule_names(&[sm.0])
+                .build()
+                .unwrap(),
+            sm.1,
         );
 
         let mut chain = chain_builder
@@ -139,14 +141,11 @@ mod test {
             super::AGGREGATE_FN_NAME
         );
 
-        let metrics = SmartModuleChainMetrics::default();
-
         let input = vec![Record::new("a")];
         let output = chain
             .process(
                 SmartModuleInput::try_from_records(input, DEFAULT_SMARTENGINE_VERSION)
                     .expect("input"),
-                &metrics,
             )
             .expect("process");
         assert_eq!(output.successes.len(), 1);
@@ -169,7 +168,6 @@ mod test {
             .process(
                 SmartModuleInput::try_from_records(input, DEFAULT_SMARTENGINE_VERSION)
                     .expect("input"),
-                &metrics,
             )
             .expect("process");
         assert_eq!(output.successes.len(), 1); // generate 3 records
@@ -192,7 +190,6 @@ mod test {
             .process(
                 SmartModuleInput::try_from_records(input, DEFAULT_SMARTENGINE_VERSION)
                     .expect("input"),
-                &metrics,
             )
             .expect("process");
         assert_eq!(output.successes.len(), 0);
@@ -213,7 +210,6 @@ mod test {
             .process(
                 SmartModuleInput::try_from_records(input, DEFAULT_SMARTENGINE_VERSION)
                     .expect("input"),
-                &metrics,
             )
             .expect("process");
         assert_eq!(output.successes.len(), 1); // generate 3 records
@@ -226,28 +222,28 @@ mod test {
         let engine = SmartEngine::new();
         let mut chain_builder = SmartModuleChainBuilder::default();
 
+        let sm = read_wasm_module(SM_AGGEGRATE);
         chain_builder.add_smart_module(
             SmartModuleConfig::builder()
+                .smartmodule_names(&[sm.0])
                 .initial_data(SmartModuleInitialData::with_aggregate(
                     "a".to_string().as_bytes().to_vec(),
                 ))
                 .build()
                 .unwrap(),
-            read_wasm_module(SM_AGGEGRATE),
+            sm.1,
         );
 
         let mut chain = chain_builder
             .initialize(&engine)
             .expect("failed to build chain");
 
-        let metrics = SmartModuleChainMetrics::default();
         // new record should accumulate
         let input = vec![Record::new("b")];
         let output = chain
             .process(
                 SmartModuleInput::try_from_records(input, DEFAULT_SMARTENGINE_VERSION)
                     .expect("input"),
-                &metrics,
             )
             .expect("process");
         assert_eq!(output.successes.len(), 1); // generate 3 records

@@ -14,7 +14,7 @@ use fluvio_protocol::{
 use fluvio_smartmodule::dataplane::smartmodule::SmartModuleInput;
 
 use crate::smartengine::produce_batch::ProduceBatchIterator;
-use crate::smartengine::{SmartModuleChainInstance, SmartModuleChainMetrics};
+use crate::smartengine::SmartModuleChainInstance;
 
 pub(crate) trait SmartModuleInputBatch {
     fn records(&self) -> &Vec<u8>;
@@ -34,15 +34,15 @@ pub(crate) fn process_record_set(
 ) -> Result<(Batch, Option<SmartModuleTransformRuntimeError>), Error> {
     let mut batches = ProduceBatchIterator::new(&records.batches);
 
-    process_batch(sm_chain, &mut batches, usize::MAX, &Default::default())
+    // process_batch(sm_chain, &mut batches, usize::MAX, &Default::default())
+    process_batch(sm_chain, &mut batches, usize::MAX)
 }
 
-#[instrument(skip(sm_chain_instance, input_batches, max_bytes, metric))]
+#[instrument(skip(sm_chain_instance, input_batches, max_bytes))]
 pub(crate) fn process_batch<R: SmartModuleInputBatch>(
     sm_chain_instance: &mut SmartModuleChainInstance,
     input_batches: &mut impl Iterator<Item = Result<R, IoError>>,
     max_bytes: usize,
-    metric: &SmartModuleChainMetrics,
 ) -> Result<(Batch, Option<SmartModuleTransformRuntimeError>), Error> {
     let mut smartmodule_batch = Batch::<MemoryRecords>::default();
     smartmodule_batch.base_offset = -1; // indicate this is uninitialized
@@ -69,7 +69,7 @@ pub(crate) fn process_batch<R: SmartModuleInputBatch>(
             input_batch.base_offset(),
             input_batch.base_timestamp(),
         );
-        let output = sm_chain_instance.process(input, metric)?;
+        let output = sm_chain_instance.process(input)?;
 
         debug!(smartmodule_execution_time = %now.elapsed().as_millis());
 
