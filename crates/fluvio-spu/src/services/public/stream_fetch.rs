@@ -413,7 +413,6 @@ impl StreamFetchHandler {
                     sm_ctx.chain_mut(),
                     &mut file_batch_iterator,
                     self.max_bytes as usize,
-                    // self.metrics.chain_metrics(),
                 )
                 .map_err(|err| {
                     StreamFetchError::Fetch(ErrorCode::Other(format!("SmartModule err {err}")))

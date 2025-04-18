@@ -7,9 +7,7 @@ use fluvio_spu_schema::server::smartmodule::SmartModuleInvocation;
 use fluvio_smartengine::{EngineError, SmartModuleConfig, SmartModuleInitialData};
 
 #[cfg(feature = "smartengine")]
-use fluvio_spu_schema::server::smartmodule::{
-    SmartModuleContextData, SmartModuleInvocationWasm, SmartModuleKind,
-};
+use fluvio_spu_schema::server::smartmodule::{SmartModuleContextData, SmartModuleKind};
 
 use crate::smartengine::SmartModuleChainBuilder;
 use crate::smartengine::SmartEngine;
@@ -34,16 +32,7 @@ pub(crate) fn build_chain(
     engine: SmartEngine,
 ) -> Result<SmartModuleChainInstance, ErrorCode> {
     for invocation in invocations {
-        let sm_names = match &invocation.wasm {
-            SmartModuleInvocationWasm::Predefined(name) => {
-                vec![name.to_owned()]
-            }
-            SmartModuleInvocationWasm::AdHoc(_) => {
-                let name = "adhoc";
-                vec![name.to_owned()]
-            }
-        };
-
+        let sm_names = vec![invocation.name.clone()];
         let raw = invocation
             .wasm
             .into_raw()

@@ -25,6 +25,7 @@ pub async fn smartmodule_chain_from_config(
             .wasm
             .as_raw_wasm()?;
 
+        // this ::from adds the smartmodule_name to the config
         let config = fluvio::SmartModuleConfig::from(step.clone());
         builder.add_smart_module(config, wasm);
     }
@@ -43,6 +44,7 @@ pub fn smartmodule_vec_from_config(config: &ConnectorConfig) -> Option<Vec<Smart
         transforms
             .iter()
             .map(|s| SmartModuleInvocation {
+                name: s.uses.clone(),
                 wasm: fluvio::SmartModuleInvocationWasm::Predefined(s.uses.clone()),
                 kind: SmartModuleKind::Generic(Default::default()),
                 params: SmartModuleExtraParams::new(
