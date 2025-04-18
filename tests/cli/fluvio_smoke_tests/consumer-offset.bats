@@ -48,7 +48,7 @@ setup_file() {
     if [ "$FLUVIO_CLUSTER_RELEASE_CHANNEL" == "stable" ]; then
         skip "don't run on cluster stable version"
     fi
-    
+
     CONSUMER_NAME=$(random_string)
     run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" --consumer $CONSUMER_NAME -p 1 -B -d
     assert_success
@@ -69,7 +69,7 @@ setup_file() {
     if [ "$FLUVIO_CLUSTER_RELEASE_CHANNEL" == "stable" ]; then
         skip "don't run on cluster stable version"
     fi
-    
+
     CONSUMER_NAME=$(random_string)
     run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" --consumer $CONSUMER_NAME -B -d
     assert_success
@@ -149,3 +149,43 @@ setup_file() {
     run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME"
     assert_output --partial "topic \"$TOPIC_NAME\" deleted"
 }
+
+@test "Consumer start and end offset should commit" {
+    if [ "$FLUVIO_CLI_RELEASE_CHANNEL" == "stable" ]; then
+	skip "don't run on fluvio cli stable version"
+    fi
+    if [ "$FLUVIO_CLUSTER_RELEASE_CHANNEL" == "stable" ]; then
+	skip "don't run on cluster stable version"
+    fi
+
+    CONSUMER_NAME=$(random_string)
+    run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME"
+    assert_output --partial "topic \"$TOPIC_NAME\" created"
+
+    echo 1:1 | "$FLUVIO_BIN" produce $TOPIC_NAME --key-separator ":"
+    echo 1:1 | "$FLUVIO_BIN" produce $TOPIC_NAME --key-separator ":"
+
+    # Create the consumer with start
+    CONSUMER_NAME=$(random_string)
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" --consumer "$CONSUMER_NAME" -B -d
+    assert_success
+    assert_line "1"
+    assert_line "1"
+
+    echo 2:2 | "$FLUVIO_BIN" produce $TOPIC_NAME --key-separator ":"
+    echo 2:2 | "$FLUVIO_BIN" produce $TOPIC_NAME --key-separator ":"
+
+    # consumer with end offset
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" --consumer "$CONSUMER_NAME" -d
+    assert_success
+    assert_line "2"
+    assert_line "2"
+
+    OFFSET=$("$FLUVIO_BIN" consumer list -O json | jq ".[] | select(.consumer_id == \"$CONSUMER_NAME\") | .offset")
+    assert [ $OFFSET == "3" ]
+
+    # Cleanup
+    run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME"
+    assert_output --partial "topic \"$TOPIC_NAME\" deleted"
+}
+
