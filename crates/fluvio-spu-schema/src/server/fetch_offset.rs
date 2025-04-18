@@ -26,7 +26,7 @@ pub struct FetchOffsetsRequest {
     pub topics: Vec<FetchOffsetTopic>,
 
     /// The consumer id (DEPRECATED)
-    #[deprecated(note = "to get consumer offest use `GetConsumerOffsetRequest` instead")]
+    #[deprecated(note = "to get consumer offest use `FetchConsumerOffsetsRequest` instead")]
     #[fluvio(min_version = 23, max_version = 23)]
     pub consumer_id: Option<String>,
 }
