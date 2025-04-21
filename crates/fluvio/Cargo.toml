@@ -81,6 +81,7 @@ chrono = { workspace = true, features = ["wasmbind", "clock"] }
 [dev-dependencies]
 async-std = { workspace = true }
 fluvio-future = { workspace = true, features = ["io", "fixture"] }
+mockall = { workspace = true }
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
 wasm-bindgen-test = { workspace = true }
