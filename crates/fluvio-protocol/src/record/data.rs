@@ -567,7 +567,6 @@ where
 }
 
 /// Record that can be used by Consumer which needs access to metadata
-#[derive(Debug, Clone)]
 pub struct ConsumerRecord {
     /// The offset of this Record into its partition
     pub offset: i64,
