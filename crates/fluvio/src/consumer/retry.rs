@@ -6,6 +6,8 @@ use anyhow::Result;
 use adaptive_backoff::prelude::{
     Backoff, BackoffBuilder, ExponentialBackoff, ExponentialBackoffBuilder,
 };
+use async_lock::Mutex;
+use async_trait::async_trait;
 use fluvio_socket::ClientConfig;
 use fluvio_types::defaults::{
     RECONNECT_BACKOFF_FACTOR, RECONNECT_BACKOFF_MAX_DURATION, RECONNECT_BACKOFF_MIN_DURATION,
@@ -54,8 +56,58 @@ pub struct ConsumerRetryStream {
     inner: ConsumerRetryInner,
     state: ConsumerRetryState,
     /// The consumer stream is stored directly (inside an Option for ownership transfer).
-    stream: Option<BoxConsumerStream>,
+    stream: Arc<Mutex<BoxConsumerStream>>,
+    strategy: Arc<dyn ReconnectStrategy>,
     notify: Arc<Notify>,
+}
+
+/// A trait for retry strategies.
+#[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
+#[cfg_attr(not(target_arch = "wasm32"), async_trait)]
+#[cfg_attr(test, mockall::automock)]
+pub trait ReconnectStrategy: Send + Sync {
+    /// Retry strategy implementation.
+    async fn reconnect(
+        &self,
+        inner: &ConsumerRetryInner,
+        new_config: ConsumerConfigExt,
+        backoff: ExponentialBackoff,
+    ) -> Result<Arc<async_lock::Mutex<BoxConsumerStream>>>;
+}
+
+pub struct DefaultReconnectStrategy;
+
+#[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
+#[cfg_attr(not(target_arch = "wasm32"), async_trait)]
+impl ReconnectStrategy for DefaultReconnectStrategy {
+    async fn reconnect(
+        &self,
+        inner: &ConsumerRetryInner,
+        new_config: ConsumerConfigExt,
+        mut backoff: ExponentialBackoff,
+    ) -> Result<Arc<async_lock::Mutex<BoxConsumerStream>>> {
+        info!(target: SPAN_RETRY, "Reconnecting to stream consumer");
+        let fluvio_client = Fluvio::connect_with_connector(
+            inner.client_config.connector().clone(),
+            &inner.cluster_config,
+        )
+        .await?;
+
+        let new_stream = fluvio_client
+            .consumer_with_config_inner(new_config.clone())
+            .await?;
+
+        backoff.reset();
+        Ok(Arc::new(Mutex::new(Box::pin(new_stream))))
+    }
+}
+
+#[derive(Default)]
+pub enum RetryStrategy {
+    #[default]
+    Default,
+    #[cfg(test)]
+    Mock(Arc<Mutex<BoxConsumerStream>>),
 }
 
 impl ConsumerRetryStream {
@@ -88,18 +140,16 @@ impl Stream for ConsumerRetryStream {
                 ConsumerRetryState::Terminated => return Poll::Ready(None),
                 ConsumerRetryState::Idle => {
                     // Take ownership of the stream and start a new retry task.
-                    if let Some(stream) = self.stream.take() {
-                        let future = Self::consumer_with_retry(self.inner.clone(), stream);
-                        self.set_task(Box::pin(future));
-                    } else {
-                        // If the stream is missing, treat as terminated.
-                        self.set_terminated();
-                        return Poll::Ready(None);
-                    }
+                    let future = Self::consumer_with_retry(
+                        self.strategy.clone(),
+                        self.inner.clone(),
+                        self.stream.clone(),
+                    );
+                    self.set_task(Box::pin(future));
                 }
                 ConsumerRetryState::Task(fut) => match fut.as_mut().poll(cx) {
                     Poll::Ready((new_stream, opt_result)) => {
-                        self.stream = Some(new_stream);
+                        self.stream = new_stream;
                         self.set_idle();
                         match opt_result {
                             Some(Ok((record, new_offset))) => {
@@ -130,11 +180,7 @@ impl ConsumerStream for ConsumerRetryStream {
             loop {
                 match self.state {
                     ConsumerRetryState::Idle | ConsumerRetryState::Terminated => {
-                        if let Some(ref mut stream) = self.stream {
-                            return stream.offset_commit().await;
-                        } else {
-                            return Err(ErrorCode::Other("Stream not available".to_string()));
-                        }
+                        return self.stream.lock().await.offset_commit().await;
                     }
                     _ => {
                         notify.notified().await;
@@ -150,11 +196,7 @@ impl ConsumerStream for ConsumerRetryStream {
             loop {
                 match self.state {
                     ConsumerRetryState::Idle | ConsumerRetryState::Terminated => {
-                        if let Some(ref mut stream) = self.stream {
-                            return stream.offset_flush().await;
-                        } else {
-                            return Err(ErrorCode::Other("Stream not available".to_string()));
-                        }
+                        return self.stream.lock().await.offset_flush().await;
                     }
                     _ => {
                         notify.notified().await;
@@ -184,8 +226,9 @@ impl ConsumerRetryStream {
                 consumer_config: config,
             },
             state: ConsumerRetryState::Idle,
-            stream: Some(boxed_stream),
+            stream: Arc::new(boxed_stream.into()),
             notify: Arc::new(Notify::new()),
+            strategy: Arc::new(DefaultReconnectStrategy),
         })
     }
 
@@ -195,10 +238,11 @@ impl ConsumerRetryStream {
     /// reconnects. When a record is successfully produced, the new stream and
     /// updated offset are returned.
     async fn consumer_with_retry(
-        inner: ConsumerRetryInner,
-        mut stream: BoxConsumerStream,
+        strategy: Arc<dyn ReconnectStrategy>,
+        mut inner: ConsumerRetryInner,
+        mut stream: Arc<Mutex<BoxConsumerStream>>,
     ) -> (
-        BoxConsumerStream,
+        Arc<Mutex<BoxConsumerStream>>,
         Option<Result<(ConsumerRecord, Option<i64>), ErrorCode>>,
     ) {
         let mut attempts: u32 = 0;
@@ -206,7 +250,7 @@ impl ConsumerRetryStream {
             Ok(b) => b,
             Err(_) => {
                 return (
-                    stream,
+                    stream.clone(),
                     Some(Err(ErrorCode::Other("Error creating backoff".to_string()))),
                 );
             }
@@ -214,19 +258,41 @@ impl ConsumerRetryStream {
 
         loop {
             // Try to retrieve the next record.
-            if let Some(record_result) = stream.as_mut().next().await {
+            let inner_stream = stream.clone();
+            let mut lock = inner_stream.lock().await;
+            if let Some(record_result) = lock.next().await {
                 match record_result {
                     Ok(record) => {
                         let new_offset = Some(record.offset + 1);
                         if attempts > 0 {
                             debug!(target: SPAN_RETRY, "Record produced successfully after reconnect");
                         }
-                        return (stream, Some(Ok((record, new_offset))));
+                        return (stream.clone(), Some(Ok((record, new_offset))));
+                    }
+                    Err(ErrorCode::OffsetEvicted {
+                        next_available,
+                        offset,
+                    }) => {
+                        info!(
+                            "Offset evicted: {}. Next available: {}",
+                            offset, next_available
+                        );
+                        warn!(target: SPAN_RETRY, "Offset evicted: {}. Next available: {}", offset, next_available);
+                        inner.next_offset_to_read = Some(next_available);
+                        if let RetryMode::Disabled = inner.consumer_config.retry_mode {
+                            return (
+                                stream.clone(),
+                                Some(Err(ErrorCode::OffsetEvicted {
+                                    next_available,
+                                    offset,
+                                })),
+                            );
+                        }
                     }
                     Err(e) => {
                         warn!(target: SPAN_RETRY, "Error consuming record: {}", e);
                         if let RetryMode::Disabled = inner.consumer_config.retry_mode {
-                            return (stream, Some(Err(e)));
+                            return (stream.clone(), Some(Err(e)));
                         }
                     }
                 }
@@ -234,7 +300,7 @@ impl ConsumerRetryStream {
 
             // If continuous consumption is disabled, end the stream.
             if inner.consumer_config.disable_continuous {
-                return (stream, None);
+                return (stream.clone(), None);
             }
 
             // Wait before retrying.
@@ -247,7 +313,7 @@ impl ConsumerRetryStream {
                     Ok(off) => off,
                     Err(e) => {
                         warn!(target: SPAN_RETRY, "Error creating offset: {}", e);
-                        return (stream, Some(Err(ErrorCode::OffsetOutOfRange)));
+                        return (stream.clone(), Some(Err(ErrorCode::OffsetOutOfRange)));
                     }
                 }
             } else {
@@ -260,7 +326,11 @@ impl ConsumerRetryStream {
 
             // Reconnect loop: keep trying until a new stream is created.
             loop {
-                match Self::reconnect_stream(&inner, new_config.clone(), backoff.clone()).await {
+                // match Self::reconnect_stream(&inner, new_config.clone(), backoff.clone()).await {
+                match strategy
+                    .reconnect(&inner, new_config.clone(), backoff.clone())
+                    .await
+                {
                     Ok(new_stream) => {
                         info!(target: SPAN_RETRY, "Created new consumer stream with offset: {:?}", new_config.offset_start);
                         stream = new_stream;
@@ -273,10 +343,13 @@ impl ConsumerRetryStream {
 
                         match inner.consumer_config.retry_mode {
                             RetryMode::TryUntil(max) if attempts >= max => {
-                                return (stream, Some(Err(ErrorCode::MaxRetryReached)));
+                                return (stream.clone(), Some(Err(ErrorCode::MaxRetryReached)));
                             }
                             RetryMode::Disabled => {
-                                return (stream, Some(Err(ErrorCode::Other(format!("{}", e)))));
+                                return (
+                                    stream.clone(),
+                                    Some(Err(ErrorCode::Other(format!("{}", e)))),
+                                );
                             }
                             _ => {} // Continue retrying.
                         }
@@ -284,26 +357,6 @@ impl ConsumerRetryStream {
                 }
             }
         }
-    }
-
-    async fn reconnect_stream(
-        inner: &ConsumerRetryInner,
-        new_config: ConsumerConfigExt,
-        mut backoff: ExponentialBackoff,
-    ) -> Result<BoxConsumerStream> {
-        info!(target: SPAN_RETRY, "Reconnecting to stream consumer");
-        let fluvio_client = Fluvio::connect_with_connector(
-            inner.client_config.connector().clone(),
-            &inner.cluster_config,
-        )
-        .await?;
-
-        let new_stream = fluvio_client
-            .consumer_with_config_inner(new_config.clone())
-            .await?;
-
-        backoff.reset();
-        Ok(Box::pin(new_stream))
     }
 }
 
@@ -326,12 +379,13 @@ async fn backoff_and_wait(backoff: &mut ExponentialBackoff) {
 
 #[cfg(test)]
 mod tests {
-    use std::vec::IntoIter;
+    use std::{sync::Arc, vec::IntoIter};
 
+    use async_lock::Mutex;
     use fluvio_protocol::record::Batch;
     use fluvio_smartmodule::RecordData;
     use fluvio_types::PartitionId;
-    use futures_util::{stream::Iter, StreamExt};
+    use futures_util::{stream::Iter, FutureExt, StreamExt};
 
     use crate::consumer::{
         MultiplePartitionConsumerStream, OffsetManagementStrategy, SinglePartitionConsumerStream,
@@ -375,8 +429,9 @@ mod tests {
                     .expect("no error"),
             },
             state: ConsumerRetryState::Idle,
-            stream: Some(Box::pin(multi_stream)),
+            stream: Arc::new(Mutex::new(Box::pin(multi_stream))),
             notify: Arc::new(Notify::new()),
+            strategy: Arc::new(DefaultReconnectStrategy),
         };
 
         //when
@@ -425,20 +480,115 @@ mod tests {
         assert!(retry_stream.offset_flush().await.is_ok())
     }
 
-    fn records_stream(
+    fn create_data(
         partition: PartitionId,
         input: impl IntoIterator<Item = &'static str>,
-    ) -> Iter<IntoIter<Result<ConsumerRecord, ErrorCode>>> {
+    ) -> Vec<Result<ConsumerRecord, ErrorCode>> {
         let mut records: Vec<_> = input
             .into_iter()
             .map(|item| fluvio_protocol::record::Record::new(RecordData::from(item.as_bytes())))
             .collect();
         let mut batch = Batch::default();
         batch.add_records(&mut records);
-        let consumer_records: Vec<_> = batch
+        batch
             .into_consumer_records_iter(partition)
             .map(Ok)
-            .collect();
+            .collect()
+    }
+
+    fn records_stream(
+        partition: PartitionId,
+        input: impl IntoIterator<Item = &'static str>,
+    ) -> Iter<IntoIter<Result<ConsumerRecord, ErrorCode>>> {
+        let consumer_records = create_data(partition, input);
         futures_util::stream::iter(consumer_records)
+    }
+
+    #[fluvio_future::test]
+    async fn test_consumer_with_retry_handles_offset_evicted() {
+        let mut consumer_records_with_error = create_data(0, ["1", "2"]);
+        let eviction = ErrorCode::OffsetEvicted {
+            next_available: 2,
+            offset: 1,
+        };
+        consumer_records_with_error.push(Err(eviction.clone()));
+
+        let (tx, _) = async_channel::unbounded();
+        let (tx2, _) = async_channel::unbounded();
+
+        let partition_stream = SinglePartitionConsumerStream::new(
+            futures_util::stream::iter(consumer_records_with_error),
+            OffsetManagementStrategy::Manual,
+            Default::default(),
+            tx,
+        );
+        let multi_stream = MultiplePartitionConsumerStream::new([partition_stream]);
+
+        let mut mock = MockReconnectStrategy::new();
+
+        mock.expect_reconnect()
+            .withf(move |inner, new_config, _backoff| {
+                assert!(!new_config.disable_continuous);
+                assert_eq!(inner.consumer_config.topic, "test_topic");
+                assert_eq!(inner.next_offset_to_read, Some(2));
+                assert_eq!(new_config.offset_start, Offset::absolute(2).unwrap());
+                assert_eq!(new_config.offset_strategy, OffsetManagementStrategy::Manual);
+                assert_eq!(
+                    new_config.offset_consumer,
+                    Some("test_consumer".to_string())
+                );
+                true
+            })
+            .returning(move |_, _, _| {
+                info!("mock reconnect");
+                let consumer_records_retry = create_data(0, ["7", "8", "9"]);
+                let partition_stream_2 = SinglePartitionConsumerStream::new(
+                    futures_util::stream::iter(consumer_records_retry),
+                    OffsetManagementStrategy::Manual,
+                    Default::default(),
+                    tx2.clone(),
+                );
+                let multi_stream_2 = MultiplePartitionConsumerStream::new([partition_stream_2]);
+
+                let stream: BoxConsumerStream = Box::pin(multi_stream_2);
+                let stream = Arc::new(Mutex::new(stream));
+                futures_util::future::ready(Ok(stream)).boxed()
+            });
+
+        let mut retry_stream = ConsumerRetryStream {
+            inner: ConsumerRetryInner {
+                client_config: Arc::new(ClientConfig::with_addr("localhost:9010".to_string())),
+                cluster_config: FluvioClusterConfig::new("localhost:9003".to_string()),
+                next_offset_to_read: None,
+                consumer_config: ConsumerConfigExt::builder()
+                    .topic("test_topic".to_string())
+                    .offset_start(Offset::beginning())
+                    .offset_strategy(OffsetManagementStrategy::Manual)
+                    .offset_consumer("test_consumer".to_string())
+                    .disable_continuous(false)
+                    .build()
+                    .expect("no error"),
+            },
+            state: ConsumerRetryState::Idle,
+            stream: Arc::new(Mutex::new(Box::pin(multi_stream))),
+            notify: Arc::new(Notify::new()),
+            strategy: Arc::new(mock),
+        };
+
+        //when
+        let mut result = vec![];
+        for _ in 0..5 {
+            assert!(matches!(retry_stream.state, ConsumerRetryState::Idle));
+            let next = retry_stream.next().await.unwrap().unwrap();
+            result.push(next);
+        }
+        assert_eq!(
+            result
+                .iter()
+                .map(|r| String::from_utf8_lossy(r.as_ref()).to_string())
+                .collect::<Vec<_>>(),
+            ["1", "2", "7", "8", "9"]
+        );
+        assert!(matches!(retry_stream.state, ConsumerRetryState::Idle));
     }
 }

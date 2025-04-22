@@ -11,6 +11,7 @@ use crate::{FluvioError, Offset};
 use super::MAX_FETCH_BYTES;
 
 const DEFAULT_OFFSET_FLUSH_PERIOD: Duration = Duration::from_secs(10);
+const DEFAULT_RETRY_MODE: RetryMode = RetryMode::TryUntil(100);
 
 /// Configures the behavior of consumer fetching and streaming
 #[derive(Debug, Builder, Clone)]
@@ -100,7 +101,7 @@ pub struct ConsumerConfigExt {
     pub isolation: Isolation,
     #[builder(default)]
     pub smartmodule: Vec<SmartModuleInvocation>,
-    #[builder(default)]
+    #[builder(default = "DEFAULT_RETRY_MODE")]
     pub retry_mode: RetryMode,
 }
 

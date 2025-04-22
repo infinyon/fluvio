@@ -14,6 +14,7 @@ use adaptive_backoff::prelude::{
 };
 use anyhow::Result;
 use async_channel::Sender;
+use async_lock::Mutex;
 use fluvio_future::timer::sleep;
 use fluvio_socket::VersionedSerialSocket;
 use fluvio_spu_schema::server::consumer_offset::{
@@ -78,7 +79,7 @@ type BoxConsumerFuture = Pin<
     Box<
         dyn Future<
                 Output = (
-                    BoxConsumerStream,
+                    Arc<Mutex<BoxConsumerStream>>,
                     Option<Result<(ConsumerRecord, Option<i64>), ErrorCode>>,
                 ),
             > + 'static,
@@ -89,7 +90,7 @@ type BoxConsumerFuture = Pin<
     Box<
         dyn Future<
                 Output = (
-                    BoxConsumerStream,
+                    Arc<Mutex<BoxConsumerStream>>,
                     Option<Result<(ConsumerRecord, Option<i64>), ErrorCode>>,
                 ),
             > + Send
