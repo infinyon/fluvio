@@ -73,30 +73,18 @@ pub type BoxConsumerStream =
 pub type BoxConsumerStream =
     Pin<Box<dyn ConsumerStream<Item = Result<ConsumerRecord, ErrorCode>> + Send + 'static>>;
 
+type ShararedConsumerStream = Arc<Mutex<BoxConsumerStream>>;
+
+type ConsumerFutureOutput = (
+    ShararedConsumerStream,
+    Option<Result<(ConsumerRecord, Option<i64>), ErrorCode>>,
+);
+
 /// Type alias to access consume stream as a future.
 #[cfg(target_arch = "wasm32")]
-type BoxConsumerFuture = Pin<
-    Box<
-        dyn Future<
-                Output = (
-                    Arc<Mutex<BoxConsumerStream>>,
-                    Option<Result<(ConsumerRecord, Option<i64>), ErrorCode>>,
-                ),
-            > + 'static,
-    >,
->;
+type BoxConsumerFuture = Pin<Box<dyn Future<Output = ConsumerFutureOutput> + 'static>>;
 #[cfg(not(target_arch = "wasm32"))]
-type BoxConsumerFuture = Pin<
-    Box<
-        dyn Future<
-                Output = (
-                    Arc<Mutex<BoxConsumerStream>>,
-                    Option<Result<(ConsumerRecord, Option<i64>), ErrorCode>>,
-                ),
-            > + Send
-            + 'static,
-    >,
->;
+type BoxConsumerFuture = Pin<Box<dyn Future<Output = ConsumerFutureOutput> + Send + 'static>>;
 
 /// An interface for consuming events from a particular partition
 ///

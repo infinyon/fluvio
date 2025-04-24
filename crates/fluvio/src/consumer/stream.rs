@@ -3,11 +3,14 @@ use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 
 use async_channel::Sender;
+use fluvio_future::timer::sleep;
 use fluvio_protocol::{link::ErrorCode, record::ConsumerRecord as Record};
 use futures_util::stream::select_all;
 use futures_util::{future::try_join_all, ready, FutureExt};
 use futures_util::Stream;
-use tracing::{info, warn};
+use tokio::select;
+use tokio::sync::Notify;
+use tracing::{debug, info, warn};
 
 use super::config::OffsetManagementStrategy;
 use super::{offset::OffsetLocalStore, StreamToServer};
@@ -38,16 +41,38 @@ pub struct SinglePartitionConsumerStream<T> {
     inner: T,
 }
 
+impl<T> Drop for SinglePartitionConsumerStream<T> {
+    fn drop(&mut self) {
+        let offset_mngt = self.offset_mngt.clone();
+        if let OffsetManagement::Auto { auto_flusher, .. } = &*offset_mngt {
+            auto_flusher.stop_background.notify_one();
+        }
+    }
+}
+
 enum OffsetManagement {
     None,
     Manual {
         offset_store: OffsetLocalStore,
     },
     Auto {
+        auto_flusher: AutomaticFlusher,
         flush_period: Duration,
         offset_store: OffsetLocalStore,
         last_flush_time: AtomicU64,
     },
+}
+
+pub struct AutomaticFlusher {
+    stop_background: Arc<Notify>,
+}
+
+impl AutomaticFlusher {
+    fn new() -> Self {
+        Self {
+            stop_background: Arc::new(Notify::new()),
+        }
+    }
 }
 
 impl<T: Stream<Item = Result<Record, ErrorCode>> + Unpin> MultiplePartitionConsumerStream<T> {
@@ -82,15 +107,23 @@ impl<T> SinglePartitionConsumerStream<T> {
                 offset_store: OffsetLocalStore::new(stream_to_server),
             },
             OffsetManagementStrategy::Auto => OffsetManagement::Auto {
+                auto_flusher: AutomaticFlusher::new(),
                 offset_store: OffsetLocalStore::new(stream_to_server),
                 flush_period,
                 last_flush_time: AtomicU64::new(0),
             },
         };
-        Self {
-            offset_mngt: Arc::new(offset_mngt),
-            inner,
+        let offset_mngt = Arc::new(offset_mngt);
+
+        // Start the background flusher for auto strategy
+        let mngt = offset_mngt.clone();
+        if matches!(*mngt, OffsetManagement::Auto { .. }) {
+            fluvio_future::task::spawn(async move {
+                mngt.start_background_flusher().await;
+            });
         }
+
+        Self { offset_mngt, inner }
     }
 }
 
@@ -110,7 +143,10 @@ impl<T: Stream<Item = Result<Record, ErrorCode>> + Unpin> Stream
                 self_mut.offset_mngt.update(last.offset);
                 std::task::Poll::Ready(Some(Ok(last)))
             }
-            other => std::task::Poll::Ready(other),
+            other => {
+                self_mut.offset_mngt.run_auto_flush();
+                std::task::Poll::Ready(other)
+            }
         }
     }
 }
@@ -175,28 +211,58 @@ impl<T: Stream<Item = Result<Record, ErrorCode>> + Unpin> Stream
 }
 
 impl OffsetManagement {
+    async fn start_background_flusher(&self) {
+        match self {
+            OffsetManagement::Auto { auto_flusher, .. } => loop {
+                let check_period = sleep(std::time::Duration::from_millis(100));
+                select! {
+                    _ = auto_flusher.stop_background.notified() => {
+                        self.run_auto_flush();
+                        break;
+                    }
+                    _ = check_period => {
+                        self.run_auto_flush();
+                    }
+                }
+            },
+            _ => {
+                // No background task for None or Manual
+            }
+        }
+    }
+
     fn update(&self, offset: i64) {
         match self {
             OffsetManagement::None => {}
             OffsetManagement::Manual { offset_store } => {
                 offset_store.update(offset);
             }
-            OffsetManagement::Auto {
-                flush_period,
-                offset_store,
-                last_flush_time,
-            } => {
-                offset_store.commit();
+            OffsetManagement::Auto { offset_store, .. } => {
                 offset_store.update(offset);
-                if Duration::from_secs(
-                    now_timestamp_secs() - last_flush_time.load(Ordering::Relaxed),
-                ) >= *flush_period
-                {
-                    if let Err(err) = offset_store.try_flush() {
-                        warn!("auto flush failed: {err:?}");
-                    }
-                    last_flush_time.store(now_timestamp_secs(), Ordering::Relaxed);
+                offset_store.commit();
+                self.run_auto_flush();
+            }
+        };
+    }
+
+    fn run_auto_flush(&self) {
+        if let OffsetManagement::Auto {
+            flush_period,
+            offset_store,
+            last_flush_time,
+            ..
+        } = self
+        {
+            if Duration::from_secs(now_timestamp_secs() - last_flush_time.load(Ordering::Relaxed))
+                >= *flush_period
+            {
+                debug!("auto flush offset");
+                if let Err(err) = offset_store.try_flush() {
+                    warn!("auto flush failed: {err:?}");
                 }
+                last_flush_time.store(now_timestamp_secs(), Ordering::Relaxed);
+            } else {
+                debug!("auto flush skipped");
             }
         };
     }
@@ -208,11 +274,7 @@ impl OffsetManagement {
                 offset_store.commit();
                 Ok(())
             }
-            OffsetManagement::Auto {
-                flush_period: _,
-                offset_store,
-                last_flush_time: _,
-            } => {
+            OffsetManagement::Auto { offset_store, .. } => {
                 offset_store.commit();
                 Ok(())
             }
@@ -224,9 +286,9 @@ impl OffsetManagement {
             OffsetManagement::None => Err(ErrorCode::OffsetManagementDisabled),
             OffsetManagement::Manual { offset_store } => offset_store.flush().await,
             OffsetManagement::Auto {
-                flush_period: _,
                 offset_store,
                 last_flush_time,
+                ..
             } => {
                 offset_store
                     .flush()
@@ -242,12 +304,13 @@ impl OffsetManagement {
 impl Drop for OffsetManagement {
     fn drop(&mut self) {
         if let OffsetManagement::Auto {
-            flush_period: _,
             ref mut offset_store,
-            last_flush_time: _,
+            ref auto_flusher,
+            ..
         } = self
         {
             offset_store.commit();
+            auto_flusher.stop_background.notify_one();
             if let Err(err) = offset_store.try_flush() {
                 warn!("flush on drop failed: {err:?}");
             }
@@ -508,17 +571,25 @@ mod tests {
         drop(partition_stream);
 
         //then
-        let message = rx.recv().await;
+        let message1 = rx.recv().await;
         assert!(
             matches!(
-                message,
+                message1,
+                Ok(StreamToServer::FlushManagedOffset { callback: _, offset }) if offset == 0
+            ),
+            "{message1:?}"
+        );
+        let message2 = rx.recv().await;
+        assert!(
+            matches!(
+                message2,
                 Ok(StreamToServer::FlushManagedOffset { callback: _, offset }) if offset == 2
             ),
-            "{message:?}"
+            "{message2:?}"
         );
 
-        let message = rx.try_recv();
-        assert!(message.is_err(), "{message:?}")
+        let message3 = rx.try_recv();
+        assert!(message3.is_err(), "{message3:?}")
     }
 
     #[fluvio_future::test]
@@ -545,6 +616,7 @@ mod tests {
         assert!(multi_stream.next().await.is_some()); // p1 seen = 0
         assert!(multi_stream.next().await.is_some()); // p2 seen = 0
         assert!(multi_stream.next().await.is_some()); // p2 seen = 1
+        sleep(Duration::from_secs(1)).await;
         drop(multi_stream);
 
         //then
@@ -565,17 +637,25 @@ mod tests {
             assert!(
                 matches!(
                     message1,
-                    Ok(StreamToServer::FlushManagedOffset { callback: _, offset }) if offset == 1
+                    Ok(StreamToServer::FlushManagedOffset { callback: _, offset }) if offset == 0
                 ),
                 "{message1:?}"
             );
-            let message2 = rx2.try_recv();
-            assert!(message2.is_err(), "{message2:?}");
+            let message2 = rx2.recv().await;
+            assert!(
+                matches!(
+                    message2,
+                    Ok(StreamToServer::FlushManagedOffset { callback: _, offset }) if offset == 1
+                ),
+                "{message2:?}"
+            );
+            let message3 = rx2.try_recv();
+            assert!(message3.is_err(), "{message3:?}");
         }
     }
 
     #[fluvio_future::test]
-    async fn test_single_partition_stream_periodic_and_drop_flush() {
+    async fn test_single_partition_stream_periodic_and_background_flush() {
         //given
         let (tx, rx) = async_channel::unbounded();
         let mut partition_stream = SinglePartitionConsumerStream::new(
@@ -588,8 +668,7 @@ mod tests {
         //when
         assert!(partition_stream.next().await.is_some()); // seen = 0
         sleep(Duration::from_secs(2)).await;
-        assert!(partition_stream.next().await.is_some()); // seen = 1, flushed = 0
-        drop(partition_stream); // flushed = 1
+        assert!(partition_stream.next().await.is_some()); // seen = 1, flushed = 1
 
         //then
         let message1 = rx.recv().await;

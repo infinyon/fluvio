@@ -43,11 +43,13 @@ pub async fn test_strategy_auto_periodic_flush(
     for _ in 0..10 {
         ensure_read(&mut stream, &mut counts).await?;
     }
-    sleep(Duration::from_secs(2)).await; // yeild  to drive auto flush flow
+    sleep(Duration::from_secs(3)).await; // yeild  to drive auto flush flow
 
-    let consumer = find_consumer(client, &consumer_id, 0).await?;
-    ensure!(consumer.is_some());
-    ensure!(consumer.unwrap().offset > 0i64);
+    for (partition, offset) in counts.iter().enumerate().take(partitions) {
+        let consumer = find_consumer(client, &consumer_id, partition).await?;
+        ensure!(consumer.is_some());
+        ensure!(consumer.unwrap().offset == *offset);
+    }
 
     drop(stream); //we keep the stream alive to prevent flush on drop occuring
 
