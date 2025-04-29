@@ -11,6 +11,7 @@ use crate::{FluvioError, Offset};
 use super::MAX_FETCH_BYTES;
 
 const DEFAULT_OFFSET_FLUSH_PERIOD: Duration = Duration::from_secs(10);
+const DEFAULT_OFFSET_FLUSHER_CHECK_PERIOD: Duration = Duration::from_millis(100);
 const DEFAULT_RETRY_MODE: RetryMode = RetryMode::TryUntil(100);
 
 /// Configures the behavior of consumer fetching and streaming
@@ -93,6 +94,8 @@ pub struct ConsumerConfigExt {
     pub offset_strategy: OffsetManagementStrategy,
     #[builder(default = "DEFAULT_OFFSET_FLUSH_PERIOD")]
     pub offset_flush: Duration,
+    #[builder(default = "DEFAULT_OFFSET_FLUSHER_CHECK_PERIOD")]
+    pub offset_flusher_check_period: Duration,
     #[builder(default)]
     pub disable_continuous: bool,
     #[builder(default = "*MAX_FETCH_BYTES")]
@@ -118,6 +121,7 @@ impl ConsumerConfigExt {
         Option<String>,
         OffsetManagementStrategy,
         Duration,
+        Duration,
     ) {
         let Self {
             topic: _,
@@ -131,6 +135,7 @@ impl ConsumerConfigExt {
             smartmodule,
             offset_strategy,
             offset_flush,
+            offset_flusher_check_period,
             retry_mode: _,
         } = self;
 
@@ -147,6 +152,7 @@ impl ConsumerConfigExt {
             offset_consumer,
             offset_strategy,
             offset_flush,
+            offset_flusher_check_period,
         )
     }
 }
@@ -185,6 +191,7 @@ impl From<ConsumerConfigExt> for ConsumerConfig {
             offset_start: _,
             offset_strategy: _,
             offset_flush: _,
+            offset_flusher_check_period: _,
             disable_continuous,
             max_bytes,
             isolation,

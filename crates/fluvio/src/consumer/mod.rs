@@ -73,30 +73,18 @@ pub type BoxConsumerStream =
 pub type BoxConsumerStream =
     Pin<Box<dyn ConsumerStream<Item = Result<ConsumerRecord, ErrorCode>> + Send + 'static>>;
 
+type ShararedConsumerStream = Arc<Mutex<BoxConsumerStream>>;
+
+type ConsumerFutureOutput = (
+    ShararedConsumerStream,
+    Option<Result<(ConsumerRecord, Option<i64>), ErrorCode>>,
+);
+
 /// Type alias to access consume stream as a future.
 #[cfg(target_arch = "wasm32")]
-type BoxConsumerFuture = Pin<
-    Box<
-        dyn Future<
-                Output = (
-                    Arc<Mutex<BoxConsumerStream>>,
-                    Option<Result<(ConsumerRecord, Option<i64>), ErrorCode>>,
-                ),
-            > + 'static,
-    >,
->;
+type BoxConsumerFuture = Pin<Box<dyn Future<Output = ConsumerFutureOutput> + 'static>>;
 #[cfg(not(target_arch = "wasm32"))]
-type BoxConsumerFuture = Pin<
-    Box<
-        dyn Future<
-                Output = (
-                    Arc<Mutex<BoxConsumerStream>>,
-                    Option<Result<(ConsumerRecord, Option<i64>), ErrorCode>>,
-                ),
-            > + Send
-            + 'static,
-    >,
->;
+type BoxConsumerFuture = Pin<Box<dyn Future<Output = ConsumerFutureOutput> + Send + 'static>>;
 
 /// An interface for consuming events from a particular partition
 ///
@@ -617,7 +605,8 @@ where
         &self,
         config: ConsumerConfigExt,
     ) -> Result<SinglePartitionConsumerStream<impl Stream<Item = Result<Record, ErrorCode>>>> {
-        let (offset, config, consumer_id, strategy, flush_period) = config.into_parts();
+        let (offset, config, consumer_id, strategy, flush_period, flusher_check_period) =
+            config.into_parts();
         let (stream, start_offset, stream_to_server) = self
             .inner_stream_batches_with_config(offset, config, consumer_id)
             .await?;
@@ -642,6 +631,7 @@ where
             flattened,
             strategy,
             flush_period,
+            flusher_check_period,
             stream_to_server,
         ))
     }
