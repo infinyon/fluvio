@@ -58,6 +58,7 @@ enum OffsetManagement {
     Auto {
         auto_flusher: AutomaticFlusher,
         flush_period: Duration,
+        flusher_check_period: Duration,
         offset_store: OffsetLocalStore,
         last_flush_time: AtomicU64,
     },
@@ -99,6 +100,7 @@ impl<T> SinglePartitionConsumerStream<T> {
         inner: T,
         offset_strategy: OffsetManagementStrategy,
         flush_period: Duration,
+        flusher_check_period: Duration,
         stream_to_server: Sender<StreamToServer>,
     ) -> Self {
         let offset_mngt = match offset_strategy {
@@ -110,6 +112,7 @@ impl<T> SinglePartitionConsumerStream<T> {
                 auto_flusher: AutomaticFlusher::new(),
                 offset_store: OffsetLocalStore::new(stream_to_server),
                 flush_period,
+                flusher_check_period,
                 last_flush_time: AtomicU64::new(0),
             },
         };
@@ -346,6 +349,7 @@ mod tests {
             records_stream(0, ["1", "2"]),
             Default::default(),
             Default::default(),
+            Duration::from_millis(100),
             tx,
         );
 
@@ -372,6 +376,7 @@ mod tests {
             records_stream(0, ["1"]),
             Default::default(),
             Default::default(),
+            Duration::from_millis(100),
             tx,
         );
         let (tx, _rx) = async_channel::unbounded();
@@ -379,6 +384,7 @@ mod tests {
             records_stream(1, ["2", "4", "6"]),
             Default::default(),
             Default::default(),
+            Duration::from_millis(100),
             tx,
         );
         let (tx, _rx) = async_channel::unbounded();
@@ -386,6 +392,7 @@ mod tests {
             records_stream(2, ["3", "5"]),
             Default::default(),
             Default::default(),
+            Duration::from_millis(100),
             tx,
         );
         let multi_stream = MultiplePartitionConsumerStream::new([
@@ -417,6 +424,7 @@ mod tests {
             records_stream(0, []),
             OffsetManagementStrategy::None,
             Default::default(),
+            Duration::from_millis(100),
             tx,
         );
 
@@ -435,6 +443,7 @@ mod tests {
             records_stream(0, []),
             OffsetManagementStrategy::None,
             Default::default(),
+            Duration::from_millis(100),
             tx,
         );
 
@@ -453,6 +462,7 @@ mod tests {
             records_stream(0, ["1", "2", "3", "4"]),
             OffsetManagementStrategy::Manual,
             Default::default(),
+            Duration::from_millis(100),
             tx,
         );
 
@@ -492,6 +502,7 @@ mod tests {
             records_stream(0, ["1"]),
             OffsetManagementStrategy::Manual,
             Default::default(),
+            Duration::from_millis(100),
             tx1,
         );
         let (tx2, rx2) = async_channel::unbounded();
@@ -499,6 +510,7 @@ mod tests {
             records_stream(1, ["2", "4", "6"]),
             OffsetManagementStrategy::Manual,
             Default::default(),
+            Duration::from_millis(100),
             tx2,
         );
         let mut multi_stream =
@@ -561,6 +573,7 @@ mod tests {
             records_stream(0, ["1", "2", "3", "4"]),
             OffsetManagementStrategy::Auto,
             Duration::from_secs(1000),
+            Duration::from_millis(100),
             tx,
         );
 
@@ -600,6 +613,7 @@ mod tests {
             records_stream(0, ["1"]),
             OffsetManagementStrategy::Auto,
             Duration::from_secs(1000),
+            Duration::from_millis(100),
             tx1,
         );
         let (tx2, rx2) = async_channel::unbounded();
@@ -607,6 +621,7 @@ mod tests {
             records_stream(1, ["2", "4", "6"]),
             OffsetManagementStrategy::Auto,
             Duration::from_secs(1000),
+            Duration::from_millis(100),
             tx2,
         );
         let mut multi_stream =
@@ -662,6 +677,7 @@ mod tests {
             records_stream(0, ["1", "2", "3", "4"]),
             OffsetManagementStrategy::Auto,
             Duration::from_secs(1),
+            Duration::from_millis(100),
             tx,
         );
 
@@ -701,6 +717,7 @@ mod tests {
             records_stream(0, ["1"]),
             OffsetManagementStrategy::Auto,
             Duration::from_secs(1),
+            Duration::from_millis(100),
             tx1,
         );
         let (tx2, rx2) = async_channel::unbounded();
@@ -708,6 +725,7 @@ mod tests {
             records_stream(1, ["2", "4", "6"]),
             OffsetManagementStrategy::Auto,
             Duration::from_secs(1),
+            Duration::from_millis(100),
             tx2,
         );
         let mut multi_stream =
@@ -763,6 +781,7 @@ mod tests {
             records_stream(0, ["1", "2", "3", "4"]),
             OffsetManagementStrategy::Manual,
             Default::default(),
+            Duration::from_millis(100),
             tx,
         );
 
@@ -802,6 +821,7 @@ mod tests {
             records_stream(0, ["1"]),
             OffsetManagementStrategy::Manual,
             Default::default(),
+            Duration::from_millis(100),
             tx1,
         );
         let (tx2, rx2) = async_channel::unbounded();
@@ -809,6 +829,7 @@ mod tests {
             records_stream(1, ["2", "4", "6"]),
             OffsetManagementStrategy::Manual,
             Default::default(),
+            Duration::from_millis(100),
             tx2,
         );
         let mut multi_stream =

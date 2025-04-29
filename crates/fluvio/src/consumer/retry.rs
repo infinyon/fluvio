@@ -1,12 +1,12 @@
 use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
+use std::time::Duration;
 
 use anyhow::Result;
 use adaptive_backoff::prelude::{
     Backoff, BackoffBuilder, ExponentialBackoff, ExponentialBackoffBuilder,
 };
-use async_channel::{Receiver, Sender};
 use async_lock::Mutex;
 use async_trait::async_trait;
 use fluvio_socket::ClientConfig;
@@ -67,7 +67,6 @@ pub struct ConsumerRetryInner {
     consumer_config: ConsumerConfigExt,
     client_config: Arc<ClientConfig>,
     strategy: Arc<dyn ReconnectStrategy>,
-    cmd_channel: (Sender<TaskCommand>, Receiver<TaskCommand>),
     backoff: ExponentialBackoff,
 }
 impl ConsumerRetryInner {
@@ -79,16 +78,6 @@ impl ConsumerRetryInner {
             self.consumer_config.offset_start.clone()
         }
     }
-
-    /// Sender for the command channel.
-    fn cmd_tx(&self) -> &Sender<TaskCommand> {
-        &self.cmd_channel.0
-    }
-
-    /// Receiver for the command channel.
-    fn cmd_rx(&self) -> &Receiver<TaskCommand> {
-        &self.cmd_channel.1
-    }
 }
 
 /// The internal state of our consumer.
@@ -99,21 +88,6 @@ enum ConsumerRetryState {
     Task(BoxConsumerFuture),
     /// The stream has terminated.
     Terminated,
-}
-
-/// A command to be sent to the retry consumer stream.
-enum TaskCommand {
-    Commit,
-    Flush,
-}
-
-impl TaskCommand {
-    async fn apply(self, stream: &mut BoxConsumerStream) -> Result<(), ErrorCode> {
-        match self {
-            TaskCommand::Commit => stream.offset_commit().await,
-            TaskCommand::Flush => stream.offset_flush().await,
-        }
-    }
 }
 
 /// A trait for retry strategies.
@@ -198,29 +172,15 @@ impl Stream for ConsumerRetryStream {
 impl ConsumerStream for ConsumerRetryStream {
     fn offset_commit(&mut self) -> ConsumerBoxFuture {
         Box::pin(async move {
-            if let Some(mut stream) = self.stream.try_lock() {
-                stream.offset_commit().await
-            } else {
-                if let Err(err) = self.inner.cmd_tx().send(TaskCommand::Commit).await {
-                    warn!(target: SPAN_RETRY, "Error sending commit command: {}", err);
-                    return Err(ErrorCode::Other(err.to_string()));
-                }
-                Ok(())
-            }
+            let mut stream = self.stream.lock().await;
+            stream.offset_commit().await
         })
     }
 
     fn offset_flush(&mut self) -> ConsumerBoxFuture {
         Box::pin(async move {
-            if let Some(mut stream) = self.stream.try_lock() {
-                stream.offset_flush().await
-            } else {
-                if let Err(err) = self.inner.cmd_tx().send(TaskCommand::Flush).await {
-                    warn!(target: SPAN_RETRY, "Error sending flush command: {}", err);
-                    return Err(ErrorCode::Other(err.to_string()));
-                }
-                Ok(())
-            }
+            let mut stream = self.stream.lock().await;
+            stream.offset_flush().await
         })
     }
 }
@@ -244,7 +204,6 @@ impl ConsumerRetryStream {
                 next_offset_to_read: None,
                 consumer_config: config,
                 strategy: Arc::new(DefaultReconnectStrategy),
-                cmd_channel: async_channel::unbounded(),
                 backoff,
             },
             state: ConsumerRetryState::Idle,
@@ -313,14 +272,11 @@ impl ConsumerRetryStream {
         loop {
             let mut stream_lock = stream.lock().await;
             select! {
-                cmd = inner.cmd_rx().recv() => {
-                    // Handle task commands.
-                    if let Ok(cmd) = cmd {
-                        if let Err(e) = cmd.apply(&mut stream_lock).await {
-                            warn!(target: SPAN_RETRY, "Error applying command: {}", e);
-                            return Some((stream.clone(), Some(Err(e))));
-                        }
-                    }
+                _ = sleep(Duration::from_millis(100)) => {
+                    // Timeout reached, release the lock
+                    // to allow commit/flush operations.
+                    drop(stream_lock);
+                    continue;
                 }
                 consumer_opt = stream_lock.next() => {
                     // Try to retrieve the next record.
@@ -372,7 +328,8 @@ impl ConsumerRetryStream {
         mut attempts: u32,
         new_config: ConsumerConfigExt,
     ) -> Result<ShararedConsumerStream, ErrorCode> {
-        info!(target: SPAN_RETRY, "Reconnecting to stream with offset: {:?}", new_config.offset_start);
+        let offset_start = new_config.offset_start.clone();
+        info!(target: SPAN_RETRY, ?offset_start, "Reconnecting to stream");
         loop {
             match inner
                 .strategy
@@ -380,7 +337,7 @@ impl ConsumerRetryStream {
                 .await
             {
                 Ok(new_stream) => {
-                    info!(target: SPAN_RETRY, "Created new consumer stream with offset: {:?}", new_config.offset_start);
+                    info!(target: SPAN_RETRY, ?offset_start, "Created new consumer stream");
                     return Ok(new_stream);
                 }
                 Err(e) => {
@@ -469,6 +426,7 @@ mod tests {
             input,
             OffsetManagementStrategy::Auto,
             Default::default(),
+            Duration::from_millis(100),
             async_channel::unbounded::<crate::consumer::StreamToServer>().0,
         );
         let multi_stream = MultiplePartitionConsumerStream::new([partition_stream]);
@@ -487,7 +445,6 @@ mod tests {
                 .build()
                 .unwrap(),
             strategy,
-            cmd_channel: async_channel::unbounded(),
             backoff: super::create_backoff().unwrap(),
         };
 
@@ -530,6 +487,7 @@ mod tests {
             records_stream(0, ["1", "3", "5"]),
             OffsetManagementStrategy::Manual,
             Default::default(),
+            Duration::from_millis(100),
             tx1,
         );
         let (tx2, rx2) = async_channel::unbounded();
@@ -537,6 +495,7 @@ mod tests {
             records_stream(1, ["2", "4", "6"]),
             OffsetManagementStrategy::Manual,
             Default::default(),
+            Duration::from_millis(100),
             tx2,
         );
         let multi_stream =
@@ -556,7 +515,6 @@ mod tests {
                     .build()
                     .expect("no error"),
                 strategy: Arc::new(DefaultReconnectStrategy),
-                cmd_channel: async_channel::unbounded(),
                 backoff: ExponentialBackoff::default(),
             },
             state: ConsumerRetryState::Idle,

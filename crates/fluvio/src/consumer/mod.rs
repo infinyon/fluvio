@@ -605,7 +605,8 @@ where
         &self,
         config: ConsumerConfigExt,
     ) -> Result<SinglePartitionConsumerStream<impl Stream<Item = Result<Record, ErrorCode>>>> {
-        let (offset, config, consumer_id, strategy, flush_period) = config.into_parts();
+        let (offset, config, consumer_id, strategy, flush_period, flusher_check_period) =
+            config.into_parts();
         let (stream, start_offset, stream_to_server) = self
             .inner_stream_batches_with_config(offset, config, consumer_id)
             .await?;
@@ -630,6 +631,7 @@ where
             flattened,
             strategy,
             flush_period,
+            flusher_check_period,
             stream_to_server,
         ))
     }
