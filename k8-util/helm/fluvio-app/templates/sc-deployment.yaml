@@ -66,6 +66,9 @@ spec:
             {{ if .Values.scPod.extraVolumeMounts }}
             {{- toYaml .Values.scPod.extraVolumeMounts | nindent 12 }}
             {{ end }}
+        {{ else if .Values.scPod.extraVolumeMounts }}
+          volumeMounts:
+            {{- toYaml .Values.scPod.extraVolumeMounts | nindent 12 }}
         {{ end }}
         {{ if .Values.scPod.extraContainers }}
         {{- toYaml .Values.scPod.extraContainers | nindent 8 }}
