@@ -70,9 +70,6 @@ spec:
         {{ if .Values.scPod.extraContainers }}
         {{- toYaml .Values.scPod.extraContainers | nindent 8 }}
         {{ end }}
-        {{ if .Values.scPod.extraVolumes }}
-        {{- toYaml .Values.scPod.extraVolumes | nindent 8 }}
-        {{ end }}
       volumes:
       {{ if .Values.tls }}
         - name: cacert
@@ -92,3 +89,6 @@ spec:
               path: scopes.json
         {{ end }}
       {{ end }}
+        {{ if .Values.scPod.extraVolumes }}
+        {{- toYaml .Values.scPod.extraVolumes | nindent 8 }}
+        {{ end }}
