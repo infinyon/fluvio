@@ -2,6 +2,37 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## Platform Version 0.17.2 - 2025-04-29
+
+### Added
+
+* Move boxed stream into main consumer api ([#4494](https://github.com/infinyon/fluvio/issues/4494))
+* Add key record parameter to smdk test ([#4496](https://github.com/infinyon/fluvio/issues/4496))
+* Add JsonSchema to connector and topic config objects ([#4510](https://github.com/infinyon/fluvio/issues/4510))
+
+### CI
+
+* Pos release fluvio 0.17.1 ([#4491](https://github.com/infinyon/fluvio/issues/4491))
+
+### Changed
+
+* Update toolchain and dep ([#4489](https://github.com/infinyon/fluvio/issues/4489))
+
+### Fixed
+
+* Consumer offset end ([#4500](https://github.com/infinyon/fluvio/issues/4500))
+* Offset evicted on retry ([#4511](https://github.com/infinyon/fluvio/issues/4511))
+* Auto management odd pauses in consumer offset ([#4504](https://github.com/infinyon/fluvio/issues/4504))
+
+### Other
+
+* Use right offset request in comments ([#4512](https://github.com/infinyon/fluvio/issues/4512))
+
+### Removed
+
+* Remove outdated Kafka compatibility reference from README. ([#4507](https://github.com/infinyon/fluvio/issues/4507))
+
+
 ## Platform Version 0.17.1 - 2025-04-03
 
 ### Fixed
