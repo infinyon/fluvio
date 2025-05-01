@@ -12,6 +12,7 @@ use fluvio_protocol::derive::Encoder;
 use fluvio_protocol::derive::Decoder;
 
 use crate::sc_api::update_mirror::UpdateMirrorStatRequest;
+use crate::sc_api::update_spu::UpdateSpuStatRequest;
 
 use super::register_spu::RegisterSpuRequest;
 use super::update_lrs::UpdateLrsRequest;
@@ -27,6 +28,7 @@ pub enum InternalScKey {
     UpdateLrs = 2001,
     ReplicaRemoved = 2002,
     UpdateMirror = 2003,
+    UpdateSpu = 2004,
 }
 
 /// Request made to Spu from Sc
@@ -40,6 +42,8 @@ pub enum InternalScRequest {
     ReplicaRemovedRequest(RequestMessage<ReplicaRemovedRequest>),
     #[fluvio(tag = 3)]
     UpdateMirrorStatRequest(RequestMessage<UpdateMirrorStatRequest>),
+    #[fluvio(tag = 4)]
+    UpdateSpuStatRequest(RequestMessage<UpdateSpuStatRequest>),
 }
 
 impl Default for InternalScRequest {
@@ -69,6 +73,9 @@ impl ApiMessage for InternalScRequest {
             }
             InternalScKey::UpdateMirror => {
                 api_decode!(InternalScRequest, UpdateMirrorStatRequest, src, header)
+            }
+            InternalScKey::UpdateSpu => {
+                api_decode!(InternalScRequest, UpdateSpuStatRequest, src, header)
             }
         }
     }

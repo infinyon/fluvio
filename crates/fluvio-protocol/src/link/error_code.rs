@@ -57,6 +57,12 @@ pub enum ErrorCode {
     #[fluvio(tag = 71)]
     #[error("Offset {offset} is evicted. The next available is {next_available}")]
     OffsetEvicted { offset: i64, next_available: i64 },
+    #[fluvio(tag = 72)]
+    #[error("Storage is full")]
+    StorageFull,
+    #[fluvio(tag = 73)]
+    #[error("Storage is short-circuited")]
+    StorageShortCircuited,
 
     // Spu errors
     #[fluvio(tag = 1000)]

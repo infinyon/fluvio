@@ -5,10 +5,12 @@ use std::time::SystemTime;
 use anyhow::Result;
 use async_lock::Mutex;
 use fluvio_controlplane::sc_api::update_lrs::LrsRequest;
+use fluvio_controlplane::sc_api::update_spu::SpuStatRequest;
 use fluvio_controlplane::sc_api::update_mirror::MirrorStatRequest;
 use fluvio_controlplane_metadata::mirror::{MirrorPairStatus, MirrorStatus};
 
 pub type SharedLrsStatusUpdate = Arc<StatusLrsMessageSink>;
+pub type SharedSpuStatusUpdate = Arc<StatusSpuMessageSink>;
 pub type SharedMirrorStatusUpdate = Arc<StatusMirrorMessageSink>;
 
 /// channel used to send message to sc
@@ -16,6 +18,7 @@ pub type SharedMirrorStatusUpdate = Arc<StatusMirrorMessageSink>;
 pub struct MessageSink<R>(Mutex<HashSet<R>>);
 
 pub type StatusLrsMessageSink = MessageSink<LrsRequest>;
+pub type StatusSpuMessageSink = MessageSink<SpuStatRequest>;
 pub type StatusMirrorMessageSink = MessageSink<MirrorStatRequest>;
 
 impl<R> MessageSink<R>

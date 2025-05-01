@@ -19,11 +19,12 @@ use fluvio_socket::{FluvioSocket, FluvioSink};
 use fluvio_storage::FileReplica;
 use fluvio_controlplane::sc_api::update_mirror::UpdateMirrorStatRequest;
 use fluvio_controlplane::spu_api::update_mirror::UpdateMirrorRequest;
+use fluvio_controlplane::sc_api::update_spu::UpdateSpuStatRequest;
 
 use crate::core::SharedGlobalContext;
 
 use super::message_sink::SharedLrsStatusUpdate;
-use super::SharedMirrorStatusUpdate;
+use super::{SharedMirrorStatusUpdate, SharedSpuStatusUpdate};
 
 // keep track of various internal state of dispatcher
 #[derive(Default)]
@@ -39,16 +40,18 @@ struct DispatcherCounter {
 /// including registering and reconnect
 pub struct ScDispatcher<S> {
     ctx: SharedGlobalContext<S>,
-    status_update: SharedLrsStatusUpdate,
+    lrs_status_update: SharedLrsStatusUpdate,
     mirror_status_update: SharedMirrorStatusUpdate,
+    spu_status_update: SharedSpuStatusUpdate,
     counter: DispatcherCounter,
 }
 
 impl ScDispatcher<FileReplica> {
     pub fn new(ctx: SharedGlobalContext<FileReplica>) -> Self {
         Self {
-            status_update: ctx.status_update_owned(),
+            lrs_status_update: ctx.status_update_owned(),
             mirror_status_update: ctx.mirror_status_update_owned(),
+            spu_status_update: ctx.spu_status_update_owned(),
             ctx,
             counter: DispatcherCounter::default(),
         }
@@ -136,6 +139,7 @@ impl ScDispatcher<FileReplica> {
 
                 _ = status_timer.next() =>  {
                     self.send_lrs_status_back_to_sc(&mut sink).await?;
+                    self.send_spu_status_back_to_sc(&mut sink).await?;
                     self.send_mirror_status_back_to_sc(&mut sink).await?;
                 },
 
@@ -189,7 +193,7 @@ impl ScDispatcher<FileReplica> {
     /// send status back to sc, if there is error return false
     #[instrument(skip(self))]
     async fn send_lrs_status_back_to_sc(&mut self, sc_sink: &mut FluvioSink) -> Result<()> {
-        let requests = self.status_update.remove_all().await;
+        let requests = self.lrs_status_update.remove_all().await;
 
         if requests.is_empty() {
             trace!("sending empty status");
@@ -197,6 +201,24 @@ impl ScDispatcher<FileReplica> {
             trace!(requests = ?requests, "sending status back to sc");
         }
         let message = RequestMessage::new_request(UpdateLrsRequest::new(requests));
+
+        sc_sink
+            .send_request(&message)
+            .await
+            .map_err(|err| anyhow!("error sending status back to sc: {}", err))
+    }
+
+    /// send status back to sc, if there is error return false
+    #[instrument(skip(self))]
+    async fn send_spu_status_back_to_sc(&mut self, sc_sink: &mut FluvioSink) -> Result<()> {
+        let requests = self.spu_status_update.remove_all().await;
+
+        if requests.is_empty() {
+            trace!("sending empty status");
+        } else {
+            trace!(requests = ?requests, "sending status back to sc");
+        }
+        let message = RequestMessage::new_request(UpdateSpuStatRequest::new(requests));
 
         sc_sink
             .send_request(&message)

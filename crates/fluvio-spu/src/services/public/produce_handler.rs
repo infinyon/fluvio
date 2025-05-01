@@ -1,5 +1,7 @@
 use std::time::Duration;
 
+use fluvio_controlplane::sc_api::update_spu::SpuStatRequest;
+use fluvio_controlplane_metadata::spu::{SpuStatus, SpuStatusResolution};
 use tokio::select;
 use tracing::{debug, trace, error};
 use tracing::instrument;
@@ -208,6 +210,23 @@ async fn handle_produce_partition(
                 error!(%replica_id, "Replica SmartEngine error: {:#?}", engine_err);
                 return PartitionWriteResult::error(replica_id, map_engine_error(engine_err));
             };
+
+            match err.downcast_ref::<std::io::Error>() {
+                Some(io_err) if io_err.kind() == std::io::ErrorKind::StorageFull => {
+                    error!(%replica_id, "Storage is full: {:#?}", io_err);
+                    ctx.spu_status_update_owned()
+                        .send(SpuStatRequest::new(
+                            ctx.local_spu_id(),
+                            SpuStatus {
+                                resolution: SpuStatusResolution::OutOfStorage,
+                            },
+                        ))
+                        .await;
+                    return PartitionWriteResult::error(replica_id, ErrorCode::StorageFull);
+                }
+                _ => {}
+            };
+
             match err.downcast_ref::<StorageError>() {
                 Some(StorageError::BatchTooBig(_)) => {
                     error!(%replica_id, "Batch is too big: {:#?}", err);
@@ -219,6 +238,10 @@ async fn handle_produce_partition(
                 }) => {
                     error!(%replica_id, batch_size, max_segment_size, "Batch size exceeded max segment size");
                     PartitionWriteResult::error(replica_id, ErrorCode::MessageTooLarge)
+                }
+                Some(StorageError::ShortCircuited) => {
+                    error!(%replica_id, "Storage short-circuited: {:#?}", err);
+                    PartitionWriteResult::error(replica_id, ErrorCode::StorageShortCircuited)
                 }
                 _ => {
                     error!(%replica_id, "Error writing to replica: {:#?}", err);
