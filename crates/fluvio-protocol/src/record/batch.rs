@@ -1,8 +1,10 @@
 use std::io::Error;
+use std::io::ErrorKind;
 use std::mem::size_of;
 use std::fmt::Debug;
 use bytes::Bytes;
 use fluvio_types::PartitionId;
+use tracing::debug;
 use tracing::trace;
 
 use fluvio_types::Timestamp;
@@ -306,21 +308,30 @@ impl Batch<RawRecords> {
     pub fn memory_records(&self) -> Result<MemoryRecords, CompressionError> {
         let mut records: MemoryRecords = Default::default();
 
+        let mut decode = |data: &[u8]| -> Result<(), CompressionError> {
+            match records.decode(&mut &*data, 0) {
+                Ok(_) => Ok(()),
+                Err(err) if err.kind() == ErrorKind::UnexpectedEof => {
+                    debug!("not enough bytes for decoding memory records from raw");
+                    Ok(())
+                }
+                Err(err) => Err(err.into()),
+            }
+        };
+
         cfg_if::cfg_if! {
             if #[cfg(feature = "compress")] {
-                let compression = self.get_compression()?;
-
-                if let Compression::None = compression {
-                    records.decode(&mut &self.records.0[..], 0)?;
-                } else {
-
-                    let decompressed = compression
-                        .uncompress(&self.records.0[..])?
-                        .ok_or(CompressionError::UnreachableError)?;
-                    records.decode(&mut &decompressed[..], 0)?;
+                match self.get_compression()? {
+                    Compression::None => decode(&self.records.0)?,
+                    compression => {
+                        let decompressed = compression
+                            .uncompress(&self.records.0)?
+                            .ok_or(CompressionError::UnreachableError)?;
+                        decode(&decompressed)?
+                    }
                 }
             } else {
-                records.decode(&mut &self.records.0[..], 0)?;
+                decode(&self.records.0)?
             }
         }
 
@@ -916,5 +927,65 @@ mod test {
         assert!(!batch.header.has_schema());
         batch.header.set_schema_id();
         assert!(batch.header.has_schema());
+    }
+
+    #[test]
+    fn test_raw_record_in_memory_records() {
+        // then
+        let mem_records = vec![Record::new("a"), Record::new("b"), Record::new("c")];
+        let batch = Batch::from(mem_records.clone());
+
+        // when
+        let batch_result = Batch::try_from(batch).unwrap().memory_records();
+
+        // then
+        let batch = batch_result.unwrap();
+        assert_eq!(batch[0].value.as_ref(), b"a");
+        assert_eq!(batch[1].value.as_ref(), b"b");
+        assert_eq!(batch[2].value.as_ref(), b"c");
+        assert_eq!(batch.len(), 3);
+    }
+
+    #[test]
+    fn test_truncate_incomplete_raw_records_in_memory_records() {
+        // then
+        let mem_records = vec![Record::new("a"), Record::new("b"), Record::new("c")];
+        let batch = Batch::from(mem_records.clone());
+
+        // when
+        let mut batch_raw_records: Batch<RawRecords> = Batch::try_from(batch).unwrap();
+        let mut other = bytes::BytesMut::from(batch_raw_records.records.0.clone());
+        other.put_slice(&[0, 1, 2, 3]); // add random bytes to be handle as incomplete
+        batch_raw_records.records.0 = other.freeze();
+        let batch_result = batch_raw_records.memory_records();
+
+        // then
+        let batch = batch_result.unwrap();
+        assert_eq!(batch[0].value.as_ref(), b"a");
+        assert_eq!(batch[1].value.as_ref(), b"b");
+        assert_eq!(batch[2].value.as_ref(), b"c");
+        assert_eq!(batch.len(), 3);
+    }
+
+    #[test]
+    fn test_truncate_incomplete_raw_records_in_memory_records_compressed() {
+        // then
+        let mem_records = vec![Record::new("a"), Record::new("b"), Record::new("c")];
+        let mut batch = Batch::from(mem_records.clone());
+        batch.header.set_compression(Compression::Gzip);
+
+        // when
+        let mut batch_raw_records: Batch<RawRecords> = Batch::try_from(batch).unwrap();
+        let mut other = bytes::BytesMut::from(batch_raw_records.records.0.clone());
+        other.put_slice(&[0, 1, 2, 3]); // add random bytes to be handle as incomplete
+        batch_raw_records.records.0 = other.freeze();
+        let batch_result = batch_raw_records.memory_records();
+
+        // then
+        let batch = batch_result.unwrap();
+        assert_eq!(batch[0].value.as_ref(), b"a");
+        assert_eq!(batch[1].value.as_ref(), b"b");
+        assert_eq!(batch[2].value.as_ref(), b"c");
+        assert_eq!(batch.len(), 3);
     }
 }
