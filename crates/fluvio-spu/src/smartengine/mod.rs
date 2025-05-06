@@ -164,10 +164,10 @@ pub(crate) fn dedup_to_invocation(dedup: &Deduplication) -> SmartModuleInvocatio
         params.insert(k.clone(), v.clone());
     }
     SmartModuleInvocation {
-        name: dedup.filter.transform.uses.clone(),
         wasm: SmartModuleInvocationWasm::Predefined(dedup.filter.transform.uses.clone()),
         kind: SmartModuleKind::Filter,
         params: SmartModuleExtraParams::new(params, Some(lookback)),
+        name: Some(dedup.filter.transform.uses.clone()),
     }
 }
 

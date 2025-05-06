@@ -1,27 +1,77 @@
 #![allow(deprecated)]
 
-use std::io::Read;
-use std::io;
 use std::fmt::{Debug, self};
+use std::io;
+use std::io::Error as IoError;
+use std::io::Read;
 
+use bytes::BufMut;
 use flate2::{
     Compression,
     bufread::{GzEncoder, GzDecoder},
 };
 
-use fluvio_protocol::{Encoder, Decoder};
+use fluvio_protocol::{Encoder, Decoder, Version};
 use fluvio_smartmodule::dataplane::smartmodule::SmartModuleExtraParams;
+
+// The fluvio COMMON_VERSION_HAS_SM_NAME that introduced the smartmodule
+// name to SmartModuleInvocations
+pub const COMMON_VERSION_HAS_SM_NAME: Version = 26;
 
 /// The request payload when using a Consumer SmartModule.
 ///
 /// This includes the WASM module name as well as the invocation being used.
 /// It also carries any data that is required for specific invocations of SmartModules.
-#[derive(Debug, Default, Clone, Encoder, Decoder)]
+#[derive(Debug, Default, Clone)]
 pub struct SmartModuleInvocation {
-    pub name: String,
     pub wasm: SmartModuleInvocationWasm,
     pub kind: SmartModuleKind,
     pub params: SmartModuleExtraParams,
+    // only included in PROD_API_HAS_SM_NAME, or later
+    // if decoding a version before this, None will be filled in
+    pub name: Option<String>, // option for backward compatibility
+}
+
+impl Decoder for SmartModuleInvocation {
+    fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), IoError>
+    where
+        T: bytes::Buf,
+    {
+        self.wasm.decode(src, version)?;
+        self.kind.decode(src, version)?;
+        self.params.decode(src, version)?;
+        if version < COMMON_VERSION_HAS_SM_NAME {
+            self.name = None;
+        } else {
+            self.name.decode(src, version)?;
+        }
+        Ok(())
+    }
+}
+
+impl Encoder for SmartModuleInvocation {
+    fn write_size(&self, version: Version) -> usize {
+        let mut size = self.wasm.write_size(version);
+        size += self.kind.write_size(version);
+        size += self.params.write_size(version);
+        if version >= COMMON_VERSION_HAS_SM_NAME {
+            size += self.name.write_size(version);
+        }
+        size
+    }
+
+    fn encode<T>(&self, dest: &mut T, version: Version) -> Result<(), IoError>
+    where
+        T: BufMut,
+    {
+        self.wasm.encode(dest, version)?;
+        self.kind.encode(dest, version)?;
+        self.params.encode(dest, version)?;
+        if version >= COMMON_VERSION_HAS_SM_NAME {
+            self.name.encode(dest, version)?;
+        }
+        Ok(())
+    }
 }
 
 #[derive(Clone, Encoder, Decoder)]

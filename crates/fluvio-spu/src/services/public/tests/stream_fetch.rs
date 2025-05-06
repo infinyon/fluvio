@@ -2421,6 +2421,7 @@ async fn test_stream_metrics() {
         let smartmodule = SmartModuleInvocation {
             wasm: SmartModuleInvocationWasm::AdHoc(wasm),
             kind: SmartModuleKind::Filter,
+            name: Some(FLUVIO_WASM_FILTER.to_string()),
             ..Default::default()
         };
         let mut request = RequestMessage::new_request(
@@ -2454,9 +2455,9 @@ async fn test_stream_metrics() {
 
         println!("metrics: {:#?}", metrics_sm);
 
-        if let Some(filter_metrics) = metrics_sm.get("adhoc") {
+        if let Some(filter_metrics) = metrics_sm.get(FLUVIO_WASM_FILTER) {
             assert_eq!(filter_metrics.bytes_in(), 24);
-            assert_eq!(filter_metrics.records_out(), 2);
+            assert_eq!(filter_metrics.records_out(), 1);
             assert_eq!(filter_metrics.invocation_count(), 1);
         } else {
             panic!("SmartModule metrics not found for {FLUVIO_WASM_FILTER}");
