@@ -2,7 +2,8 @@ use std::fmt::Debug;
 use std::io::{Error, ErrorKind};
 use std::marker::PhantomData;
 use std::time::Duration;
-use bytes::{Buf, BufMut};
+use bytes::Buf;
+use bytes::BufMut;
 
 use fluvio_protocol::record::RawRecords;
 use fluvio_protocol::Encoder;
@@ -23,8 +24,6 @@ pub type DefaultProduceRequest = ProduceRequest<RecordSet<RawRecords>>;
 pub type DefaultPartitionRequest = PartitionProduceData<RecordSet<RawRecords>>;
 pub type DefaultTopicRequest = TopicProduceData<RecordSet<RawRecords>>;
 
-const PRODUCER_TRANSFORMATION_API_VERSION: i16 = 8;
-
 #[derive(FluvioDefault, Debug)]
 pub struct ProduceRequest<R> {
     /// The transactional ID, or null if the producer is not transactional.
@@ -41,7 +40,7 @@ pub struct ProduceRequest<R> {
     /// Each topic to produce to.
     pub topics: Vec<TopicProduceData<R>>,
 
-    #[fluvio(min_version = PRODUCER_TRANSFORMATION_API)]
+    // #[fluvio(min_version = PRODUCER_TRANSFORMATION_API)]
     pub smartmodules: Vec<SmartModuleInvocation>,
 
     pub data: PhantomData<R>,
@@ -87,11 +86,7 @@ where
             + IsolationData(0i16).write_size(version)
             + TimeoutData(0i32).write_size(version)
             + self.topics.write_size(version)
-            + if version >= PRODUCER_TRANSFORMATION_API_VERSION {
-                self.smartmodules.write_size(version)
-            } else {
-                0
-            }
+            + self.smartmodules.write_size(version)
     }
 
     fn encode<T>(&self, dest: &mut T, version: Version) -> Result<(), Error>
@@ -102,9 +97,7 @@ where
         IsolationData::from(self.isolation).encode(dest, version)?;
         TimeoutData::try_from(self.timeout)?.encode(dest, version)?;
         self.topics.encode(dest, version)?;
-        if version >= PRODUCER_TRANSFORMATION_API_VERSION {
-            self.smartmodules.encode(dest, version)?;
-        }
+        self.smartmodules.encode(dest, version)?;
         Ok(())
     }
 }
@@ -121,9 +114,7 @@ where
         self.isolation = Isolation::from(IsolationData::decode_from(src, version)?);
         self.timeout = Duration::try_from(TimeoutData::decode_from(src, version)?)?;
         self.topics = Decoder::decode_from(src, version)?;
-        if version >= PRODUCER_TRANSFORMATION_API_VERSION {
-            self.smartmodules.decode(src, version)?;
-        }
+        self.smartmodules.decode(src, version)?;
         Ok(())
     }
 }
@@ -296,7 +287,6 @@ mod tests {
     use crate::produce::TopicProduceData;
     use crate::produce::PartitionProduceData;
     use crate::isolation::Isolation;
-    use crate::produce::request::PRODUCER_TRANSFORMATION_API_VERSION;
     use crate::server::smartmodule::{
         SmartModuleInvocation, SmartModuleInvocationWasm, SmartModuleKind,
     };
@@ -385,23 +375,23 @@ mod tests {
             timeout: Duration::from_secs(1),
             topics: vec![],
             smartmodules: vec![SmartModuleInvocation {
-                name: name.to_string(),
                 wasm: SmartModuleInvocationWasm::AdHoc(vec![0xde, 0xad, 0xbe, 0xef]),
                 kind: SmartModuleKind::Filter,
                 params,
+                name: Some(name.to_string()),
             }],
             data: std::marker::PhantomData,
         };
+        let version = DefaultProduceRequest::DEFAULT_API_VERSION;
         //when
-        value
-            .encode(&mut dest, PRODUCER_TRANSFORMATION_API_VERSION)
-            .expect("should encode");
+        value.encode(&mut dest, version).expect("encode failure");
 
         //then
         let expected = vec![
             0x01, 0x00, 0x04, 0x74, 0x5f, 0x69, 0x64, 0xff, 0xff, 0x00, 0x00, 0x03, 0xe8, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x00, 0x00, 0x00, 0x04, 0xde, 0xad,
-            0xbe, 0xef, 0x00, 0x00, 0x00,
+            0xbe, 0xef, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x0a, 0x61, 0x64, 0x68, 0x6f, 0x63,
+            0x2d, 0x74, 0x65, 0x73, 0x74,
         ];
         assert_eq!(dest, expected);
     }
@@ -412,17 +402,15 @@ mod tests {
         let bytes = vec![
             0x01, 0x00, 0x04, 0x74, 0x5f, 0x69, 0x64, 0xff, 0xff, 0x00, 0x00, 0x03, 0xe8, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x00, 0x00, 0x00, 0x04, 0xde, 0xad,
-            0xbe, 0xef, 0x00, 0x00, 0x00,
+            0xbe, 0xef, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x0a, 0x61, 0x64, 0x68, 0x6f, 0x63,
+            0x2d, 0x74, 0x65, 0x73, 0x74,
         ];
         let mut value = DefaultProduceRequest::default();
-
+        let version = DefaultProduceRequest::DEFAULT_API_VERSION;
         //when
         value
-            .decode(
-                &mut std::io::Cursor::new(bytes),
-                PRODUCER_TRANSFORMATION_API_VERSION,
-            )
-            .unwrap();
+            .decode(&mut std::io::Cursor::new(bytes), version)
+            .expect("decode failure");
 
         //then
         assert_eq!(value.transactional_id, Some("t_id".into()));
@@ -433,6 +421,7 @@ mod tests {
             Some(wasm) => wasm,
             _ => panic!("should have smartmodule payload"),
         };
+        assert_eq!(&sm.name, &Some("adhoc-test".to_string()));
         assert!(sm.params.lookback().is_none());
         let wasm = match &sm.wasm {
             SmartModuleInvocationWasm::AdHoc(wasm) => wasm.as_slice(),
@@ -444,9 +433,10 @@ mod tests {
     }
 
     #[test]
-    fn test_encode_produce_request_last_version() {
+    fn test_encode_produce_request_no_name_version() {
+        use crate::server::smartmodule::COMMON_VERSION_HAS_SM_NAME;
         //given
-        let name = "adhoc-test";
+        let name = "adhoc-tes-debugttttttt";
         let mut dest = Vec::new();
         let mut params = SmartModuleExtraParams::default();
         params.set_lookback(Some(Lookback::last(1)));
@@ -456,26 +446,65 @@ mod tests {
             timeout: Duration::from_secs(1),
             topics: vec![],
             smartmodules: vec![SmartModuleInvocation {
-                name: name.to_string(),
                 wasm: SmartModuleInvocationWasm::AdHoc(vec![0xde, 0xad, 0xbe, 0xef]),
                 kind: SmartModuleKind::Filter,
                 params,
+                name: Some(name.to_string()),
             }],
             data: std::marker::PhantomData,
         };
+        let version = COMMON_VERSION_HAS_SM_NAME - 1;
         //when
-        value
-            .encode(&mut dest, DefaultProduceRequest::MAX_API_VERSION)
-            .expect("should encode");
+        value.encode(&mut dest, version).expect("should encode");
 
         //then
         let expected = vec![
+            // pre SM_NAME, smartmodule is not encoded into this message
             0x01, 0x00, 0x04, 0x74, 0x5f, 0x69, 0x64, 0xff, 0xff, 0x00, 0x00, 0x03, 0xe8, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x00, 0x00, 0x00, 0x04, 0xde, 0xad,
             0xbe, 0xef, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
             0x00,
         ];
         assert_eq!(dest, expected);
+    }
+
+    #[test]
+    fn test_decode_produce_request_no_name_version() {
+        use crate::server::smartmodule::COMMON_VERSION_HAS_SM_NAME;
+        //given
+        let bytes = vec![
+            // pre SM_NAME, smartmodule is not encoded into this message
+            0x01, 0x00, 0x04, 0x74, 0x5f, 0x69, 0x64, 0xff, 0xff, 0x00, 0x00, 0x03, 0xe8, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x00, 0x00, 0x00, 0x04, 0xde, 0xad,
+            0xbe, 0xef, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+            0x00,
+        ];
+        let mut value = DefaultProduceRequest::default();
+        let _version = DefaultProduceRequest::MAX_API_VERSION;
+        let version = COMMON_VERSION_HAS_SM_NAME - 1;
+        //when
+        value
+            .decode(&mut std::io::Cursor::new(bytes), version)
+            .unwrap();
+
+        //then
+        assert_eq!(value.transactional_id, Some("t_id".into()));
+        assert_eq!(value.isolation, Isolation::ReadCommitted);
+        assert_eq!(value.timeout, Duration::from_secs(1));
+        assert!(value.topics.is_empty());
+        let sm = match value.smartmodules.first() {
+            Some(wasm) => wasm,
+            _ => panic!("should have smartmodule payload"),
+        };
+        assert_eq!(sm.params.lookback(), Some(&Lookback { last: 1, age: None }));
+        let wasm = match &sm.wasm {
+            SmartModuleInvocationWasm::AdHoc(wasm) => wasm.as_slice(),
+            #[allow(unreachable_patterns)]
+            _ => panic!("should be SmartModuleInvocationWasm::AdHoc"),
+        };
+        assert_eq!(wasm, vec![0xde, 0xad, 0xbe, 0xef]);
+        assert!(matches!(sm.kind, SmartModuleKind::Filter));
+        assert!(sm.name.is_none());
     }
 
     #[test]
@@ -491,24 +520,23 @@ mod tests {
             timeout: Duration::from_secs(1),
             topics: vec![],
             smartmodules: vec![SmartModuleInvocation {
-                name: name.to_string(),
                 wasm: SmartModuleInvocationWasm::AdHoc(vec![0xde, 0xad, 0xbe, 0xef]),
                 kind: SmartModuleKind::Filter,
                 params,
+                name: Some(name.to_string()),
             }],
             data: std::marker::PhantomData,
         };
         //when
-        value
-            .encode(&mut dest, DefaultProduceRequest::MAX_API_VERSION - 1)
-            .expect("should encode");
+        // let version = DefaultProduceRequest::MAX_API_VERSION - 1;
+        let version = 8i16;
+        value.encode(&mut dest, version).expect("should encode");
 
         //then
         let expected = vec![
             0x01, 0x00, 0x04, 0x74, 0x5f, 0x69, 0x64, 0xff, 0xff, 0x00, 0x00, 0x03, 0xe8, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x00, 0x00, 0x00, 0x04, 0xde, 0xad,
-            0xbe, 0xef, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
-            0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x14, 0x00, 0x00, 0x00, 0x00,
+            0xbe, 0xef, 0x00, 0x00, 0x00,
         ];
         assert_eq!(dest, expected);
     }
@@ -525,11 +553,10 @@ mod tests {
         let mut value = DefaultProduceRequest::default();
 
         //when
+        // let version = DefaultProduceRequest::MAX_API_VERSION;
+        let version = 8i16;
         value
-            .decode(
-                &mut std::io::Cursor::new(bytes),
-                DefaultProduceRequest::MAX_API_VERSION,
-            )
+            .decode(&mut std::io::Cursor::new(bytes), version)
             .unwrap();
 
         //then
@@ -541,7 +568,7 @@ mod tests {
             Some(wasm) => wasm,
             _ => panic!("should have smartmodule payload"),
         };
-        assert_eq!(sm.params.lookback(), Some(&Lookback::last(1)));
+        assert_eq!(sm.params.lookback(), None);
         let wasm = match &sm.wasm {
             SmartModuleInvocationWasm::AdHoc(wasm) => wasm.as_slice(),
             #[allow(unreachable_patterns)]
@@ -558,7 +585,7 @@ mod tests {
             0x01, 0x00, 0x04, 0x74, 0x5f, 0x69, 0x64, 0xff, 0xff, 0x00, 0x00, 0x03, 0xe8, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x00, 0x00, 0x00, 0x04, 0xde, 0xad,
             0xbe, 0xef, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
-            0x00,
+            0x00, 0x00,
         ];
         let mut value = DefaultProduceRequest::default();
 
@@ -568,7 +595,7 @@ mod tests {
                 &mut std::io::Cursor::new(bytes),
                 DefaultProduceRequest::MAX_API_VERSION - 1,
             )
-            .unwrap();
+            .expect("decode failure");
 
         //then
         assert_eq!(value.transactional_id, Some("t_id".into()));

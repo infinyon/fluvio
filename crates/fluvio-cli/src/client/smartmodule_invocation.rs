@@ -20,10 +20,10 @@ pub(crate) fn create_smartmodule(
     params: BTreeMap<String, String>,
 ) -> SmartModuleInvocation {
     SmartModuleInvocation {
-        name: name.to_string(),
         wasm: SmartModuleInvocationWasm::Predefined(name.to_string()),
         kind: SmartModuleKind::Generic(ctx),
         params: params.into(),
+        name: Some(name.to_string()),
     }
 }
 
@@ -39,15 +39,17 @@ pub(crate) fn create_smartmodule_from_path(
     let mut buffer = Vec::with_capacity(raw_buffer.len());
     encoder.read_to_end(&mut buffer)?;
 
+    let name = path
+        .file_name()
+        .and_then(|s| s.to_str())
+        .unwrap_or("unknown")
+        .to_string();
+
     Ok(SmartModuleInvocation {
-        name: path
-            .file_name()
-            .and_then(|s| s.to_str())
-            .unwrap_or("unknown")
-            .to_string(),
         wasm: SmartModuleInvocationWasm::AdHoc(buffer),
         kind: SmartModuleKind::Generic(ctx),
         params: params.into(),
+        name: Some(name),
     })
 }
 
@@ -65,7 +67,6 @@ pub(crate) fn create_smartmodule_list(
         .transforms
         .into_iter()
         .map(|t| SmartModuleInvocation {
-            name: name.clone(),
             wasm: SmartModuleInvocationWasm::Predefined(t.uses),
             kind: SmartModuleKind::Generic(Default::default()),
             params: SmartModuleExtraParams::new(
@@ -75,6 +76,7 @@ pub(crate) fn create_smartmodule_list(
                     .collect::<std::collections::BTreeMap<String, String>>(),
                 t.lookback.map(Into::into),
             ),
+            name: Some(name.clone()),
         })
         .collect())
 }

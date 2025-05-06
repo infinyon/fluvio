@@ -32,7 +32,7 @@ pub(crate) fn build_chain(
     engine: SmartEngine,
 ) -> Result<SmartModuleChainInstance, ErrorCode> {
     for invocation in invocations {
-        let sm_names = vec![invocation.name.clone()];
+        let sm_names = vec![invocation.name.clone().unwrap_or_default()];
         let raw = invocation
             .wasm
             .into_raw()

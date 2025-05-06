@@ -2355,7 +2355,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.28.0"
+version = "0.28.1"
 dependencies = [
  "adaptive_backoff",
  "anyhow",
@@ -3027,7 +3027,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartengine"
-version = "0.8.6"
+version = "0.8.7"
 dependencies = [
  "anyhow",
  "cfg-if",
@@ -3142,7 +3142,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-spu-schema"
-version = "0.18.0"
+version = "0.18.1"
 dependencies = [
  "bytes",
  "derive_builder",

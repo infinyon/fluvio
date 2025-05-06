@@ -531,10 +531,10 @@ async fn test_produce_basic_with_smartmodule_with_lookback() {
     let ctx = GlobalContext::new_shared_context(spu_config);
     load_wasm_module(&ctx, FLUVIO_WASM_FILTER_WITH_LOOKBACK);
     let mut smartmodule = SmartModuleInvocation {
-        name: FLUVIO_WASM_FILTER_WITH_LOOKBACK.to_owned(),
         wasm: SmartModuleInvocationWasm::Predefined(FLUVIO_WASM_FILTER_WITH_LOOKBACK.to_owned()),
         kind: SmartModuleKind::Filter,
         params: Default::default(),
+        name: Some(FLUVIO_WASM_FILTER_WITH_LOOKBACK.to_owned()),
     };
     smartmodule.params.set_lookback(Some(Lookback::last(1)));
     let mut smartmodules = vec![smartmodule];

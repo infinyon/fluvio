@@ -44,7 +44,6 @@ pub fn smartmodule_vec_from_config(config: &ConnectorConfig) -> Option<Vec<Smart
         transforms
             .iter()
             .map(|s| SmartModuleInvocation {
-                name: s.uses.clone(),
                 wasm: fluvio::SmartModuleInvocationWasm::Predefined(s.uses.clone()),
                 kind: SmartModuleKind::Generic(Default::default()),
                 params: SmartModuleExtraParams::new(
@@ -54,6 +53,7 @@ pub fn smartmodule_vec_from_config(config: &ConnectorConfig) -> Option<Vec<Smart
                         .collect::<std::collections::BTreeMap<String, String>>(),
                     s.lookback.map(Into::into),
                 ),
+                name: Some(s.uses.clone()),
             })
             .collect(),
     )
