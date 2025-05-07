@@ -14,7 +14,7 @@ use fluvio_controlplane::sc_api::register_spu::RegisterSpuResponse;
 use fluvio_controlplane::sc_api::remove::ReplicaRemovedRequest;
 use fluvio_controlplane::sc_api::update_lrs::UpdateLrsRequest;
 use fluvio_controlplane::sc_api::update_mirror::UpdateMirrorStatRequest;
-use fluvio_controlplane::sc_api::update_spu::UpdateSpuStatRequest;
+use fluvio_controlplane::sc_api::update_partition::UpdatePartitionStatRequest;
 use fluvio_controlplane::spu_api::update_mirror::MirrorMsg;
 use fluvio_controlplane::spu_api::update_mirror::UpdateMirrorRequest;
 use fluvio_controlplane::spu_api::update_replica::UpdateReplicaRequest;
@@ -178,7 +178,7 @@ where
                             InternalScRequest::UpdateMirrorStatRequest(msg) => {
                                 receive_mirror_update(&context, msg.request).await;
                             },
-                            InternalScRequest::UpdateSpuStatRequest(msg) => {
+                            InternalScRequest::UpdatePartitionStatRequest(msg) => {
                                 receive_spu_status_update(&context, msg.request).await;
                             }
                         }
@@ -340,7 +340,7 @@ where
 
 /// send spu update to metadata stores
 #[instrument(skip(ctx, requests))]
-async fn receive_spu_status_update<C>(ctx: &SharedContext<C>, requests: UpdateSpuStatRequest)
+async fn receive_spu_status_update<C>(ctx: &SharedContext<C>, requests: UpdatePartitionStatRequest)
 where
     C: MetadataItem,
 {
@@ -352,39 +352,28 @@ where
     debug!(?stats, "received mirror stats");
 
     let mut actions = vec![];
-    let mut health_write = ctx.health().write().await;
     for stat in stats.into_iter() {
-        if let Some(current_status) = health_write.get(&stat.spu_id) {
-            debug!(spu_id = stat.spu_id, "spu status: {}", current_status);
+        let store = ctx.partitions().store().read().await;
+        let partition = store.get(&stat.replica_key);
 
-            let status = stat.status.clone();
-            let key = ctx
-                .spus()
-                .store()
-                .read()
-                .await
-                .values()
-                .find(|spu| spu.spec.id == stat.spu_id)
-                .map(|spu| spu.key.clone());
-
-            if let Some(key) = key {
-                let is_online = status.is_online();
-                health_write.insert(stat.spu_id, is_online);
-                actions.push(WSAction::<SpuSpec, C>::UpdateStatus((key, status)));
-            }
+        if let Some(partition) = partition {
+            let mut current_status = partition.inner().status().clone();
+            current_status.resolution = stat.resolution.clone();
+            actions.push(WSAction::<PartitionSpec, C>::UpdateStatus((
+                stat.replica_key,
+                current_status,
+            )));
         } else {
             error!(
                 "trying to update replica: {}, that doesn't exist",
-                stat.spu_id
+                stat.replica_key
             );
             return;
         }
     }
 
-    drop(health_write);
-
     for action in actions.into_iter() {
-        ctx.spus().send_action(action).await;
+        ctx.partitions().send_action(action).await;
     }
 }
 

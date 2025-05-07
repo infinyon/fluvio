@@ -1,7 +1,6 @@
 use std::time::Duration;
 
-use fluvio_controlplane::sc_api::update_spu::SpuStatRequest;
-use fluvio_controlplane_metadata::spu::{SpuStatus, SpuStatusResolution};
+use fluvio_controlplane::sc_api::update_partition::PartitionStatRequest;
 use tokio::select;
 use tracing::{debug, trace, error};
 use tracing::instrument;
@@ -21,7 +20,7 @@ use fluvio_spu_schema::server::smartmodule::SmartModuleInvocation;
 use fluvio_protocol::{api::RequestMessage, link::ErrorCode};
 use fluvio_protocol::api::ResponseMessage;
 use fluvio_protocol::record::RecordSet;
-use fluvio_controlplane_metadata::partition::ReplicaKey;
+use fluvio_controlplane_metadata::partition::{PartitionResolution, ReplicaKey};
 
 use fluvio_future::timer::sleep;
 
@@ -165,31 +164,31 @@ async fn handle_produce_topic(
 }
 
 #[instrument(
-    skip(ctx, replica_id, partition_request, leader_state),
-    fields(%replica_id),
+    skip(ctx, replica_key, partition_request, leader_state),
+    fields(%replica_key),
 )]
 async fn handle_produce_partition(
     ctx: &DefaultSharedGlobalContext,
-    replica_id: ReplicaKey,
+    replica_key: ReplicaKey,
     leader_state: SharedFileLeaderState,
     partition_request: PartitionProduceData<RecordSet<RawRecords>>,
     is_connector: bool,
 ) -> PartitionWriteResult {
     trace!("Handling produce request for partition:");
 
-    let replica_metadata = match ctx.replica_localstore().spec(&replica_id) {
+    let replica_metadata = match ctx.replica_localstore().spec(&replica_key) {
         Some(replica_metadata) => replica_metadata,
         None => {
-            error!(%replica_id, "Replica not found");
-            return PartitionWriteResult::error(replica_id, ErrorCode::TopicNotFound);
+            error!(%replica_key, "Replica not found");
+            return PartitionWriteResult::error(replica_key, ErrorCode::TopicNotFound);
         }
     };
 
     let mut records = partition_request.records;
 
     if validate_records(&records, replica_metadata.compression_type).is_err() {
-        error!(%replica_id, "Compression in batch not supported by this topic");
-        return PartitionWriteResult::error(replica_id, ErrorCode::CompressionError);
+        error!(%replica_key, "Compression in batch not supported by this topic");
+        return PartitionWriteResult::error(replica_key, ErrorCode::CompressionError);
     }
 
     let write_result = leader_state
@@ -203,49 +202,50 @@ async fn handle_produce_partition(
                 .inbound()
                 .increase(is_connector, (leo - base_offset) as u64, bytes as u64);
 
-            PartitionWriteResult::ok(replica_id, base_offset, leo)
+            PartitionWriteResult::ok(replica_key, base_offset, leo)
         }
         Err(err) => {
             if let Some(engine_err) = err.downcast_ref::<EngineError>() {
-                error!(%replica_id, "Replica SmartEngine error: {:#?}", engine_err);
-                return PartitionWriteResult::error(replica_id, map_engine_error(engine_err));
+                error!(%replica_key, "Replica SmartEngine error: {:#?}", engine_err);
+                return PartitionWriteResult::error(replica_key, map_engine_error(engine_err));
             };
 
             match err.downcast_ref::<std::io::Error>() {
                 Some(io_err) if io_err.kind() == std::io::ErrorKind::StorageFull => {
-                    error!(%replica_id, "Storage is full: {:#?}", io_err);
-                    ctx.spu_status_update_owned()
-                        .send(SpuStatRequest::new(
-                            ctx.local_spu_id(),
-                            SpuStatus {
-                                resolution: SpuStatusResolution::OutOfStorage,
-                            },
+                    error!(%replica_key, "Storage is full: {:#?}", io_err);
+                    ctx.partition_status_update_owned()
+                        .send(PartitionStatRequest::new(
+                            replica_key.clone(),
+                            PartitionResolution::OutOfStorage,
                         ))
                         .await;
-                    return PartitionWriteResult::error(replica_id, ErrorCode::StorageFull);
+                    return PartitionWriteResult::error(
+                        replica_key.clone(),
+                        ErrorCode::PartitionFull { replica_key },
+                    );
                 }
                 _ => {}
             };
 
             match err.downcast_ref::<StorageError>() {
                 Some(StorageError::BatchTooBig(_)) => {
-                    error!(%replica_id, "Batch is too big: {:#?}", err);
-                    PartitionWriteResult::error(replica_id, ErrorCode::MessageTooLarge)
+                    error!(%replica_key, "Batch is too big: {:#?}", err);
+                    PartitionWriteResult::error(replica_key, ErrorCode::MessageTooLarge)
                 }
                 Some(StorageError::BatchExceededSegment {
                     batch_size,
                     max_segment_size,
                 }) => {
-                    error!(%replica_id, batch_size, max_segment_size, "Batch size exceeded max segment size");
-                    PartitionWriteResult::error(replica_id, ErrorCode::MessageTooLarge)
+                    error!(%replica_key, batch_size, max_segment_size, "Batch size exceeded max segment size");
+                    PartitionWriteResult::error(replica_key, ErrorCode::MessageTooLarge)
                 }
                 Some(StorageError::ShortCircuited) => {
-                    error!(%replica_id, "Storage short-circuited: {:#?}", err);
-                    PartitionWriteResult::error(replica_id, ErrorCode::StorageShortCircuited)
+                    error!(%replica_key, "Storage short-circuited: {:#?}", err);
+                    PartitionWriteResult::error(replica_key, ErrorCode::PartitionShortCircuited)
                 }
                 _ => {
-                    error!(%replica_id, "Error writing to replica: {:#?}", err);
-                    PartitionWriteResult::error(replica_id, ErrorCode::StorageError)
+                    error!(%replica_key, "Error writing to replica: {:#?}", err);
+                    PartitionWriteResult::error(replica_key, ErrorCode::StorageError)
                 }
             }
         }

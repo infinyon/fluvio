@@ -197,7 +197,7 @@ fluvio-extension-common = { path = "crates/fluvio-extension-common", default-fea
 fluvio-hub-util = { path = "crates/fluvio-hub-util" }
 fluvio-package-index = { version = "0.7.6", path = "crates/fluvio-package-index", default-features = false }
 fluvio-protocol = { version = "0.12.0", path = "crates/fluvio-protocol" }
-fluvio-sc-schema = { version = "0.25.0", path = "crates/fluvio-sc-schema", default-features = false }
+fluvio-sc-schema = { version = "0.26.0", path = "crates/fluvio-sc-schema", default-features = false }
 fluvio-service = { path = "crates/fluvio-service" }
 fluvio-smartengine = { version = "0.8.0", path = "crates/fluvio-smartengine", default-features = false }
 fluvio-smartmodule = { version = "0.8.0", path = "crates/fluvio-smartmodule", default-features = false }

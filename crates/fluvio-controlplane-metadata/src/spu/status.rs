@@ -34,7 +34,6 @@ impl SpuStatus {
             SpuStatusResolution::Online => "online",
             SpuStatusResolution::Offline => "offline",
             SpuStatusResolution::Init => "Init",
-            SpuStatusResolution::OutOfStorage => "out of storage",
         }
     }
 
@@ -71,8 +70,6 @@ pub enum SpuStatusResolution {
     Offline,
     #[fluvio(tag = 2)]
     Init,
-    #[fluvio(tag = 3, min_version = 19)]
-    OutOfStorage,
 }
 
 impl Default for SpuStatusResolution {

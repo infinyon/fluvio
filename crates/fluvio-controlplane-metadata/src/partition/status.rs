@@ -111,11 +111,19 @@ impl PartitionStatus {
     }
 
     pub fn is_online(&self) -> bool {
-        self.resolution == PartitionResolution::Online
+        matches!(
+            self.resolution,
+            PartitionResolution::Online | PartitionResolution::OutOfStorage
+        )
     }
 
     pub fn is_offline(&self) -> bool {
-        self.resolution != PartitionResolution::Online
+        matches!(
+            self.resolution,
+            PartitionResolution::Offline
+                | PartitionResolution::LeaderOffline
+                | PartitionResolution::ElectionLeaderFound
+        )
     }
 
     #[deprecated = "Replaced by lrs()"]
@@ -162,6 +170,8 @@ pub enum PartitionResolution {
     LeaderOffline, // Election has failed, no suitable leader has been found
     #[fluvio(tag = 3)]
     ElectionLeaderFound, // New leader has been selected
+    #[fluvio(tag = 4, min_version = 19)]
+    OutOfStorage,
 }
 
 #[derive(Decoder, Encoder, Debug, Clone, Eq, PartialEq)]

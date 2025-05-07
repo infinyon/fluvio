@@ -19,12 +19,12 @@ use fluvio_socket::{FluvioSocket, FluvioSink};
 use fluvio_storage::FileReplica;
 use fluvio_controlplane::sc_api::update_mirror::UpdateMirrorStatRequest;
 use fluvio_controlplane::spu_api::update_mirror::UpdateMirrorRequest;
-use fluvio_controlplane::sc_api::update_spu::UpdateSpuStatRequest;
+use fluvio_controlplane::sc_api::update_partition::UpdatePartitionStatRequest;
 
 use crate::core::SharedGlobalContext;
 
 use super::message_sink::SharedLrsStatusUpdate;
-use super::{SharedMirrorStatusUpdate, SharedSpuStatusUpdate};
+use super::{SharedMirrorStatusUpdate, SharedPartitionStatusUpdate};
 
 // keep track of various internal state of dispatcher
 #[derive(Default)]
@@ -42,7 +42,7 @@ pub struct ScDispatcher<S> {
     ctx: SharedGlobalContext<S>,
     lrs_status_update: SharedLrsStatusUpdate,
     mirror_status_update: SharedMirrorStatusUpdate,
-    spu_status_update: SharedSpuStatusUpdate,
+    spu_status_update: SharedPartitionStatusUpdate,
     counter: DispatcherCounter,
 }
 
@@ -51,7 +51,7 @@ impl ScDispatcher<FileReplica> {
         Self {
             lrs_status_update: ctx.status_update_owned(),
             mirror_status_update: ctx.mirror_status_update_owned(),
-            spu_status_update: ctx.spu_status_update_owned(),
+            spu_status_update: ctx.partition_status_update_owned(),
             ctx,
             counter: DispatcherCounter::default(),
         }
@@ -218,7 +218,7 @@ impl ScDispatcher<FileReplica> {
         } else {
             trace!(requests = ?requests, "sending status back to sc");
         }
-        let message = RequestMessage::new_request(UpdateSpuStatRequest::new(requests));
+        let message = RequestMessage::new_request(UpdatePartitionStatRequest::new(requests));
 
         sc_sink
             .send_request(&message)
