@@ -206,10 +206,10 @@ mod tests {
             partition: 3,
             smartmodules: vec![
                 (SmartModuleInvocation {
-                    name: name.to_string(),
                     wasm: SmartModuleInvocationWasm::AdHoc(vec![0xde, 0xad, 0xbe, 0xef]),
                     kind: SmartModuleKind::Filter,
                     params,
+                    name: Some(name.to_string()),
                 }),
             ],
             ..Default::default()
@@ -237,10 +237,10 @@ mod tests {
             partition: 3,
             smartmodules: vec![
                 (SmartModuleInvocation {
-                    name: name.to_string(),
                     wasm: SmartModuleInvocationWasm::AdHoc(vec![0xde, 0xad, 0xbe, 0xef]),
                     kind: SmartModuleKind::Filter,
                     params,
+                    name: Some(name.to_string()),
                 }),
             ],
             ..Default::default()
@@ -263,7 +263,7 @@ mod tests {
             0x00, 0x03, 0x6f, 0x6e, 0x65, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x01, 0x01, 0x00, 0x00, 0x00, 0x04, 0xde, 0xad, 0xbe, 0xef, 0x00,
-            0x00, 0x00,
+            0x00, 0x00, 0x00,
         ];
         let mut value = DefaultStreamFetchRequest::default();
         value

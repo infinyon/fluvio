@@ -2416,9 +2416,9 @@ async fn test_stream_metrics() {
     {
         let wasm = zip(read_wasm_module(FLUVIO_WASM_FILTER));
         let smartmodule = SmartModuleInvocation {
-            name: FLUVIO_WASM_FILTER.to_string(),
             wasm: SmartModuleInvocationWasm::AdHoc(wasm),
             kind: SmartModuleKind::Filter,
+            name: Some(FLUVIO_WASM_FILTER.to_string()),
             ..Default::default()
         };
         let mut request = RequestMessage::new_request(
