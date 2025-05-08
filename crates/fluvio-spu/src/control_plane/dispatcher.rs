@@ -42,7 +42,7 @@ pub struct ScDispatcher<S> {
     ctx: SharedGlobalContext<S>,
     lrs_status_update: SharedLrsStatusUpdate,
     mirror_status_update: SharedMirrorStatusUpdate,
-    spu_status_update: SharedPartitionStatusUpdate,
+    partition_status_update: SharedPartitionStatusUpdate,
     counter: DispatcherCounter,
 }
 
@@ -51,7 +51,7 @@ impl ScDispatcher<FileReplica> {
         Self {
             lrs_status_update: ctx.status_update_owned(),
             mirror_status_update: ctx.mirror_status_update_owned(),
-            spu_status_update: ctx.partition_status_update_owned(),
+            partition_status_update: ctx.partition_status_update_owned(),
             ctx,
             counter: DispatcherCounter::default(),
         }
@@ -139,7 +139,7 @@ impl ScDispatcher<FileReplica> {
 
                 _ = status_timer.next() =>  {
                     self.send_lrs_status_back_to_sc(&mut sink).await?;
-                    self.send_spu_status_back_to_sc(&mut sink).await?;
+                    self.send_partition_status_back_to_sc(&mut sink).await?;
                     self.send_mirror_status_back_to_sc(&mut sink).await?;
                 },
 
@@ -210,8 +210,8 @@ impl ScDispatcher<FileReplica> {
 
     /// send status back to sc, if there is error return false
     #[instrument(skip(self))]
-    async fn send_spu_status_back_to_sc(&mut self, sc_sink: &mut FluvioSink) -> Result<()> {
-        let requests = self.spu_status_update.remove_all().await;
+    async fn send_partition_status_back_to_sc(&mut self, sc_sink: &mut FluvioSink) -> Result<()> {
+        let requests = self.partition_status_update.remove_all().await;
 
         if requests.is_empty() {
             trace!("sending empty status");

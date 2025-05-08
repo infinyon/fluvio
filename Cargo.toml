@@ -184,7 +184,7 @@ k8-diff = { version = "0.1.2" }
 trybuild = { branch = "check_option", git = "https://github.com/infinyon/trybuild" }
 
 # Internal fluvio dependencies
-fluvio = { version = "0.27.0", path = "crates/fluvio" }
+fluvio = { version = "0.28.0", path = "crates/fluvio" }
 fluvio-auth = { path = "crates/fluvio-auth" }
 fluvio-benchmark = { path = "crates/fluvio-benchmark" }
 fluvio-channel = { path = "crates/fluvio-channel" }
@@ -192,7 +192,7 @@ fluvio-cli-common = { path = "crates/fluvio-cli-common" }
 fluvio-compression = { version = "0.3.2", path = "crates/fluvio-compression", default-features = false }
 fluvio-connector-package = { path = "crates/fluvio-connector-package/" }
 fluvio-controlplane = { path = "crates/fluvio-controlplane" }
-fluvio-controlplane-metadata = { version = "0.30.0", default-features = false, path = "crates/fluvio-controlplane-metadata" }
+fluvio-controlplane-metadata = { version = "0.31.0", default-features = false, path = "crates/fluvio-controlplane-metadata" }
 fluvio-extension-common = { path = "crates/fluvio-extension-common", default-features = false }
 fluvio-hub-util = { path = "crates/fluvio-hub-util" }
 fluvio-package-index = { version = "0.7.6", path = "crates/fluvio-package-index", default-features = false }
