@@ -179,7 +179,7 @@ where
                                 receive_mirror_update(&context, msg.request).await;
                             },
                             InternalScRequest::UpdatePartitionStatRequest(msg) => {
-                                receive_spu_status_update(&context, msg.request).await;
+                                receive_partition_status_update(&context, msg.request).await;
                             }
                         }
                         // reset timer
@@ -340,8 +340,10 @@ where
 
 /// send spu update to metadata stores
 #[instrument(skip(ctx, requests))]
-async fn receive_spu_status_update<C>(ctx: &SharedContext<C>, requests: UpdatePartitionStatRequest)
-where
+async fn receive_partition_status_update<C>(
+    ctx: &SharedContext<C>,
+    requests: UpdatePartitionStatRequest,
+) where
     C: MetadataItem,
 {
     let stats = requests.into_stats();
@@ -349,11 +351,11 @@ where
         trace!("no stats, just health check");
         return;
     }
-    debug!(?stats, "received mirror stats");
+    debug!(?stats, "received partition stats");
 
     let mut actions = vec![];
+    let store = ctx.partitions().store().read().await;
     for stat in stats.into_iter() {
-        let store = ctx.partitions().store().read().await;
         let partition = store.get(&stat.replica_key);
 
         if let Some(partition) = partition {
