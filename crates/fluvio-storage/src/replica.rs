@@ -40,7 +40,7 @@ pub struct FileReplica {
     commit_checkpoint: CheckPoint,
     cleaner: Arc<Cleaner>,
     size: Arc<ReplicaSize>,
-    append_failure: bool, // if this is true, last append failed, should not append again
+    short_circuit: bool, // if this is true, last append failed, should not append again
     max_request_size: usize,
     max_segment_size: usize,
 }
@@ -295,7 +295,7 @@ impl FileReplica {
             commit_checkpoint,
             cleaner,
             size,
-            append_failure: false,
+            short_circuit: false,
             max_request_size,
             max_segment_size,
         })
@@ -405,10 +405,8 @@ impl FileReplica {
 
     #[instrument(skip(self, item))]
     async fn write_batch<R: BatchRecords>(&mut self, item: &mut Batch<R>) -> Result<()> {
-        if self.append_failure {
-            return Err(
-                StorageError::Other("last append failed, disabling append".to_owned()).into(),
-            );
+        if self.short_circuit {
+            return Err(StorageError::ShortCircuited.into());
         }
 
         match self.active_segment.append_batch(item).await {
@@ -422,7 +420,7 @@ impl FileReplica {
                             Ok(true) => {}
                             Ok(false) => {
                                 warn!("failed to append even after rollver");
-                                self.append_failure = true;
+                                self.short_circuit = true;
                                 return Err(StorageError::Other(
                                     "failed to append even after rollver".to_owned(),
                                 )
@@ -430,21 +428,21 @@ impl FileReplica {
                             }
                             Err(err) => {
                                 warn!("failed to append after rollver: {:#?}", err);
-                                self.append_failure = true;
+                                self.short_circuit = true;
                                 return Err(err);
                             }
                         }
                     }
                     Err(err) => {
                         warn!("failed to rollver: {:#?}", err);
-                        self.append_failure = true;
+                        self.short_circuit = true;
                         return Err(err);
                     }
                 }
             }
             Err(err) => {
                 warn!("failed to write to active segment: {:#?}", err);
-                self.append_failure = true;
+                self.short_circuit = true;
                 return Err(err);
             }
         }

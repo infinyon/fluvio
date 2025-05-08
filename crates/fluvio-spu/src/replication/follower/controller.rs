@@ -220,10 +220,10 @@ mod inner {
 
                             match req_msg {
                                 FollowerPeerRequest::SyncRecords(sync_request)=> self.sync_from_leader(&mut sink,sync_request.request).await?,
-                                 FollowerPeerRequest::RejectedOffsetRequest(requests) => {
-                                     debug!(fail_req = ?requests,"leader rejected these requests");
-                                     timer= sleep(Duration::from_secs(*SHORT_RECONCILLATION));
-                                 },
+                                FollowerPeerRequest::RejectedOffsetRequest(requests) => {
+                                    debug!(fail_req = ?requests,"leader rejected these requests");
+                                    timer= sleep(Duration::from_secs(*SHORT_RECONCILLATION));
+                                },
                              }
 
                         } else {

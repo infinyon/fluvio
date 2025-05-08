@@ -5,7 +5,7 @@
 //!
 use flv_util::string_helper::upper_cammel_case_to_sentence;
 
-use crate::{Encoder, Decoder, api::RequestKind};
+use crate::{api::RequestKind, record::ReplicaKey, Decoder, Encoder};
 
 // -----------------------------------
 // Error Definition & Implementation
@@ -57,6 +57,12 @@ pub enum ErrorCode {
     #[fluvio(tag = 71)]
     #[error("Offset {offset} is evicted. The next available is {next_available}")]
     OffsetEvicted { offset: i64, next_available: i64 },
+    #[fluvio(tag = 72)]
+    #[error("Partition storage is full")]
+    PartitionFull { replica_key: ReplicaKey },
+    #[fluvio(tag = 73)]
+    #[error("Partition is short-circuited")]
+    PartitionShortCircuited,
 
     // Spu errors
     #[fluvio(tag = 1000)]

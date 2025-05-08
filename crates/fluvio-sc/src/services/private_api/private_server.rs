@@ -14,6 +14,7 @@ use fluvio_controlplane::sc_api::register_spu::RegisterSpuResponse;
 use fluvio_controlplane::sc_api::remove::ReplicaRemovedRequest;
 use fluvio_controlplane::sc_api::update_lrs::UpdateLrsRequest;
 use fluvio_controlplane::sc_api::update_mirror::UpdateMirrorStatRequest;
+use fluvio_controlplane::sc_api::update_partition::UpdatePartitionStatRequest;
 use fluvio_controlplane::spu_api::update_mirror::MirrorMsg;
 use fluvio_controlplane::spu_api::update_mirror::UpdateMirrorRequest;
 use fluvio_controlplane::spu_api::update_replica::UpdateReplicaRequest;
@@ -177,6 +178,9 @@ where
                             InternalScRequest::UpdateMirrorStatRequest(msg) => {
                                 receive_mirror_update(&context, msg.request).await;
                             },
+                            InternalScRequest::UpdatePartitionStatRequest(msg) => {
+                                receive_partition_status_update(&context, msg.request).await;
+                            }
                         }
                         // reset timer
                         health_check_timer = sleep(Duration::from_secs(HEALTH_DURATION));
@@ -331,6 +335,47 @@ where
 
     for action in actions.into_iter() {
         ctx.mirrors().send_action(action).await;
+    }
+}
+
+/// send spu update to metadata stores
+#[instrument(skip(ctx, requests))]
+async fn receive_partition_status_update<C>(
+    ctx: &SharedContext<C>,
+    requests: UpdatePartitionStatRequest,
+) where
+    C: MetadataItem,
+{
+    let stats = requests.into_stats();
+    if stats.is_empty() {
+        trace!("no stats, just health check");
+        return;
+    }
+    debug!(?stats, "received partition stats");
+
+    let mut actions = vec![];
+    let store = ctx.partitions().store().read().await;
+    for stat in stats.into_iter() {
+        let partition = store.get(&stat.replica_key);
+
+        if let Some(partition) = partition {
+            let mut current_status = partition.inner().status().clone();
+            current_status.resolution = stat.resolution.clone();
+            actions.push(WSAction::<PartitionSpec, C>::UpdateStatus((
+                stat.replica_key,
+                current_status,
+            )));
+        } else {
+            error!(
+                "trying to update replica: {}, that doesn't exist",
+                stat.replica_key
+            );
+            return;
+        }
+    }
+
+    for action in actions.into_iter() {
+        ctx.partitions().send_action(action).await;
     }
 }
 

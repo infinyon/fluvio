@@ -1,4 +1,6 @@
+use std::collections::HashSet;
 use std::time::Duration;
+use std::fmt::Debug;
 
 use tracing::{info, trace, error, debug, warn, instrument};
 use tokio::select;
@@ -15,15 +17,17 @@ use flv_util::print_cli_err;
 use fluvio_future::task::spawn;
 use fluvio_future::timer::sleep;
 use fluvio_protocol::api::RequestMessage;
+use fluvio_protocol::Encoder as FlvEncoder;
 use fluvio_socket::{FluvioSocket, FluvioSink};
 use fluvio_storage::FileReplica;
 use fluvio_controlplane::sc_api::update_mirror::UpdateMirrorStatRequest;
 use fluvio_controlplane::spu_api::update_mirror::UpdateMirrorRequest;
+use fluvio_controlplane::sc_api::update_partition::UpdatePartitionStatRequest;
 
 use crate::core::SharedGlobalContext;
 
 use super::message_sink::SharedLrsStatusUpdate;
-use super::SharedMirrorStatusUpdate;
+use super::{SharedMirrorStatusUpdate, SharedPartitionStatusUpdate};
 
 // keep track of various internal state of dispatcher
 #[derive(Default)]
@@ -39,16 +43,18 @@ struct DispatcherCounter {
 /// including registering and reconnect
 pub struct ScDispatcher<S> {
     ctx: SharedGlobalContext<S>,
-    status_update: SharedLrsStatusUpdate,
+    lrs_status_update: SharedLrsStatusUpdate,
     mirror_status_update: SharedMirrorStatusUpdate,
+    partition_status_update: SharedPartitionStatusUpdate,
     counter: DispatcherCounter,
 }
 
 impl ScDispatcher<FileReplica> {
     pub fn new(ctx: SharedGlobalContext<FileReplica>) -> Self {
         Self {
-            status_update: ctx.status_update_owned(),
+            lrs_status_update: ctx.status_update_owned(),
             mirror_status_update: ctx.mirror_status_update_owned(),
+            partition_status_update: ctx.partition_status_update_owned(),
             ctx,
             counter: DispatcherCounter::default(),
         }
@@ -136,6 +142,7 @@ impl ScDispatcher<FileReplica> {
 
                 _ = status_timer.next() =>  {
                     self.send_lrs_status_back_to_sc(&mut sink).await?;
+                    self.send_partition_status_back_to_sc(&mut sink).await?;
                     self.send_mirror_status_back_to_sc(&mut sink).await?;
                 },
 
@@ -186,35 +193,63 @@ impl ScDispatcher<FileReplica> {
         Ok(())
     }
 
-    /// send status back to sc, if there is error return false
+    /// send lrs status back to sc
     #[instrument(skip(self))]
     async fn send_lrs_status_back_to_sc(&mut self, sc_sink: &mut FluvioSink) -> Result<()> {
-        let requests = self.status_update.remove_all().await;
+        let requests = self.lrs_status_update.remove_all().await;
 
-        if requests.is_empty() {
-            trace!("sending empty status");
-        } else {
-            trace!(requests = ?requests, "sending status back to sc");
-        }
-        let message = RequestMessage::new_request(UpdateLrsRequest::new(requests));
-
-        sc_sink
-            .send_request(&message)
-            .await
-            .map_err(|err| anyhow!("error sending status back to sc: {}", err))
+        Self::send_unique_status(requests, sc_sink, |unique_requests| {
+            RequestMessage::new_request(UpdateLrsRequest::new(unique_requests))
+        })
+        .await
     }
 
-    /// send mirror status back to sc, if there is error return false
+    // send partition status back to sc
+    #[instrument(skip(self))]
+    async fn send_partition_status_back_to_sc(&mut self, sc_sink: &mut FluvioSink) -> Result<()> {
+        let requests = self.partition_status_update.remove_all().await;
+
+        Self::send_unique_status(requests, sc_sink, |unique_requests| {
+            RequestMessage::new_request(UpdatePartitionStatRequest::new(unique_requests))
+        })
+        .await
+    }
+
+    /// send mirror status back to sc
     #[instrument(skip(self))]
     async fn send_mirror_status_back_to_sc(&mut self, sc_sink: &mut FluvioSink) -> Result<()> {
         let requests = self.mirror_status_update.remove_all().await;
 
+        Self::send_unique_status(requests, sc_sink, |unique_requests| {
+            RequestMessage::new_request(UpdateMirrorStatRequest::new(unique_requests))
+        })
+        .await
+    }
+
+    /// send status back to sc, if there is error return false
+    async fn send_unique_status<T, U>(
+        requests: Vec<T>,
+        sc_sink: &mut FluvioSink,
+        request_builder: impl Fn(Vec<T>) -> RequestMessage<U>,
+    ) -> Result<()>
+    where
+        T: std::hash::Hash + Eq + Clone,
+        RequestMessage<U>: FlvEncoder + Debug,
+    {
         if requests.is_empty() {
+            trace!("sending empty status");
             return Ok(());
         }
 
-        trace!(requests = ?requests, "sending mirror status back to sc");
-        let message = RequestMessage::new_request(UpdateMirrorStatRequest::new(requests));
+        let unique_requests: Vec<_> = requests
+            .into_iter()
+            .collect::<HashSet<_>>()
+            .into_iter()
+            .collect();
+        trace!("sending status back to sc");
+
+        let message = request_builder(unique_requests);
+
         sc_sink
             .send_request(&message)
             .await

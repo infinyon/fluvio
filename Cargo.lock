@@ -2355,7 +2355,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.27.0"
+version = "0.28.0"
 dependencies = [
  "adaptive_backoff",
  "anyhow",
@@ -2719,7 +2719,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-controlplane-metadata"
-version = "0.30.4"
+version = "0.31.0"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
@@ -2994,7 +2994,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-sc-schema"
-version = "0.25.0"
+version = "0.26.0"
 dependencies = [
  "anyhow",
  "fluvio-controlplane-metadata",
