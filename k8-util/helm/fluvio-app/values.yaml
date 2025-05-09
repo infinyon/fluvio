@@ -29,6 +29,7 @@ scPod:
   extraEnv: []
   extraVolumes: []
   extraVolumeMounts: []
+  priorityClassName: null
 spuPod:
   resources:
     requests:
@@ -42,7 +43,7 @@ spuPod:
   extraEnv: []
   extraVolumes: []
   extraVolumeMounts: []
-
+  priorityClassName: null
 rbac:
   create: true
 serviceAccount:
