@@ -1,4 +1,4 @@
-mod list;
+pub(crate) mod list;
 
 pub use cmd::PartitionCmd;
 
