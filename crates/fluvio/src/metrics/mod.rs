@@ -1,12 +1,18 @@
 use serde::{Serialize, Deserialize};
 
+#[cfg(feature = "smartengine")]
+use std::collections::HashMap;
+
+#[cfg(feature = "smartengine")]
+use std::sync::Mutex;
+
 #[derive(Default, Debug, Deserialize, Serialize)]
 pub struct ClientMetrics {
     consumer: RecordCounter,
     producer_connector: RecordCounter,
     producer_client: RecordCounter,
     #[cfg(feature = "smartengine")]
-    smartmodule: fluvio_smartengine::metrics::SmartModuleChainMetrics,
+    smartmodules: Mutex<HashMap<String, fluvio_smartengine::metrics::SmartModuleChainMetrics>>,
 }
 
 impl ClientMetrics {
@@ -32,8 +38,19 @@ impl ClientMetrics {
     }
 
     #[cfg(feature = "smartengine")]
-    pub(crate) fn chain_metrics(&self) -> &fluvio_smartengine::metrics::SmartModuleChainMetrics {
-        &self.smartmodule
+    pub(crate) fn metrics_append(
+        &self,
+        append: &HashMap<String, fluvio_smartengine::metrics::SmartModuleChainMetrics>,
+    ) {
+        let mut map = self.smartmodules.lock().expect("Poisoned lock");
+
+        for (name, metrics) in append {
+            if let Some(existing_metrics) = map.get_mut(name) {
+                existing_metrics.append(metrics);
+            } else {
+                map.insert(name.clone(), metrics.clone());
+            }
+        }
     }
 }
 

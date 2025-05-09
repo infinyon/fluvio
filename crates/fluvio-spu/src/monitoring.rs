@@ -5,9 +5,11 @@ use fluvio_types::defaults::SPU_MONITORING_UNIX_SOCKET;
 use fluvio_future::task::spawn;
 use fluvio_future::net::unix::UnixListener;
 use tracing::{error, info, debug};
+use serde_json::json;
 
-use crate::core::{DefaultSharedGlobalContext, metrics::SpuMetrics};
+use crate::core::DefaultSharedGlobalContext;
 
+// Add SmartEngine to init_monitoring params
 pub(crate) fn init_monitoring(ctx: DefaultSharedGlobalContext) {
     spawn(async move {
         if let Err(err) = start_monitoring(ctx).await {
@@ -46,7 +48,6 @@ async fn start_monitoring(ctx: DefaultSharedGlobalContext) -> Result<(), IoError
         let mut incoming = listener.incoming();
         info!("monitoring started");
 
-        let metrics: &SpuMetrics = &ctx.metrics();
         while let Some(stream) = incoming.next().await {
             let mut stream = match stream {
                 Ok(stream) => stream,
@@ -56,7 +57,16 @@ async fn start_monitoring(ctx: DefaultSharedGlobalContext) -> Result<(), IoError
                 }
             };
 
-            let bytes = serde_json::to_vec_pretty(metrics)?;
+            // format a metrics object with all available metrics
+            let out_metrics = json!({
+                "spu": {
+                    "inbound": ctx.metrics().inbound(),
+                    "outbound": ctx.metrics().outbound(),
+                    "smartmodule": ctx.metrics().smartmodule_metrics(),
+                }
+            });
+
+            let bytes = serde_json::to_vec_pretty(&out_metrics)?;
             stream.write_all(&bytes).await?;
         }
 

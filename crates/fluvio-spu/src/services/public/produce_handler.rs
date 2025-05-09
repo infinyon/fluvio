@@ -276,7 +276,7 @@ async fn apply_smartmodules(
         sm_ctx.chain_mut(),
         &mut batches,
         usize::MAX,
-        ctx.metrics().chain_metrics(),
+        //
     ) {
         Ok((result, sm_runtime_error)) => {
             if let Some(error) = sm_runtime_error {

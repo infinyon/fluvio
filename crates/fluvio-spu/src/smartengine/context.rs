@@ -48,10 +48,7 @@ impl SmartModuleContext {
         replica: &LeaderReplicaState<R>,
     ) -> Result<(), ErrorCode> {
         self.chain
-            .look_back(
-                |lookback| read_records(replica, lookback, self.version),
-                self.spu_metrics.chain_metrics(),
-            )
+            .look_back(|lookback| read_records(replica, lookback, self.version))
             .await
             .map_err(|err| {
                 error!("look_back chain error: {err:#}");
@@ -89,6 +86,14 @@ impl SmartModuleContext {
             spu_metrics: ctx.metrics(),
         }))
     }
+
+    pub fn update_global_metrics(&self) {
+        let split_metrics = self.chain.metrics_export();
+
+        for (name, metrics) in split_metrics.iter() {
+            self.spu_metrics.update_smartmodule_metrics(name, metrics);
+        }
+    }
 }
 
 fn resolve_invocation<R: ReplicaStorage>(
@@ -103,6 +108,7 @@ fn resolve_invocation<R: ReplicaStorage>(
         {
             Ok(SmartModuleInvocation {
                 wasm: SmartModuleInvocationWasm::AdHoc(smartmodule.spec.wasm.payload.into()),
+                name: Some(name.clone()),
                 ..invocation
             })
         } else {

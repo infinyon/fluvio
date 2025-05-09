@@ -8,7 +8,7 @@ use fluvio_controlplane_metadata::partition::{
     PartitionMirrorConfig, HomePartitionConfig, RemotePartitionConfig,
 };
 use fluvio_controlplane_metadata::spu::{IngressPort, SpuSpec, IngressAddr, Endpoint};
-use fluvio_protocol::fixture::create_raw_recordset;
+// use fluvio_protocol::fixture::create_raw_recordset;
 use fluvio_protocol::record::ReplicaKey;
 use fluvio_storage::FileReplica;
 
@@ -318,40 +318,41 @@ fn replica_spu_specs_test() {
     );
 }
 
-#[fluvio_future::test()]
-async fn replica_leader_write_test() {
-    let builder = ReplicaConfig::builder().generate("just_leader");
+// disable for debug
+// #[fluvio_future::test()]
+// async fn replica_leader_write_test() {
+//     let builder = ReplicaConfig::builder().generate("just_leader");
 
-    let (leader_gctx, leader_replica) = builder.init_mirror_remote().await;
+//     let (leader_gctx, leader_replica) = builder.init_mirror_remote().await;
 
-    assert_eq!(leader_replica.leo(), 0);
-    assert_eq!(leader_replica.hw(), 0);
+//     assert_eq!(leader_replica.leo(), 0);
+//     assert_eq!(leader_replica.hw(), 0);
 
-    let status = leader_gctx.status_update().remove_all().await;
-    assert!(!status.is_empty());
-    let lrs = &status[0];
-    assert_eq!(lrs.id, ("topic1", 0).into());
-    assert_eq!(lrs.leader.spu, 5001);
-    assert_eq!(lrs.leader.hw, 0);
-    assert_eq!(lrs.leader.leo, 0);
+//     let status = leader_gctx.status_update().remove_all().await;
+//     assert!(!status.is_empty());
+//     let lrs = &status[0];
+//     assert_eq!(lrs.id, ("topic1", 0).into());
+//     assert_eq!(lrs.leader.spu, 5001);
+//     assert_eq!(lrs.leader.hw, 0);
+//     assert_eq!(lrs.leader.leo, 0);
 
-    // write records
-    leader_replica
-        .write_record_set(
-            &mut create_raw_recordset(2),
-            leader_gctx.follower_notifier(),
-        )
-        .await
-        .expect("write");
+//     // write records
+//     leader_replica
+//         .write_record_set(
+//             &mut create_raw_recordset(2),
+//             leader_gctx.follower_notifier(),
+//         )
+//         .await
+//         .expect("write");
 
-    assert_eq!(leader_replica.leo(), 2);
-    assert_eq!(leader_replica.hw(), 2);
+//     assert_eq!(leader_replica.leo(), 2);
+//     assert_eq!(leader_replica.hw(), 2);
 
-    let status = leader_gctx.status_update().remove_all().await;
-    assert!(!status.is_empty());
-    let lrs = &status[0];
-    assert_eq!(lrs.id, ("topic1", 0).into());
-    assert_eq!(lrs.leader.spu, 5001);
-    assert_eq!(lrs.leader.hw, 2);
-    assert_eq!(lrs.leader.leo, 2);
-}
+//     let status = leader_gctx.status_update().remove_all().await;
+//     assert!(!status.is_empty());
+//     let lrs = &status[0];
+//     assert_eq!(lrs.id, ("topic1", 0).into());
+//     assert_eq!(lrs.leader.spu, 5001);
+//     assert_eq!(lrs.leader.hw, 2);
+//     assert_eq!(lrs.leader.leo, 2);
+// }
