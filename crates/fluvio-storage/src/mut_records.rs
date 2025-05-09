@@ -144,52 +144,37 @@ impl MutFileRecords {
         let batch_len = batch.write_size(0);
         debug!(batch_len, "writing batch of size",);
 
-        if (batch_len as u32 + self.len) <= self.max_len {
-            let mut buffer: Vec<u8> = Vec::with_capacity(batch_len);
-            batch.encode(&mut buffer, 0)?;
-            assert_eq!(buffer.len(), batch_len);
-
-            let raw_fd = self.file.as_raw_fd();
-            let mut std_file = unsafe { std::fs::File::from_raw_fd(raw_fd) };
-            std_file.write_all(&buffer)?;
-            std::mem::forget(std_file);
-
-            self.len += batch_len as u32;
-            debug!(pos = self.get_pos(), "update pos",);
-            self.write_count = self.write_count.saturating_add(1);
-
-            self.flush().await?;
-            debug!(
-                flush_count = self.flush_count(),
-                write_count = self.write_count,
-                "Flushing Now"
-            );
-
-            /*
-            match self.flush_policy.should_flush() {
-                FlushAction::NoFlush => {}
-
-                FlushAction::Now => {
-                    self.flush().await?;
-                    debug!(
-                        flush_count = self.flush_count(),
-                        write_count = self.write_count,
-                        "Flushing Now"
-                    );
-                }
-
-                FlushAction::Delay(delay_millis) => {
-                    debug!("  delay flush start {:?}", self.flush_policy);
-                    self.delay_flush(delay_millis).await?;
-                }
-            }
-            */
-
-            Ok((true, batch_len, self.len))
-        } else {
+        if (batch_len as u32 + self.len) > self.max_len {
             debug!(self.len, batch_len, "no more room to add");
-            Ok((false, batch_len, self.len))
+            return Ok((false, batch_len, self.len));
         }
+
+        let mut buffer: Vec<u8> = Vec::with_capacity(batch_len);
+        batch.encode(&mut buffer, 0)?;
+        assert_eq!(buffer.len(), batch_len);
+
+        let raw_fd = self.file.as_raw_fd();
+        let mut std_file = unsafe { std::fs::File::from_raw_fd(raw_fd) };
+        if let Err(err) = std_file.write_all(&buffer) {
+            std::mem::forget(std_file); // Prevents double free on error
+            return Err(err.into());
+        }
+
+        // We must forget to avoid double free
+        std::mem::forget(std_file);
+
+        self.len += batch_len as u32;
+        debug!(pos = self.get_pos(), "update pos",);
+        self.write_count = self.write_count.saturating_add(1);
+
+        self.flush().await?;
+        debug!(
+            flush_count = self.flush_count(),
+            write_count = self.write_count,
+            "Flushing Now"
+        );
+
+        Ok((true, batch_len, self.len))
     }
 
     pub async fn flush(&mut self) -> Result<(), IoError> {
@@ -201,115 +186,12 @@ impl MutFileRecords {
     pub fn flush_count(&self) -> u32 {
         self.flush_count.load(Ordering::Relaxed)
     }
-
-    /*
-    async fn delay_flush(&mut self, _delay_millis: u32) -> Result<(), IoError> {
-        //let delay_tgt = delay_millis as u64;
-
-        if self.flush_time_tx.is_none() {
-            // no task running so start one
-            let (tx, rx) = async_channel::bounded(100);
-            self.flush_time_tx = Some(tx);
-           // let delay_tgt = Duration::from_millis(delay_tgt);
-            let flush_count = self.flush_count.clone();
-
-            if let Err(e) = self.file.flush().await {
-                warn!("flush error {}", e);
-            } else {
-                let fc = flush_count.fetch_add(1, Ordering::Relaxed);
-                debug!(fc,"flush");
-            }
-
-
-            fluvio_future::task::spawn(async move {
-                let mut delay_dur = delay_tgt;
-                let mut write_time = Instant::now();
-
-                // when the mut_record struct is dropped self.flush_time_tx
-                // will also be closed and dropped, causing this while loop
-                // to end then exit the task
-                while !rx.is_closed() {
-                    if let Ok(wt) = rx.recv().await {
-                        // always grab initial write time, but also
-                        // guarantee a wait on a write time for flush
-                        // for wait times after the first delay runs
-                        write_time = wt;
-                    }
-                    //  A short fixed wait was added here to give a little
-                    //  breathing space to accumulate clusters of writes which
-                    //  arrive closely but not fast enough for this task loop
-                    //  between the first and following check for write times
-                    //  It prevents extra flushes and the time is still accounted for
-                    //  in the delay_dur calculation.
-                    timer::after(Duration::from_millis(DELAY_FLUSH_SIA_MSEC)).await;
-
-                    // Clear out any accumulated write times but don't wait
-                    // Update to latest accumulated write time
-
-                    // could use a mutex for last write time instead?
-                    // could bundle write time with f_sink inside a struct
-                    // held by the existing mutex, but that's more invasive
-                    while let Ok(wt) = rx.try_recv() {
-                        write_time = wt;
-                        debug!("update write time for delayed flush {:?}", write_time);
-                    }
-                    if write_time.elapsed() < delay_tgt {
-                        // calculate remaining delay time
-                        delay_dur = delay_tgt - write_time.elapsed();
-                    }
-                    debug!(
-                        "flush delay wait start delay:tgt {:?}:{:?}",
-                        delay_dur, delay_tgt
-                    );
-                    timer::after(delay_dur).await;
-
-                    debug!("delay flush: get lock");
-                    if let Err(e) = self.file.flush().await {
-                        warn!("flush error {}", e);
-                    } else {
-                        let fc = flush_count.fetch_add(1, Ordering::Relaxed);
-                        debug!(" - flushed: delay task flush cnt: {}", fc);
-                    }
-                }
-                debug!("delay_flush task exited");
-            });
-
-        }
-
-
-        // update running flush
-        if let Some(flush_tx) = &self.flush_time_tx {
-            if let Err(serr) = flush_tx.send(Instant::now()).await {
-                use std::io::{Error, ErrorKind};
-                warn!("Flush send error {}", serr);
-                return Err(Error::new(ErrorKind::Other, "flush send error"));
-            }
-        }
-        Ok(())
-    }
-    */
 }
 
 impl FileRecords for MutFileRecords {
     fn get_base_offset(&self) -> Offset {
         self.base_offset
     }
-
-    // the get_file method was never called, leaving it in makes
-    // the ownership management of the f_sink impossible to place in a mutex
-    // to manage access from send() writers and a async timed delay flush
-    // not sure how to resolve this
-
-    // fn get_file(&self) -> &File {
-    //
-    //     // &self.f_sink.inner()
-    //
-    //     block_on(async {
-    //         let am = self.f_sink.clone();
-    //         let f_sink = am.lock().await;
-    //         &f_sink.inner().clone()
-    //     })
-    // }
 
     fn len(&self) -> Size64 {
         self.len as u64
