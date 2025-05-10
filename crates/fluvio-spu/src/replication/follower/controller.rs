@@ -320,6 +320,7 @@ mod inner {
 
                 match FluvioSocket::connect(&leader_endpoint).await {
                     Ok(mut socket) => {
+                        socket.set_nodelay(true);
                         debug!("connected to leader");
 
                         match self.send_fetch_stream_request(&mut socket).await {

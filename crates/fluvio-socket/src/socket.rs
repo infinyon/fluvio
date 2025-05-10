@@ -119,6 +119,23 @@ impl FluvioSocket {
         let connector = DefaultDomainConnector::new();
         Self::connect_with_connector(addr, &connector).await
     }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    pub fn set_nodelay(&self, value: bool) {
+        let fd = self.id();
+        let opt = libc::IPPROTO_TCP;
+        let val = libc::TCP_NODELAY;
+        let value: i32 = if value { 1 } else { 0 };
+        let payload = std::ptr::addr_of!(value).cast();
+        unsafe {
+            libc::setsockopt(fd, opt, val, payload, std::mem::size_of::<u32>() as u32);
+        }
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    pub fn set_nodelay(&self, _value: bool) {
+        // No-op for WASM
+    }
 }
 
 cfg_if::cfg_if! {
