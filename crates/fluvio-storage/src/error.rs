@@ -28,6 +28,8 @@ pub enum StorageError {
     },
     #[error("Batch is empty")]
     EmptyBatch,
+    #[error("Storage is short-circuited")]
+    ShortCircuited,
 }
 
 impl From<BoundedFileSinkError> for StorageError {

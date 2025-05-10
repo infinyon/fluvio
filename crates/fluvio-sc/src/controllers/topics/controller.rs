@@ -194,9 +194,10 @@ where
         const INTERVAL_STEP: u64 = 15;
         const MAX_INTERVAL: u64 = 120;
 
-        let mut interval_secs = INTERVAL_STEP;
+        let mut interval_secs = 1;
 
         loop {
+            debug!(interval_secs, "sleeping for");
             sleep(Duration::from_secs(interval_secs)).await;
             self.ensure_offsets_topic_exists().await;
             interval_secs = min(MAX_INTERVAL, interval_secs.add(INTERVAL_STEP));

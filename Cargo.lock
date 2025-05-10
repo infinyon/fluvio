@@ -2012,6 +2012,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "downcast"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1435fa1053d8b2fbbe9be7e97eca7f33d37b28409959813daefc1446a14247f1"
+
+[[package]]
 name = "duct"
 version = "0.13.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2349,7 +2355,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.26.2"
+version = "0.28.0"
 dependencies = [
  "adaptive_backoff",
  "anyhow",
@@ -2374,6 +2380,7 @@ dependencies = [
  "fluvio-types",
  "fluvio_ws_stream_wasm",
  "futures-util",
+ "mockall",
  "once_cell",
  "pin-project",
  "semver 1.0.26",
@@ -2692,6 +2699,7 @@ dependencies = [
  "minijinja",
  "openapiv3",
  "pretty_assertions",
+ "schemars",
  "serde",
  "serde_yaml 0.9.34+deprecated",
  "tempfile",
@@ -2711,7 +2719,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-controlplane-metadata"
-version = "0.30.3"
+version = "0.31.0"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
@@ -2726,6 +2734,7 @@ dependencies = [
  "flv-util",
  "humantime-serde",
  "lenient_semver",
+ "schemars",
  "semver 1.0.26",
  "serde",
  "serde_json",
@@ -2901,7 +2910,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.12.2"
+version = "0.12.4"
 dependencies = [
  "bytes",
  "cfg-if",
@@ -2985,7 +2994,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-sc-schema"
-version = "0.25.0"
+version = "0.26.0"
 dependencies = [
  "anyhow",
  "fluvio-controlplane-metadata",
@@ -3018,7 +3027,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartengine"
-version = "0.8.5"
+version = "0.8.6"
 dependencies = [
  "anyhow",
  "cfg-if",
@@ -3027,6 +3036,7 @@ dependencies = [
  "fluvio-protocol",
  "fluvio-smartmodule",
  "humantime-serde",
+ "schemars",
  "serde",
  "serde_json",
  "serde_yaml 0.9.34+deprecated",
@@ -3133,7 +3143,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-spu-schema"
-version = "0.17.0"
+version = "0.18.0"
 dependencies = [
  "bytes",
  "derive_builder",
@@ -3244,6 +3254,7 @@ dependencies = [
  "futures",
  "futures-lite",
  "hdrhistogram",
+ "humantime",
  "indicatif",
  "inventory",
  "md-5",
@@ -3310,10 +3321,11 @@ dependencies = [
 
 [[package]]
 name = "fluvio-types"
-version = "0.5.3"
+version = "0.5.4"
 dependencies = [
  "event-listener 5.4.0",
  "fluvio-future",
+ "schemars",
  "serde",
  "thiserror 2.0.12",
  "tokio",
@@ -3455,6 +3467,12 @@ checksum = "e13624c2627564efccf4934284bdd98cbaa14e79b0b5a141218e507b3a823456"
 dependencies = [
  "percent-encoding",
 ]
+
+[[package]]
+name = "fragile"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "28dd6caf6059519a65843af8fe2a3ae298b14b80179855aeb4adc2c1934ee619"
 
 [[package]]
 name = "fs-err"
@@ -5268,6 +5286,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "mockall"
+version = "0.13.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "39a6bfcc6c8c7eed5ee98b9c3e33adc726054389233e201c95dab2d41a3839d2"
+dependencies = [
+ "cfg-if",
+ "downcast",
+ "fragile",
+ "mockall_derive",
+ "predicates",
+ "predicates-tree",
+]
+
+[[package]]
+name = "mockall_derive"
+version = "0.13.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "25ca3004c2efe9011bd4e461bd8256445052b9615405b4f7ea43fc8ca5c20898"
+dependencies = [
+ "cfg-if",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.100",
+]
+
+[[package]]
 name = "names"
 version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6738,6 +6782,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "schemars"
+version = "0.8.22"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3fbf2ae1b8bc8e02df939598064d22402220cd5bbcca1c76f7d6a310974d5615"
+dependencies = [
+ "dyn-clone",
+ "schemars_derive",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "schemars_derive"
+version = "0.8.22"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "32e265784ad618884abaea0600a9adf15393368d840e0222d101a072f3f7534d"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "serde_derive_internals",
+ "syn 2.0.100",
+]
+
+[[package]]
 name = "scopeguard"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6848,6 +6916,17 @@ name = "serde_derive"
 version = "1.0.219"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5b0276cf7f2c73365f7157c8123c21cd9a50fbbd844757af28ca1f5925fc2a00"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.100",
+]
+
+[[package]]
+name = "serde_derive_internals"
+version = "0.29.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "18d26a20a969b9e3fdf2fc2d9f21eda6c40e2de84c9408bb5d3b05d499aae711"
 dependencies = [
  "proc-macro2",
  "quote",

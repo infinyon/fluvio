@@ -597,7 +597,11 @@ impl From<(PartitionCount, ReplicationFactor)> for TopicSpec {
 }
 
 #[derive(Decoder, Encoder, Default, Debug, Clone, Eq, PartialEq)]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    derive(schemars::JsonSchema)
+)]
 pub struct PartitionMap {
     pub id: PartitionId,
     pub replicas: Vec<SpuId>,
@@ -984,7 +988,11 @@ pub struct TopicStorageConfig {
 }
 
 #[derive(Decoder, Default, Encoder, Debug, Clone, Eq, PartialEq)]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    derive(schemars::JsonSchema)
+)]
 pub enum CompressionAlgorithm {
     #[fluvio(tag = 0)]
     None,

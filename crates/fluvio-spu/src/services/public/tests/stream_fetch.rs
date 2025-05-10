@@ -15,16 +15,13 @@ use flv_util::fixture::ensure_clean_dir;
 use futures_util::{Future, StreamExt};
 
 use fluvio_future::timer::sleep;
-use fluvio_socket::{FluvioSocket, MultiplexerSocket, AsyncResponse};
-use fluvio_spu_schema::server::{
-    smartmodule::{
-        SmartModuleKind, SmartModuleInvocation, SmartModuleInvocationWasm, SmartModuleContextData,
-    },
-    stream_fetch::StreamFetchRequest,
+use fluvio_socket::{FluvioSocket, MultiplexerSocket};
+use fluvio_spu_schema::server::smartmodule::{
+    SmartModuleKind, SmartModuleInvocation, SmartModuleInvocationWasm, SmartModuleContextData,
 };
 use fluvio_protocol::{
     fixture::BatchProducer,
-    record::{RecordData, Record, Batch, RawRecords},
+    record::{RecordData, Record, Batch},
     link::{smartmodule::SmartModuleKind as SmartModuleKindError, ErrorCode},
     ByteBuf,
 };
@@ -35,7 +32,7 @@ use fluvio_spu_schema::{
 };
 use fluvio_spu_schema::server::stream_fetch::DefaultStreamFetchRequest;
 use crate::services::public::tests::{
-    create_filter_raw_records, create_public_server_with_root_auth, vec_to_batch,
+    create_filter_raw_records, create_public_server_with_root_auth, read_records, vec_to_batch,
 };
 use crate::{
     core::GlobalContext,
@@ -3005,26 +3002,6 @@ async fn stream_fetch_filter_lookback_age(
     }
     server_end_event.notify();
     debug!("terminated controller");
-}
-
-async fn read_records(
-    mut stream: AsyncResponse<StreamFetchRequest<RecordSet<RawRecords>>>,
-    count: usize,
-) -> anyhow::Result<Vec<String>> {
-    let mut res = Vec::with_capacity(count);
-    while res.len() < count {
-        let response = stream
-            .next()
-            .await
-            .ok_or(anyhow::anyhow!("expected item"))??;
-        let partition = &response.partition;
-        assert_eq!(partition.records.batches.len(), 1);
-        let batch = &partition.records.batches[0];
-        for record in batch.memory_records()? {
-            res.push(String::from_utf8_lossy(record.value().as_ref()).to_string());
-        }
-    }
-    Ok(res)
 }
 
 #[fluvio_future::test(ignore)]

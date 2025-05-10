@@ -82,10 +82,10 @@ colored = "3.0.0"
 comfy-table = { version = "7.0.1", default-features = false }
 const_format = { version = "0.2" }
 content_inspector = { version = "0.2" }
-crc32c = { version = "0.6"}
+crc32c = { version = "0.6" }
 criterion = "0.5.0"
 crossbeam-channel = "0.5"
-crossterm = { version = "0.28.1", default-features = false}
+crossterm = { version = "0.28.1", default-features = false }
 ctrlc = { version = "3.1.3" }
 current_platform = { version = "0.2" }
 derive_builder = "0.20.0"
@@ -116,6 +116,7 @@ libc = "0.2.116"
 madato = "0.7.0"
 mimalloc = "0.1.39"
 mime = "0.3"
+mockall = { version = "0.13.1", default-features = false }
 nix = { version = "0.29.0", default-features = false }
 once_cell = "1.7.2"
 parking_lot = { version = "0.12.3", default-features = false }
@@ -129,6 +130,7 @@ rayon = "1.10.0"
 rand_xoshiro = "0.6.0"
 regex = "1.7"
 reqwest = "0.12"
+schemars = { version = "0.8.22" }
 semver = "1.0.13"
 serde = { version = "1.0", default-features = false }
 serde_json = "1.0.60"
@@ -138,21 +140,29 @@ sha2 = { version = "0.10" }
 siphasher = "1.0.0"
 static_assertions = "1.1.0"
 syn = "2.0"
-sysinfo = { version = "0.33.1", default-features = false, features = ["system"] }
+sysinfo = { version = "0.33.1", default-features = false, features = [
+    "system",
+] }
 tar = { version = "0.4.38", default-features = false }
 tempfile = "3.4.0"
 thiserror = "2.0.11"
 timeago = "0.4.2"
-tokio = { version =  "1.34.0", default-features = false }
+tokio = { version = "1.34.0", default-features = false }
 tokio-util = { version = "0.7.0", default-features = false }
 toml = { version = "0.8.0", default-features = false }
 tracing = "0.1.19"
 tracing-subscriber = { version = "0.3", default-features = false }
 tui = { version = "0.19.0", default-features = false }
-ureq = { version = "=2.9.7", default-features = false, features = ["tls", "http-crate", "native-certs", "brotli"] }
+ureq = { version = "=2.9.7", default-features = false, features = [
+    "tls",
+    "http-crate",
+    "native-certs",
+    "brotli",
+] }
 url = "2.5"
 uuid = { version = "1.1", features = ["serde", "v4"] }
-wasm-bindgen-test = "0.3.24"
+wasm-bindgen-test = "0.3.50"
+wasm-bindgen = "0.2.100"
 wasi-common = { version = "31.0.0" }
 wasmtime = { version = "31.0.0" }
 wasmparser = "0.227.1"
@@ -169,30 +179,30 @@ flv-tls-proxy = { version = "0.10.0" }
 flv-util = { version = "0.5.2", default-features = false }
 k8-client = { version = "13.1.0" }
 k8-config = { version = "2.3.0" }
-k8-types =  { version = "0.8.7" }
+k8-types = { version = "0.8.7" }
 k8-diff = { version = "0.1.2" }
 trybuild = { branch = "check_option", git = "https://github.com/infinyon/trybuild" }
 
 # Internal fluvio dependencies
-fluvio = { version = "0.26.0", path = "crates/fluvio" }
+fluvio = { version = "0.28.0", path = "crates/fluvio" }
 fluvio-auth = { path = "crates/fluvio-auth" }
 fluvio-benchmark = { path = "crates/fluvio-benchmark" }
 fluvio-channel = { path = "crates/fluvio-channel" }
-fluvio-cli-common = { path = "crates/fluvio-cli-common"}
+fluvio-cli-common = { path = "crates/fluvio-cli-common" }
 fluvio-compression = { version = "0.3.2", path = "crates/fluvio-compression", default-features = false }
 fluvio-connector-package = { path = "crates/fluvio-connector-package/" }
 fluvio-controlplane = { path = "crates/fluvio-controlplane" }
-fluvio-controlplane-metadata = { version = "0.30.0", default-features = false, path = "crates/fluvio-controlplane-metadata" }
+fluvio-controlplane-metadata = { version = "0.31.0", default-features = false, path = "crates/fluvio-controlplane-metadata" }
 fluvio-extension-common = { path = "crates/fluvio-extension-common", default-features = false }
 fluvio-hub-util = { path = "crates/fluvio-hub-util" }
 fluvio-package-index = { version = "0.7.6", path = "crates/fluvio-package-index", default-features = false }
 fluvio-protocol = { version = "0.12.0", path = "crates/fluvio-protocol" }
-fluvio-sc-schema = { version = "0.25.0", path = "crates/fluvio-sc-schema", default-features = false }
+fluvio-sc-schema = { version = "0.26.0", path = "crates/fluvio-sc-schema", default-features = false }
 fluvio-service = { path = "crates/fluvio-service" }
-fluvio-smartengine = {  version = "0.8.0", path = "crates/fluvio-smartengine", default-features = false }
+fluvio-smartengine = { version = "0.8.0", path = "crates/fluvio-smartengine", default-features = false }
 fluvio-smartmodule = { version = "0.8.0", path = "crates/fluvio-smartmodule", default-features = false }
 fluvio-socket = { version = "0.15.2", path = "crates/fluvio-socket", default-features = false }
-fluvio-spu-schema = { version = "0.17.0", path = "crates/fluvio-spu-schema", default-features  = false }
+fluvio-spu-schema = { version = "0.18.0", path = "crates/fluvio-spu-schema", default-features = false }
 fluvio-storage = { path = "crates/fluvio-storage" }
 fluvio-stream-dispatcher = { version = "0.13.2", path = "crates/fluvio-stream-dispatcher" }
 fluvio-stream-model = { version = "0.11.4", path = "crates/fluvio-stream-model", default-features = false }

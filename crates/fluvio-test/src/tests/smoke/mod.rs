@@ -11,12 +11,12 @@ use std::time::{Duration, SystemTime};
 use clap::Parser;
 
 use fluvio_test_derive::fluvio_test;
-use fluvio_test_util::test_meta::environment::{EnvironmentSetup};
+use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase};
 use fluvio_test_util::async_process;
 
 use fluvio_cli::TableFormatConfig;
-use fluvio_controlplane_metadata::tableformat::{TableFormatSpec};
+use fluvio_controlplane_metadata::tableformat::TableFormatSpec;
 
 use fluvio_future::timer::sleep;
 

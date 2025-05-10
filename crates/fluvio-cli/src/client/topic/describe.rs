@@ -60,7 +60,7 @@ mod display {
     };
 
     #[allow(clippy::redundant_closure)]
-    // Connect to Kafka Controller and query server for topic
+    // Connect to Controller and query server for topic
     pub async fn describe_topics<O>(
         topics: Vec<Metadata<TopicSpec>>,
         output_type: OutputType,

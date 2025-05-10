@@ -62,8 +62,28 @@ pub struct DeleteConsumerOffsetResponse {
     pub error_code: ErrorCode,
 }
 
+#[derive(Encoder, Decoder, Default, Debug)]
+pub struct FilterOpts {
+    pub replica_id: Option<ReplicaKey>,
+    pub consumer_id: Option<String>,
+}
+
 #[derive(Decoder, Encoder, Default, Debug)]
-pub struct FetchConsumerOffsetsRequest;
+pub struct FetchConsumerOffsetsRequest {
+    #[fluvio(min_version = 24)]
+    pub filter_opts: Option<FilterOpts>,
+}
+
+impl FetchConsumerOffsetsRequest {
+    pub fn with_opts(replica_id: Option<ReplicaKey>, consumer_id: Option<String>) -> Self {
+        Self {
+            filter_opts: Some(FilterOpts {
+                replica_id,
+                consumer_id,
+            }),
+        }
+    }
+}
 
 impl Request for FetchConsumerOffsetsRequest {
     const API_KEY: u16 = SpuServerApiKey::FetchConsumerOffsets as u16;

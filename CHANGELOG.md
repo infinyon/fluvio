@@ -2,7 +2,46 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
-## Platform Version 0.17.0-dev-2 - 2025-03-19
+## Platform Version 0.17.3-dev-1 - UNRELEASED
+
+## Platform Version 0.17.2 - 2025-04-29
+
+### Added
+
+* Move boxed stream into main consumer api ([#4494](https://github.com/infinyon/fluvio/issues/4494))
+* Add key record parameter to smdk test ([#4496](https://github.com/infinyon/fluvio/issues/4496))
+* Add JsonSchema to connector and topic config objects ([#4510](https://github.com/infinyon/fluvio/issues/4510))
+
+### CI
+
+* Pos release fluvio 0.17.1 ([#4491](https://github.com/infinyon/fluvio/issues/4491))
+
+### Changed
+
+* Update toolchain and dep ([#4489](https://github.com/infinyon/fluvio/issues/4489))
+
+### Fixed
+
+* Consumer offset end ([#4500](https://github.com/infinyon/fluvio/issues/4500))
+* Offset evicted on retry ([#4511](https://github.com/infinyon/fluvio/issues/4511))
+* Auto management odd pauses in consumer offset ([#4504](https://github.com/infinyon/fluvio/issues/4504))
+
+### Other
+
+* Use right offset request in comments ([#4512](https://github.com/infinyon/fluvio/issues/4512))
+
+### Removed
+
+* Remove outdated Kafka compatibility reference from README. ([#4507](https://github.com/infinyon/fluvio/issues/4507))
+
+
+## Platform Version 0.17.1 - 2025-04-03
+
+### Fixed
+
+* Compilation for hub utils for WASM ([#4485](https://github.com/infinyon/fluvio/issues/4485))
+
+## Platform Version 0.17.0 - 2025-04-02
 
 ### Added
 
@@ -12,17 +51,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Make SPG creation optional in crate API ([#4432](https://github.com/infinyon/fluvio/issues/4432))
 * Add proxy on  fvm install ([#4438](https://github.com/infinyon/fluvio/issues/4438))
 
-### CI
-
-* Pos release fluvio 0.16.1 ([#4424](https://github.com/infinyon/fluvio/issues/4424))
-* Pre release fluvio 0.17.0-dev-1
-
 ### Changed
 
+* Update wasmtime ([#4469](https://github.com/infinyon/fluvio/issues/4469))
+* Update README.md ([#4470](https://github.com/infinyon/fluvio/issues/4470))
 * Update referenced sdf version ([#4425](https://github.com/infinyon/fluvio/issues/4425))
 
 ### Fixed
 
+* Replication stuck when syncing large batches ([#4474](https://github.com/infinyon/fluvio/issues/4474))
+* Re-export PartitionId from fluvio package. ([#4481](https://github.com/infinyon/fluvio/issues/4481))
+* Derive clone on SpuSocketPool ([#4480](https://github.com/infinyon/fluvio/issues/4480))
 * Cdk, additional validation on `cdk publish` ([#4423](https://github.com/infinyon/fluvio/issues/4423))
 * Reconnect log with right offset ([#4430](https://github.com/infinyon/fluvio/issues/4430))
 * Reconnect producer when spu is down ([#4441](https://github.com/infinyon/fluvio/issues/4441))
@@ -33,7 +72,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Other
 
+* Comment doc for TopicProducer ([#4468](https://github.com/infinyon/fluvio/issues/4468))
+* Set SPU_PEER_MAX_BYTES to 10mb ([#4479](https://github.com/infinyon/fluvio/issues/4479))
 * Export ReplyHubref{} and HUB_REF_ENDPOINT ([#4431](https://github.com/infinyon/fluvio/issues/4431))
+
+### CI
+
+* Pos release fluvio 0.16.1 ([#4424](https://github.com/infinyon/fluvio/issues/4424))
+* Pre release fluvio 0.17.0-dev-1
+
 
 ## Platform Version 0.16.1 - 2025-02-27
 

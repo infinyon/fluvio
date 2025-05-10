@@ -6,10 +6,6 @@ A cluster consists of two components, which are run using the respective command
 * Streaming Controller (fluvio run sc)
 * Streaming Processing Unit (fluvio run spu)
 
-#### Kafka
-Fluvio CLI is also compatible with Kafka 2.x. Fluvio makes it easy for system administrators to provision Kafka and Fluvio environments through a common user friendly command line interface.
-
-
 #### Profiles
 Fluvio CLI uses Profile files to store most common parameters. This approach offers administrators the convenience to communicate with SC, SPU, or a Kafka environment.
 

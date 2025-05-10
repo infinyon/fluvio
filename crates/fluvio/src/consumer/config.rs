@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{str::FromStr, time::Duration};
 
 use anyhow::Result;
 use derive_builder::Builder;
@@ -11,6 +11,8 @@ use crate::{FluvioError, Offset};
 use super::MAX_FETCH_BYTES;
 
 const DEFAULT_OFFSET_FLUSH_PERIOD: Duration = Duration::from_secs(10);
+const DEFAULT_OFFSET_FLUSHER_CHECK_PERIOD: Duration = Duration::from_millis(100);
+const DEFAULT_RETRY_MODE: RetryMode = RetryMode::TryUntil(100);
 
 /// Configures the behavior of consumer fetching and streaming
 #[derive(Debug, Builder, Clone)]
@@ -41,7 +43,7 @@ impl ConsumerConfigBuilder {
     }
 }
 
-#[derive(Debug, Default, Copy, Clone, PartialEq)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
 pub enum OffsetManagementStrategy {
     /// Offsets are not saved
     #[default]
@@ -51,6 +53,21 @@ pub enum OffsetManagementStrategy {
     /// Before yielding a new record to the caller, the previous record is committed and flushed if the configured interval is passed.
     /// Additionally, the commit and the flush are triggered when the stream object gets dropped.
     Auto,
+}
+
+impl FromStr for OffsetManagementStrategy {
+    type Err = FluvioError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "none" => Ok(OffsetManagementStrategy::None),
+            "manual" => Ok(OffsetManagementStrategy::Manual),
+            "auto" => Ok(OffsetManagementStrategy::Auto),
+            _ => Err(FluvioError::ConsumerConfig(format!(
+                "Invalid offset management strategy: {s}"
+            ))),
+        }
+    }
 }
 
 #[derive(Debug, Default, Clone, PartialEq)]
@@ -77,6 +94,8 @@ pub struct ConsumerConfigExt {
     pub offset_strategy: OffsetManagementStrategy,
     #[builder(default = "DEFAULT_OFFSET_FLUSH_PERIOD")]
     pub offset_flush: Duration,
+    #[builder(default = "DEFAULT_OFFSET_FLUSHER_CHECK_PERIOD")]
+    pub offset_flusher_check_period: Duration,
     #[builder(default)]
     pub disable_continuous: bool,
     #[builder(default = "*MAX_FETCH_BYTES")]
@@ -85,7 +104,7 @@ pub struct ConsumerConfigExt {
     pub isolation: Isolation,
     #[builder(default)]
     pub smartmodule: Vec<SmartModuleInvocation>,
-    #[builder(default)]
+    #[builder(default = "DEFAULT_RETRY_MODE")]
     pub retry_mode: RetryMode,
 }
 
@@ -102,6 +121,7 @@ impl ConsumerConfigExt {
         Option<String>,
         OffsetManagementStrategy,
         Duration,
+        Duration,
     ) {
         let Self {
             topic: _,
@@ -115,6 +135,7 @@ impl ConsumerConfigExt {
             smartmodule,
             offset_strategy,
             offset_flush,
+            offset_flusher_check_period,
             retry_mode: _,
         } = self;
 
@@ -131,6 +152,7 @@ impl ConsumerConfigExt {
             offset_consumer,
             offset_strategy,
             offset_flush,
+            offset_flusher_check_period,
         )
     }
 }
@@ -169,6 +191,7 @@ impl From<ConsumerConfigExt> for ConsumerConfig {
             offset_start: _,
             offset_strategy: _,
             offset_flush: _,
+            offset_flusher_check_period: _,
             disable_continuous,
             max_bytes,
             isolation,

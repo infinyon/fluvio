@@ -2,11 +2,16 @@ pub use http;
 pub use http::StatusCode;
 pub use http::{Request, Response};
 
+#[cfg(not(target_arch = "wasm32"))]
+use std::env;
+
 use anyhow::{anyhow, Result};
+#[cfg(not(target_arch = "wasm32"))]
+use anyhow::Context;
 use serde::de::DeserializeOwned;
 
 #[cfg(not(target_arch = "wasm32"))]
-use ureq::OrAnyStatus;
+use ureq::{Agent, AgentBuilder, Proxy, OrAnyStatus};
 
 pub async fn get_auth_json<J: serde::de::DeserializeOwned>(
     url: &str,
@@ -107,13 +112,9 @@ where
     Ok(response.into())
 }
 
-#[cfg(not(target_arch = "wasm32"))]
-use ureq::{Agent, AgentBuilder, Proxy};
-use std::env;
-use anyhow::Context;
-
 /// Configures a `ureq::Agent` with a proxy, if one is defined in the environment.
 //  TODO: If `ureq` version is updated to 3.0.8, you can replace this function with `try_from_env` here, see more [PR #4438]
+#[cfg(not(target_arch = "wasm32"))]
 fn configure_ureq_proxy() -> Result<Agent> {
     let agent_builder = AgentBuilder::new();
 
