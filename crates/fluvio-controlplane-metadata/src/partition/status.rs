@@ -111,6 +111,10 @@ impl PartitionStatus {
     }
 
     pub fn is_online(&self) -> bool {
+        matches!(self.resolution, PartitionResolution::Online)
+    }
+
+    pub fn is_readable(&self) -> bool {
         matches!(
             self.resolution,
             PartitionResolution::Online | PartitionResolution::OutOfStorage
@@ -118,12 +122,7 @@ impl PartitionStatus {
     }
 
     pub fn is_offline(&self) -> bool {
-        matches!(
-            self.resolution,
-            PartitionResolution::Offline
-                | PartitionResolution::LeaderOffline
-                | PartitionResolution::ElectionLeaderFound
-        )
+        self.resolution == PartitionResolution::Offline
     }
 
     #[deprecated = "Replaced by lrs()"]

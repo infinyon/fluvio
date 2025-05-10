@@ -215,7 +215,7 @@ impl<C: MetadataItem> PartitionReducer<C> {
 
         for partition_kv_epoch in self.partition_store.read().await.values() {
             let partition_kv = partition_kv_epoch.inner();
-            if partition_kv.status.is_offline() {
+            if !partition_kv.status.is_readable() {
                 if partition_kv.spec.leader != online_leader_spu_id {
                     // switch leader if online leader is different
                     for replica_status in partition_kv.status.replica_iter() {
