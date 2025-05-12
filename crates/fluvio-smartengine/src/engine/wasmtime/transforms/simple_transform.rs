@@ -58,8 +58,10 @@ impl SmartModuleTransform for SimpleTansform {
         ctx: &mut SmartModuleInstanceContext,
         store: &mut WasmState,
     ) -> Result<SmartModuleOutput> {
+        let start_time = ctx.metrics_time_start();
         let slice = ctx.write_input(&input, &mut *store)?;
         let map_output = self.f.call(&mut *store, slice)?;
+        ctx.metrics_time_elapsed(start_time, store);
 
         if map_output < 0 {
             let internal_error = SmartModuleTransformErrorStatus::try_from(map_output)
@@ -68,6 +70,8 @@ impl SmartModuleTransform for SimpleTansform {
         }
 
         let output: SmartModuleOutput = ctx.read_output(store)?;
+        let num_recs = output.successes.len() as u64;
+        ctx.metrics().add_records_out(num_recs);
         Ok(output)
     }
 

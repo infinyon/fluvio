@@ -30,6 +30,13 @@ fn generate_source(func: &ConnectorFn) -> TokenStream {
 
                 ::fluvio_connector_common::future::select! {
                     user_fn_result = async {
+                        // let prod = producer.clone();
+                        // let result = #user_fn(user_config, producer).await;
+                        // let met = &prod.update_smartmodule_metrics().await;
+                        // if met.is_err() {
+                        //     ::fluvio_connector_common::tracing::trace!(?met, "Error collecting smartmodule metrics");
+                        // }
+                        // result
                         #user_fn(user_config, producer).await
                     } => {
                         match user_fn_result {

@@ -5,7 +5,7 @@ mod test {
     use fluvio_smartmodule::dataplane::smartmodule::SmartModuleInput;
 
     use crate::engine::{
-        SmartEngine, SmartModuleChainBuilder, SmartModuleConfig, metrics::SmartModuleChainMetrics,
+        SmartEngine, SmartModuleChainBuilder, SmartModuleConfig,
         wasmtime::transforms::simple_transform::MAP_FN_NAME,
     };
     use crate::engine::fixture::read_wasm_module;
@@ -19,9 +19,13 @@ mod test {
         let engine = SmartEngine::new();
         let mut chain_builder = SmartModuleChainBuilder::default();
 
+        let sm = read_wasm_module(SM_MAP);
         chain_builder.add_smart_module(
-            SmartModuleConfig::builder().build().unwrap(),
-            read_wasm_module(SM_MAP),
+            SmartModuleConfig::builder()
+                .smartmodule_names(&[sm.0])
+                .build()
+                .unwrap(),
+            sm.1,
         );
 
         let mut chain = chain_builder
@@ -33,13 +37,11 @@ mod test {
             MAP_FN_NAME
         );
 
-        let metrics = SmartModuleChainMetrics::default();
         let input = vec![Record::new("apple"), Record::new("fruit")];
         let output = chain
             .process(
                 SmartModuleInput::try_from_records(input, DEFAULT_SMARTENGINE_VERSION)
                     .expect("input"),
-                &metrics,
             )
             .expect("process");
         assert_eq!(output.successes.len(), 2); // one record passed

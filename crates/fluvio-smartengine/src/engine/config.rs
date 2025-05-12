@@ -40,6 +40,9 @@ pub struct SmartModuleConfig {
     pub(crate) version: Option<i16>,
     #[builder(default)]
     pub(crate) lookback: Option<Lookback>,
+    // into makes the field required
+    #[builder(setter(into))]
+    pub(crate) smartmodule_names: Vec<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -76,6 +79,7 @@ impl SmartModuleConfig {
 #[cfg(feature = "transformation")]
 impl From<crate::transformation::TransformationStep> for SmartModuleConfig {
     fn from(step: crate::transformation::TransformationStep) -> Self {
+        let names = step.uses.clone();
         Self {
             initial_data: SmartModuleInitialData::None,
             params: step
@@ -86,6 +90,7 @@ impl From<crate::transformation::TransformationStep> for SmartModuleConfig {
                 .into(),
             version: None,
             lookback: step.lookback.map(|l| l.into()),
+            smartmodule_names: vec![names],
         }
     }
 }
