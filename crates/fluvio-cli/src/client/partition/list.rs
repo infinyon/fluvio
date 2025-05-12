@@ -43,7 +43,7 @@ impl ListPartitionOpt {
     }
 }
 
-mod display {
+pub(crate) mod display {
 
     use std::convert::TryInto;
 
