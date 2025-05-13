@@ -2,7 +2,18 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
-## Platform Version 0.17.3-dev-1 - UNRELEASED
+## Platform Version 0.17.3 - 2025-05-13
+
+### CI
+
+* Pos release fluvio v0.17.2 ([#4520](https://github.com/infinyon/fluvio/issues/4520))
+
+### Fixed
+
+* Render extra volumes under the volumes property ([#4519](https://github.com/infinyon/fluvio/issues/4519))
+* Consume large and incomplete batches ([#4522](https://github.com/infinyon/fluvio/issues/4522))
+* Prevent double free on storage error ([#4527](https://github.com/infinyon/fluvio/issues/4527))
+* OutOfSpace partition status returning to online ([#4529](https://github.com/infinyon/fluvio/issues/4529))
 
 ## Platform Version 0.17.2 - 2025-04-29
 
