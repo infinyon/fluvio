@@ -17,6 +17,7 @@ spec:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       nodeSelector:
         {{- toYaml .Values.scPod.nodeSelector | nindent 8 }}
+      priorityClassName: {{ .Values.scPod.priorityClassName }}
       containers:
         - name: fluvio-sc
           image: {{ .Values.image.registry }}/fluvio:{{ .Values.image.tag | default .Chart.AppVersion }}
