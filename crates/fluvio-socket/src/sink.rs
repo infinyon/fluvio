@@ -103,9 +103,6 @@ mod fd {
 
 #[cfg(feature = "file")]
 mod file {
-
-    use std::io::Error as IoError;
-    use std::io::ErrorKind;
     use std::os::fd::BorrowedFd;
 
     use bytes::BytesMut;
@@ -173,10 +170,7 @@ mod file {
                                 let writer = ZeroCopy::raw(self.fd);
                                 let bytes_written =
                                     writer.copy_slice(&f_slice).await.map_err(|err| {
-                                        IoError::new(
-                                            ErrorKind::Other,
-                                            format!("zero copy failed: {err}"),
-                                        )
+                                        std::io::Error::other(format!("zero copy failed: {err}"))
                                     })?;
                                 trace!("finish writing file slice with {bytes_written} bytes");
                                 total_bytes_written += bytes_written;
@@ -198,10 +192,7 @@ mod file {
                                     buf.resize(f_slice.len() as usize, 0);
                                     let fd = unsafe { BorrowedFd::borrow_raw(in_fd) };
                                     let read_size = pread(fd, &mut buf, offset).map_err(|err| {
-                                        IoError::new(
-                                            ErrorKind::Other,
-                                            format!("pread failed: {err}"),
-                                        )
+                                        std::io::Error::other(format!("pread failed: {err}"))
                                     });
                                     (read_size, buf)
                                 })

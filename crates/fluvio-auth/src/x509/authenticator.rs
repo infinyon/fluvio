@@ -127,8 +127,8 @@ impl Authenticator for X509Authenticator {
         incoming_tls_stream: &DefaultServerTlsStream,
         target_tcp_stream: &TcpStream,
     ) -> Result<bool> {
-        let principal = Self::principal_from_tls_stream(incoming_tls_stream)
-            .map_err(|err| std::io::Error::new(std::io::ErrorKind::Other, err))?;
+        let principal =
+            Self::principal_from_tls_stream(incoming_tls_stream).map_err(std::io::Error::other)?;
         let scopes = self.scope_bindings.get_scopes(&principal);
         let authorization_request = AuthRequest::new(principal, scopes);
         let success =

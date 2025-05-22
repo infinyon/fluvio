@@ -280,7 +280,7 @@ async fn apply_smartmodules(
     ) {
         Ok((result, sm_runtime_error)) => {
             if let Some(error) = sm_runtime_error {
-                return Err(ErrorCode::SmartModuleRuntimeError(error));
+                return Err(ErrorCode::SmartModuleRuntimeError(Box::new(error)));
             } else {
                 result
             }

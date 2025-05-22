@@ -73,7 +73,7 @@ impl Iterator for FileBatchIterator {
             &mut header,
             offset,
         )
-        .map_err(|err| IoError::new(ErrorKind::Other, format!("pread error {err}")))
+        .map_err(|err| IoError::other(format!("pread error {err}")))
         {
             Ok(bytes) => bytes,
             Err(err) => return Some(Err(err)),
@@ -92,10 +92,9 @@ impl Iterator for FileBatchIterator {
 
         let mut batch: Batch = Batch::default();
         if let Err(err) = batch.decode_from_file_buf(&mut Cursor::new(header), 0) {
-            return Some(Err(IoError::new(
-                ErrorKind::Other,
-                format!("decodinge batch header error {err}"),
-            )));
+            return Some(Err(IoError::other(format!(
+                "decodinge batch header error {err}"
+            ))));
         }
 
         let remainder = batch.batch_len as usize - BATCH_HEADER_SIZE;
@@ -116,7 +115,7 @@ impl Iterator for FileBatchIterator {
             &mut raw_records,
             offset,
         )
-        .map_err(|err| IoError::new(ErrorKind::Other, format!("pread error {err}")))
+        .map_err(|err| IoError::other(format!("pread error {err}")))
         {
             Ok(bytes) => bytes,
             Err(err) => return Some(Err(err)),
@@ -136,22 +135,16 @@ impl Iterator for FileBatchIterator {
         let compression = match batch.get_compression() {
             Ok(compression) => compression,
             Err(err) => {
-                return Some(Err(IoError::new(
-                    ErrorKind::Other,
-                    format!("unknown compression value for batch {err}"),
-                )))
+                return Some(Err(IoError::other(format!(
+                    "unknown compression value for batch {err}"
+                ))))
             }
         };
 
         let records = match compression.uncompress(&raw_records) {
             Ok(Some(records)) => records,
             Ok(None) => raw_records,
-            Err(err) => {
-                return Some(Err(IoError::new(
-                    ErrorKind::Other,
-                    format!("uncompress error {err}"),
-                )))
-            }
+            Err(err) => return Some(Err(IoError::other(format!("uncompress error {err}")))),
         };
 
         self.offset += bytes_read as i64;

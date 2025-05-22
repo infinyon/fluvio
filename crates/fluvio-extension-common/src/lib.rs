@@ -83,7 +83,7 @@ impl Terminal for PrintTerminal {
 
 #[cfg(feature = "target")]
 pub mod target {
-    use std::io::{ErrorKind, Error as IoError};
+    use std::io::Error as IoError;
     use std::convert::TryInto;
     use clap::Parser;
 
@@ -154,10 +154,8 @@ pub mod target {
                         .into());
                     }
 
-                    let cluster =
-                        FluvioClusterConfig::load_with_profile(&profile)?.ok_or_else(|| {
-                            IoError::new(ErrorKind::Other, "Cluster not found for profile")
-                        })?;
+                    let cluster = FluvioClusterConfig::load_with_profile(&profile)?
+                        .ok_or_else(|| IoError::other("Cluster not found for profile"))?;
                     Ok(cluster.clone())
                 }
                 (None, Some(cluster)) => {

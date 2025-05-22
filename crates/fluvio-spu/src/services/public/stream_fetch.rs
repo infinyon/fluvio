@@ -481,7 +481,7 @@ impl StreamFetchHandler {
         type DefaultPartitionResponse = FetchablePartitionResponse<RecordSet<RawRecords>>;
 
         let error_code = match smartmodule_error {
-            Some(error) => ErrorCode::SmartModuleRuntimeError(error),
+            Some(error) => ErrorCode::SmartModuleRuntimeError(Box::new(error)),
             None => file_partition_response.error_code,
         };
         trace!(?error_code, "SmartModule error code output:");
