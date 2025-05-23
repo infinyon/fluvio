@@ -579,7 +579,7 @@ mod wasm_tests {
 
             let (mut _ws, wsstream) = WsMeta::connect(addr, None)
                 .await
-                .map_err(|e| IoError::new(std::io::ErrorKind::Other, e))?;
+                .map_err(|e| IoError::other(e))?;
             let wsstream_clone = wsstream.clone();
             Ok((
                 Box::new(wsstream.into_io()),

@@ -1,7 +1,6 @@
 use std::convert::TryFrom;
 use std::fmt::Debug;
 use std::io::Error as IoError;
-use std::io::ErrorKind;
 
 use futures_util::{Stream, StreamExt};
 use tracing::{debug, trace, instrument};
@@ -351,18 +350,15 @@ impl FluvioAdmin {
         let stream = inner_socket.create_stream(req_msg, 10).await?;
         Ok(stream.map(|respons_result| match respons_result {
             Ok(response) => {
-                let watch_response = response.downcast().map_err(|err| {
-                    IoError::new(ErrorKind::Other, format!("downcast error: {:#?}", err))
-                })?;
-                watch_response.ok_or(IoError::new(
-                    ErrorKind::Other,
-                    format!("cannot decoded as {s}", s = S::LABEL),
-                ))
+                let watch_response = response
+                    .downcast()
+                    .map_err(|err| IoError::other(format!("downcast error: {:#?}", err)))?;
+                watch_response.ok_or(IoError::other(format!(
+                    "cannot decoded as {s}",
+                    s = S::LABEL
+                )))
             }
-            Err(err) => Err(IoError::new(
-                ErrorKind::Other,
-                format!("socket error {err}"),
-            )),
+            Err(err) => Err(IoError::other(format!("socket error {err}"))),
         }))
     }
 }

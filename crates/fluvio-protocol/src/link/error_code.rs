@@ -160,7 +160,7 @@ pub enum ErrorCode {
     SmartModuleInvalidExports { error: String, kind: String },
     #[fluvio(tag = 6004)]
     #[error("SmartModule transform error {0}")]
-    SmartModuleRuntimeError(super::smartmodule::SmartModuleTransformRuntimeError),
+    SmartModuleRuntimeError(Box<super::smartmodule::SmartModuleTransformRuntimeError>),
     #[fluvio(tag = 6005)]
     #[error("Error initializing {0} SmartModule Chain")]
     SmartModuleChainInitError(String),

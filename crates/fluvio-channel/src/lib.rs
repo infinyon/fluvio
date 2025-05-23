@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fmt::Display;
 use std::path::{Path, PathBuf};
 use std::fs::{File, create_dir_all, read_to_string};
-use std::io::{ErrorKind, Error as IoError, Write};
+use std::io::{Error as IoError, Write};
 
 use clap::{Parser, ValueEnum};
 use dirs::home_dir;
@@ -335,8 +335,7 @@ impl ChannelConfig {
     pub fn save_to<T: AsRef<Path>>(&self, path: T) -> Result<(), IoError> {
         let path_ref = path.as_ref();
         debug!("saving config: {:#?} to: {:#?}", self, path_ref);
-        let toml = toml::to_string(self)
-            .map_err(|err| IoError::new(ErrorKind::Other, format!("{err}")))?;
+        let toml = toml::to_string(self).map_err(|err| IoError::other(format!("{err}")))?;
 
         let mut file = File::create(path_ref)?;
         file.write_all(toml.as_bytes())?;

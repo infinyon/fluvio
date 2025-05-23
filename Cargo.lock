@@ -2355,7 +2355,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.28.0"
+version = "0.28.1"
 dependencies = [
  "adaptive_backoff",
  "anyhow",
@@ -2746,7 +2746,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-extension-common"
-version = "0.15.0"
+version = "0.15.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2910,7 +2910,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.12.4"
+version = "0.12.5"
 dependencies = [
  "bytes",
  "cfg-if",
@@ -3070,7 +3070,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-socket"
-version = "0.15.2"
+version = "0.15.3"
 dependencies = [
  "async-channel 1.9.0",
  "async-lock",
@@ -3320,7 +3320,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-types"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "event-listener 5.4.0",
  "fluvio-future",

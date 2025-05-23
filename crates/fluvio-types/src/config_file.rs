@@ -1,6 +1,5 @@
 use std::fmt::Debug;
 use std::io::Error as IoError;
-use std::io::ErrorKind;
 use std::io::Write;
 use std::path::Path;
 use std::fs::{File, read_to_string};
@@ -35,8 +34,7 @@ where
     fn save_to<T: AsRef<Path>>(&self, path: T) -> Result<(), IoError> {
         let path_ref = path.as_ref();
         debug!("saving config: {:#?} to: {:#?}", self, path_ref);
-        let toml = toml::to_string(self)
-            .map_err(|err| IoError::new(ErrorKind::Other, format!("{err}")))?;
+        let toml = toml::to_string(self).map_err(|err| IoError::other(format!("{err}")))?;
 
         let mut file = File::create(path_ref)?;
         file.write_all(toml.as_bytes())?;

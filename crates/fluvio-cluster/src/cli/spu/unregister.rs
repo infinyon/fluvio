@@ -4,8 +4,6 @@
 //! CLI tree to generate Delete Custom SPUs
 //!
 use std::io::Error as IoError;
-use std::io::ErrorKind;
-
 use anyhow::Result;
 use clap::Parser;
 
@@ -48,7 +46,7 @@ impl UnregisterCustomSpuOpt {
         } else if let Some(id) = self.id {
             CustomSpuKey::Id(id)
         } else {
-            return Err(IoError::new(ErrorKind::Other, "missing custom SPU name or id").into());
+            return Err(IoError::other("missing custom SPU name or id").into());
         };
 
         Ok(custom_spu)

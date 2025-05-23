@@ -4,8 +4,6 @@
 //! CLI tree to generate Delete Topics
 //!
 
-use std::io::Read;
-
 use fluvio_protocol::link::ErrorCode;
 use fluvio_sc_schema::ApiError;
 use tracing::debug;
@@ -41,7 +39,7 @@ impl DeleteTopicOpt {
             debug!(name, "deleting topic");
             match admin.delete::<TopicSpec>(name).await {
                 Err(error) if self.system && is_system_spec_error(&error) => {
-                    if self.force || user_confirms(name) {
+                    if self.force || user_confirms(name)? {
                         if let Err(err) = admin.force_delete::<TopicSpec>(name).await {
                             err_happened = true;
                             if self.continue_on_error {
@@ -95,14 +93,12 @@ fn is_system_spec_error(error: &anyhow::Error) -> bool {
     )
 }
 
-fn user_confirms(name: &str) -> bool {
+fn user_confirms(name: &str) -> Result<bool> {
     println!("You are trying to delete a system topic '{name}'. It can affect the functioning of the cluster.
                              \nAre you sure you want to proceed? (y/n)");
-    char::from(
-        std::io::stdin()
-            .bytes()
-            .next()
-            .and_then(|b| b.ok())
-            .unwrap_or_default(),
-    ) == 'y'
+
+    let mut ans = String::new();
+    std::io::stdin().read_line(&mut ans)?;
+    let ans = ans.trim_end().to_lowercase();
+    Ok(matches!(ans.as_str(), "y" | "yes"))
 }
