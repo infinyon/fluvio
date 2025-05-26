@@ -335,4 +335,12 @@ teardown_file() {
     assert_success
 }
 
+# Describe  topic
+@test "Describe a topic" {
+    debug_msg "topic: $TOPIC_NAME"
+    run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME"
+    run timeout 15s "$FLUVIO_BIN" topic describe "$TOPIC_NAME"
+    assert_output --partial "$TOPIC_NAME"
+    assert_success
+}
 
