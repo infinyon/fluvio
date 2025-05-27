@@ -131,10 +131,10 @@ impl TestDriver {
 
     pub async fn get_consumer_with_config(&self, config: ConsumerConfigExt) -> BoxConsumerStream {
         let fluvio_client = self.create_client().await.expect("cant' create client");
-        match fluvio_client.boxed_consumer_with_config(config).await {
+        match fluvio_client.consumer_with_config(config).await {
             Ok(client) => {
                 //self.consumer_num += 1;
-                client
+                Box::pin(client)
             }
             Err(err) => {
                 panic!("can't create consumer: {err:#?}");

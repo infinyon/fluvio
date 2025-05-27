@@ -77,9 +77,9 @@ pub async fn consumer_stream_from_config(
         tracing::error!("Config build error: {e}");
         e
     })?;
-    let stream = fluvio.boxed_consumer_with_config(cfg).await?;
+    let stream = fluvio.consumer_with_config(cfg).await?;
 
-    Ok((fluvio, stream))
+    Ok((fluvio, Box::pin(stream)))
 }
 
 pub fn init_ctrlc() -> Result<async_channel::Receiver<()>> {

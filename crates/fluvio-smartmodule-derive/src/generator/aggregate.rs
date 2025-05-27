@@ -46,7 +46,7 @@ pub fn generate_aggregate_smartmodule(sm_func: &SmartModuleFn) -> TokenStream {
                 use fluvio_smartmodule::dataplane::core::{Encoder, Decoder};
                 use fluvio_smartmodule::dataplane::record::{Record, RecordData};
 
-                extern "C" {
+                unsafe extern "C" {
                     fn copy_records(putr: i32, len: i32);
                 }
 

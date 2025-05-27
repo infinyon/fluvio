@@ -41,7 +41,7 @@ pub fn generate_init_smartmodule(func: &SmartModuleFn) -> TokenStream {
                     Err(err) =>  {
 
                         // copy data from wasm memory
-                        extern "C" {
+                        unsafe extern "C" {
                             fn copy_records(putr: i32, len: i32);
                         }
 

@@ -18,7 +18,7 @@ use fluvio_socket::{
 
 use crate::admin::FluvioAdmin;
 use crate::consumer::{
-    BoxConsumerStream, ConsumerConfigExt, ConsumerOffset, ConsumerRetryStream, ConsumerStream,
+    ConsumerConfigExt, ConsumerOffset, ConsumerRetryStream, ConsumerStream,
     MultiplePartitionConsumer, MultiplePartitionConsumerStream, PartitionSelectionStrategy, Record,
 };
 use crate::error::anyhow_version_error;
@@ -356,17 +356,6 @@ impl Fluvio {
         + use<>,
     > {
         ConsumerRetryStream::new(self, self.cluster_config.clone(), config).await
-    }
-
-    /// Create boxed consume stream with config.
-    /// This is useful for storing stream in a struct
-    pub async fn boxed_consumer_with_config(
-        &self,
-        config: ConsumerConfigExt,
-    ) -> Result<BoxConsumerStream> {
-        let stream = ConsumerRetryStream::new(self, self.cluster_config.clone(), config).await?;
-        let boxed_stream: BoxConsumerStream = Box::pin(stream);
-        Ok(boxed_stream)
     }
 
     /// Creates a new [ConsumerStream] instance without retry logic.

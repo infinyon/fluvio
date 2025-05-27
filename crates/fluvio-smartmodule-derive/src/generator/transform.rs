@@ -29,7 +29,7 @@ pub(crate) fn generate_transform(
                 };
 
                 // DECODING
-                extern "C" {
+                unsafe extern "C" {
                     fn copy_records(putr: i32, len: i32);
                 }
 

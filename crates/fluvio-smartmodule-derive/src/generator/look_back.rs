@@ -25,7 +25,7 @@ pub fn generate_look_back_smartmodule(sm_func: &SmartModuleFn) -> TokenStream {
                 };
 
                 // DECODING
-                extern "C" {
+                unsafe extern "C" {
                     fn copy_records(putr: i32, len: i32);
                 }
 
