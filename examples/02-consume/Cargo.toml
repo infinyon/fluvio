@@ -2,7 +2,7 @@
 name = "consume"
 version = "0.0.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
-edition = "2021"
+edition = "2024"
 publish = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

@@ -184,7 +184,7 @@ impl<C: MetadataItem> TopicNextState<C> {
     ) -> TopicNextState<C> {
         match topic.spec().replicas() {
             // Computed Topic
-            ReplicaSpec::Computed(ref param) => match topic.status.resolution {
+            ReplicaSpec::Computed(param) => match topic.status.resolution {
                 TopicResolution::Init | TopicResolution::InvalidConfig => {
                     validate_computed_topic_parameters(param)
                 }
@@ -229,7 +229,7 @@ impl<C: MetadataItem> TopicNextState<C> {
             },
 
             // Assign Topic
-            ReplicaSpec::Assigned(ref partition_map) => match topic.status.resolution {
+            ReplicaSpec::Assigned(partition_map) => match topic.status.resolution {
                 TopicResolution::Init | TopicResolution::InvalidConfig => {
                     validate_assigned_topic_parameters(partition_map)
                 }
@@ -258,7 +258,7 @@ impl<C: MetadataItem> TopicNextState<C> {
             },
 
             // Mirror Topic
-            ReplicaSpec::Mirror(ref mirror_config) => match topic.status.resolution {
+            ReplicaSpec::Mirror(mirror_config) => match topic.status.resolution {
                 // same logic for computed topic
                 // should collapse
                 TopicResolution::Init | TopicResolution::InvalidConfig => {

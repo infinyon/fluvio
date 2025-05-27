@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-stream-model"
-edition = "2021"
+edition = "2024"
 version = "0.11.5"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Fluvio Event Stream Model"

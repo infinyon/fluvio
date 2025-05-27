@@ -137,9 +137,7 @@ impl Cargo {
 
 impl CargoBuilder {
     fn validate(&self) -> Result<(), String> {
-        if let (Some(ref _target), Some(ref extra_arguments)) =
-            (&self.target, &self.extra_arguments)
-        {
+        if let (Some(_target), Some(extra_arguments)) = (&self.target, &self.extra_arguments) {
             // We don't want to allow setting both `target` and also
             // `extra_arguments` containing `--target` in it
             if extra_arguments.contains(&"--target".to_string()) {

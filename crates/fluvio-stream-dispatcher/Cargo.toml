@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-stream-dispatcher"
-edition = "2021"
+edition = "2024"
 version = "0.13.7"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Fluvio Event Stream access"

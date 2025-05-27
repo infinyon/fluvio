@@ -1,7 +1,7 @@
 [package]
 name = "fluvio-compression"
 version = "0.3.5"
-edition = "2021"
+edition = "2024"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 categories = ["compression"]

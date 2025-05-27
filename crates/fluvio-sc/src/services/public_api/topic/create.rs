@@ -151,7 +151,7 @@ async fn validate_topic_request<C: MetadataItem>(
                 Status::new_ok(name.to_owned())
             }
         }
-        ReplicaSpec::Assigned(ref partition_map) => {
+        ReplicaSpec::Assigned(partition_map) => {
             let next_state = validate_assigned_topic_parameters::<C>(partition_map);
             trace!("validating, computed topic: {:#?}", next_state);
             if next_state.resolution.is_invalid() {
@@ -175,7 +175,7 @@ async fn validate_topic_request<C: MetadataItem>(
                 }
             }
         }
-        ReplicaSpec::Mirror(ref mirror) => {
+        ReplicaSpec::Mirror(mirror) => {
             let next_state = validate_mirror_topic_parameter::<C>(mirror);
             trace!("validating, mirror topic: {:#?}", next_state);
             if next_state.resolution.is_invalid() {

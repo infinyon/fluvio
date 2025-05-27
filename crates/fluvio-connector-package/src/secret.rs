@@ -310,7 +310,9 @@ mod tests {
         let store = EnvSecretStore;
 
         //when
-        std::env::set_var(secret_name, secret_value);
+        unsafe {
+            std::env::set_var(secret_name, secret_value);
+        }
         let resolved = secret.resolve_from(&store)?;
 
         //then

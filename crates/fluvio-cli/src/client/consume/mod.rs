@@ -321,7 +321,7 @@ mod cmd {
                 builder.offset_flush(DEFAULT_OFFSET_FLUSH_INTERVAL);
             }
 
-            if let Some(ref mirror) = self.mirror {
+            if let Some(mirror) = &self.mirror {
                 builder.mirror(mirror.clone());
             }
 
@@ -628,7 +628,7 @@ mod cmd {
                     value
                 }
                 (Some(ConsumeOutputType::full_table), None) => {
-                    if let Some(ref mut table) = table_model {
+                    if let Some(table) = table_model {
                         format_fancy_table_record(record.value(), table)
                     } else {
                         unreachable!()

@@ -306,7 +306,7 @@ impl OffsetManagement {
 
 impl Drop for OffsetManagement {
     fn drop(&mut self) {
-        if let OffsetManagement::Auto {
+        if let &mut OffsetManagement::Auto {
             ref mut offset_store,
             ref auto_flusher,
             ..

@@ -104,7 +104,7 @@ impl<S: ReplicaStorage + Send + Sync + 'static> Stream for ReplicaRevStream<S> {
         cx: &mut std::task::Context<'_>,
     ) -> Poll<Option<Self::Item>> {
         let next = match &mut self.inner_iter_fut {
-            InnerFutureState::Resolved(ref mut records) => records.pop(),
+            InnerFutureState::Resolved(records) => records.pop(),
 
             InnerFutureState::Pending(fut) => match ready!(fut.poll_unpin(cx)) {
                 Ok(records) if records.is_empty() => return Poll::Ready(None),
