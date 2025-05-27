@@ -137,7 +137,9 @@ mod tests {
 
         // Scenario: Using Context
 
-        set_var(INFINYON_CI_CONTEXT, "unit_testing");
+        unsafe {
+            set_var(INFINYON_CI_CONTEXT, "unit_testing");
+        }
 
         let client = Client::new("https://hub.infinyon.cloud").unwrap();
         let url = client
@@ -152,6 +154,8 @@ mod tests {
             "https://hub.infinyon.cloud/hub/v1/fvm/pkgset/0.10.14-dev+123345abc?arch=arm-unknown-linux-gnueabihf&ctx=unit_testing",
             "failed on Scenario Using Context"
         );
-        remove_var(INFINYON_CI_CONTEXT);
+        unsafe {
+            remove_var(INFINYON_CI_CONTEXT);
+        }
     }
 }

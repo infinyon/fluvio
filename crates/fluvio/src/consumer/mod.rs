@@ -936,7 +936,7 @@ impl MultiplePartitionConsumer {
             async move { consumer.stream_with_config(offset, config).await }
         });
 
-        let streams = futures_util::future::try_join_all(stream_futures).await?;
+        let streams = try_join_all(stream_futures).await?;
 
         Ok(select_all(streams))
     }

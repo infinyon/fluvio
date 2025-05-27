@@ -1,3 +1,4 @@
+use std::pin::Pin;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
@@ -164,6 +165,28 @@ where
 
     fn offset_flush(&mut self) -> ConsumerBoxFuture {
         self.get_mut().offset_flush()
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl ConsumerStream for Pin<Box<dyn ConsumerStream + Send>> {
+    fn offset_commit(&mut self) -> ConsumerBoxFuture {
+        Box::pin(async move { self.as_mut().offset_commit().await })
+    }
+
+    fn offset_flush(&mut self) -> ConsumerBoxFuture {
+        Box::pin(async move { self.as_mut().offset_flush().await })
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+impl ConsumerStream for Pin<Box<dyn ConsumerStream>> {
+    fn offset_commit(&mut self) -> ConsumerBoxFuture {
+        Box::pin(async move { self.as_mut().offset_commit().await })
+    }
+
+    fn offset_flush(&mut self) -> ConsumerBoxFuture {
+        Box::pin(async move { self.as_mut().offset_flush().await })
     }
 }
 

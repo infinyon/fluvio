@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-package-index"
-version = "0.7.6"
+version = "0.7.7"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Fluvio Package Index"
 repository = "https://github.com/infinyon/fluvio"

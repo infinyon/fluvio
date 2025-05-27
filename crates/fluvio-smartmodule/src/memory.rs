@@ -1,6 +1,6 @@
 /// Allocate memory into the module's linear memory
 /// and return the offset to the start of the block.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub fn alloc(len: usize) -> *mut u8 {
     // create a new mutable buffer with capacity `len`
     let mut buf = Vec::with_capacity(len);
@@ -16,9 +16,11 @@ pub fn alloc(len: usize) -> *mut u8 {
     ptr
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 #[allow(clippy::missing_safety_doc)]
 pub unsafe fn dealloc(ptr: *mut u8, size: usize) {
-    let data = Vec::from_raw_parts(ptr, size, size);
-    std::mem::drop(data);
+    unsafe {
+        let data = Vec::from_raw_parts(ptr, size, size);
+        std::mem::drop(data);
+    }
 }

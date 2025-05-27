@@ -352,7 +352,8 @@ impl Fluvio {
         &self,
         config: ConsumerConfigExt,
     ) -> Result<
-        impl ConsumerStream<Item = std::result::Result<Record, fluvio_protocol::link::ErrorCode>>,
+        impl ConsumerStream<Item = std::result::Result<Record, fluvio_protocol::link::ErrorCode>>
+        + use<>,
     > {
         ConsumerRetryStream::new(self, self.cluster_config.clone(), config).await
     }
