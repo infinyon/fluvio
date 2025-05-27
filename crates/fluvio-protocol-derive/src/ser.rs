@@ -1,13 +1,13 @@
 use crate::ast::prop::UnnamedProp;
 use crate::ast::r#struct::FluvioStructProps;
-use crate::ast::{add_bounds, FluvioBound};
 use crate::ast::{
-    container::ContainerAttributes, prop::NamedProp, r#enum::EnumProp, r#enum::FieldKind,
-    DeriveItem,
+    DeriveItem, container::ContainerAttributes, r#enum::EnumProp, r#enum::FieldKind,
+    prop::NamedProp,
 };
+use crate::ast::{FluvioBound, add_bounds};
 use proc_macro2::Span;
 use proc_macro2::TokenStream;
-use quote::{format_ident, quote, ToTokens};
+use quote::{ToTokens, format_ident, quote};
 use std::str::FromStr;
 use syn::punctuated::Punctuated;
 use syn::{Ident, LitInt, Token};

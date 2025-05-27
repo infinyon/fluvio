@@ -82,7 +82,9 @@ async fn main() {
                     println!("{manifest_diff}");
                 }
             }
-            CrateStatus::Unchanged => println!("🟢 {crate_name:-padding$} Code does not differ from crates.io"),
+            CrateStatus::Unchanged => {
+                println!("🟢 {crate_name:-padding$} Code does not differ from crates.io")
+            }
             CrateStatus::CodeChanged(manifest_diff) => {
                 println!("⛔ {crate_name:-padding$} Code changed but version number did not:");
                 diff_crate_src(&crate_name, &cli.crates_dir, &cli.crates_io_dir, true);
@@ -90,13 +92,17 @@ async fn main() {
                     println!("{manifest_diff}");
                 }
                 version_needs_bump = true;
-            },
+            }
             CrateStatus::ManifestChanged(manifest_diff) => {
-                println!("⛔ {crate_name:-padding$} Manifest (Cargo.toml) changed but version number did not:");
+                println!(
+                    "⛔ {crate_name:-padding$} Manifest (Cargo.toml) changed but version number did not:"
+                );
                 print!("{manifest_diff}");
                 version_needs_bump = true;
-            },
-            CrateStatus::NotPublished => println!("🟡 {crate_name:-padding$} Crate not found in crates.io (Possible cause: Not published yet?)"),
+            }
+            CrateStatus::NotPublished => println!(
+                "🟡 {crate_name:-padding$} Crate not found in crates.io (Possible cause: Not published yet?)"
+            ),
         }
     }
     if version_needs_bump {

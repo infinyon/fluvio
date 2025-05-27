@@ -10,7 +10,7 @@ fn impl_test_case_macro(opt_struct: &syn::DeriveInput) -> TokenStream {
     let test_case_struct_name_str = "MyTestCase".to_string();
     let test_case_struct_ident = Ident::new(&test_case_struct_name_str, Span::call_site());
 
-    let gen = quote! {
+    let token_stream = quote! {
 
         use fluvio_test_util::test_meta::{TestOption, TestCase};
 
@@ -43,7 +43,7 @@ fn impl_test_case_macro(opt_struct: &syn::DeriveInput) -> TokenStream {
 
     };
 
-    gen.into()
+    token_stream.into()
 }
 
 #[proc_macro_derive(MyTestCase)]

@@ -111,7 +111,9 @@ pub enum LegacySmartModuleError {
     #[error("WASM Module error: {0}")]
     #[fluvio(tag = 1)]
     InvalidWasmModule(String),
-    #[error("WASM module is not a valid '{0}' DerivedStream. Are you missing a #[smartmodule({0})] attribute?")]
+    #[error(
+        "WASM module is not a valid '{0}' DerivedStream. Are you missing a #[smartmodule({0})] attribute?"
+    )]
     #[fluvio(tag = 2)]
     InvalidDerivedStreamModule(String),
 }

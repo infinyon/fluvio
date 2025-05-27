@@ -1185,9 +1185,10 @@ mod tests {
 
         let err = connector_spec.unwrap_err();
 
-        assert!(err
-            .to_string()
-            .contains("mapping values are not allowed in this context at line 16 column 17"));
+        assert!(
+            err.to_string()
+                .contains("mapping values are not allowed in this context at line 16 column 17")
+        );
     }
 
     #[test]

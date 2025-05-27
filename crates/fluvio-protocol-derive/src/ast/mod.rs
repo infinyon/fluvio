@@ -5,7 +5,7 @@ pub(crate) mod r#struct;
 
 use syn::parse::{Parse, ParseStream};
 use syn::{
-    parse_quote, Attribute, GenericParam, Generics, ItemEnum, ItemStruct, Result, Token, Visibility,
+    Attribute, GenericParam, Generics, ItemEnum, ItemStruct, Result, Token, Visibility, parse_quote,
 };
 
 use crate::ast::container::ContainerAttributes;

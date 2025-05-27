@@ -43,9 +43,15 @@ mod util {
 
     pub(crate) fn parse_isolation(s: &str) -> Result<Isolation, String> {
         match s {
-            "read_committed" | "ReadCommitted" | "readCommitted" | "readcommitted" => Ok(Isolation::ReadCommitted),
-            "read_uncommitted" | "ReadUncommitted" | "readUncommitted" | "readuncommitted" => Ok(Isolation::ReadUncommitted),
-            _ => Err(format!("unrecognized isolation: {s}. Supported: read_committed (ReadCommitted), read_uncommitted (ReadUncommitted)")),
+            "read_committed" | "ReadCommitted" | "readCommitted" | "readcommitted" => {
+                Ok(Isolation::ReadCommitted)
+            }
+            "read_uncommitted" | "ReadUncommitted" | "readUncommitted" | "readuncommitted" => {
+                Ok(Isolation::ReadUncommitted)
+            }
+            _ => Err(format!(
+                "unrecognized isolation: {s}. Supported: read_committed (ReadCommitted), read_uncommitted (ReadUncommitted)"
+            )),
         }
     }
 

@@ -235,9 +235,15 @@ impl FromStr for DeliverySemantic {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "at_most_once" | "at-most-once" | "AtMostOnce" | "atMostOnce" | "atmostonce" => Ok(DeliverySemantic::AtMostOnce),
-            "at_least_once" | "at-least-once" | "AtLeastOnce" | "atLeastOnce" | "atleastonce" => Ok(DeliverySemantic::default()),
-            _ => Err(format!("unrecognized delivery semantic: {s}. Supported: at_most_once (AtMostOnce), at_least_once (AtLeastOnce)")),
+            "at_most_once" | "at-most-once" | "AtMostOnce" | "atMostOnce" | "atmostonce" => {
+                Ok(DeliverySemantic::AtMostOnce)
+            }
+            "at_least_once" | "at-least-once" | "AtLeastOnce" | "atLeastOnce" | "atleastonce" => {
+                Ok(DeliverySemantic::default())
+            }
+            _ => Err(format!(
+                "unrecognized delivery semantic: {s}. Supported: at_most_once (AtMostOnce), at_least_once (AtLeastOnce)"
+            )),
         }
     }
 }

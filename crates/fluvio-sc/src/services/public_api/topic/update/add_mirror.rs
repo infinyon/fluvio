@@ -59,7 +59,10 @@ pub async fn handle_add_mirror<AC: AuthContext, C: MetadataItem>(
                                             return Ok(Status::new(
                                                 topic_name,
                                                 ErrorCode::MirrorAlreadyExists,
-                                                Some(format!("remote \"{}\" is already assigned to partition: \"{}\"", home.remote_cluster, i)),
+                                                Some(format!(
+                                                    "remote \"{}\" is already assigned to partition: \"{}\"",
+                                                    home.remote_cluster, i
+                                                )),
                                             ));
                                         }
                                     }

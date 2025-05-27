@@ -12,7 +12,7 @@ pub fn impl_smart_opt(input: DeriveInput) -> syn::Result<TokenStream> {
             return Err(syn::Error::new_spanned(
                 input.ident,
                 "SmartOpt derive macro only can be used on structs.",
-            ))
+            ));
         }
     };
 
@@ -34,7 +34,7 @@ pub fn impl_smart_opt(input: DeriveInput) -> syn::Result<TokenStream> {
 
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
 
-    let gen = quote! {
+    let token_stream = quote! {
         impl #impl_generics std::convert::TryFrom<fluvio_smartmodule::dataplane::smartmodule::SmartModuleExtraParams
         > for #name #ty_generics #where_clause {
             type Error =  String;
@@ -53,16 +53,16 @@ pub fn impl_smart_opt(input: DeriveInput) -> syn::Result<TokenStream> {
             }
         }
     };
-    Ok(gen.into())
+    Ok(token_stream.into())
 }
 
 fn ty_inner_type<'a>(ty: &'a syn::Type, wrapper: &'static str) -> Option<&'a syn::Type> {
-    if let syn::Type::Path(ref p) = ty {
+    if let syn::Type::Path(p) = ty {
         if p.path.segments.len() == 1 && p.path.segments[0].ident == wrapper {
             if let syn::PathArguments::AngleBracketed(ref inner_ty) = p.path.segments[0].arguments {
                 if inner_ty.args.len() == 1 {
                     let inner_ty = inner_ty.args.first().unwrap();
-                    if let syn::GenericArgument::Type(ref t) = inner_ty {
+                    if let syn::GenericArgument::Type(t) = inner_ty {
                         return Some(t);
                     }
                 }

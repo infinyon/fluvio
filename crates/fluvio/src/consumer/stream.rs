@@ -1,3 +1,4 @@
+use std::pin::Pin;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
@@ -167,6 +168,28 @@ where
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+impl ConsumerStream for Pin<Box<dyn ConsumerStream + Send>> {
+    fn offset_commit(&mut self) -> ConsumerBoxFuture {
+        Box::pin(async move { self.as_mut().offset_commit().await })
+    }
+
+    fn offset_flush(&mut self) -> ConsumerBoxFuture {
+        Box::pin(async move { self.as_mut().offset_flush().await })
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+impl ConsumerStream for Pin<Box<dyn ConsumerStream>> {
+    fn offset_commit(&mut self) -> ConsumerBoxFuture {
+        Box::pin(async move { self.as_mut().offset_commit().await })
+    }
+
+    fn offset_flush(&mut self) -> ConsumerBoxFuture {
+        Box::pin(async move { self.as_mut().offset_flush().await })
+    }
+}
+
 impl<T: Stream<Item = Result<Record, ErrorCode>> + Unpin> ConsumerStream
     for SinglePartitionConsumerStream<T>
 {
@@ -306,7 +329,7 @@ impl OffsetManagement {
 
 impl Drop for OffsetManagement {
     fn drop(&mut self) {
-        if let OffsetManagement::Auto {
+        if let &mut OffsetManagement::Auto {
             ref mut offset_store,
             ref auto_flusher,
             ..

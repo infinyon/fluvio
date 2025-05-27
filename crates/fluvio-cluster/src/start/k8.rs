@@ -504,11 +504,7 @@ impl ClusterConfigBuilder {
     where
         F: Fn(&mut Self) -> &mut Self,
     {
-        if cond {
-            f(self)
-        } else {
-            self
-        }
+        if cond { f(self) } else { self }
     }
 
     pub fn with_default_spu_group(
@@ -603,7 +599,9 @@ impl ClusterInstaller {
 
         // HACK. set FLV_DISPATCHER if not set
         if env::var(DISPATCHER_WAIT).is_err() {
-            env::set_var(DISPATCHER_WAIT, "300");
+            unsafe {
+                env::set_var(DISPATCHER_WAIT, "300");
+            }
         }
 
         let mut checker = ClusterChecker::empty().with_k8_checks();

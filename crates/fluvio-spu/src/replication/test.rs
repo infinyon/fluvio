@@ -40,11 +40,7 @@ const FOLLOWER2: SpuId = 5003;
 
 static MAX_WAIT_REPLICATION: Lazy<u64> = Lazy::new(|| {
     use std::env;
-    if env::var("CI").is_ok() {
-        5000
-    } else {
-        1000
-    }
+    if env::var("CI").is_ok() { 5000 } else { 1000 }
 });
 
 #[derive(Builder, Debug)]
@@ -577,28 +573,34 @@ async fn test_replication2_promote() {
     sleep(Duration::from_millis(*MAX_WAIT_REPLICATION)).await;
 
     // check follower replica exists before
-    assert!(follower_ctx
-        .followers_state()
-        .get(&new_replica.id)
-        .await
-        .is_some());
+    assert!(
+        follower_ctx
+            .followers_state()
+            .get(&new_replica.id)
+            .await
+            .is_some()
+    );
 
     // promote ctx
     follower_ctx.promote(&new_replica, &old_replica).await;
 
     // ensure follower ctx is removed
-    assert!(follower_ctx
-        .followers_state()
-        .get(&new_replica.id)
-        .await
-        .is_none());
+    assert!(
+        follower_ctx
+            .followers_state()
+            .get(&new_replica.id)
+            .await
+            .is_none()
+    );
 
     // ensure leader ctx is there
-    assert!(follower_ctx
-        .leaders_state()
-        .get(&new_replica.id)
-        .await
-        .is_some());
+    assert!(
+        follower_ctx
+            .leaders_state()
+            .get(&new_replica.id)
+            .await
+            .is_some()
+    );
 
     sleep(Duration::from_millis(WAIT_TERMINATE)).await;
 
@@ -634,11 +636,13 @@ async fn test_replication_dispatch_in_sequence() {
         .get(&replica.id)
         .await
         .expect("replica");
-    assert!(leader_gctx
-        .followers_state()
-        .get(&replica.id)
-        .await
-        .is_none());
+    assert!(
+        leader_gctx
+            .followers_state()
+            .get(&replica.id)
+            .await
+            .is_none()
+    );
     // should be new
     assert_eq!(leader.leo(), 0);
     assert_eq!(leader.hw(), 0);
@@ -729,11 +733,13 @@ async fn test_replication_dispatch_out_of_sequence() {
         .get(&replica.id)
         .await
         .expect("replica");
-    assert!(leader_gctx
-        .followers_state()
-        .get(&replica.id)
-        .await
-        .is_none());
+    assert!(
+        leader_gctx
+            .followers_state()
+            .get(&replica.id)
+            .await
+            .is_none()
+    );
     // should be new
     assert_eq!(leader.leo(), 0);
     assert_eq!(leader.hw(), 0);
@@ -905,11 +911,13 @@ async fn test_sync_larger_records() {
         .get(&replica.id)
         .await
         .expect("replica");
-    assert!(leader_gctx
-        .followers_state()
-        .get(&replica.id)
-        .await
-        .is_none());
+    assert!(
+        leader_gctx
+            .followers_state()
+            .get(&replica.id)
+            .await
+            .is_none()
+    );
     // should be new
     assert_eq!(leader.leo(), 0);
     assert_eq!(leader.hw(), 0);

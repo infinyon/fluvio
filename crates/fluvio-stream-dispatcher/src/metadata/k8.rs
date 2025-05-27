@@ -536,11 +536,13 @@ mod tests {
                 .name,
             "parent"
         );
-        assert!(items.items[0]
-            .ctx()
-            .item()
-            .inner()
-            .finalizers
-            .contains(&"FINALIZER1".to_string()));
+        assert!(
+            items.items[0]
+                .ctx()
+                .item()
+                .inner()
+                .finalizers
+                .contains(&"FINALIZER1".to_string())
+        );
     }
 }

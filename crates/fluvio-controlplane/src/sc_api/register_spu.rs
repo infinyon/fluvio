@@ -81,7 +81,7 @@ impl RegisterSpuResponse {
     }
 
     pub fn error_message(&self) -> String {
-        if let Some(ref err_msg) = &self.error_message {
+        if let Some(err_msg) = &self.error_message {
             err_msg.clone()
         } else {
             self.error_code.to_sentence()

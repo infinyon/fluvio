@@ -18,7 +18,7 @@ use fluvio_socket::{
 
 use crate::admin::FluvioAdmin;
 use crate::consumer::{
-    BoxConsumerStream, ConsumerConfigExt, ConsumerOffset, ConsumerRetryStream, ConsumerStream,
+    ConsumerConfigExt, ConsumerOffset, ConsumerRetryStream, ConsumerStream,
     MultiplePartitionConsumer, MultiplePartitionConsumerStream, PartitionSelectionStrategy, Record,
 };
 use crate::error::anyhow_version_error;
@@ -352,19 +352,10 @@ impl Fluvio {
         &self,
         config: ConsumerConfigExt,
     ) -> Result<
-        impl ConsumerStream<Item = std::result::Result<Record, fluvio_protocol::link::ErrorCode>>,
+        impl ConsumerStream<Item = std::result::Result<Record, fluvio_protocol::link::ErrorCode>>
+        + use<>,
     > {
         ConsumerRetryStream::new(self, self.cluster_config.clone(), config).await
-    }
-
-    /// Create boxed consume stream with config.
-    /// This is usedful for storing stream in a struct
-    pub async fn boxed_consumer_with_config(
-        &self,
-        config: ConsumerConfigExt,
-    ) -> Result<BoxConsumerStream> {
-        let boxed_stream: BoxConsumerStream = Box::pin(self.consumer_with_config(config).await?);
-        Ok(boxed_stream)
     }
 
     /// Creates a new [ConsumerStream] instance without retry logic.
@@ -372,7 +363,8 @@ impl Fluvio {
         &self,
         config: ConsumerConfigExt,
     ) -> Result<
-        impl ConsumerStream<Item = std::result::Result<Record, fluvio_protocol::link::ErrorCode>>,
+        impl ConsumerStream<Item = std::result::Result<Record, fluvio_protocol::link::ErrorCode>>
+        + use<>,
     > {
         let spu_pool = self.spu_pool().await?;
         let topic = &config.topic;
@@ -383,7 +375,7 @@ impl Fluvio {
             .ok_or_else(|| FluvioError::TopicNotFound(topic.to_string()))?
             .spec;
 
-        let mirror_partition = if let Some(ref mirror) = &config.mirror {
+        let mirror_partition = if let Some(mirror) = &config.mirror {
             match topic_spec.replicas() {
                 ReplicaSpec::Mirror(MirrorConfig::Home(home_mirror_config)) => {
                     let partitions_maps =

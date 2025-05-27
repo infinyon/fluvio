@@ -123,7 +123,9 @@ fn main() -> Result<()> {
                 channel[0], channel[1]
             );
         } else {
-            eprintln!("Couldn't find Fluvio channel binary (Unexpected error formatting (raw output): {channel_info_str})");
+            eprintln!(
+                "Couldn't find Fluvio channel binary (Unexpected error formatting (raw output): {channel_info_str})"
+            );
         }
         panic!("Exec loop detected");
     }
@@ -298,12 +300,14 @@ fn main() -> Result<()> {
     }
 
     // Set env vars
-    env::set_var(FLUVIO_RELEASE_CHANNEL, channel_name.clone());
-    env::set_var(FLUVIO_EXTENSIONS_DIR, channel.extensions.clone());
-    env::set_var(
-        FLUVIO_IMAGE_TAG_STRATEGY,
-        channel.image_tag_strategy.to_string(),
-    );
+    unsafe {
+        env::set_var(FLUVIO_RELEASE_CHANNEL, channel_name.clone());
+        env::set_var(FLUVIO_EXTENSIONS_DIR, channel.extensions.clone());
+        env::set_var(
+            FLUVIO_IMAGE_TAG_STRATEGY,
+            channel.image_tag_strategy.to_string(),
+        );
+    }
 
     // On windows, this path should end in `.exe`
     let exe = channel.get_binary_path();
@@ -319,7 +323,9 @@ fn main() -> Result<()> {
     // Set the env var we check at the beginning to signal if we're in an exec loop
     // Give channel name and binary location for error message in form: <channel_name>,<channel_path>
     let channel_info = format!("{},{}", channel_name, channel.get_binary_path().display());
-    env::set_var(IS_FLUVIO_EXEC_LOOP, channel_info);
+    unsafe {
+        env::set_var(IS_FLUVIO_EXEC_LOOP, channel_info);
+    }
 
     // Handle pipes
     let mut proc = std::process::Command::new(exe);

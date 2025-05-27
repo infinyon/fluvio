@@ -1,7 +1,7 @@
 [package]
 name = "fluvio-benchmark"
 version = "0.0.0"
-edition = "2021"
+edition = "2024"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Fluvio benchmarking tool"
 repository = "https://github.com/infinyon/fluvio"

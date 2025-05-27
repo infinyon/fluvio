@@ -123,9 +123,8 @@ impl ReconnectStrategy for DefaultReconnectStrategy {
         )
         .await?;
 
-        let new_stream = fluvio_client
-            .consumer_with_config_inner(new_config.clone())
-            .await?;
+        let new_stream =
+            ConsumerRetryStream::create_owned_stream(fluvio_client, new_config.clone()).await?;
 
         backoff.reset();
         Ok(Arc::new(Mutex::new(Box::pin(new_stream))))
@@ -186,6 +185,18 @@ impl ConsumerStream for ConsumerRetryStream {
 }
 
 impl ConsumerRetryStream {
+    /// Creates an owned consumer stream from a Fluvio client.
+    async fn create_owned_stream(
+        fluvio: Fluvio,
+        config: ConsumerConfigExt,
+    ) -> Result<
+        impl ConsumerStream<
+            Item = std::result::Result<ConsumerRecord, fluvio_protocol::link::ErrorCode>,
+        >,
+    > {
+        fluvio.consumer_with_config_inner(config).await
+    }
+
     /// Creates a new `ConsumerRetryStream` with the given configuration.
     pub async fn new(
         fluvio: &Fluvio,

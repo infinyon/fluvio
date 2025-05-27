@@ -16,7 +16,7 @@ pub fn generate_look_back_smartmodule(sm_func: &SmartModuleFn) -> TokenStream {
         #[cfg(target_arch = "wasm32")]
         mod ___system {
 
-            #[no_mangle]
+            #[unsafe(no_mangle)]
             #[allow(clippy::missing_safety_doc)]
             pub unsafe fn look_back(ptr: *mut u8, len: usize, version: i16) -> i32 {
                 use fluvio_smartmodule::dataplane::smartmodule::{
@@ -25,7 +25,7 @@ pub fn generate_look_back_smartmodule(sm_func: &SmartModuleFn) -> TokenStream {
                 };
 
                 // DECODING
-                extern "C" {
+                unsafe extern "C" {
                     fn copy_records(putr: i32, len: i32);
                 }
 

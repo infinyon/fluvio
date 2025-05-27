@@ -16,7 +16,7 @@ pub fn generate_init_smartmodule(func: &SmartModuleFn) -> TokenStream {
 
 
 
-            #[no_mangle]
+            #[unsafe(no_mangle)]
             #[allow(clippy::missing_safety_doc)]
             pub unsafe fn init(ptr: *mut u8, len: usize, version: i16) -> i32 {
                 use fluvio_smartmodule::dataplane::smartmodule::{
@@ -41,7 +41,7 @@ pub fn generate_init_smartmodule(func: &SmartModuleFn) -> TokenStream {
                     Err(err) =>  {
 
                         // copy data from wasm memory
-                        extern "C" {
+                        unsafe extern "C" {
                             fn copy_records(putr: i32, len: i32);
                         }
 

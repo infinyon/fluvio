@@ -249,130 +249,149 @@ mod tests {
                 PackageSet {
                     pkgset: Version::from_str("0.1.0").unwrap(),
                     arch: String::from("aarch64-apple-darwin"),
-                    artifacts: vec![
-                        Artifact {
-                            name: String::from("fluvio-cloud"),
-                            version: Version::from_str("0.2.19").unwrap(),
-                            download_url: String::from("https://packages.fluvio.io/fluvio-cloud/aarch64-apple-darwin/0.2.19"),
-                            sha256_url: String::from("https://packages.fluvio.io/v1/packages/fluvio/fluvio-cloud/0.2.19/aarch64-apple-darwin/fluvio-cloud.sha256"),
-                        }
-                    ]
+                    artifacts: vec![Artifact {
+                        name: String::from("fluvio-cloud"),
+                        version: Version::from_str("0.2.19").unwrap(),
+                        download_url: String::from(
+                            "https://packages.fluvio.io/fluvio-cloud/aarch64-apple-darwin/0.2.19",
+                        ),
+                        sha256_url: String::from(
+                            "https://packages.fluvio.io/v1/packages/fluvio/fluvio-cloud/0.2.19/aarch64-apple-darwin/fluvio-cloud.sha256",
+                        ),
+                    }],
                 },
                 PackageSet {
                     pkgset: Version::from_str("0.1.0").unwrap(),
                     arch: String::from("aarch64-apple-darwin"),
-                    artifacts: vec![
-                        Artifact {
-                            name: String::from("fluvio-cloud"),
-                            version: Version::from_str("0.11.6").unwrap(),
-                            download_url: String::from("https://packages.fluvio.io/fluvio-cloud/aarch64-apple-darwin/0.2.19"),
-                            sha256_url: String::from("https://packages.fluvio.io/v1/packages/fluvio/fluvio-cloud/0.2.19/aarch64-apple-darwin/fluvio-cloud.sha256"),
-                        }
-                    ]
+                    artifacts: vec![Artifact {
+                        name: String::from("fluvio-cloud"),
+                        version: Version::from_str("0.11.6").unwrap(),
+                        download_url: String::from(
+                            "https://packages.fluvio.io/fluvio-cloud/aarch64-apple-darwin/0.2.19",
+                        ),
+                        sha256_url: String::from(
+                            "https://packages.fluvio.io/v1/packages/fluvio/fluvio-cloud/0.2.19/aarch64-apple-darwin/fluvio-cloud.sha256",
+                        ),
+                    }],
                 },
-                1
+                1,
             ),
             (
                 PackageSet {
                     pkgset: Version::from_str("0.2.0").unwrap(),
                     arch: String::from("aarch64-apple-darwin"),
-                    artifacts: vec![
-                        Artifact {
-                            name: String::from("fluvio-cloud"),
-                            version: Version::from_str("0.2.19").unwrap(),
-                            download_url: String::from("https://packages.fluvio.io/fluvio-cloud/aarch64-apple-darwin/0.2.19"),
-                            sha256_url: String::from("https://packages.fluvio.io/v1/packages/fluvio/fluvio-cloud/0.2.19/aarch64-apple-darwin/fluvio-cloud.sha256"),
-                        }
-                    ]
+                    artifacts: vec![Artifact {
+                        name: String::from("fluvio-cloud"),
+                        version: Version::from_str("0.2.19").unwrap(),
+                        download_url: String::from(
+                            "https://packages.fluvio.io/fluvio-cloud/aarch64-apple-darwin/0.2.19",
+                        ),
+                        sha256_url: String::from(
+                            "https://packages.fluvio.io/v1/packages/fluvio/fluvio-cloud/0.2.19/aarch64-apple-darwin/fluvio-cloud.sha256",
+                        ),
+                    }],
                 },
                 PackageSet {
                     pkgset: Version::from_str("0.2.1").unwrap(),
                     arch: String::from("aarch64-apple-darwin"),
-                    artifacts: vec![
-                        Artifact {
-                            name: String::from("fluvio-cloud"),
-                            version: Version::from_str("0.2.19").unwrap(),
-                            download_url: String::from("https://packages.fluvio.io/fluvio-cloud/aarch64-apple-darwin/0.2.19"),
-                            sha256_url: String::from("https://packages.fluvio.io/v1/packages/fluvio/fluvio-cloud/0.2.19/aarch64-apple-darwin/fluvio-cloud.sha256"),
-                        }
-                    ]
+                    artifacts: vec![Artifact {
+                        name: String::from("fluvio-cloud"),
+                        version: Version::from_str("0.2.19").unwrap(),
+                        download_url: String::from(
+                            "https://packages.fluvio.io/fluvio-cloud/aarch64-apple-darwin/0.2.19",
+                        ),
+                        sha256_url: String::from(
+                            "https://packages.fluvio.io/v1/packages/fluvio/fluvio-cloud/0.2.19/aarch64-apple-darwin/fluvio-cloud.sha256",
+                        ),
+                    }],
                 },
-                0
+                0,
             ),
             (
                 PackageSet {
                     pkgset: Version::from_str("0.3.1").unwrap(),
                     arch: String::from("aarch64-apple-darwin"),
-                    artifacts: vec![
-                        Artifact {
-                            name: String::from("fluvio-cloud"),
-                            version: Version::from_str("0.2.19").unwrap(),
-                            download_url: String::from("https://packages.fluvio.io/fluvio-cloud/aarch64-apple-darwin/0.2.19"),
-                            sha256_url: String::from("https://packages.fluvio.io/v1/packages/fluvio/fluvio-cloud/0.2.19/aarch64-apple-darwin/fluvio-cloud.sha256"),
-                        }
-                    ]
+                    artifacts: vec![Artifact {
+                        name: String::from("fluvio-cloud"),
+                        version: Version::from_str("0.2.19").unwrap(),
+                        download_url: String::from(
+                            "https://packages.fluvio.io/fluvio-cloud/aarch64-apple-darwin/0.2.19",
+                        ),
+                        sha256_url: String::from(
+                            "https://packages.fluvio.io/v1/packages/fluvio/fluvio-cloud/0.2.19/aarch64-apple-darwin/fluvio-cloud.sha256",
+                        ),
+                    }],
                 },
                 PackageSet {
                     pkgset: Version::from_str("0.3.2").unwrap(),
                     arch: String::from("aarch64-apple-darwin"),
-                    artifacts: vec![]
+                    artifacts: vec![],
                 },
-                0
+                0,
             ),
             (
                 PackageSet {
                     pkgset: Version::from_str("0.4.7").unwrap(),
                     arch: String::from("aarch64-apple-darwin"),
-                    artifacts: vec![
-                        Artifact {
-                            name: String::from("fluvio-cloud"),
-                            version: Version::from_str("0.2.19").unwrap(),
-                            download_url: String::from("https://packages.fluvio.io/fluvio-cloud/aarch64-apple-darwin/0.2.19"),
-                            sha256_url: String::from("https://packages.fluvio.io/v1/packages/fluvio/fluvio-cloud/0.2.19/aarch64-apple-darwin/fluvio-cloud.sha256"),
-                        },
-                    ]
+                    artifacts: vec![Artifact {
+                        name: String::from("fluvio-cloud"),
+                        version: Version::from_str("0.2.19").unwrap(),
+                        download_url: String::from(
+                            "https://packages.fluvio.io/fluvio-cloud/aarch64-apple-darwin/0.2.19",
+                        ),
+                        sha256_url: String::from(
+                            "https://packages.fluvio.io/v1/packages/fluvio/fluvio-cloud/0.2.19/aarch64-apple-darwin/fluvio-cloud.sha256",
+                        ),
+                    }],
                 },
                 PackageSet {
                     pkgset: Version::from_str("0.4.7").unwrap(),
                     arch: String::from("aarch64-apple-darwin"),
-                    artifacts: vec![
-                        Artifact {
-                            name: String::from("new-pkg"),
-                            version: Version::from_str("0.1.0").unwrap(),
-                            download_url: String::from("https://packages.fluvio.io/fluvio-cloud/aarch64-apple-darwin/0.2.19"),
-                            sha256_url: String::from("https://packages.fluvio.io/v1/packages/fluvio/fluvio-cloud/0.2.19/aarch64-apple-darwin/fluvio-cloud.sha256"),
-                        }
-                    ]
+                    artifacts: vec![Artifact {
+                        name: String::from("new-pkg"),
+                        version: Version::from_str("0.1.0").unwrap(),
+                        download_url: String::from(
+                            "https://packages.fluvio.io/fluvio-cloud/aarch64-apple-darwin/0.2.19",
+                        ),
+                        sha256_url: String::from(
+                            "https://packages.fluvio.io/v1/packages/fluvio/fluvio-cloud/0.2.19/aarch64-apple-darwin/fluvio-cloud.sha256",
+                        ),
+                    }],
                 },
-                1
+                1,
             ),
             (
                 PackageSet {
                     pkgset: Version::from_str("0.3.1").unwrap(),
                     arch: String::from("aarch64-apple-darwin"),
-                    artifacts: vec![]
+                    artifacts: vec![],
                 },
                 PackageSet {
                     pkgset: Version::from_str("0.3.2").unwrap(),
                     arch: String::from("aarch64-apple-darwin"),
-                    artifacts: vec![
-                        Artifact {
-                            name: String::from("fluvio-cloud"),
-                            version: Version::from_str("0.2.19").unwrap(),
-                            download_url: String::from("https://packages.fluvio.io/fluvio-cloud/aarch64-apple-darwin/0.2.19"),
-                            sha256_url: String::from("https://packages.fluvio.io/v1/packages/fluvio/fluvio-cloud/0.2.19/aarch64-apple-darwin/fluvio-cloud.sha256"),
-                        }
-                    ]
+                    artifacts: vec![Artifact {
+                        name: String::from("fluvio-cloud"),
+                        version: Version::from_str("0.2.19").unwrap(),
+                        download_url: String::from(
+                            "https://packages.fluvio.io/fluvio-cloud/aarch64-apple-darwin/0.2.19",
+                        ),
+                        sha256_url: String::from(
+                            "https://packages.fluvio.io/v1/packages/fluvio/fluvio-cloud/0.2.19/aarch64-apple-darwin/fluvio-cloud.sha256",
+                        ),
+                    }],
                 },
-                1
+                1,
             ),
         ];
 
         for (ours, theirs, new_pkgs) in package_sets {
             let diff = ours.artifacts_diff(&theirs).len();
 
-            assert_eq!(diff, new_pkgs, "PackageSet Artifacts diff between PackageSets {} and {} should have {} diff items but found {}",
-                ours.pkgset, theirs.pkgset, new_pkgs, diff);
+            assert_eq!(
+                diff, new_pkgs,
+                "PackageSet Artifacts diff between PackageSets {} and {} should have {} diff items but found {}",
+                ours.pkgset, theirs.pkgset, new_pkgs, diff
+            );
         }
     }
 }

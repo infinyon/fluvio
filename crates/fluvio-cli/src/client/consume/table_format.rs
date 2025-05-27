@@ -227,11 +227,7 @@ impl TableModel {
                     Some(i) => {
                         let up_five: isize = (i as isize) - 5;
 
-                        if up_five >= 0 {
-                            up_five as usize
-                        } else {
-                            0
-                        }
+                        if up_five >= 0 { up_five as usize } else { 0 }
                     }
                     None => 0,
                 };

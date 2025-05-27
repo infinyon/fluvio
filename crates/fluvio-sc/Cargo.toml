@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-sc"
-edition = "2021"
+edition = "2024"
 version = "0.0.0"
 authors = ["fluvio.io"]
 description = "Fluvio Stream Controller"

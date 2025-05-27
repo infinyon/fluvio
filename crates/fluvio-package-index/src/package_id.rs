@@ -430,7 +430,9 @@ impl<'de> Deserialize<'de> for PackageId<WithVersion> {
                 use serde::de::{Unexpected, Error as DeserializeError};
                 return Err(DeserializeError::invalid_value(
                     Unexpected::Other("Invalid PackageId"),
-                    &&*format!("A PackageId, <registry>/<group>/<name>:<version>, where <registry> is optional: {e}"),
+                    &&*format!(
+                        "A PackageId, <registry>/<group>/<name>:<version>, where <registry> is optional: {e}"
+                    ),
                 ));
             }
         };
@@ -450,7 +452,9 @@ impl<'de> Deserialize<'de> for PackageId<MaybeVersion> {
                 use serde::de::{Unexpected, Error as DeserializeError};
                 return Err(DeserializeError::invalid_value(
                     Unexpected::Other("Invalid PackageId"),
-                    &&*format!("A PackageId, <registry>/<group>/<name>:<version>, where <registry> is optional: {e}"),
+                    &&*format!(
+                        "A PackageId, <registry>/<group>/<name>:<version>, where <registry> is optional: {e}"
+                    ),
                 ));
             }
         };

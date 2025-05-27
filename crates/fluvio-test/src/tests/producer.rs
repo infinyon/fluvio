@@ -194,11 +194,7 @@ pub fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
             async {
                 // We want to ensure that we handle the case of an odd split in work
                 let workload_size = if n + 1 == producers {
-                    if is_even_split {
-                        even_split
-                    } else {
-                        odd_split
-                    }
+                    if is_even_split { even_split } else { odd_split }
                 } else {
                     even_split
                 };

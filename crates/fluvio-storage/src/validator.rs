@@ -81,7 +81,7 @@ impl LogValidator {
             Ok(batch_stream) => batch_stream,
             Err(err) => match err.kind() {
                 ErrorKind::UnexpectedEof => {
-                    return Err(anyhow!("empty file with base offset: {}", val.base_offset))
+                    return Err(anyhow!("empty file with base offset: {}", val.base_offset));
                 }
                 _ => return Err(err.into()),
             },

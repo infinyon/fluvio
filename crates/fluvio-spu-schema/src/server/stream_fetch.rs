@@ -348,9 +348,7 @@ mod tests {
         let orig = vec![0x01; ORIG_LEN];
         let compressed = SmartModuleInvocationWasm::adhoc_from_bytes(orig.as_slice())
             .expect("compression failed");
-        assert!(
-            matches!(&compressed, SmartModuleInvocationWasm::AdHoc(ref x) if x.len() < ORIG_LEN)
-        );
+        assert!(matches!(&compressed, SmartModuleInvocationWasm::AdHoc(x) if x.len() < ORIG_LEN));
         let uncompressed = compressed.into_raw().expect("decompression failed");
         assert_eq!(orig, uncompressed);
     }

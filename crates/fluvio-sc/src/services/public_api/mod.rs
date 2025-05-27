@@ -36,7 +36,6 @@ mod server {
         A: Authorization + Sync + Send + Debug + 'static,
         C: MetadataItem + 'static,
         C::UId: Send + Sync,
-
         AuthGlobalContext<A, C>: Clone + Debug,
         <A as Authorization>::Context: Send + Sync,
     {

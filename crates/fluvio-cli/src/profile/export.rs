@@ -57,8 +57,8 @@ impl ExportOpt {
         {
             if let TlsPolicy::Verified(TlsConfig::Files(_)) = fluvio_config.tls {
                 return Err(anyhow!(
-                        "Cluster {cluster_name} uses externals TLS certs. Only inline TLS certs are supported."
-                    ));
+                    "Cluster {cluster_name} uses externals TLS certs. Only inline TLS certs are supported."
+                ));
             }
             fluvio_config
         } else {

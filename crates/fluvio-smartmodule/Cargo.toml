@@ -1,7 +1,7 @@
 [package]
 name = "fluvio-smartmodule"
-version = "0.8.0"
-edition = "2021"
+version = "0.8.1"
+edition = "2024"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 categories = ["wasm", "database", "encoding"]

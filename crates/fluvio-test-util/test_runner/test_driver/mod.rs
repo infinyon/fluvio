@@ -1,10 +1,9 @@
 //use fluvio::consumer::{PartitionSelectionStrategy, ConsumerConfig};
 
-use fluvio::dataplane::link::ErrorCode;
 use tracing::debug;
 use anyhow::Result;
 
-use fluvio::consumer::{ConsumerConfigExt, ConsumerConfigExtBuilder, ConsumerStream, Record};
+use fluvio::consumer::{BoxConsumerStream, ConsumerConfigExt, ConsumerConfigExtBuilder};
 use fluvio::{TopicProducerPool, Fluvio, Offset, RecordKey};
 use fluvio::metadata::topic::TopicSpec;
 use fluvio::TopicProducerConfig;
@@ -130,15 +129,12 @@ impl TestDriver {
         Ok(())
     }
 
-    pub async fn get_consumer_with_config(
-        &self,
-        config: ConsumerConfigExt,
-    ) -> impl ConsumerStream<Item = Result<Record, ErrorCode>> {
+    pub async fn get_consumer_with_config(&self, config: ConsumerConfigExt) -> BoxConsumerStream {
         let fluvio_client = self.create_client().await.expect("cant' create client");
         match fluvio_client.consumer_with_config(config).await {
             Ok(client) => {
                 //self.consumer_num += 1;
-                client
+                Box::pin(client)
             }
             Err(err) => {
                 panic!("can't create consumer: {err:#?}");
@@ -151,7 +147,7 @@ impl TestDriver {
         topic: &str,
         partition: PartitionId,
         offset_start: Offset,
-    ) -> impl ConsumerStream<Item = Result<Record, ErrorCode>> {
+    ) -> BoxConsumerStream {
         let config = ConsumerConfigExtBuilder::default()
             .topic(topic)
             .partition(partition)

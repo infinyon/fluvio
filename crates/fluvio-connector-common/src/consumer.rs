@@ -4,7 +4,7 @@ use std::{
 };
 use std::time::Duration;
 
-use fluvio::consumer::{ConsumerConfigExtBuilder, OffsetManagementStrategy};
+use fluvio::consumer::{BoxConsumerStream, ConsumerConfigExtBuilder, OffsetManagementStrategy};
 use fluvio::{Fluvio, FluvioClusterConfig, Offset};
 use fluvio_connector_package::config::{ConsumerPartitionConfig, OffsetConfig, OffsetStrategyConfig};
 use crate::{config::ConnectorConfig, Result};
@@ -15,7 +15,7 @@ pub use fluvio::consumer::ConsumerStream;
 
 pub async fn consumer_stream_from_config(
     config: &ConnectorConfig,
-) -> Result<(Fluvio, impl ConsumerStream)> {
+) -> Result<(Fluvio, BoxConsumerStream)> {
     let mut cluster_config = FluvioClusterConfig::load()?;
     cluster_config.client_id = Some(format!("fluvio_connector_{}", &config.meta().name()));
 
@@ -79,7 +79,7 @@ pub async fn consumer_stream_from_config(
     })?;
     let stream = fluvio.consumer_with_config(cfg).await?;
 
-    Ok((fluvio, stream))
+    Ok((fluvio, Box::pin(stream)))
 }
 
 pub fn init_ctrlc() -> Result<async_channel::Receiver<()>> {

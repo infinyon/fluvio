@@ -268,7 +268,7 @@ fn connector_name_from_config(package_cmd: PackageCmd, config: PathBuf) -> Resul
         Err(err) => {
             return Err(err).with_context(|| {
                 format!("Could not open connector config at: {}", config.display())
-            })
+            });
         }
     };
 

@@ -32,11 +32,7 @@ mod common {
     use crate::{Encoder, Decoder};
 
     const fn max(a: i16, b: i16) -> i16 {
-        if a > b {
-            a
-        } else {
-            b
-        }
+        if a > b { a } else { b }
     }
 
     pub trait Request: Encoder + Decoder + Debug {

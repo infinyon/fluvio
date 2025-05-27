@@ -533,11 +533,13 @@ mod tests {
         assert_eq!(seg1_metadata.len(), 1000);
 
         // this should return none since we are trying find offset before start offset
-        assert!((active_segment
-            .find_offset_position(10)
-            .await
-            .expect("offset"))
-        .is_none());
+        assert!(
+            (active_segment
+                .find_offset_position(10)
+                .await
+                .expect("offset"))
+            .is_none()
+        );
         let offset_position =
             (active_segment.find_offset_position(20).await.expect("find")).expect("offset exists");
         assert_eq!(offset_position.batch.get_base_offset(), 20);

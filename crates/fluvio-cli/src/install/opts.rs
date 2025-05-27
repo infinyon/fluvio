@@ -125,10 +125,12 @@ impl InstallOpt {
                                 .name(),
                             target
                         ));
-                        install_println("❕ Consider filing an issue to add support for this platform using the link below! 👇");
+                        install_println(
+                            "❕ Consider filing an issue to add support for this platform using the link below! 👇",
+                        );
                         install_println(format!(
-                    "❕   https://github.com/infinyon/fluvio/issues/new?title=Support+fluvio-cloud+on+target+{target}"
-                ));
+                            "❕   https://github.com/infinyon/fluvio/issues/new?title=Support+fluvio-cloud+on+target+{target}"
+                        ));
                         return Ok(());
                     }
                     _ => return Err(err),

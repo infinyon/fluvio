@@ -23,7 +23,7 @@ use fluvio_spu_schema::server::consumer_offset::{
 use tracing::{debug, error, trace, instrument, info, warn};
 use futures_util::stream::{Stream, select_all};
 use once_cell::sync::Lazy;
-use futures_util::future::{Either, err, join_all};
+use futures_util::future::{Either, err, try_join_all};
 use futures_util::stream::{StreamExt, once, iter};
 use futures_util::FutureExt;
 
@@ -115,7 +115,7 @@ impl<P> Clone for PartitionConsumer<P> {
 
 impl<P> PartitionConsumer<P>
 where
-    P: SpuDirectory,
+    P: SpuDirectory + 'static,
 {
     pub fn new(
         topic: String,
@@ -191,7 +191,7 @@ where
     pub async fn stream(
         &self,
         offset: Offset,
-    ) -> Result<impl Stream<Item = Result<Record, ErrorCode>>> {
+    ) -> Result<impl Stream<Item = Result<Record, ErrorCode>> + use<P>> {
         let config = ConsumerConfig::builder().build()?;
         let stream = self.stream_with_config(offset, config).await?;
 
@@ -245,7 +245,7 @@ where
         &self,
         offset: Offset,
         config: ConsumerConfig,
-    ) -> Result<impl Stream<Item = Result<Record, ErrorCode>>> {
+    ) -> Result<impl Stream<Item = Result<Record, ErrorCode>> + use<P>> {
         let (stream, start_offset, _) = self
             .inner_stream_batches_with_config(offset, config, None)
             .await?;
@@ -300,7 +300,7 @@ where
         &self,
         offset: Offset,
         config: ConsumerConfig,
-    ) -> Result<impl Stream<Item = Result<Batch, ErrorCode>>> {
+    ) -> Result<impl Stream<Item = Result<Batch, ErrorCode>> + use<P>> {
         let (stream, _start_offset, _) = self
             .inner_stream_batches_with_config(offset, config, None)
             .await?;
@@ -316,7 +316,7 @@ where
         config: ConsumerConfig,
         consumer_id: Option<String>,
     ) -> Result<(
-        impl Stream<Item = Result<Batch, ErrorCode>>,
+        impl Stream<Item = Result<Batch, ErrorCode>> + use<P>,
         fluvio_protocol::record::Offset,
         Sender<StreamToServer>,
     )> {
@@ -385,7 +385,7 @@ where
         config: ConsumerConfig,
         consumer_id: Option<String>,
     ) -> Result<(
-        impl Stream<Item = Result<DefaultStreamFetchResponse, ErrorCode>>,
+        impl Stream<Item = Result<DefaultStreamFetchResponse, ErrorCode>> + use<P>,
         fluvio_protocol::record::Offset,
         Sender<StreamToServer>,
     )> {
@@ -442,7 +442,9 @@ where
             .unwrap_or(CHAIN_SMARTMODULE_API - 1);
         debug!(%stream_fetch_version, "stream_fetch_version");
         if stream_fetch_version < CHAIN_SMARTMODULE_API {
-            warn!("SPU does not support SmartModule chaining. SmartModules will not be applied to the stream");
+            warn!(
+                "SPU does not support SmartModule chaining. SmartModules will not be applied to the stream"
+            );
         }
         if with_consumer_id && stream_fetch_version < OFFSET_MANAGEMENT_API {
             warn!("SPU does not support Offset Management API");
@@ -602,9 +604,10 @@ where
 
     #[instrument(skip(self, config))]
     pub(crate) async fn consumer_stream_with_config(
-        &self,
+        self,
         config: ConsumerConfigExt,
-    ) -> Result<SinglePartitionConsumerStream<impl Stream<Item = Result<Record, ErrorCode>>>> {
+    ) -> Result<SinglePartitionConsumerStream<impl Stream<Item = Result<Record, ErrorCode>> + use<P>>>
+    {
         let (offset, config, consumer_id, strategy, flush_period, flusher_check_period) =
             config.into_parts();
         let (stream, start_offset, stream_to_server) = self
@@ -911,7 +914,7 @@ impl MultiplePartitionConsumer {
         offset: Offset,
         config: ConsumerConfig,
     ) -> Result<impl Stream<Item = Result<Record, ErrorCode>>> {
-        let consumers = self
+        let consumers: Vec<_> = self
             .strategy
             .selection(self.pool.clone())
             .await?
@@ -924,15 +927,16 @@ impl MultiplePartitionConsumer {
                     self.metrics.clone(),
                 )
             })
-            .collect::<Vec<_>>();
+            .collect();
 
-        let streams_future = consumers
-            .iter()
-            .map(|consumer| consumer.stream_with_config(offset.clone(), config.clone()));
+        // Create futures that own their consumers to enable concurrent execution
+        let stream_futures = consumers.into_iter().map(|consumer| {
+            let offset = offset.clone();
+            let config = config.clone();
+            async move { consumer.stream_with_config(offset, config).await }
+        });
 
-        let streams_result = join_all(streams_future).await;
-
-        let streams = streams_result.into_iter().collect::<Result<Vec<_>, _>>()?;
+        let streams = try_join_all(stream_futures).await?;
 
         Ok(select_all(streams))
     }

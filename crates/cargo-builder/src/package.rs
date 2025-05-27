@@ -68,7 +68,10 @@ impl PackageInfo {
                 )
             })?
         } else {
-            return Err(anyhow!("Could not find a default cargo package in {}. Try the `-p` option to specify a project/package.", current_project.display()));
+            return Err(anyhow!(
+                "Could not find a default cargo package in {}. Try the `-p` option to specify a project/package.",
+                current_project.display()
+            ));
         };
 
         // find the path of the parent folder for this Cargo.toml
@@ -177,21 +180,29 @@ mod tests {
 
         //then
         assert_eq!(package_info.package_name(), "cargo-builder");
-        assert!(package_info
-            .package_path()
-            .ends_with("crates/cargo-builder"));
+        assert!(
+            package_info
+                .package_path()
+                .ends_with("crates/cargo-builder")
+        );
         assert_eq!(package_info.target_name().unwrap(), "cargo_builder");
-        assert!(package_info
-            .target_bin_path()
-            .unwrap()
-            .ends_with("x86_64-unknown-linux-gnu/release-lto/cargo_builder"));
-        assert!(package_info
-            .target_wasm32_path()
-            .unwrap()
-            .ends_with("wasm32-unknown-unknown/release-lto/cargo_builder.wasm"));
-        assert!(package_info
-            .target_wasm32_wasi_path()
-            .unwrap()
-            .ends_with(format!("{WASM_TARGET}/release-lto/cargo_builder.wasm")));
+        assert!(
+            package_info
+                .target_bin_path()
+                .unwrap()
+                .ends_with("x86_64-unknown-linux-gnu/release-lto/cargo_builder")
+        );
+        assert!(
+            package_info
+                .target_wasm32_path()
+                .unwrap()
+                .ends_with("wasm32-unknown-unknown/release-lto/cargo_builder.wasm")
+        );
+        assert!(
+            package_info
+                .target_wasm32_wasi_path()
+                .unwrap()
+                .ends_with(format!("{WASM_TARGET}/release-lto/cargo_builder.wasm"))
+        );
     }
 }

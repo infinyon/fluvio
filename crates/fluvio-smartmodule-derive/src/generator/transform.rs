@@ -21,7 +21,7 @@ pub(crate) fn generate_transform(
 
         #[cfg(target_arch = "wasm32")]
         mod __system {
-            #[no_mangle]
+            #[unsafe(no_mangle)]
             #[allow(clippy::missing_safety_doc)]
             pub unsafe fn #name(ptr: *mut u8, len: usize, version: i16) -> i32 {
                 use fluvio_smartmodule::dataplane::smartmodule::{SmartModuleTransformErrorStatus,
@@ -29,7 +29,7 @@ pub(crate) fn generate_transform(
                 };
 
                 // DECODING
-                extern "C" {
+                unsafe extern "C" {
                     fn copy_records(putr: i32, len: i32);
                 }
 

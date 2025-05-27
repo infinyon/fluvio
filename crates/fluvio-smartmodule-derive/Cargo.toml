@@ -1,7 +1,7 @@
 [package]
 name = "fluvio-smartmodule-derive"
-version = "0.6.4"
-edition = "2021"
+version = "0.6.5"
+edition = "2024"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 categories = ["wasm", "database", "encoding"]

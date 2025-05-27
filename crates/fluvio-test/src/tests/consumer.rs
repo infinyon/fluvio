@@ -192,7 +192,9 @@ where
         records_recvd == 0 && !test_case.option.allow_empty_topic
     );
     if records_recvd == 0 && !test_case.option.allow_empty_topic {
-        panic!("Consumer test failed, received no records. If this is intentional, run with --allow-empty-topic");
+        panic!(
+            "Consumer test failed, received no records. If this is intentional, run with --allow-empty-topic"
+        );
     }
 
     let consume_p99 = Duration::from_nanos(latency_histogram.value_at_percentile(0.99));

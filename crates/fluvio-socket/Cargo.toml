@@ -1,7 +1,7 @@
 [package]
 name = "fluvio-socket"
 version = "0.15.3"
-edition = "2021"
+edition = "2024"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Provide TCP socket wrapper for fluvio protocol"
 repository = "https://github.com/infinyon/fluvio"

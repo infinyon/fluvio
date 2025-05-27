@@ -78,7 +78,12 @@ fn test_binary_in_manifest() {
         // (ipkg file, Option<errstr>)
 
         // this package was built with binary "foo", but the Connector.toml specifies "no-foo"
-        ("../../crates/cdk/tests/foo-0.1.0.ipkg", Some("Package missing binary file 'no-foo' specified in Connector.toml '[deployment]' section")),
+        (
+            "../../crates/cdk/tests/foo-0.1.0.ipkg",
+            Some(
+                "Package missing binary file 'no-foo' specified in Connector.toml '[deployment]' section",
+            ),
+        ),
     ];
 
     for (ipkg_file, opt_err_str) in ipkg_test_set {

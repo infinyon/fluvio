@@ -238,10 +238,12 @@ pub mod replica_map_test {
         };
         let mut scheduler = PartitionScheduler::init(&spus, &partitions).await;
         // not enough spus for replication
-        assert!(scheduler
-            .generate_partitions_without_rack(&param, None)
-            .await
-            .is_empty());
+        assert!(
+            scheduler
+                .generate_partitions_without_rack(&param, None)
+                .await
+                .is_empty()
+        );
     }
 
     #[fluvio_future::test]

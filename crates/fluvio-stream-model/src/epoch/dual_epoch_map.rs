@@ -708,10 +708,11 @@ mod test {
         assert!(map.update(test1.key_owned(), test1).is_none());
 
         // without rev update, no updates
-        assert!(map
-            .update(test2.key_owned(), test2.clone())
-            .expect("update")
-            .has_no_changes());
+        assert!(
+            map.update(test2.key_owned(), test2.clone())
+                .expect("update")
+                .has_no_changes()
+        );
 
         map.increment_epoch();
         let changes = map

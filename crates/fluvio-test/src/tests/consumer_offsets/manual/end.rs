@@ -73,9 +73,11 @@ pub async fn test_strategy_manual_end(
     }
 
     for partition in 0..partitions {
-        ensure!(find_consumer(client, &consumer_id, partition)
-            .await?
-            .is_none());
+        ensure!(
+            find_consumer(client, &consumer_id, partition)
+                .await?
+                .is_none()
+        );
     }
 
     Ok(())
