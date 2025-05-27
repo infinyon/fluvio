@@ -324,8 +324,7 @@ pub(crate) async fn fetch_offsets(
 
     trace!(
         "receive fetch response replica: {}, {:#?}",
-        replica,
-        response
+        replica, response
     );
 
     match response.find_partition(replica) {

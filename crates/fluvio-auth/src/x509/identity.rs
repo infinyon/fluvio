@@ -41,7 +41,7 @@ impl X509Identity {
                         return Err(std::io::Error::new(
                             std::io::ErrorKind::Interrupted,
                             "connection closed",
-                        ))
+                        ));
                     }
                 }
             } else {

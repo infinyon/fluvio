@@ -1,13 +1,13 @@
 use proc_macro2::Span;
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::spanned::Spanned;
 use syn::Attribute;
 use syn::Data;
 use syn::DataStruct;
 use syn::DeriveInput;
 use syn::Fields;
 use syn::Ident;
+use syn::spanned::Spanned;
 
 use super::util::find_attr;
 use super::util::find_int_name_value;

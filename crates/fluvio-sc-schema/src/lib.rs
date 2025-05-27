@@ -66,7 +66,10 @@ mod error {
                     write!(f, "Connector not found")
                 }
                 ApiError::Code(ErrorCode::TopicInvalidName, _) => {
-                    write!(f,"Invalid topic name: topic name may only include lowercase letters (a-z), numbers (0-9), and hyphens (-).")
+                    write!(
+                        f,
+                        "Invalid topic name: topic name may only include lowercase letters (a-z), numbers (0-9), and hyphens (-)."
+                    )
                 }
                 ApiError::Code(ErrorCode::TableFormatAlreadyExists, _) => {
                     write!(f, "TableFormat already exists")

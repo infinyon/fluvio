@@ -39,7 +39,9 @@ impl UpgradeOpt {
         debug!(?installation_type);
         if let Some(requested) = self.start.installation_type.get() {
             if installation_type != requested {
-                bail!("It is not allowed to change installation type during cluster upgrade. Current: {installation_type}, requested: {requested}");
+                bail!(
+                    "It is not allowed to change installation type during cluster upgrade. Current: {installation_type}, requested: {requested}"
+                );
             }
         } else {
             self.start.installation_type.set(installation_type.clone());
@@ -72,7 +74,7 @@ impl UpgradeOpt {
                         return Err(ClusterCliError::Other(
                             "Failed to create progress bar".to_string(),
                         )
-                        .into())
+                        .into());
                     }
                 };
                 ShutdownOpt.process().await?;
@@ -83,7 +85,9 @@ impl UpgradeOpt {
             }
             InstallationType::Cloud => {
                 let profile = config.config().current_profile_name().unwrap_or("none");
-                bail!("Fluvio cluster upgrade does not operate on cloud cluster \"{profile}\", use 'fluvio cloud ...' commands")
+                bail!(
+                    "Fluvio cluster upgrade does not operate on cloud cluster \"{profile}\", use 'fluvio cloud ...' commands"
+                )
             }
             other => bail!("upgrade command is not supported for {other} installation type"),
         };

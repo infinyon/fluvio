@@ -789,7 +789,10 @@ async fn test_stream_filter_error_fetch(
             assert_eq!(error.record_value.as_ref(), "ten".as_bytes());
             assert_eq!(error.kind, SmartModuleKindError::Filter);
             let rendered = format!("{error}");
-            assert_eq!(rendered, "Oops something went wrong\n\nCaused by:\n   0: Failed to parse int\n   1: invalid digit found in string\n\nSmartModule Info: \n    Type: Filter\n    Offset: 10\n    Key: NULL\n    Value: ten");
+            assert_eq!(
+                rendered,
+                "Oops something went wrong\n\nCaused by:\n   0: Failed to parse int\n   1: invalid digit found in string\n\nSmartModule Info: \n    Type: Filter\n    Offset: 10\n    Key: NULL\n    Value: ten"
+            );
         }
         _ => panic!("should have gotten error code"),
     }
@@ -881,7 +884,7 @@ async fn test_stream_filter_max(
         .write_record_set(&mut create_filter_raw_records(10), ctx.follower_notifier())
         .await
         .expect("write"); // 3000 bytes total
-                          // now total of 300 filter records bytes (min), but last filter record is greater than max
+    // now total of 300 filter records bytes (min), but last filter record is greater than max
 
     let stream_request = DefaultStreamFetchRequest::builder()
         .topic(topic.to_owned())

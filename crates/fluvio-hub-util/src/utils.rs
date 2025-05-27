@@ -288,9 +288,9 @@ mod util_tests {
             assert!(out.is_ok());
             let (org, pkg, ver) = out.unwrap();
 
-            assert_eq!(rec.1 .0, org);
-            assert_eq!(rec.1 .1, pkg);
-            assert_eq!(rec.1 .2, ver);
+            assert_eq!(rec.1.0, org);
+            assert_eq!(rec.1.1, pkg);
+            assert_eq!(rec.1.2, ver);
         }
     }
 

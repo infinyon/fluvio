@@ -39,8 +39,7 @@ impl Decoder for FluvioCodec {
             packet_len.decode(&mut src, 0)?;
             trace!(
                 "Decoder: received buffer: {}, message size: {}",
-                len,
-                packet_len
+                len, packet_len
             );
             if (packet_len + 4) as usize <= bytes.len() {
                 trace!(

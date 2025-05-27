@@ -26,7 +26,7 @@ impl ShutdownOpt {
             Err(_) => {
                 return Err(
                     ClusterCliError::Other("Failed to create progress bar".to_string()).into(),
-                )
+                );
             }
         };
         let (installation_type, config) = get_installation_type()?;
@@ -38,7 +38,9 @@ impl ShutdownOpt {
             }
             InstallationType::Cloud => {
                 let profile = config.config().current_profile_name().unwrap_or("none");
-                bail!("'fluvio cluster shutdown does not operate on Infinyon cloud cluster \"{profile}\", use `fluvio cloud ...` commands");
+                bail!(
+                    "'fluvio cluster shutdown does not operate on Infinyon cloud cluster \"{profile}\", use `fluvio cloud ...` commands"
+                );
             }
             _ => {
                 pb.println("❌ Shutdown is only implemented for local clusters.");

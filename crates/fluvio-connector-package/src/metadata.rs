@@ -473,7 +473,10 @@ mod tests {
         validate_deployment(&deployment3, &config).unwrap();
 
         //then
-        assert_eq!(res.unwrap_err().to_string(), "deployment image in metadata: 'infinyon/fluvio-connect-http_sink:latest' mismatches image in config: 'infinyon/fluvio-connect-http_source:latest'");
+        assert_eq!(
+            res.unwrap_err().to_string(),
+            "deployment image in metadata: 'infinyon/fluvio-connect-http_sink:latest' mismatches image in config: 'infinyon/fluvio-connect-http_source:latest'"
+        );
     }
 
     #[test]

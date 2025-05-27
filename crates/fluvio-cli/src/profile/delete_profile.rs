@@ -26,7 +26,9 @@ impl DeleteProfileOpt {
                 } else {
                     println!("profile {} deleted", &profile_name);
                     if config_file.config().current_profile_name().is_none() {
-                        println!("warning: this removed your current profile, use 'fluvio profile switch' to select a different one");
+                        println!(
+                            "warning: this removed your current profile, use 'fluvio profile switch' to select a different one"
+                        );
                     } else {
                         println!("profile deleted");
                     }

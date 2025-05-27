@@ -12,7 +12,7 @@ pub fn impl_smart_opt(input: DeriveInput) -> syn::Result<TokenStream> {
             return Err(syn::Error::new_spanned(
                 input.ident,
                 "SmartOpt derive macro only can be used on structs.",
-            ))
+            ));
         }
     };
 

@@ -72,5 +72,7 @@ To interact with this cluster, please install the matching CLI version using the
 pub fn anyhow_version_error(platform_ver: &str) -> anyhow::Error {
     use anyhow::anyhow;
     let client_ver = crate::VERSION.trim();
-    anyhow!("Fluvio Client {client_ver} and Cluster {platform_ver} versions are not compatible. Please use a client compatible with {platform_ver}")
+    anyhow!(
+        "Fluvio Client {client_ver} and Cluster {platform_ver} versions are not compatible. Please use a client compatible with {platform_ver}"
+    )
 }

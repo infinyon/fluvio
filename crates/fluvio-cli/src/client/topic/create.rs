@@ -191,7 +191,7 @@ impl CreateTopicOpt {
                 MirrorConfig::Remote(_) => {
                     return Err(
                         CliError::InvalidArg("Invalid mirror configuration".to_string()).into(),
-                    )
+                    );
                 }
             };
 

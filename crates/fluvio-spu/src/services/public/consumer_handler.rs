@@ -124,8 +124,7 @@ async fn handle_update(
     if let Some(ref replica) = ctx.leaders_state().get(&consumer_replica_key).await {
         trace!(
             consumer.consumer_id,
-            offset,
-            "update consumer offset locally"
+            offset, "update consumer offset locally"
         );
         if let Err(err) = update_offset_for_leader(
             ctx,
@@ -143,8 +142,7 @@ async fn handle_update(
     } else {
         trace!(
             consumer.consumer_id,
-            offset,
-            "update consumer offset remote"
+            offset, "update consumer offset remote"
         );
         update_offset_in_peer(
             ctx,

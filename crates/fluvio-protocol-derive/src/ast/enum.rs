@@ -24,7 +24,10 @@ impl FluvioEnum {
             let enum_prop = EnumProp::from_ast(variant.clone())?;
 
             if !attrs.encode_discriminant && enum_prop.tag.is_none() {
-                return Err(Error::new(variant.span(), "You must provide `fluvio(encode_discriminant)` if `fluvio(tag)` is not provided"));
+                return Err(Error::new(
+                    variant.span(),
+                    "You must provide `fluvio(encode_discriminant)` if `fluvio(tag)` is not provided",
+                ));
             }
 
             props.push(enum_prop);
@@ -91,7 +94,7 @@ impl EnumProp {
                     return Err(Error::new(
                         discriminant.span(),
                         "not supported discriminant type",
-                    ))
+                    ));
                 }
             }
         } else {

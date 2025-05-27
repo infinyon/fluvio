@@ -137,7 +137,7 @@ impl Iterator for FileBatchIterator {
             Err(err) => {
                 return Some(Err(IoError::other(format!(
                     "unknown compression value for batch {err}"
-                ))))
+                ))));
             }
         };
 

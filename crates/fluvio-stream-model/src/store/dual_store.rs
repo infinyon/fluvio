@@ -521,16 +521,14 @@ mod listener {
             drop(read_guard);
             trace!(
                 "finding last status change: {}, from: {}",
-                self.last_change,
-                changes.epoch
+                self.last_change, changes.epoch
             );
 
             let current_epoch = self.event_publisher().current_change();
             if changes.epoch > current_epoch {
                 trace!(
                     "latest epoch: {} > spec epoch: {}",
-                    changes.epoch,
-                    current_epoch
+                    changes.epoch, current_epoch
                 );
             }
             self.set_last_change(changes.epoch);
@@ -611,10 +609,12 @@ mod test {
         assert_eq!(topic_store.epoch().await, 1);
 
         // applying same data should result in zero changes in the store
-        assert!(topic_store
-            .apply_changes(vec![LSUpdate::Mod(initial_topic.clone())])
-            .await
-            .is_none());
+        assert!(
+            topic_store
+                .apply_changes(vec![LSUpdate::Mod(initial_topic.clone())])
+                .await
+                .is_none()
+        );
         assert_eq!(topic_store.epoch().await, 1);
 
         // update spec should result in increase epoch

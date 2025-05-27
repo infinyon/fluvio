@@ -105,9 +105,7 @@ where
         let content_len = batch.batch_len as usize - BATCH_HEADER_SIZE;
         trace!(
             last_offset = batch.get_last_offset(),
-            content_len,
-            pos,
-            "trying to read batch content",
+            content_len, pos, "trying to read batch content",
         );
 
         // for now se
@@ -121,7 +119,7 @@ where
                     expected_len: content_len,
                     pos,
                 }
-                .into())
+                .into());
             }
         };
 
@@ -130,8 +128,7 @@ where
 
         trace!(
             "file batch: read records {} bytes out of {}",
-            read_len,
-            content_len
+            read_len, content_len
         );
 
         if read_len < content_len {

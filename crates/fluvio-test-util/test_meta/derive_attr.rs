@@ -60,7 +60,7 @@ impl TestRequirementAttribute {
             } else if lit_str.value().to_lowercase() == "local" {
                 return Ok(Self::ClusterType(EnvironmentType::Local));
             } else {
-                return  Err(SynError::new(
+                return Err(SynError::new(
                     name_value.span(),
                     "ClusterType values must be \"k8\" or \"local\". Don't define cluster_type if both.",
                 ));

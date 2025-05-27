@@ -364,10 +364,12 @@ mod tests {
 
         //then
         assert!(sync_res.is_err());
-        assert!(sync_res
-            .unwrap_err()
-            .to_string()
-            .contains("Unknown Entry type"));
+        assert!(
+            sync_res
+                .unwrap_err()
+                .to_string()
+                .contains("Unknown Entry type")
+        );
     }
 
     #[fluvio_future::test]

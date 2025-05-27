@@ -123,7 +123,9 @@ fn main() -> Result<()> {
                 channel[0], channel[1]
             );
         } else {
-            eprintln!("Couldn't find Fluvio channel binary (Unexpected error formatting (raw output): {channel_info_str})");
+            eprintln!(
+                "Couldn't find Fluvio channel binary (Unexpected error formatting (raw output): {channel_info_str})"
+            );
         }
         panic!("Exec loop detected");
     }

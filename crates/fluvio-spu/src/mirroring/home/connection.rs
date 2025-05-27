@@ -448,7 +448,9 @@ impl MirrorHomeHandler {
                     new_remote_leo,
                     "remote has more records, this should not happen, this is error"
                 );
-                return Err(anyhow!("remote's leo: {new_remote_leo} > leader's leo: {leader_leo} this should not happen, this is error"));
+                return Err(anyhow!(
+                    "remote's leo: {new_remote_leo} > leader's leo: {leader_leo} this should not happen, this is error"
+                ));
             }
             std::cmp::Ordering::Less => {
                 debug!(

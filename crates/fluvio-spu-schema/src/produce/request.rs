@@ -349,11 +349,11 @@ mod tests {
                 partitions: vec![PartitionProduceData {
                     partition_index: 1,
                     records: RecordSet {
-                        batches: vec![Batch::from(vec![Record::new(RecordData::from(
-                            "some raw data",
-                        ))])
-                        .try_into()
-                        .expect("compressed batch")],
+                        batches: vec![
+                            Batch::from(vec![Record::new(RecordData::from("some raw data"))])
+                                .try_into()
+                                .expect("compressed batch"),
+                        ],
                     },
                 }],
                 data: Default::default(),

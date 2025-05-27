@@ -559,7 +559,7 @@ impl LocalInstaller {
                 return Err(LocalInstallError::Other(format!(
                     "Installation type {other} is not supported for local clusters"
                 ))
-                .into())
+                .into());
             }
         };
 

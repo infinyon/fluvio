@@ -19,7 +19,9 @@ type InfinyonRemote = String;
 
 #[derive(Clone, thiserror::Error, Debug)]
 pub enum InfinyonCredentialError {
-    #[error("no org access token found, please login or switch to an org with 'fluvio cloud org switch'")]
+    #[error(
+        "no org access token found, please login or switch to an org with 'fluvio cloud org switch'"
+    )]
     MissingOrgToken,
 
     #[error("{0}")]

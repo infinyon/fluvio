@@ -373,7 +373,8 @@ impl Fluvio {
         &self,
         config: ConsumerConfigExt,
     ) -> Result<
-        impl ConsumerStream<Item = std::result::Result<Record, fluvio_protocol::link::ErrorCode>> + use<>,
+        impl ConsumerStream<Item = std::result::Result<Record, fluvio_protocol::link::ErrorCode>>
+        + use<>,
     > {
         let spu_pool = self.spu_pool().await?;
         let topic = &config.topic;

@@ -195,11 +195,7 @@ impl GenerateCmd {
         let group = self.project_group.and_then(|g| {
             debug!("Using user provided project group: \"{}\"", &g);
 
-            if g.is_empty() {
-                None
-            } else {
-                Some(g)
-            }
+            if g.is_empty() { None } else { Some(g) }
         });
 
         let sm_params = match (self.with_params, self.no_params) {

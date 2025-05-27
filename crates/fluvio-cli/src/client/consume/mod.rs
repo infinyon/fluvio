@@ -841,9 +841,9 @@ mod cmd {
             );
             opt.end = Some(2);
             assert_eq!(
-            opt.format_status_string(),
-            "Consuming records from 'TOPIC_NAME' starting 1 from the beginning of log until offset 2 (inclusive)",
-        );
+                opt.format_status_string(),
+                "Consuming records from 'TOPIC_NAME' starting 1 from the beginning of log until offset 2 (inclusive)",
+            );
 
             // --start
             let mut opt = get_opt();
@@ -854,9 +854,9 @@ mod cmd {
             );
             opt.end = Some(2);
             assert_eq!(
-            opt.format_status_string(),
-            "Consuming records from 'TOPIC_NAME' starting at offset 1 until offset 2 (inclusive)",
-        );
+                opt.format_status_string(),
+                "Consuming records from 'TOPIC_NAME' starting at offset 1 until offset 2 (inclusive)",
+            );
 
             // --tail
             let mut opt = get_opt();
@@ -867,9 +867,9 @@ mod cmd {
             );
             opt.end = Some(2);
             assert_eq!(
-            opt.format_status_string(),
-            "Consuming records from 'TOPIC_NAME' starting 1 from the end of log until offset 2 (inclusive)",
-        );
+                opt.format_status_string(),
+                "Consuming records from 'TOPIC_NAME' starting 1 from the end of log until offset 2 (inclusive)",
+            );
 
             // base case
             let mut opt = get_opt();

@@ -108,22 +108,30 @@ mod common {
         #[fluvio_future::test]
         async fn test_read_only_context() {
             let auth_context = ReadOnlyAuthContext {};
-            assert!(auth_context
-                .allow_type_action(ObjectType::Spu, TypeAction::Read)
-                .await
-                .unwrap());
-            assert!(!auth_context
-                .allow_type_action(ObjectType::Spu, TypeAction::Create)
-                .await
-                .unwrap());
-            assert!(auth_context
-                .allow_type_action(ObjectType::Topic, TypeAction::Read)
-                .await
-                .unwrap());
-            assert!(!auth_context
-                .allow_type_action(ObjectType::Topic, TypeAction::Create)
-                .await
-                .unwrap());
+            assert!(
+                auth_context
+                    .allow_type_action(ObjectType::Spu, TypeAction::Read)
+                    .await
+                    .unwrap()
+            );
+            assert!(
+                !auth_context
+                    .allow_type_action(ObjectType::Spu, TypeAction::Create)
+                    .await
+                    .unwrap()
+            );
+            assert!(
+                auth_context
+                    .allow_type_action(ObjectType::Topic, TypeAction::Read)
+                    .await
+                    .unwrap()
+            );
+            assert!(
+                !auth_context
+                    .allow_type_action(ObjectType::Topic, TypeAction::Create)
+                    .await
+                    .unwrap()
+            );
         }
 
         /// test root context
@@ -131,22 +139,30 @@ mod common {
         #[fluvio_future::test]
         async fn test_root_context() {
             let auth_context = RootAuthContext {};
-            assert!(auth_context
-                .allow_type_action(ObjectType::Spu, TypeAction::Read)
-                .await
-                .unwrap());
-            assert!(auth_context
-                .allow_type_action(ObjectType::Spu, TypeAction::Create)
-                .await
-                .unwrap());
-            assert!(auth_context
-                .allow_type_action(ObjectType::Topic, TypeAction::Read)
-                .await
-                .unwrap());
-            assert!(auth_context
-                .allow_type_action(ObjectType::Topic, TypeAction::Create)
-                .await
-                .unwrap());
+            assert!(
+                auth_context
+                    .allow_type_action(ObjectType::Spu, TypeAction::Read)
+                    .await
+                    .unwrap()
+            );
+            assert!(
+                auth_context
+                    .allow_type_action(ObjectType::Spu, TypeAction::Create)
+                    .await
+                    .unwrap()
+            );
+            assert!(
+                auth_context
+                    .allow_type_action(ObjectType::Topic, TypeAction::Read)
+                    .await
+                    .unwrap()
+            );
+            assert!(
+                auth_context
+                    .allow_type_action(ObjectType::Topic, TypeAction::Create)
+                    .await
+                    .unwrap()
+            );
         }
     }
 }

@@ -40,7 +40,9 @@ impl ConnectorHubDownloadOpts {
 
         let package_name = self.package_name;
         let file_name = cli_pkgname_to_filename(&package_name).map_err(|_| {
-            anyhow!("invalid package name format {package_name}, is it the form infinyon/json-sql@0.1.0")
+            anyhow!(
+                "invalid package name format {package_name}, is it the form infinyon/json-sql@0.1.0"
+            )
         })?;
 
         let file_path = if let Some(mut output) = self.output {

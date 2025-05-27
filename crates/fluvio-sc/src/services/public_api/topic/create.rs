@@ -122,7 +122,7 @@ async fn validate_topic_request<C: MetadataItem>(
                     sm_name.to_string(),
                     ErrorCode::DeduplicationSmartModuleNameInvalid(err.to_string()),
                     Some(err.to_string()),
-                )
+                );
             }
         };
         if !metadata.smartmodules().store().contains_key(&sm_fqdn).await {
@@ -223,7 +223,7 @@ async fn process_topic_request<AC: AuthContext, C: MetadataItem>(
                 name.clone(),
                 ErrorCode::TopicNotProvisioned,
                 Some(format!("error: {err}")),
-            )
+            );
         }
     };
 

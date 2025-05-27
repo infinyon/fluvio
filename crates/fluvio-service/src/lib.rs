@@ -27,9 +27,7 @@ macro_rules! call_service {
         }
     }};
 
-    ($handler:expr,$sink:expr) => {{
-        call_service!($handler, $sink, "")
-    }};
+    ($handler:expr,$sink:expr) => {{ call_service!($handler, $sink, "") }};
 }
 
 #[macro_export]

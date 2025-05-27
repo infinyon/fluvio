@@ -46,7 +46,9 @@ impl CheckOpt {
             InstallationType::LocalK8 => ClusterChecker::empty().with_local_checks(),
             InstallationType::Cloud => {
                 let profile = config.config().current_profile_name().unwrap_or("none");
-                bail!("'fluvio cluster check' is invalid with cloud cluster \"{profile}\", use 'fluvio cloud ...' commands");
+                bail!(
+                    "'fluvio cluster check' is invalid with cloud cluster \"{profile}\", use 'fluvio cloud ...' commands"
+                );
             }
 
             _other => ClusterChecker::empty(),

@@ -1,19 +1,19 @@
 use proc_macro2::Span;
 use proc_macro2::TokenStream;
-use quote::{format_ident, quote, ToTokens};
+use quote::{ToTokens, format_ident, quote};
 use std::str::FromStr;
-use syn::punctuated::Punctuated;
 use syn::Ident;
 use syn::LitInt;
 use syn::Token;
+use syn::punctuated::Punctuated;
 
+use crate::ast::FluvioBound;
 use crate::ast::add_bounds;
 use crate::ast::prop::UnnamedProp;
 use crate::ast::r#struct::FluvioStructProps;
-use crate::ast::FluvioBound;
 use crate::ast::{
-    container::ContainerAttributes, prop::NamedProp, r#enum::EnumProp, r#enum::FieldKind,
-    DeriveItem,
+    DeriveItem, container::ContainerAttributes, r#enum::EnumProp, r#enum::FieldKind,
+    prop::NamedProp,
 };
 
 pub(crate) fn generate_decode_trait_impls(input: &DeriveItem) -> TokenStream {

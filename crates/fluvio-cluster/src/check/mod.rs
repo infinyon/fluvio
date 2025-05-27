@@ -232,11 +232,15 @@ pub enum UnrecoverableCheckStatus {
     #[error("Local Fluvio cluster still running")]
     ExistingLocalCluster,
 
-    #[error("Local Fluvio cluster wasn't deleted. Use 'resume' to resume created cluster or 'delete' before starting a new one")]
+    #[error(
+        "Local Fluvio cluster wasn't deleted. Use 'resume' to resume created cluster or 'delete' before starting a new one"
+    )]
     CreateLocalConfigError,
 
     /// The installed version of the local cluster is incompatible
-    #[error("Check Versions match failed: cannot resume a {installed} cluster with fluvio version {required}.\nShutdown the cluster with \"fluvio cluster shutdown\" and use \"fluvio cluster upgrade\" to update to the new version")]
+    #[error(
+        "Check Versions match failed: cannot resume a {installed} cluster with fluvio version {required}.\nShutdown the cluster with \"fluvio cluster shutdown\" and use \"fluvio cluster upgrade\" to update to the new version"
+    )]
     IncompatibleLocalClusterVersion {
         /// The currently-installed version
         installed: String,
@@ -305,13 +309,13 @@ impl ClusterCheck for ActiveKubernetesCluster {
             Err(K8ConfigError::NoCurrentContext) => {
                 return Ok(CheckStatus::Unrecoverable(
                     UnrecoverableCheckStatus::NoActiveKubernetesContext,
-                ))
+                ));
             }
 
             Err(err) => {
                 return Ok(CheckStatus::Unrecoverable(
                     UnrecoverableCheckStatus::UnhandledK8ClientError(format!("K8 Error: {err:#?}")),
-                ))
+                ));
             }
         };
 
@@ -319,7 +323,7 @@ impl ClusterCheck for ActiveKubernetesCluster {
             K8Config::Pod(_) => {
                 return Ok(CheckStatus::Unrecoverable(UnrecoverableCheckStatus::Other(
                     "Pod config found".to_owned(),
-                )))
+                )));
             }
             K8Config::KubeConfig(context) => context,
         };
@@ -383,7 +387,7 @@ impl ClusterCheck for K8Version {
             None => {
                 return Ok(CheckStatus::Unrecoverable(
                     UnrecoverableCheckStatus::CannotConnectToKubernetes,
-                ))
+                ));
             }
         };
 
@@ -430,7 +434,7 @@ impl ClusterCheck for HelmVersion {
                     UnrecoverableCheckStatus::NoHelmClient(format!(
                         "Unable to find helm: {err:#?}"
                     )),
-                ))
+                ));
             }
         };
 

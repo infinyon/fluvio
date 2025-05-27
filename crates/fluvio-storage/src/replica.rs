@@ -177,8 +177,7 @@ impl ReplicaStorage for FileReplica {
         } else {
             trace!(
                 "updating to new high watermark: {} old: {}",
-                old_offset,
-                offset
+                old_offset, offset
             );
             self.commit_checkpoint.write(offset);
             Ok(true)

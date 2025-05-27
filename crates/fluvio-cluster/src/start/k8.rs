@@ -504,11 +504,7 @@ impl ClusterConfigBuilder {
     where
         F: Fn(&mut Self) -> &mut Self,
     {
-        if cond {
-            f(self)
-        } else {
-            self
-        }
+        if cond { f(self) } else { self }
     }
 
     pub fn with_default_spu_group(

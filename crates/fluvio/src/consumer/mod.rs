@@ -23,7 +23,7 @@ use fluvio_spu_schema::server::consumer_offset::{
 use tracing::{debug, error, trace, instrument, info, warn};
 use futures_util::stream::{Stream, select_all};
 use once_cell::sync::Lazy;
-use futures_util::future::{Either, err};
+use futures_util::future::{Either, err, try_join_all};
 use futures_util::stream::{StreamExt, once, iter};
 use futures_util::FutureExt;
 
@@ -442,7 +442,9 @@ where
             .unwrap_or(CHAIN_SMARTMODULE_API - 1);
         debug!(%stream_fetch_version, "stream_fetch_version");
         if stream_fetch_version < CHAIN_SMARTMODULE_API {
-            warn!("SPU does not support SmartModule chaining. SmartModules will not be applied to the stream");
+            warn!(
+                "SPU does not support SmartModule chaining. SmartModules will not be applied to the stream"
+            );
         }
         if with_consumer_id && stream_fetch_version < OFFSET_MANAGEMENT_API {
             warn!("SPU does not support Offset Management API");
@@ -927,14 +929,14 @@ impl MultiplePartitionConsumer {
             })
             .collect();
 
-        let mut streams = Vec::new();
-        for consumer in consumers {
-            streams.push(
-                consumer
-                    .stream_with_config(offset.clone(), config.clone())
-                    .await?,
-            );
-        }
+        // Create futures that own their consumers to enable concurrent execution
+        let stream_futures = consumers.into_iter().map(|consumer| {
+            let offset = offset.clone();
+            let config = config.clone();
+            async move { consumer.stream_with_config(offset, config).await }
+        });
+
+        let streams = futures_util::future::try_join_all(stream_futures).await?;
 
         Ok(select_all(streams))
     }

@@ -67,7 +67,7 @@ impl<'a> Iterator for ProduceBatchIterator<'a> {
             Err(err) => {
                 return Some(Err(IoError::other(format!(
                     "unknown compression value for batch {err}"
-                ))))
+                ))));
             }
         };
 
