@@ -1,4 +1,4 @@
-use async_channel::SendError;
+use flume::SendError;
 use fluvio_types::PartitionError;
 use fluvio_storage::StorageError;
 use fluvio_socket::SocketError;

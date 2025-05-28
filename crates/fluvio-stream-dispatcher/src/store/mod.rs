@@ -14,7 +14,7 @@ mod context {
 
     use fluvio_stream_model::core::MetadataItem;
     use tracing::error;
-    use async_channel::{Sender, Receiver, bounded, SendError};
+    use flume::{Sender, Receiver, bounded, SendError};
     use once_cell::sync::Lazy;
     use tokio::select;
     use tracing::{debug, trace};
@@ -83,7 +83,7 @@ mod context {
             actions: Vec<WSAction<S, MetaContext>>,
         ) -> Result<(), SendError<WSAction<S, MetaContext>>> {
             for action in actions.into_iter() {
-                self.sender.send(action).await?;
+                self.sender.send_async(action).await?;
             }
             Ok(())
         }
@@ -174,7 +174,7 @@ mod context {
         /// This should only used in the imperative code such as API Server where confirmation is needed.  
         /// Controller should only use Action.
         pub async fn delete(&self, key: S::IndexKey) -> Result<(), IoError> {
-            match self.sender.send(WSAction::Delete(key.clone())).await {
+            match self.sender.send_async(WSAction::Delete(key.clone())).await {
                 Ok(_) => {
                     // wait for object created in the store
 
@@ -250,7 +250,7 @@ mod context {
 
             let debug_action = action.to_string();
             let mut loop_count: u16 = 0;
-            match self.sender.send(action).await {
+            match self.sender.send_async(action).await {
                 Ok(_) => loop {
                     // check if we can find updates to object
                     if let Some(new_value) = self.store.value(key).await {
@@ -295,7 +295,7 @@ mod context {
 
         /// send action
         pub async fn send_action(&self, action: WSAction<S, MetaContext>) {
-            if let Err(err) = self.sender.send(action).await {
+            if let Err(err) = self.sender.send_async(action).await {
                 error!("{}, error sending action to store: {}", S::LABEL, err);
             }
         }

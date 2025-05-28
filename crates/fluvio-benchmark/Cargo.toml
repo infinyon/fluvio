@@ -10,7 +10,7 @@ publish = false
 
 [dependencies]
 anyhow = { workspace = true }
-async-channel = { workspace = true }
+flume = { workspace = true }
 bytesize = { workspace = true, features = ['serde'] }
 clap = { workspace = true, features = ["std","derive"] }
 derive_builder = { workspace = true }

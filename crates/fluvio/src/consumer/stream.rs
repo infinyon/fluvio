@@ -3,7 +3,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 
-use async_channel::Sender;
+use flume::Sender;
 use fluvio_future::timer::sleep;
 use fluvio_protocol::{link::ErrorCode, record::ConsumerRecord as Record};
 use futures_util::stream::select_all;
@@ -155,7 +155,7 @@ impl<T: Stream<Item = Result<Record, ErrorCode>> + Unpin> Stream
     }
 }
 
-impl<T> ConsumerStream for futures_util::stream::TakeUntil<T, async_channel::Recv<'_, ()>>
+impl<T> ConsumerStream for futures_util::stream::TakeUntil<T, flume::r#async::RecvFut<'_, ()>>
 where
     T: ConsumerStream,
 {
@@ -367,7 +367,7 @@ mod tests {
     #[fluvio_future::test]
     async fn test_single_partition_stream_works() {
         //given
-        let (tx, _rx) = async_channel::unbounded();
+        let (tx, _rx) = flume::unbounded();
         let partition_stream = SinglePartitionConsumerStream::new(
             records_stream(0, ["1", "2"]),
             Default::default(),
@@ -394,7 +394,7 @@ mod tests {
     #[fluvio_future::test]
     async fn test_multi_partition_stream_works() {
         //given
-        let (tx, _rx) = async_channel::unbounded();
+        let (tx, _rx) = flume::unbounded();
         let partition_stream1 = SinglePartitionConsumerStream::new(
             records_stream(0, ["1"]),
             Default::default(),
@@ -402,7 +402,7 @@ mod tests {
             Duration::from_millis(100),
             tx,
         );
-        let (tx, _rx) = async_channel::unbounded();
+        let (tx, _rx) = flume::unbounded();
         let partition_stream2 = SinglePartitionConsumerStream::new(
             records_stream(1, ["2", "4", "6"]),
             Default::default(),
@@ -410,7 +410,7 @@ mod tests {
             Duration::from_millis(100),
             tx,
         );
-        let (tx, _rx) = async_channel::unbounded();
+        let (tx, _rx) = flume::unbounded();
         let partition_stream3 = SinglePartitionConsumerStream::new(
             records_stream(2, ["3", "5"]),
             Default::default(),
@@ -442,7 +442,7 @@ mod tests {
     #[fluvio_future::test]
     async fn test_none_offset_strategy_raise_error_on_commit() {
         //given
-        let (tx, _rx) = async_channel::unbounded();
+        let (tx, _rx) = flume::unbounded();
         let mut partition_stream = SinglePartitionConsumerStream::new(
             records_stream(0, []),
             OffsetManagementStrategy::None,
@@ -461,7 +461,7 @@ mod tests {
     #[fluvio_future::test]
     async fn test_none_offset_strategy_raise_error_on_flush() {
         //given
-        let (tx, _rx) = async_channel::unbounded();
+        let (tx, _rx) = flume::unbounded();
         let mut partition_stream = SinglePartitionConsumerStream::new(
             records_stream(0, []),
             OffsetManagementStrategy::None,
@@ -480,7 +480,7 @@ mod tests {
     #[fluvio_future::test]
     async fn test_single_partition_stream_commit_and_flush_on_manual() {
         //given
-        let (tx, rx) = async_channel::unbounded();
+        let (tx, rx) = flume::unbounded();
         let mut partition_stream = SinglePartitionConsumerStream::new(
             records_stream(0, ["1", "2", "3", "4"]),
             OffsetManagementStrategy::Manual,
@@ -499,7 +499,7 @@ mod tests {
         //then
         fluvio_future::task::spawn(async move {
             //then
-            let message = rx.recv().await;
+            let message = rx.recv_async().await;
             assert!(matches!(
                 message,
                 Ok(StreamToServer::FlushManagedOffset { callback: _, offset }) if offset == 2
@@ -520,7 +520,7 @@ mod tests {
     #[fluvio_future::test]
     async fn test_multi_partition_stream_commit_and_flush_on_manual() {
         //given
-        let (tx1, rx1) = async_channel::unbounded();
+        let (tx1, rx1) = flume::unbounded();
         let partition_stream1 = SinglePartitionConsumerStream::new(
             records_stream(0, ["1"]),
             OffsetManagementStrategy::Manual,
@@ -528,7 +528,7 @@ mod tests {
             Duration::from_millis(100),
             tx1,
         );
-        let (tx2, rx2) = async_channel::unbounded();
+        let (tx2, rx2) = flume::unbounded();
         let partition_stream2 = SinglePartitionConsumerStream::new(
             records_stream(1, ["2", "4", "6"]),
             OffsetManagementStrategy::Manual,
@@ -549,7 +549,7 @@ mod tests {
         //then
         fluvio_future::task::spawn(async move {
             //then
-            let message = rx1.recv().await;
+            let message = rx1.recv_async().await;
             assert!(
                 matches!(
                     message,
@@ -567,7 +567,7 @@ mod tests {
         });
         fluvio_future::task::spawn(async move {
             //then
-            let message = rx2.recv().await;
+            let message = rx2.recv_async().await;
             assert!(
                 matches!(
                     message,
@@ -591,7 +591,7 @@ mod tests {
     #[fluvio_future::test]
     async fn test_single_partition_stream_auto_commit_and_flush_on_drop() {
         //given
-        let (tx, rx) = async_channel::unbounded();
+        let (tx, rx) = flume::unbounded();
         let mut partition_stream = SinglePartitionConsumerStream::new(
             records_stream(0, ["1", "2", "3", "4"]),
             OffsetManagementStrategy::Auto,
@@ -607,7 +607,7 @@ mod tests {
         drop(partition_stream);
 
         //then
-        let message1 = rx.recv().await;
+        let message1 = rx.recv_async().await;
         assert!(
             matches!(
                 message1,
@@ -615,7 +615,7 @@ mod tests {
             ),
             "{message1:?}"
         );
-        let message2 = rx.recv().await;
+        let message2 = rx.recv_async().await;
         assert!(
             matches!(
                 message2,
@@ -631,7 +631,7 @@ mod tests {
     #[fluvio_future::test]
     async fn test_multi_partition_stream_auto_commit_and_flush_on_drop() {
         //given
-        let (tx1, rx1) = async_channel::unbounded();
+        let (tx1, rx1) = flume::unbounded();
         let partition_stream1 = SinglePartitionConsumerStream::new(
             records_stream(0, ["1"]),
             OffsetManagementStrategy::Auto,
@@ -639,7 +639,7 @@ mod tests {
             Duration::from_millis(100),
             tx1,
         );
-        let (tx2, rx2) = async_channel::unbounded();
+        let (tx2, rx2) = flume::unbounded();
         let partition_stream2 = SinglePartitionConsumerStream::new(
             records_stream(1, ["2", "4", "6"]),
             OffsetManagementStrategy::Auto,
@@ -659,7 +659,7 @@ mod tests {
 
         //then
         {
-            let message1 = rx1.recv().await;
+            let message1 = rx1.recv_async().await;
             assert!(
                 matches!(
                     message1,
@@ -671,7 +671,7 @@ mod tests {
             assert!(message2.is_err(), "{message2:?}");
         }
         {
-            let message1 = rx2.recv().await;
+            let message1 = rx2.recv_async().await;
             assert!(
                 matches!(
                     message1,
@@ -679,7 +679,7 @@ mod tests {
                 ),
                 "{message1:?}"
             );
-            let message2 = rx2.recv().await;
+            let message2 = rx2.recv_async().await;
             assert!(
                 matches!(
                     message2,
@@ -695,7 +695,7 @@ mod tests {
     #[fluvio_future::test]
     async fn test_single_partition_stream_periodic_and_background_flush() {
         //given
-        let (tx, rx) = async_channel::unbounded();
+        let (tx, rx) = flume::unbounded();
         let mut partition_stream = SinglePartitionConsumerStream::new(
             records_stream(0, ["1", "2", "3", "4"]),
             OffsetManagementStrategy::Auto,
@@ -710,7 +710,7 @@ mod tests {
         assert!(partition_stream.next().await.is_some()); // seen = 1, flushed = 1
 
         //then
-        let message1 = rx.recv().await;
+        let message1 = rx.recv_async().await;
         assert!(
             matches!(
                 message1,
@@ -719,7 +719,7 @@ mod tests {
             "{message1:?}"
         );
 
-        let message2 = rx.recv().await;
+        let message2 = rx.recv_async().await;
         assert!(
             matches!(
                 message2,
@@ -735,7 +735,7 @@ mod tests {
     #[fluvio_future::test]
     async fn test_multi_partition_stream_periodic_and_drop_flush() {
         //given
-        let (tx1, rx1) = async_channel::unbounded();
+        let (tx1, rx1) = flume::unbounded();
         let partition_stream1 = SinglePartitionConsumerStream::new(
             records_stream(0, ["1"]),
             OffsetManagementStrategy::Auto,
@@ -743,7 +743,7 @@ mod tests {
             Duration::from_millis(100),
             tx1,
         );
-        let (tx2, rx2) = async_channel::unbounded();
+        let (tx2, rx2) = flume::unbounded();
         let partition_stream2 = SinglePartitionConsumerStream::new(
             records_stream(1, ["2", "4", "6"]),
             OffsetManagementStrategy::Auto,
@@ -763,7 +763,7 @@ mod tests {
 
         //then
         {
-            let message1 = rx1.recv().await;
+            let message1 = rx1.recv_async().await;
             assert!(
                 matches!(
                     message1,
@@ -775,7 +775,7 @@ mod tests {
             assert!(message2.is_err(), "{message2:?}");
         }
         {
-            let message1 = rx2.recv().await;
+            let message1 = rx2.recv_async().await;
             assert!(
                 matches!(
                     message1,
@@ -783,7 +783,7 @@ mod tests {
                 ),
                 "{message1:?}"
             );
-            let message2 = rx2.recv().await;
+            let message2 = rx2.recv_async().await;
             assert!(
                 matches!(
                     message2,
@@ -799,7 +799,7 @@ mod tests {
     #[fluvio_future::test]
     async fn test_single_partition_stream_flush_error_propagated() {
         //given
-        let (tx, rx) = async_channel::unbounded();
+        let (tx, rx) = flume::unbounded();
         let mut partition_stream = SinglePartitionConsumerStream::new(
             records_stream(0, ["1", "2", "3", "4"]),
             OffsetManagementStrategy::Manual,
@@ -811,7 +811,7 @@ mod tests {
         //when
         fluvio_future::task::spawn(async move {
             //then
-            let message = rx.recv().await;
+            let message = rx.recv_async().await;
             assert!(
                 matches!(
                     message,
@@ -839,7 +839,7 @@ mod tests {
     #[fluvio_future::test]
     async fn test_multi_partition_stream_flush_error_propagated() {
         //given
-        let (tx1, rx1) = async_channel::unbounded();
+        let (tx1, rx1) = flume::unbounded();
         let partition_stream1 = SinglePartitionConsumerStream::new(
             records_stream(0, ["1"]),
             OffsetManagementStrategy::Manual,
@@ -847,7 +847,7 @@ mod tests {
             Duration::from_millis(100),
             tx1,
         );
-        let (tx2, rx2) = async_channel::unbounded();
+        let (tx2, rx2) = flume::unbounded();
         let partition_stream2 = SinglePartitionConsumerStream::new(
             records_stream(1, ["2", "4", "6"]),
             OffsetManagementStrategy::Manual,
@@ -863,7 +863,7 @@ mod tests {
         assert!(multi_stream.next().await.is_some()); // p2 seen = 0
         let _ = multi_stream.offset_commit().await;
         fluvio_future::task::spawn(async move {
-            let message = rx1.recv().await;
+            let message = rx1.recv_async().await;
             assert!(
                 matches!(
                     message,
@@ -880,7 +880,7 @@ mod tests {
             }
         });
         fluvio_future::task::spawn(async move {
-            let message = rx2.recv().await;
+            let message = rx2.recv_async().await;
             if let Ok(StreamToServer::FlushManagedOffset {
                 callback,
                 offset: _,

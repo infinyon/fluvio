@@ -5,7 +5,7 @@ use std::time::Instant;
 #[cfg(target_arch = "wasm32")]
 use web_time::Instant;
 
-use async_channel::Receiver;
+use flume::Receiver;
 use async_lock::RwLock;
 
 use fluvio_protocol::record::Offset;
@@ -75,7 +75,7 @@ impl BatchMetadata {
         match &*state {
             BatchMetadataState::Buffered(receiver) => {
                 let msg = receiver
-                    .recv()
+                    .recv_async()
                     .await
                     .map_err(|err| ProducerError::GetRecordMetadata(Some(err)));
 

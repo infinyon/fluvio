@@ -394,7 +394,7 @@ mod cmd {
             let mut stream = fluvio
                 .consumer_with_config(consume_config)
                 .await?
-                .take_until(stop_signal.recv());
+                .take_until(stop_signal.recv_async());
             self.consume_records_stream(&mut stream, tableformat)
                 .await?;
 
@@ -722,8 +722,8 @@ mod cmd {
         }
 
         /// Initialize Ctrl-C event handler
-        fn init_ctrlc(&self) -> Result<async_channel::Receiver<()>> {
-            let (s, r) = async_channel::bounded(1);
+        fn init_ctrlc(&self) -> Result<flume::Receiver<()>> {
+            let (s, r) = flume::bounded(1);
             let invoked = AtomicBool::new(false);
             let result = ctrlc::set_handler(move || {
                 debug!("detected control c, setting end");

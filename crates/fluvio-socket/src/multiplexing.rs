@@ -13,9 +13,9 @@ use std::time::Duration;
 use std::fmt;
 use std::future::Future;
 
-use async_channel::bounded;
-use async_channel::Receiver;
-use async_channel::Sender;
+use flume::bounded;
+use flume::Receiver;
+use flume::Sender;
 use async_lock::Mutex;
 use bytes::Bytes;
 use event_listener::Event;
@@ -250,7 +250,7 @@ impl MultiplexerSocket {
 
         senders.retain(|_, shared_sender| match shared_sender {
             SharedSender::Serial(_) => true,
-            SharedSender::Queue(sender) => !sender.is_closed(),
+            SharedSender::Queue(sender) => !sender.is_disconnected(),
         });
 
         senders.insert(correlation_id, SharedSender::Queue(sender));
@@ -288,7 +288,6 @@ pub struct AsyncResponse<R> {
 #[pinned_drop]
 impl<R> PinnedDrop for AsyncResponse<R> {
     fn drop(self: Pin<&mut Self>) {
-        self.receiver.close();
         debug!("multiplexer stream: {} closed", self.correlation_id);
     }
 }
@@ -305,7 +304,8 @@ impl<R: Request> Stream for AsyncResponse<R> {
     )]
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         let this = self.project();
-        let next: Option<Option<_>> = match this.receiver.poll_next(cx) {
+        let mut stream = this.receiver.stream();
+        let next: Option<Option<_>> = match stream.poll_next_unpin(cx) {
             Poll::Pending => {
                 trace!("Waiting for async response");
                 return Poll::Pending;
@@ -428,12 +428,12 @@ impl MultiPlexingResponseDispatcher {
                 _ = self.terminate.listen() => {
                     // terminate all channels
 
-                    let guard = self.senders.lock().await;
-                    for sender in guard.values() {
+                    let mut guard = self.senders.lock().await;
+                    for (_, sender) in guard.drain() {
                         match sender {
                             SharedSender::Serial(msg) => msg.close().await,
                             SharedSender::Queue(stream_sender) => {
-                                stream_sender.close();
+                                drop(stream_sender);
                             }
                         }
                     }
@@ -475,11 +475,11 @@ impl MultiPlexingResponseDispatcher {
                 SharedSender::Queue(queue_sender) => {
                     trace!("found stream");
                     // sender was dropped before response arrives
-                    if queue_sender.is_closed() {
+                    if queue_sender.is_disconnected() {
                         debug!(correlation_id, "attempt to send data to closed socket");
                         Ok(())
                     } else {
-                        queue_sender.send(Some(msg)).await.map_err(|err| {
+                        queue_sender.send_async(Some(msg)).await.map_err(|err| {
                             IoError::new(
                                 ErrorKind::BrokenPipe,
                                 format!(
@@ -509,7 +509,7 @@ impl MultiPlexingResponseDispatcher {
             match sender {
                 SharedSender::Serial(msg) => msg.close().await,
                 SharedSender::Queue(stream_sender) => {
-                    let _ = stream_sender.send(None).await;
+                    let _ = stream_sender.send_async(None).await;
                 }
             }
         }
@@ -706,10 +706,11 @@ mod tests {
 
         // create async status
         let async_status_request = RequestMessage::new_request(AsyncStatusRequest { count: 2 });
-        let mut status_response = multiplexer
+        let status_response = multiplexer
             .create_stream(async_status_request, 10)
             .await
             .expect("response");
+        let mut status_response = Box::pin(status_response);
 
         let multiplexor2 = multiplexer.clone();
         let multiplexor3 = multiplexer.clone();

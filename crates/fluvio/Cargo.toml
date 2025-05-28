@@ -26,7 +26,7 @@ unstable = []
 
 [dependencies]
 adaptive_backoff = { workspace = true }
-async-channel = { workspace = true }
+flume = { workspace = true }
 async-lock = { workspace = true }
 async-trait = { workspace = true }
 anyhow = { workspace = true }

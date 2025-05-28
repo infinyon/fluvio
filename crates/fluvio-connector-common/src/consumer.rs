@@ -82,8 +82,8 @@ pub async fn consumer_stream_from_config(
     Ok((fluvio, Box::pin(stream)))
 }
 
-pub fn init_ctrlc() -> Result<async_channel::Receiver<()>> {
-    let (s, r) = async_channel::bounded(1);
+pub fn init_ctrlc() -> Result<flume::Receiver<()>> {
+    let (s, r) = flume::bounded(1);
     let invoked = AtomicBool::new(false);
     let result = ctrlc::set_handler(move || {
         if invoked.load(Ordering::SeqCst) {

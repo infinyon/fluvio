@@ -180,20 +180,20 @@ mod context {
                 &self,
             ) -> impl Stream<Item = MetadataChanges<S, LocalMetadataItem>> {
                 let mut listener = self.store.change_listener();
-                let (sender, receiver) = async_channel::unbounded();
+                let (sender, receiver) = flume::unbounded();
 
                 fluvio_future::task::spawn_local(async move {
                     loop {
                         listener.listen().await;
                         let changes = listener.sync_changes().await;
-                        if let Err(e) = sender.send(changes).await {
+                        if let Err(e) = sender.send_async(changes).await {
                             tracing::error!("Failed to send Metadata update: {:?}", e);
                             break;
                         }
                     }
                 });
 
-                receiver
+                receiver.into_stream()
             }
         }
     }

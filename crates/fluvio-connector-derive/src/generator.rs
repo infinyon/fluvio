@@ -40,7 +40,7 @@ fn generate_source(func: &ConnectorFn) -> TokenStream {
                             },
                         }
                     },
-                    _ = stop_signal.recv() => {
+                    _ = stop_signal.recv_async() => {
                         ::fluvio_connector_common::tracing::info!("Stop signal received, shutting down connector.");
                     },
                 };
@@ -83,7 +83,7 @@ fn generate_sink(func: &ConnectorFn) -> TokenStream {
                             },
                         }
                     },
-                    _ = stop_signal.recv() => {
+                    _ = stop_signal.recv_async() => {
                         ::fluvio_connector_common::tracing::info!("Stop signal received, shutting down connector.");
                     },
                 };

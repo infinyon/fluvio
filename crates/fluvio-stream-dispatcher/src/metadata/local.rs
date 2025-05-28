@@ -101,7 +101,7 @@ cfg_if::cfg_if! {
         };
 
         use anyhow::{Result, anyhow, Context};
-        use async_channel::{Sender, Receiver, bounded};
+        use flume::{Sender, Receiver, bounded};
         use parking_lot::RwLock;
         use futures_util::{stream::BoxStream, StreamExt};
         use serde::{de::DeserializeOwned};
@@ -504,6 +504,7 @@ cfg_if::cfg_if! {
                     Some(Ok(version)) => self
                         .receiver
                         .clone()
+                        .into_stream()
                         .filter(move |update| {
                             let res = update.store_revision() >= version;
                             async move { res }
@@ -516,6 +517,7 @@ cfg_if::cfg_if! {
                     None => self
                         .receiver
                         .clone()
+                        .into_stream()
                         .map(|update| Ok(vec![update.into_ls_update()?]))
                         .boxed(),
                 }
@@ -531,7 +533,7 @@ cfg_if::cfg_if! {
                     .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
                 update.set_store_revision(store_revision);
                 trace!(?update, "spec update sending");
-                if let Err(err) = self.sender.send(update).await {
+                if let Err(err) = self.sender.send_async(update).await {
                     warn!("store sender failed: {err}");
                 }
             }

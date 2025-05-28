@@ -4,7 +4,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use async_channel::{Receiver, Sender};
+use flume::{Receiver, Sender};
 use fluvio::ProduceCompletionBatchEvent;
 use fluvio_future::{sync::RwLock, task::spawn};
 use hdrhistogram::Histogram;
@@ -72,7 +72,7 @@ impl ProducerStat {
     ) {
         let latencies = Arc::new(RwLock::new(Vec::with_capacity(num_records as usize)));
         spawn(async move {
-            while let Ok(event) = event_receiver.recv().await {
+            while let Ok(event) = event_receiver.recv_async().await {
                 total_stats
                     .first_start_time
                     .get_or_init(|| event.created_at);
@@ -93,7 +93,7 @@ impl ProducerStat {
                         .fetch_add(event.bytes_size, std::sync::atomic::Ordering::Relaxed);
 
                     central_stats_tx
-                        .send(CentralStats {
+                        .send_async(CentralStats {
                             record_send: event.records_len,
                             record_bytes: event.bytes_size,
                             latency: event.elapsed.as_nanos() as u64,
@@ -168,7 +168,7 @@ impl StatCollector {
         print_stats_sender: Sender<Stats>,
         end_sender: Arc<broadcast::Sender<EndProducerStat>>,
     ) -> Self {
-        let (central_stats_tx, central_stats_rx) = async_channel::unbounded();
+        let (central_stats_tx, central_stats_rx) = flume::unbounded();
 
         let total_stats = Arc::new(TotalStats {
             record_send: AtomicU64::new(0),
@@ -220,7 +220,7 @@ impl StatCollector {
 
             loop {
                 select! {
-                    stat = central_stats_rx.recv() => {
+                    stat = central_stats_rx.recv_async() => {
                         if let Ok(stats) = stat {
                             if is_the_first {
                                 is_the_first = false;
@@ -244,7 +244,7 @@ impl StatCollector {
                                     (central_stats.record_bytes as f64 / elapsed_seconds).round() as u64;
 
                                 let _ = stats_sender
-                                    .send(Stats {
+                                    .send_async(Stats {
                                         record_send: central_stats.record_send,
                                         record_bytes: central_stats.record_bytes,
                                         records_per_sec,

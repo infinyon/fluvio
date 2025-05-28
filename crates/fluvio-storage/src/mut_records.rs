@@ -14,7 +14,7 @@ use tracing::info;
 use tracing::instrument;
 use tracing::{debug, trace};
 use futures_lite::io::AsyncWriteExt;
-use async_channel::Sender;
+use flume::Sender;
 use anyhow::Result;
 
 use fluvio_protocol::record::BatchRecords;

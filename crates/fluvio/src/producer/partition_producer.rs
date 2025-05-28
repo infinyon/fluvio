@@ -244,7 +244,7 @@ where
         for (batch_notifier, partition_response_fut) in
             batch_notifiers.into_iter().zip(response.into_iter())
         {
-            if let Err(_e) = batch_notifier.send(partition_response_fut).await {
+            if let Err(_e) = batch_notifier.send_async(partition_response_fut).await {
                 trace!("Failed to notify produce result because receiver was dropped");
             }
         }

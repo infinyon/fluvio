@@ -438,7 +438,7 @@ mod tests {
             OffsetManagementStrategy::Auto,
             Default::default(),
             Duration::from_millis(100),
-            async_channel::unbounded::<crate::consumer::StreamToServer>().0,
+            flume::unbounded::<crate::consumer::StreamToServer>().0,
         );
         let multi_stream = MultiplePartitionConsumerStream::new([partition_stream]);
 
@@ -493,7 +493,7 @@ mod tests {
     #[fluvio_future::test]
     async fn test_retry_stream() {
         //given
-        let (tx1, rx1) = async_channel::unbounded();
+        let (tx1, rx1) = flume::unbounded();
         let partition_stream1 = SinglePartitionConsumerStream::new(
             records_stream(0, ["1", "3", "5"]),
             OffsetManagementStrategy::Manual,
@@ -501,7 +501,7 @@ mod tests {
             Duration::from_millis(100),
             tx1,
         );
-        let (tx2, rx2) = async_channel::unbounded();
+        let (tx2, rx2) = flume::unbounded();
         let partition_stream2 = SinglePartitionConsumerStream::new(
             records_stream(1, ["2", "4", "6"]),
             OffsetManagementStrategy::Manual,
@@ -555,7 +555,7 @@ mod tests {
 
         retry_stream.offset_commit().await.unwrap();
         fluvio_future::task::spawn(async move {
-            let message = rx1.recv().await;
+            let message = rx1.recv_async().await;
             if let Ok(StreamToServer::FlushManagedOffset {
                 offset: _,
                 callback,
@@ -565,7 +565,7 @@ mod tests {
             }
         });
         fluvio_future::task::spawn(async move {
-            let message = rx2.recv().await;
+            let message = rx2.recv_async().await;
             if let Ok(StreamToServer::FlushManagedOffset {
                 callback,
                 offset: _,

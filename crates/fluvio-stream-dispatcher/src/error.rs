@@ -5,7 +5,7 @@
 use std::fmt;
 use std::io::Error as StdIoError;
 
-use async_channel::SendError;
+use flume::SendError;
 use fluvio_types::PartitionError;
 
 #[derive(Debug)]

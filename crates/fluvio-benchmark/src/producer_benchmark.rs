@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use anyhow::Result;
-use async_channel::unbounded;
+use flume::unbounded;
 
 use bytesize::ByteSize;
 use fluvio_future::{future::timeout, task::spawn, timer::sleep};
@@ -94,9 +94,9 @@ impl ProducerBenchmark {
         });
     }
 
-    async fn print_progress_on_backgroud(stats_receiver: async_channel::Receiver<Stats>) {
+    async fn print_progress_on_backgroud(stats_receiver: flume::Receiver<Stats>) {
         spawn(async move {
-            while let Ok(stat) = stats_receiver.recv().await {
+            while let Ok(stat) = stats_receiver.recv_async().await {
                 let human_readable_bytes = ByteSize(stat.bytes_per_sec).to_string();
                 println!(
                     "{} records sent, {} records/sec: ({}/sec), {} avg latency, {} max latency",

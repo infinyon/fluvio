@@ -144,7 +144,7 @@ where
 
                 },
 
-                msg = ws_receiver.recv() => {
+                msg = ws_receiver.recv_async() => {
                     match msg {
                         Ok(action) => {
                             debug!("store: received ws action: {action}");

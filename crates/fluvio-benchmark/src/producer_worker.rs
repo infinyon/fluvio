@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 
-use async_channel::Sender;
+use flume::Sender;
 use fluvio::{
     dataplane::record::RecordData, DeliverySemantic, Fluvio, Isolation,
     ProduceCompletionBatchEvent, ProducerCallback, SharedProducerCallback, RecordKey,
@@ -33,7 +33,7 @@ impl BenchmarkProducerCallback {
 impl ProducerCallback for BenchmarkProducerCallback {
     fn finished(&self, event: ProduceCompletionBatchEvent) -> BoxFuture<'_, anyhow::Result<()>> {
         Box::pin(async {
-            self.event_sender.send(event).await?;
+            self.event_sender.send_async(event).await?;
             Ok(())
         })
     }

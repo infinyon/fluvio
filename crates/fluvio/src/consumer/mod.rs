@@ -13,7 +13,7 @@ use adaptive_backoff::prelude::{
     Backoff, BackoffBuilder, ExponentialBackoff, ExponentialBackoffBuilder,
 };
 use anyhow::Result;
-use async_channel::Sender;
+use flume::Sender;
 use async_lock::Mutex;
 use fluvio_future::timer::sleep;
 use fluvio_socket::VersionedSerialSocket;
@@ -456,7 +456,7 @@ where
             .await?;
 
         let (server_sender, server_recv) =
-            async_channel::bounded::<StreamToServer>(STREAM_TO_SERVER_CHANNEL_SIZE);
+            flume::bounded::<StreamToServer>(STREAM_TO_SERVER_CHANNEL_SIZE);
 
         let server_sender_clone = server_sender.clone();
 
@@ -478,7 +478,7 @@ where
                     use fluvio_spu_schema::server::update_offset::{UpdateOffsetsRequest, OffsetUpdate};
 
                     loop {
-                        match server_recv.recv().await {
+                        match server_recv.recv_async().await {
                             Ok(StreamToServer::UpdateOffset(fetch_last_value)) => {
                                 debug!(fetch_last_value, stream_id, "received end fetch");
                                 debug!(
@@ -536,7 +536,7 @@ where
                 if let Some(last_offset) = response.partition.next_offset_for_fetch() {
                     debug!(last_offset, "notify new last offset");
                     let _ = server_sender_clone
-                        .send(StreamToServer::UpdateOffset(last_offset))
+                        .send_async(StreamToServer::UpdateOffset(last_offset))
                         .await;
                 }
 
@@ -706,7 +706,7 @@ mod publish_stream {
     use std::pin::Pin;
     use std::task::{Poll, Context};
 
-    use async_channel::Sender;
+    use flume::Sender;
     use pin_project::pin_project;
     use futures_util::ready;
 
@@ -963,7 +963,7 @@ impl<T> StreamToServerCallback<T> {
         match self {
             Self::NoOp => {}
             Self::Channel(channel) => {
-                if let Err(err) = channel.send(value).await {
+                if let Err(err) = channel.send_async(value).await {
                     error!("stream callback error: {err:?}");
                 }
             }

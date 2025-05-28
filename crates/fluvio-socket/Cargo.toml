@@ -23,7 +23,7 @@ once_cell = { workspace = true }
 futures-util = { features = ["sink", "io"], workspace = true }
 async-lock = { workspace = true }
 event-listener = { workspace = true }
-async-channel = { workspace = true }
+flume = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
 tokio-util = { features = ["codec", "compat"], workspace = true }
 async-trait = { workspace = true }

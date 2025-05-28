@@ -44,7 +44,7 @@ directories = { workspace = true }
 tempfile = { workspace = true }
 include_dir = { workspace = true }
 anyhow = { workspace = true }
-async-channel = { workspace = true }
+flume = { workspace = true }
 bytesize = { workspace = true,  features = ['serde'] }
 indicatif = { workspace = true }
 rand = { workspace = true }

@@ -2354,12 +2354,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "flume"
+version = "0.11.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "da0e4dd2a88388a1f4ccc7c9ce104604dab68d9f408dc34cd45823d5a9069095"
+dependencies = [
+ "futures-core",
+ "futures-sink",
+ "nanorand",
+ "spin",
+]
+
+[[package]]
 name = "fluvio"
 version = "0.28.1"
 dependencies = [
  "adaptive_backoff",
  "anyhow",
- "async-channel 1.9.0",
  "async-lock",
  "async-std",
  "async-trait",
@@ -2368,6 +2379,7 @@ dependencies = [
  "derive_builder",
  "dirs 6.0.0",
  "event-listener 5.4.0",
+ "flume",
  "fluvio-compression",
  "fluvio-future",
  "fluvio-protocol",
@@ -2418,10 +2430,10 @@ name = "fluvio-benchmark"
 version = "0.0.0"
 dependencies = [
  "anyhow",
- "async-channel 1.9.0",
  "bytesize",
  "clap",
  "derive_builder",
+ "flume",
  "fluvio",
  "fluvio-future",
  "futures-util",
@@ -2479,7 +2491,6 @@ name = "fluvio-cli"
 version = "0.0.0"
 dependencies = [
  "anyhow",
- "async-channel 1.9.0",
  "async-trait",
  "bytesize",
  "clap",
@@ -2491,6 +2502,7 @@ dependencies = [
  "ctrlc",
  "current_platform",
  "flate2",
+ "flume",
  "fluvio",
  "fluvio-auth",
  "fluvio-benchmark",
@@ -2568,7 +2580,6 @@ name = "fluvio-cluster"
 version = "0.0.0"
 dependencies = [
  "anyhow",
- "async-channel 1.9.0",
  "async-trait",
  "bytesize",
  "chrono",
@@ -2581,6 +2592,7 @@ dependencies = [
  "directories",
  "duct",
  "flate2",
+ "flume",
  "fluvio",
  "fluvio-channel",
  "fluvio-cli-common",
@@ -2645,9 +2657,9 @@ name = "fluvio-connector-common"
 version = "0.0.0"
 dependencies = [
  "anyhow",
- "async-channel 1.9.0",
  "async-trait",
  "ctrlc",
+ "flume",
  "fluvio",
  "fluvio-connector-derive",
  "fluvio-connector-package",
@@ -3072,13 +3084,13 @@ dependencies = [
 name = "fluvio-socket"
 version = "0.15.3"
 dependencies = [
- "async-channel 1.9.0",
  "async-lock",
  "async-trait",
  "built",
  "bytes",
  "cfg-if",
  "event-listener 5.4.0",
+ "flume",
  "fluvio-future",
  "fluvio-protocol",
  "fluvio-types",
@@ -3100,7 +3112,6 @@ version = "0.0.0"
 dependencies = [
  "adaptive_backoff",
  "anyhow",
- "async-channel 1.9.0",
  "async-io",
  "async-lock",
  "async-trait",
@@ -3110,6 +3121,7 @@ dependencies = [
  "clap",
  "derive_builder",
  "flate2",
+ "flume",
  "fluvio",
  "fluvio-auth",
  "fluvio-compression",
@@ -3165,13 +3177,13 @@ name = "fluvio-storage"
 version = "0.0.0"
 dependencies = [
  "anyhow",
- "async-channel 1.9.0",
  "async-lock",
  "async-trait",
  "blocking",
  "bytes",
  "clap",
  "derive_builder",
+ "flume",
  "fluvio-controlplane",
  "fluvio-controlplane-metadata",
  "fluvio-future",
@@ -3196,10 +3208,10 @@ name = "fluvio-stream-dispatcher"
 version = "0.13.8"
 dependencies = [
  "anyhow",
- "async-channel 1.9.0",
  "async-lock",
  "async-trait",
  "cfg-if",
+ "flume",
  "fluvio-future",
  "fluvio-stream-model",
  "fluvio-types",
@@ -3234,11 +3246,11 @@ name = "fluvio-test"
 version = "0.0.0"
 dependencies = [
  "anyhow",
- "async-channel 1.9.0",
  "clap",
  "comfy-table",
  "crc",
  "fastrand",
+ "flume",
  "fluvio",
  "fluvio-cli",
  "fluvio-command",
@@ -5320,6 +5332,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "nanorand"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6a51313c5820b0b02bd422f4b44776fbf47961755c74ce64afc73bfad10226c3"
+dependencies = [
+ "getrandom 0.2.15",
+]
+
+[[package]]
 name = "native-tls"
 version = "0.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7208,6 +7229,9 @@ name = "spin"
 version = "0.9.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6980e8d7511241f8acf4aebddbb1ff938df5eebe98691418c4468d0b72a96a67"
+dependencies = [
+ "lock_api",
+]
 
 [[package]]
 name = "spki"

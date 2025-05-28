@@ -43,7 +43,7 @@ pub mod memory {
             loop {
                 trace!("dispatcher waiting");
 
-                let msg = ws_receiver.recv().await;
+                let msg = ws_receiver.recv_async().await;
 
                 match msg {
                     Ok(action) => {

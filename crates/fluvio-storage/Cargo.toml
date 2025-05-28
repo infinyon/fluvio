@@ -37,7 +37,7 @@ thiserror = { workspace = true }
 libc = { workspace = true }
 futures-lite = { workspace = true }
 pin-utils = { workspace = true }
-async-channel = { workspace = true }
+flume = { workspace = true }
 async-trait = { workspace = true }
 serde = { workspace = true, features = ['derive', 'std'] }
 tracing = { workspace = true }

@@ -19,7 +19,7 @@ k8 = ["fluvio-stream-model/k8", "k8-client", "serde_json"]
 anyhow = { workspace = true }
 async-trait = { workspace = true }
 async-lock = { workspace = true }
-async-channel = { workspace = true }
+flume = { workspace = true }
 cfg-if = { workspace = true }
 futures-util = { workspace = true, features = ["alloc"] }
 once_cell = { workspace = true }

@@ -6,7 +6,7 @@ use futures::FutureExt;
 use futures_lite::StreamExt;
 use futures::future::try_join_all;
 use tokio::select;
-use async_channel;
+use flume;
 use tracing::info;
 
 use fluvio_test_util::test_runner::test_driver::TestDriver;
@@ -22,11 +22,11 @@ use super::MyTestCase;
 
 // This is for joining multiple topic support per process
 async fn consume_from_stream(
-    channel: async_channel::Sender<ConsumerRecord>,
+    channel: flume::Sender<ConsumerRecord>,
     mut stream: impl Stream<Item = Result<ConsumerRecord, ErrorCode>> + Unpin,
 ) -> Result<(), ()> {
     while let Ok(Some(record_raw)) = stream.try_next().await {
-        channel.send(record_raw).await.expect("channel");
+        channel.send_async(record_raw).await.expect("channel");
     }
 
     Ok(())
@@ -37,7 +37,7 @@ pub async fn consumer_stream(test_driver: TestDriver, option: MyTestCase, consum
     // Vec of consumer streams
     let mut streams = Vec::new();
     // Create channel here
-    let (s, r) = async_channel::bounded(1000);
+    let (s, r) = flume::bounded(1000);
 
     // loop over number of topics
     for t in 0..option.environment.topic {
@@ -85,7 +85,7 @@ pub async fn consumer_stream(test_driver: TestDriver, option: MyTestCase, consum
         _ = try_join_all(streams.clone()) => {}
 
         // This is for stdout
-        record_raw = r.recv() => {
+        record_raw = r.recv_async() => {
             // Consumer handling code for single stream
             if let Ok(raw) = record_raw {
                 records_recvd += 1;

@@ -10,7 +10,7 @@ use std::time::Instant;
 #[cfg(target_arch = "wasm32")]
 use web_time::Instant;
 
-use async_channel::Sender;
+use flume::Sender;
 use async_lock::RwLock;
 use tracing::trace;
 use futures_util::future::{BoxFuture, Either, Shared};
@@ -284,7 +284,7 @@ impl ProducerBatch {
         compression: Compression,
         created_at: Instant,
     ) -> Self {
-        let (sender, receiver) = async_channel::bounded(1);
+        let (sender, receiver) = flume::bounded(1);
         let batch_metadata = Arc::new(BatchMetadata::new(receiver, Some(created_at)));
         let batch = MemoryBatch::new(write_limit, batch_limit, compression);
 

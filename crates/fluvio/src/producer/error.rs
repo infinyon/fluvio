@@ -1,4 +1,4 @@
-use async_channel::RecvError;
+use flume::RecvError;
 use fluvio_future::retry::TimeoutError;
 use fluvio_protocol::link::ErrorCode;
 
@@ -12,7 +12,7 @@ pub enum ProducerError {
     #[error("record size ({0} bytes), exceeded maximum request size ({0} bytes)")]
     RecordTooLarge(usize, usize),
     #[error("failed to send record metadata: {0}")]
-    SendRecordMetadata(#[from] async_channel::SendError<RecordMetadata>),
+    SendRecordMetadata(#[from] flume::SendError<RecordMetadata>),
     #[error("failed to get record metadata")]
     GetRecordMetadata(#[from] Option<RecvError>),
     #[error("partition: {0} not found")]

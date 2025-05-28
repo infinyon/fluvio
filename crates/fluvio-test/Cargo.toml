@@ -10,7 +10,7 @@ license = "Apache-2.0"
 publish = false
 
 [dependencies]
-async-channel = { workspace = true }
+flume = { workspace = true }
 anyhow = { workspace = true }
 futures-lite = { workspace = true }
 futures = { workspace = true }

@@ -1,7 +1,7 @@
 #![allow(unused)]
 
 use futures_util::StreamExt;
-use async_channel::Receiver;
+use flume::Receiver;
 use crate::{
     CheckResult, CheckResults, CheckStatus, CheckSuggestion,
     render::{ProgressRenderedText, ProgressRenderer},

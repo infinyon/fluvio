@@ -3,7 +3,7 @@ use std::{
     sync::atomic::AtomicI64,
 };
 
-use async_channel::{Sender, bounded};
+use flume::{Sender, bounded};
 use anyhow::Result;
 use fluvio_types::PartitionId;
 use serde::Serialize;
@@ -47,14 +47,14 @@ impl OffsetLocalStore {
         }
         let (s, r) = bounded(1);
         self.stream_to_server
-            .send(StreamToServer::FlushManagedOffset {
+            .send_async(StreamToServer::FlushManagedOffset {
                 offset: self.comitted(),
                 callback: StreamToServerCallback::Channel(s),
             })
             .await
             .map_err(|e| ErrorCode::Other(e.to_string()))?;
         match r
-            .recv()
+            .recv_async()
             .await
             .map_err(|e| ErrorCode::Other(e.to_string()))?
         {
@@ -134,14 +134,14 @@ impl From<ConsumerOffsetRequest> for ConsumerOffset {
 
 #[cfg(test)]
 mod tests {
-    use async_channel::TryRecvError;
+    use flume::TryRecvError;
 
     use super::*;
 
     #[test]
     fn test_try_flush() {
         //given
-        let (sender, recv) = async_channel::bounded(1);
+        let (sender, recv) = flume::bounded(1);
         let store = OffsetLocalStore::new(sender);
 
         //when
@@ -159,7 +159,7 @@ mod tests {
     #[test]
     fn test_try_flush_ignores_initial_state() {
         //given
-        let (sender, recv) = async_channel::bounded(1);
+        let (sender, recv) = flume::bounded(1);
         let store = OffsetLocalStore::new(sender);
 
         //when
@@ -173,7 +173,7 @@ mod tests {
     #[test]
     fn test_try_flush_avoid_repeats() {
         //given
-        let (sender, recv) = async_channel::bounded(2);
+        let (sender, recv) = flume::bounded(2);
         let store = OffsetLocalStore::new(sender);
 
         //when
@@ -193,7 +193,7 @@ mod tests {
     #[test]
     fn test_monotonic_update() {
         //given
-        let (sender, recv) = async_channel::bounded(1);
+        let (sender, recv) = flume::bounded(1);
         let store = OffsetLocalStore::new(sender);
 
         //when
@@ -216,12 +216,12 @@ mod tests {
     #[fluvio_future::test]
     async fn test_flush() {
         //given
-        let (sender, recv) = async_channel::bounded(2);
+        let (sender, recv) = flume::bounded(2);
         let store = OffsetLocalStore::new(sender);
 
         fluvio_future::task::spawn(async move {
             //then
-            let message1 = recv.recv().await;
+            let message1 = recv.recv_async().await;
             assert!(matches!(
                 message1,
                 Ok(StreamToServer::FlushManagedOffset { callback: _, offset }) if offset == 1
@@ -234,7 +234,7 @@ mod tests {
                 callback.send(ErrorCode::None).await;
             }
 
-            let message2 = recv.recv().await;
+            let message2 = recv.recv_async().await;
             assert!(matches!(
                 message2,
                 Ok(StreamToServer::FlushManagedOffset { callback: _, offset }) if offset == 2
@@ -260,7 +260,7 @@ mod tests {
     #[fluvio_future::test]
     async fn test_flush_ignores_initial_state() {
         //given
-        let (sender, recv) = async_channel::bounded(1);
+        let (sender, recv) = flume::bounded(1);
         let store = OffsetLocalStore::new(sender);
 
         //when
@@ -274,13 +274,13 @@ mod tests {
     #[fluvio_future::test]
     async fn test_flush_avoid_repeats() {
         //given
-        let (sender, recv) = async_channel::bounded(2);
+        let (sender, recv) = flume::bounded(2);
         let store = OffsetLocalStore::new(sender);
 
         let recv_clone = recv.clone();
         fluvio_future::task::spawn(async move {
             //then
-            let message1 = recv.recv().await;
+            let message1 = recv.recv_async().await;
             assert!(matches!(
                 message1,
                 Ok(StreamToServer::FlushManagedOffset { callback: _, offset }) if offset == 1
@@ -307,12 +307,12 @@ mod tests {
     #[fluvio_future::test]
     async fn test_flush_error_propagated() {
         //given
-        let (sender, recv) = async_channel::bounded(1);
+        let (sender, recv) = flume::bounded(1);
         let store = OffsetLocalStore::new(sender);
 
         fluvio_future::task::spawn(async move {
             //then
-            let message1 = recv.recv().await;
+            let message1 = recv.recv_async().await;
             assert!(matches!(
                 message1,
                 Ok(StreamToServer::FlushManagedOffset { callback: _, offset }) if offset == 1
