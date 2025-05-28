@@ -34,7 +34,6 @@ pub(crate) fn process_record_set(
 ) -> Result<(Batch, Option<SmartModuleTransformRuntimeError>), Error> {
     let mut batches = ProduceBatchIterator::new(&records.batches);
 
-    // process_batch(sm_chain, &mut batches, usize::MAX, &Default::default())
     process_batch(sm_chain, &mut batches, usize::MAX)
 }
 

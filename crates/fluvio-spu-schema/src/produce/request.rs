@@ -40,7 +40,6 @@ pub struct ProduceRequest<R> {
     /// Each topic to produce to.
     pub topics: Vec<TopicProduceData<R>>,
 
-    // #[fluvio(min_version = PRODUCER_TRANSFORMATION_API)]
     pub smartmodules: Vec<SmartModuleInvocation>,
 
     pub data: PhantomData<R>,
@@ -553,7 +552,6 @@ mod tests {
         let mut value = DefaultProduceRequest::default();
 
         //when
-        // let version = DefaultProduceRequest::MAX_API_VERSION;
         let version = 8i16;
         value
             .decode(&mut std::io::Cursor::new(bytes), version)
