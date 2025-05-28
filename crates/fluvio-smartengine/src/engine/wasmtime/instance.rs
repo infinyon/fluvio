@@ -223,8 +223,17 @@ impl SmartModuleInstanceContext {
     }
 
     /// convenience function for use with metrics_time_elapsed
+    #[cfg(not(target_arch = "wasm32"))]
     pub(crate) fn metrics_time_start(&self) -> std::time::Instant {
         std::time::Instant::now()
+    }
+
+    // fluvio-smartengine is not compiled for wasm32, but add this
+    // warning to avoid confusion should that change
+    #[cfg(target_arch = "wasm32")]
+    pub(crate) fn metrics_time_start(&self) -> std::time::Instant {
+        compile_error!("metrics_time_start should not be compiled for wasm32");
+        unreachable!()
     }
 
     /// record time elapsed
