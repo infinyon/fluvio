@@ -14,9 +14,9 @@ use flate2::{
 use fluvio_protocol::{Encoder, Decoder, Version};
 use fluvio_smartmodule::dataplane::smartmodule::SmartModuleExtraParams;
 
-// The fluvio COMMON_VERSION_HAS_SM_NAME that introduced the smartmodule
-// name to SmartModuleInvocations
-pub const COMMON_VERSION_HAS_SM_NAME: Version = 26;
+// The fluvio COMMON_VERSION in fluvio-spu-schema/src/lib.rs
+// that introduced the smartmodule name to SmartModuleInvocations
+pub const COMMON_VERSION_HAS_SM_NAME: Version = 25;
 
 /// The request payload when using a Consumer SmartModule.
 ///
