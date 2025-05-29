@@ -62,7 +62,7 @@ resolver = "2"
 [workspace.dependencies]
 adaptive_backoff = "0.2.1"
 anyhow = "1.0.86"
-async-channel = { version = "1.9.0", default-features = false }
+async-channel = { version = "2.3.1",  features = ["std"] }
 async-io = "2.3.3"
 async-lock = "3.4.0"
 async-std = { version = "1.8.0", default-features = false }
@@ -100,7 +100,7 @@ flate2 = { version = "1.0.25" }
 futures = { version = "0.3.1" }
 futures-channel = "0.3"
 futures-lite = "2.3.0"
-futures-util = { version = "0.3.6", default-features = false }
+futures-util = { version = "0.3.31", default-features = false }
 getrandom = "0.2.15"
 handlebars = "6.3.0"
 hdrhistogram = "7.0"

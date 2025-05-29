@@ -166,6 +166,8 @@ mod context {
 
     #[cfg(feature = "unstable")]
     mod unstable {
+        use std::pin::Pin;
+
         use super::*;
         use crate::metadata::store::MetadataChanges;
         use futures_util::Stream;
@@ -178,7 +180,8 @@ mod context {
         {
             pub(crate) fn watch(
                 &self,
-            ) -> impl Stream<Item = MetadataChanges<S, LocalMetadataItem>> {
+            ) -> Pin<Box<dyn Stream<Item = MetadataChanges<S, LocalMetadataItem>> + Send + 'static>>
+            {
                 let mut listener = self.store.change_listener();
                 let (sender, receiver) = async_channel::unbounded();
 
@@ -193,7 +196,7 @@ mod context {
                     }
                 });
 
-                receiver
+                Box::pin(receiver)
             }
         }
     }

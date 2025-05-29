@@ -21,7 +21,8 @@ use bytes::Bytes;
 use event_listener::Event;
 use futures_util::ready;
 use futures_util::stream::{Stream, StreamExt};
-use pin_project::{pin_project, pinned_drop};
+use pin_project::pin_project;
+use pin_project::pinned_drop;
 use tokio::select;
 use tracing::{info, warn};
 use tracing::{debug, error, trace, instrument};
@@ -266,7 +267,7 @@ impl MultiplexerSocket {
         // but it is easier to clean up
 
         Ok(AsyncResponse {
-            receiver,
+            receiver: Box::pin(receiver),
             header: req_msg.header,
             correlation_id,
             data: PhantomData,
@@ -279,7 +280,7 @@ impl MultiplexerSocket {
 #[pin_project(PinnedDrop)]
 pub struct AsyncResponse<R> {
     #[pin]
-    receiver: Receiver<Option<Bytes>>,
+    receiver: Pin<Box<Receiver<Option<Bytes>>>>,
     header: RequestHeader,
     correlation_id: i32,
     data: PhantomData<R>,
@@ -296,49 +297,31 @@ impl<R> PinnedDrop for AsyncResponse<R> {
 impl<R: Request> Stream for AsyncResponse<R> {
     type Item = Result<R::Response, SocketError>;
 
-    #[instrument(
-        skip(self, cx),
-        fields(
-            api_key = R::API_KEY,
-            correlation_id = self.correlation_id,
-        )
-    )]
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         let this = self.project();
-        let next: Option<Option<_>> = match this.receiver.poll_next(cx) {
-            Poll::Pending => {
-                trace!("Waiting for async response");
-                return Poll::Pending;
-            }
-            Poll::Ready(next) => next,
-        };
-
-        if let Some(bytes) = next {
-            if let Some(msg) = bytes {
+        match ready!(this.receiver.poll_next(cx)) {
+            Some(Some(bytes)) => {
                 use bytes::Buf;
-                let response_len = msg.len();
+                let response_len = bytes.len();
                 debug!(
                     response_len,
-                    remaining = msg.remaining(),
+                    remaining = bytes.remaining(),
                     version = this.header.api_version(),
                     "response len>>>"
                 );
 
-                let mut cursor = Cursor::new(msg);
+                let mut cursor = Cursor::new(bytes);
                 let response = R::Response::decode_from(&mut cursor, this.header.api_version());
-                let value = match response {
+                match response {
                     Ok(value) => {
                         trace!("Received response bytes: {},  {:#?}", response_len, &value,);
-                        Some(Ok(value))
+                        Poll::Ready(Some(Ok(value)))
                     }
-                    Err(e) => Some(Err(e.into())),
-                };
-                Poll::Ready(value)
-            } else {
-                Poll::Ready(Some(Err(SocketError::SocketClosed)))
+                    Err(e) => Poll::Ready(Some(Err(e.into()))),
+                }
             }
-        } else {
-            Poll::Ready(None)
+            Some(None) => Poll::Ready(Some(Err(SocketError::SocketClosed))),
+            None => Poll::Ready(None),
         }
     }
 }
@@ -347,8 +330,29 @@ impl<R: Request> Future for AsyncResponse<R> {
     type Output = Result<R::Response, SocketError>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        match ready!(self.poll_next(cx)) {
-            Some(next) => Poll::Ready(next),
+        let this = self.project();
+        match ready!(this.receiver.poll_next(cx)) {
+            Some(Some(bytes)) => {
+                use bytes::Buf;
+                let response_len = bytes.len();
+                debug!(
+                    response_len,
+                    remaining = bytes.remaining(),
+                    version = this.header.api_version(),
+                    "response len>>>"
+                );
+
+                let mut cursor = Cursor::new(bytes);
+                let response = R::Response::decode_from(&mut cursor, this.header.api_version());
+                match response {
+                    Ok(value) => {
+                        trace!("Received response bytes: {},  {:#?}", response_len, &value,);
+                        Poll::Ready(Ok(value))
+                    }
+                    Err(e) => Poll::Ready(Err(e.into())),
+                }
+            }
+            Some(None) => Poll::Ready(Err(SocketError::SocketClosed)),
             None => Poll::Ready(Err(SocketError::SocketClosed)),
         }
     }

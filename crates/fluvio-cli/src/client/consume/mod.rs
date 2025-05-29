@@ -23,7 +23,7 @@ mod cmd {
     use std::sync::Arc;
 
     use fluvio_protocol::link::ErrorCode;
-    use futures_util::{Stream, StreamExt};
+    use futures_util::StreamExt;
     use tracing::{debug, trace, instrument};
     use clap::{Parser, ValueEnum};
     use futures::{select, FutureExt};
@@ -391,11 +391,8 @@ mod cmd {
             debug!("consume config: {:#?}", consume_config);
 
             self.print_status();
-            let mut stream = fluvio
-                .consumer_with_config(consume_config)
-                .await?
-                .take_until(stop_signal.recv());
-            self.consume_records_stream(&mut stream, tableformat)
+            let mut stream = fluvio.consumer_with_config(consume_config).await?;
+            self.consume_records_stream(&mut stream, stop_signal, tableformat)
                 .await?;
 
             if !self.disable_continuous {
@@ -403,19 +400,23 @@ mod cmd {
             }
 
             if self.consumer.is_some() {
-                stream.get_mut().offset_commit().await?;
-                stream.get_mut().offset_flush().await?;
+                stream.offset_commit().await?;
+                stream.offset_flush().await?;
             }
 
             Ok(())
         }
 
         /// Consume records as a stream, waiting for new records to arrive
-        async fn consume_records_stream(
+        async fn consume_records_stream<S>(
             &self,
-            stream: &mut (impl Stream<Item = Result<Record, ErrorCode>> + Unpin),
+            stream: &mut S,
+            stop_signal: async_channel::Receiver<()>,
             tableformat: Option<TableFormatSpec>,
-        ) -> Result<()> {
+        ) -> Result<()>
+        where
+            S: ConsumerStream + Unpin + Send,
+        {
             let maybe_potential_end_offset: Option<u32> = self.end;
 
             let templates = match self.format.as_deref() {
@@ -515,6 +516,10 @@ mod cmd {
                             },
                             None => break,
                         },
+                        _ = stop_signal.recv().fuse() => {
+                            debug!("Received stop signal, exiting consume loop");
+                            break;
+                        },
                         maybe_event = user_input_reader.next().fuse() => {
                             match maybe_event {
                                 Some(Ok(event)) => {
@@ -537,33 +542,44 @@ mod cmd {
             } else {
                 let pb = ProgressRenderer::default();
                 // We do not support `--output=full_table` when we don't have a TTY (i.e., CI environment)
-                while let Some(result) = stream.next().await {
-                    let result: std::result::Result<Record, _> = result;
-                    let record = match result {
-                        Ok(record) => record,
-                        /*
-                        Err(FluvioError::AdminApi(ApiError::Code(code, _))) => {
-                            eprintln!("{}", code.to_sentence());
-                            continue;
-                        }
-                        */
-                        Err(other) => return Err(other.into()),
-                    };
+                loop {
+                    select! {
+                        stream_next = stream.next().fuse() => match stream_next {
+                            Some(result) => {
+                                let result: std::result::Result<Record, _> = result;
+                                let record = match result {
+                                    Ok(record) => record,
+                                    /*
+                                    Err(FluvioError::AdminApi(ApiError::Code(code, _))) => {
+                                        eprintln!("{}", code.to_sentence());
+                                        continue;
+                                    }
+                                    */
+                                    Err(other) => return Err(other.into()),
+                                };
 
-                    self.print_record(
-                        templates.as_ref(),
-                        &record,
-                        &mut header_print,
-                        &mut None,
-                        &mut None,
-                        &pb,
-                    );
+                                self.print_record(
+                                    templates.as_ref(),
+                                    &record,
+                                    &mut header_print,
+                                    &mut None,
+                                    &mut None,
+                                    &pb,
+                                );
 
-                    if let Some(potential_offset) = maybe_potential_end_offset {
-                        if record.offset >= potential_offset as i64 {
-                            eprintln!("End-offset has been reached; exiting");
+                                if let Some(potential_offset) = maybe_potential_end_offset {
+                                    if record.offset >= potential_offset as i64 {
+                                        eprintln!("End-offset has been reached; exiting");
+                                        break;
+                                    }
+                                }
+                            },
+                            None => break,
+                        },
+                        _ = stop_signal.recv().fuse() => {
+                            debug!("Received stop signal, exiting consume loop");
                             break;
-                        }
+                        },
                     }
                 }
             }
