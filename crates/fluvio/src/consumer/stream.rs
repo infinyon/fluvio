@@ -155,19 +155,6 @@ impl<T: Stream<Item = Result<Record, ErrorCode>> + Unpin> Stream
     }
 }
 
-impl<T> ConsumerStream for futures_util::stream::TakeUntil<T, async_channel::Recv<'_, ()>>
-where
-    T: ConsumerStream,
-{
-    fn offset_commit(&mut self) -> ConsumerBoxFuture {
-        self.get_mut().offset_commit()
-    }
-
-    fn offset_flush(&mut self) -> ConsumerBoxFuture {
-        self.get_mut().offset_flush()
-    }
-}
-
 #[cfg(not(target_arch = "wasm32"))]
 impl ConsumerStream for Pin<Box<dyn ConsumerStream + Send>> {
     fn offset_commit(&mut self) -> ConsumerBoxFuture {

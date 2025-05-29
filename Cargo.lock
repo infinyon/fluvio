@@ -2359,7 +2359,7 @@ version = "0.28.1"
 dependencies = [
  "adaptive_backoff",
  "anyhow",
- "async-channel 1.9.0",
+ "async-channel 2.3.1",
  "async-lock",
  "async-std",
  "async-trait",
@@ -2418,7 +2418,7 @@ name = "fluvio-benchmark"
 version = "0.0.0"
 dependencies = [
  "anyhow",
- "async-channel 1.9.0",
+ "async-channel 2.3.1",
  "bytesize",
  "clap",
  "derive_builder",
@@ -2479,7 +2479,7 @@ name = "fluvio-cli"
 version = "0.0.0"
 dependencies = [
  "anyhow",
- "async-channel 1.9.0",
+ "async-channel 2.3.1",
  "async-trait",
  "bytesize",
  "clap",
@@ -2568,7 +2568,7 @@ name = "fluvio-cluster"
 version = "0.0.0"
 dependencies = [
  "anyhow",
- "async-channel 1.9.0",
+ "async-channel 2.3.1",
  "async-trait",
  "bytesize",
  "chrono",
@@ -2645,7 +2645,7 @@ name = "fluvio-connector-common"
 version = "0.0.0"
 dependencies = [
  "anyhow",
- "async-channel 1.9.0",
+ "async-channel 2.3.1",
  "async-trait",
  "ctrlc",
  "fluvio",
@@ -3072,7 +3072,7 @@ dependencies = [
 name = "fluvio-socket"
 version = "0.15.3"
 dependencies = [
- "async-channel 1.9.0",
+ "async-channel 2.3.1",
  "async-lock",
  "async-trait",
  "built",
@@ -3100,7 +3100,7 @@ version = "0.0.0"
 dependencies = [
  "adaptive_backoff",
  "anyhow",
- "async-channel 1.9.0",
+ "async-channel 2.3.1",
  "async-io",
  "async-lock",
  "async-trait",
@@ -3165,7 +3165,7 @@ name = "fluvio-storage"
 version = "0.0.0"
 dependencies = [
  "anyhow",
- "async-channel 1.9.0",
+ "async-channel 2.3.1",
  "async-lock",
  "async-trait",
  "blocking",
@@ -3196,7 +3196,7 @@ name = "fluvio-stream-dispatcher"
 version = "0.13.8"
 dependencies = [
  "anyhow",
- "async-channel 1.9.0",
+ "async-channel 2.3.1",
  "async-lock",
  "async-trait",
  "cfg-if",
@@ -3234,7 +3234,7 @@ name = "fluvio-test"
 version = "0.0.0"
 dependencies = [
  "anyhow",
- "async-channel 1.9.0",
+ "async-channel 2.3.1",
  "clap",
  "comfy-table",
  "crc",

@@ -328,7 +328,9 @@ impl FluvioAdmin {
     /// Watch stream of changes for metadata
     /// There is caching, this is just pass through
     #[instrument(skip(self))]
-    pub async fn watch<S>(&self) -> Result<impl Stream<Item = Result<WatchResponse<S>, IoError>>>
+    pub async fn watch<S>(
+        &self,
+    ) -> Result<impl Stream<Item = Result<WatchResponse<S>, IoError>> + Unpin>
     where
         S: AdminSpec,
         S::Status: Encoder + Decoder,
@@ -348,7 +350,7 @@ impl FluvioAdmin {
         debug!(api_version = req_msg.header.api_version(), obj = %S::LABEL, "create watch stream");
         let inner_socket = self.socket.new_socket();
         let stream = inner_socket.create_stream(req_msg, 10).await?;
-        Ok(stream.map(|respons_result| match respons_result {
+        let mapped_stream = stream.map(|respons_result| match respons_result {
             Ok(response) => {
                 let watch_response = response
                     .downcast()
@@ -359,7 +361,8 @@ impl FluvioAdmin {
                 )))
             }
             Err(err) => Err(IoError::other(format!("socket error {err}"))),
-        }))
+        });
+        Ok(Box::pin(mapped_stream))
     }
 }
 
