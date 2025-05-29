@@ -8,7 +8,11 @@ use std::{
 };
 
 use fluvio_protocol::record::Batch;
+#[cfg(feature = "smartengine")]
 use fluvio_smartengine::metrics::SmartModuleChainMetrics;
+#[cfg(not(feature = "smartengine"))]
+use crate::smartengine::SmartModuleChainMetrics;
+
 use fluvio_spu_schema::fetch::FilePartitionResponse;
 use serde::Serialize;
 

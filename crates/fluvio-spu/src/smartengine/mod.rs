@@ -20,6 +20,7 @@ pub(crate) use fluvio_smartengine::{
 // Stub structures to support a null smartengine config
 #[cfg(not(feature = "smartengine"))]
 mod null_smartengine {
+    use std::collections::HashMap;
     use std::future::Future;
     use std::sync::atomic::{AtomicU64, Ordering};
     use std::time::Duration;
@@ -37,8 +38,16 @@ mod null_smartengine {
     pub struct SmartModuleChainMetrics {
         bytes_in: AtomicU64,
         records_out: AtomicU64,
+        records_err: AtomicU64,
         invocation_count: AtomicU64,
         fuel_used: AtomicU64,
+        // CPU time in milliseconds
+        // allow this to be missing for deserialization for legacy use
+        #[serde(default)]
+        cpu_ms: AtomicU64,
+        // Names of the SmartModules in the chain
+        #[serde(default)]
+        smartmodule_names: Vec<String>,
     }
 
     #[allow(dead_code)]
@@ -70,6 +79,33 @@ mod null_smartengine {
         pub fn invocation_count(&self) -> u64 {
             self.invocation_count.load(Ordering::SeqCst)
         }
+
+        // Added append method
+        pub fn append(&self, other: &Self) {
+            self.bytes_in.fetch_add(other.bytes_in(), Ordering::SeqCst);
+            self.records_out
+                .fetch_add(other.records_out(), Ordering::SeqCst);
+            self.invocation_count
+                .fetch_add(other.invocation_count(), Ordering::SeqCst);
+            self.fuel_used
+                .fetch_add(other.fuel_used(), Ordering::SeqCst);
+        }
+    }
+
+    const DEFAULT_ORDERING: Ordering = Ordering::Relaxed;
+
+    impl Clone for SmartModuleChainMetrics {
+        fn clone(&self) -> Self {
+            Self {
+                bytes_in: AtomicU64::new(self.bytes_in.load(DEFAULT_ORDERING)),
+                records_out: AtomicU64::new(self.records_out.load(DEFAULT_ORDERING)),
+                records_err: AtomicU64::new(self.records_err.load(DEFAULT_ORDERING)),
+                invocation_count: AtomicU64::new(self.invocation_count.load(DEFAULT_ORDERING)),
+                fuel_used: AtomicU64::new(self.fuel_used.load(DEFAULT_ORDERING)),
+                cpu_ms: AtomicU64::new(self.cpu_ms.load(DEFAULT_ORDERING)),
+                smartmodule_names: self.smartmodule_names.clone(),
+            }
+        }
     }
 
     #[derive(Clone, Debug, Default)]
@@ -92,11 +128,7 @@ mod null_smartengine {
     pub struct SmartModuleChainInstance;
 
     impl SmartModuleChainInstance {
-        pub async fn look_back<F, R>(
-            &mut self,
-            _read_fn: F,
-            _metrics: &SmartModuleChainMetrics,
-        ) -> Result<()>
+        pub async fn look_back<F, R>(&mut self, _read_fn: F) -> Result<()>
         where
             R: Future<Output = Result<Vec<Record>>>,
             F: Fn(Lookback) -> R,
@@ -104,11 +136,7 @@ mod null_smartengine {
             Ok(())
         }
 
-        pub fn process(
-            &mut self,
-            input: SmartModuleInput,
-            _metric: &SmartModuleChainMetrics,
-        ) -> Result<SmartModuleOutput> {
+        pub fn process(&mut self, input: SmartModuleInput) -> Result<SmartModuleOutput> {
             use fluvio_smartmodule::SMARTMODULE_TIMESTAMPS_VERSION;
             const DEFAULT_SMARTENGINE_VERSION: Version = SMARTMODULE_TIMESTAMPS_VERSION;
 
@@ -116,6 +144,11 @@ mod null_smartengine {
             let records = input.try_into_records(DEFAULT_SMARTENGINE_VERSION)?;
             let out = SmartModuleOutput::new(records);
             Ok(out)
+        }
+
+        // Added metrics_export method
+        pub fn metrics_export(&self) -> HashMap<String, SmartModuleChainMetrics> {
+            HashMap::<String, SmartModuleChainMetrics>::new()
         }
     }
 
