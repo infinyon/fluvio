@@ -29,7 +29,7 @@ serde_json = { workspace = true }
 thiserror = { workspace = true }
 
 # regardless of TLS, sc and spu always use openssl_tls for now because we need cert API
-fluvio-future = { workspace = true, features = ["subscriber"] }
+fluvio-future = { workspace = true, features = ["subscriber", "tokio1"] }
 fluvio-extension-common = { workspace = true }
 fluvio-sc = { path = "../fluvio-sc", default-features = false }
 fluvio-spu = { path = "../fluvio-spu", default-features = false  }

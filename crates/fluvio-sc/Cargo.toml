@@ -63,5 +63,5 @@ flv-tls-proxy = { workspace = true }
 
 [dev-dependencies]
 rand = { workspace = true }
-fluvio-future = { workspace = true, features = ["fixture"] }
+fluvio-future = { workspace = true, features = ["fixture", "tokio1"] }
 fluvio-stream-model = { workspace = true, features = ["fixture"] }

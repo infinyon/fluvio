@@ -74,5 +74,5 @@ portpicker = { workspace = true }
 rand = { workspace = true }
 
 flv-util = { workspace = true, features = ["fixture"] }
-fluvio-future = { workspace = true,features = ["fixture", "subscriber"] }
+fluvio-future = { workspace = true, features = ["fixture", "subscriber", "tokio1"] }
 fluvio-protocol = { workspace = true,  features = ["fixture"] }
