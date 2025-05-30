@@ -10,6 +10,7 @@ publish = false
 
 [dependencies]
 anyhow = { workspace = true }
+async-lock = { workspace = true }
 async-channel = { workspace = true }
 bytesize = { workspace = true, features = ['serde'] }
 clap = { workspace = true, features = ["std","derive"] }
@@ -32,6 +33,5 @@ fluvio = { workspace = true  }
 fluvio-future = { workspace = true, features = [
     'task',
     'future',
-    'sync',
     'subscriber',
 ] }

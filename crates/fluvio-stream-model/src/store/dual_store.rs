@@ -667,8 +667,7 @@ mod test_notify {
     use tokio::select;
     use tracing::debug;
 
-    use fluvio_future::task::spawn;
-    use fluvio_future::task::JoinHandle;
+    use fluvio_future::task::{spawn, spawn_task, Task};
     use fluvio_future::timer::sleep;
 
     use crate::core::{Spec, MetadataItem};
@@ -838,13 +837,13 @@ mod test_notify {
     fn start_batch_of_test_listeners(
         store: Arc<LocalStore<TestSpec, TestMeta>>,
         has_been_updated: Arc<AtomicBool>,
-    ) -> Vec<JoinHandle<()>> {
+    ) -> Vec<Task<()>> {
         (0..10u32)
             // let jh: Vec<()> = (0..10u32)
             .map(|_| {
                 let store = store.clone();
 
-                spawn(listener_thread(store, has_been_updated.clone()))
+                spawn_task(listener_thread(store, has_been_updated.clone()))
             })
             .collect()
     }
