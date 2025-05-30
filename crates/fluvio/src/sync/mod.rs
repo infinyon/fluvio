@@ -185,7 +185,7 @@ mod context {
                 let mut listener = self.store.change_listener();
                 let (sender, receiver) = async_channel::unbounded();
 
-                fluvio_future::task::spawn_local(async move {
+                fluvio_future::task::spawn(async move {
                     loop {
                         listener.listen().await;
                         let changes = listener.sync_changes().await;

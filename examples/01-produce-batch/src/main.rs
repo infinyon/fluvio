@@ -21,7 +21,7 @@
 //! [Hello] Fluvio
 //! ```
 
-#[async_std::main]
+#[tokio::main]
 async fn main() {
     if let Err(e) = produce_batch().await {
         println!("Produce error: {e:?}");

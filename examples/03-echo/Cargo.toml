@@ -9,7 +9,7 @@ publish = false
 
 [dependencies]
 futures = { workspace = true }
-async-std = { workspace = true, features = ["attributes"] }
+tokio = { workspace = true }
 anyhow = { workspace = true }
 
 fluvio = { workspace = true  }

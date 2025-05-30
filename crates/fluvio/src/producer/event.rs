@@ -59,31 +59,31 @@ mod test {
         let timeout = std::time::Duration::from_millis(150);
 
         assert!(
-            async_std::future::timeout(timeout, event.listen())
+            fluvio_future::future::timeout(timeout, event.listen())
                 .await
                 .is_err()
         );
 
         event.notify().await;
         assert!(
-            async_std::future::timeout(timeout, event.listen())
+            fluvio_future::future::timeout(timeout, event.listen())
                 .await
                 .is_ok()
         );
         event.notify().await;
         event.notify().await;
         assert!(
-            async_std::future::timeout(timeout, event.listen())
+            fluvio_future::future::timeout(timeout, event.listen())
                 .await
                 .is_ok()
         );
         assert!(
-            async_std::future::timeout(timeout, event.listen())
+            fluvio_future::future::timeout(timeout, event.listen())
                 .await
                 .is_ok()
         );
         assert!(
-            async_std::future::timeout(timeout, event.listen())
+            fluvio_future::future::timeout(timeout, event.listen())
                 .await
                 .is_err()
         );

@@ -24,7 +24,7 @@
 
 use fluvio::RecordKey;
 
-#[async_std::main]
+#[tokio::main]
 async fn main() {
     if let Err(e) = produce().await {
         println!("Produce error: {e:?}");
