@@ -14,7 +14,7 @@ default = ["toml"]
 anyhow = { workspace = true }
 bytesize = { workspace = true }
 humantime-serde = { workspace = true }
-minijinja = { version = "2.6", default-features = false, features = [
+minijinja = { version = "2.10", default-features = false, features = [
     "custom_syntax",
     "fuel",
     "serde",
