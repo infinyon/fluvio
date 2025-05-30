@@ -13,6 +13,7 @@ use fluvio_smartmodule::dataplane::smartmodule::{
 };
 
 use crate::engine::config::Lookback;
+use crate::metrics::SmartModuleChainMetrics;
 
 use super::error::EngineError;
 use super::init::SmartModuleInit;
@@ -61,7 +62,25 @@ impl SmartModuleInstance {
         input: SmartModuleInput,
         store: &mut WasmState,
     ) -> Result<SmartModuleOutput> {
-        self.transform.process(input, &mut self.ctx, store)
+        // pre metrics
+        let raw_len = input.raw_bytes().len();
+        self.ctx.metrics().add_bytes_in(raw_len as u64);
+        self.ctx.metrics().add_invocation_count(1);
+        let start_time = self.ctx.metrics_time_start();
+
+        let out = self.transform.process(input, &mut self.ctx, store);
+
+        // post metrics
+        self.ctx.metrics_time_elapsed(start_time, store);
+        if let Ok(ref output) = out {
+            // let num_recs = output.successes.len() as u64;
+            // self.ctx.metrics().add_records_out(num_recs);
+
+            if let Some(_err) = output.error.as_ref() {
+                self.ctx.metrics().add_records_err(1);
+            }
+        }
+        out
     }
 
     // TODO: Move this to SPU
@@ -94,6 +113,11 @@ impl SmartModuleInstance {
         self.ctx.lookback
     }
 
+    #[allow(dead_code)]
+    pub(crate) fn metrics(&self) -> Arc<SmartModuleChainMetrics> {
+        self.ctx.metrics()
+    }
+
     /// Retrieves SmartModule Version
     pub fn version(&self) -> Version {
         self.version
@@ -106,6 +130,7 @@ pub(crate) struct SmartModuleInstanceContext {
     params: SmartModuleExtraParams,
     version: Version,
     lookback: Option<Lookback>,
+    metrics: Arc<SmartModuleChainMetrics>,
 }
 
 impl Debug for SmartModuleInstanceContext {
@@ -123,6 +148,7 @@ impl SmartModuleInstanceContext {
         params: SmartModuleExtraParams,
         version: Version,
         lookback: Option<Lookback>,
+        names: &[String], // smartmodule names
     ) -> Result<Self, EngineError> {
         debug!("creating WasmModuleInstance");
         let cb = Arc::new(RecordsCallBack::new());
@@ -147,12 +173,14 @@ impl SmartModuleInstanceContext {
                 Ok(e) => e,
                 Err(e) => EngineError::Instantiate(e),
             })?;
+        let metrics = Arc::new(SmartModuleChainMetrics::new(names));
         Ok(Self {
             instance,
             records_cb,
             params,
             version,
             lookback,
+            metrics,
         })
     }
 
@@ -188,6 +216,36 @@ impl SmartModuleInstanceContext {
         let mut output = D::default();
         output.decode(&mut std::io::Cursor::new(bytes), self.version)?;
         Ok(output)
+    }
+
+    pub(crate) fn metrics(&self) -> Arc<SmartModuleChainMetrics> {
+        self.metrics.clone()
+    }
+
+    /// convenience function for use with metrics_time_elapsed
+    #[cfg(not(target_arch = "wasm32"))]
+    pub(crate) fn metrics_time_start(&self) -> std::time::Instant {
+        std::time::Instant::now()
+    }
+
+    // fluvio-smartengine is not compiled for wasm32, but add this
+    // warning to avoid confusion should that change
+    #[cfg(target_arch = "wasm32")]
+    pub(crate) fn metrics_time_start(&self) -> std::time::Instant {
+        compile_error!("metrics_time_start should not be compiled for wasm32");
+        unreachable!()
+    }
+
+    /// record time elapsed
+    /// start_time: should come from metrics_time_start
+    pub(crate) fn metrics_time_elapsed(
+        &self,
+        start_time: std::time::Instant,
+        store: &mut WasmState,
+    ) {
+        let elapsed = start_time.elapsed();
+        let fuel = store.get_used_fuel();
+        self.metrics.add_fuel_used(fuel, elapsed);
     }
 }
 

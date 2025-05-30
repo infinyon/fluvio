@@ -32,6 +32,7 @@ pub(crate) fn build_chain(
     engine: SmartEngine,
 ) -> Result<SmartModuleChainInstance, ErrorCode> {
     for invocation in invocations {
+        let sm_names = vec![invocation.name.clone().unwrap_or_default()];
         let raw = invocation
             .wasm
             .into_raw()
@@ -57,6 +58,7 @@ pub(crate) fn build_chain(
         debug!("param: {:#?}", invocation.params);
         chain_builder.add_smart_module(
             SmartModuleConfig::builder()
+                .smartmodule_names(sm_names)
                 .params(invocation.params)
                 .version(version)
                 .lookback(lookback)

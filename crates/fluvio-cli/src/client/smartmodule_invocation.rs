@@ -23,6 +23,7 @@ pub(crate) fn create_smartmodule(
         wasm: SmartModuleInvocationWasm::Predefined(name.to_string()),
         kind: SmartModuleKind::Generic(ctx),
         params: params.into(),
+        name: Some(name.to_string()),
     }
 }
 
@@ -38,10 +39,17 @@ pub(crate) fn create_smartmodule_from_path(
     let mut buffer = Vec::with_capacity(raw_buffer.len());
     encoder.read_to_end(&mut buffer)?;
 
+    let name = path
+        .file_name()
+        .and_then(|s| s.to_str())
+        .unwrap_or("unknown")
+        .to_string();
+
     Ok(SmartModuleInvocation {
         wasm: SmartModuleInvocationWasm::AdHoc(buffer),
         kind: SmartModuleKind::Generic(ctx),
         params: params.into(),
+        name: Some(name),
     })
 }
 
@@ -49,6 +57,12 @@ pub(crate) fn create_smartmodule_from_path(
 pub(crate) fn create_smartmodule_list(
     config: TransformationConfig,
 ) -> Result<Vec<SmartModuleInvocation>> {
+    let name = config
+        .transforms
+        .iter()
+        .map(|t| t.uses.clone())
+        .collect::<Vec<_>>()
+        .join(",");
     Ok(config
         .transforms
         .into_iter()
@@ -62,6 +76,7 @@ pub(crate) fn create_smartmodule_list(
                     .collect::<std::collections::BTreeMap<String, String>>(),
                 t.lookback.map(Into::into),
             ),
+            name: Some(name.clone()),
         })
         .collect())
 }
