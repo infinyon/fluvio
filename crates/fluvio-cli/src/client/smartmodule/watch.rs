@@ -3,12 +3,12 @@ use std::fmt::Debug;
 
 use async_trait::async_trait;
 use clap::Parser;
+use futures::StreamExt;
 use tokio::select;
 use anyhow::Result;
 
 use fluvio::metadata::smartmodule::SmartModuleSpec;
 use fluvio::Fluvio;
-use fluvio_future::io::StreamExt;
 
 use crate::client::cmd::ClientCmd;
 use crate::client::smartmodule::list::ListSmartModuleOpt;
