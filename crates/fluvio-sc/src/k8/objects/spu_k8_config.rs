@@ -37,6 +37,7 @@ pub struct PodConfig {
     pub extra_volume_mounts: Vec<VolumeMount>,
     #[serde(default)]
     pub extra_volumes: Vec<VolumeSpec>,
+    pub priority_class_name: Option<String>,
 }
 
 #[derive(Debug, Eq, PartialEq, Default, Clone, Serialize, Deserialize)]

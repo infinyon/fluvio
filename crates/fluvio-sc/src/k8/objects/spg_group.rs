@@ -334,6 +334,7 @@ mod k8_convert {
                 volumes,
                 security_context: spu_k8_config.pod_security_context.clone(),
                 node_selector: Some(spu_pod_config.node_selector.clone()),
+                priority_class_name: spu_pod_config.priority_class_name.clone(),
                 ..Default::default()
             },
         };
