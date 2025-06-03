@@ -7,15 +7,18 @@ use std::time::Duration;
 
 #[cfg(not(target_arch = "wasm32"))]
 use std::time::Instant;
+use event_listener::Event;
 #[cfg(target_arch = "wasm32")]
 use web_time::Instant;
 
 use async_channel::Sender;
+use async_lock::RwLock;
 use tracing::trace;
 use futures_util::future::{BoxFuture, Either, Shared};
 use futures_util::{FutureExt, ready};
-use parking_lot::{Mutex, MutexGuard, Condvar, RwLock};
 
+use fluvio_future::future::timeout;
+use fluvio_future::task::spawn;
 use fluvio_protocol::record::Batch;
 use fluvio_compression::Compression;
 use fluvio_protocol::record::Offset;
@@ -37,15 +40,15 @@ const RECORD_ENQUEUE_TIMEOUT: Duration = Duration::from_secs(30);
 pub(crate) type BatchHandler = (Arc<BatchEvents>, Arc<BatchesDeque>);
 
 pub(crate) struct BatchesDeque {
-    pub batches: Mutex<VecDeque<ProducerBatch>>,
-    pub control: Condvar,
+    pub batches: RwLock<VecDeque<ProducerBatch>>,
+    pub space_event: Event,
 }
 
 impl BatchesDeque {
     pub(crate) fn new() -> Self {
         Self {
-            batches: Mutex::new(VecDeque::new()),
-            control: Condvar::new(),
+            batches: RwLock::new(VecDeque::new()),
+            space_event: Event::new(),
         }
     }
 
@@ -89,7 +92,10 @@ impl RecordAccumulator {
         partition_id: PartitionId,
         value: (Arc<BatchEvents>, Arc<BatchesDeque>),
     ) -> BatchHandler {
-        self.batches.write().insert(partition_id, value.clone());
+        self.batches
+            .write()
+            .await
+            .insert(partition_id, value.clone());
 
         value
     }
@@ -102,88 +108,92 @@ impl RecordAccumulator {
     ) -> Result<PushRecord, ProducerError> {
         let created_at = Instant::now();
 
-        // Get the batch handlers for this partition
-        let (batch_events, batches_deque) = {
-            let batches_lock = self.batches.read();
-            batches_lock
-                .get(&partition_id)
-                .ok_or(ProducerError::PartitionNotFound(partition_id))?
-                .clone()
-        }; // Drop the read lock here
+        let batches_lock = self.batches.read().await;
+        let (batch_events, batches_lock) = batches_lock
+            .get(&partition_id)
+            .ok_or(ProducerError::PartitionNotFound(partition_id))?;
 
-        // Wait for space in the batch queue and try to add record
-        let (should_notify_full, result) = {
-            let mut batches = self.wait_for_space(&batches_deque)?;
+        // Wait for space in the batch queue
+        self.wait_for_space(batches_lock.clone()).await?;
+        let mut batches = batches_lock.batches.write().await;
 
-            // If the last batch is not full, try to push the record to it
-            if let Some(batch) = batches.back_mut() {
-                match batch.push_record(record.clone()) {
-                    Ok(ProduceBatchStatus::Added(push_record)) => {
-                        let is_full = batch.is_full();
-                        (is_full, Ok(push_record))
+        // If the last batch is not full, push the record to it
+        if let Some(batch) = batches.back_mut() {
+            match batch.push_record(record) {
+                Ok(ProduceBatchStatus::Added(push_record)) => {
+                    if batch.is_full() {
+                        batch_events.notify_batch_full().await;
                     }
-                    Ok(ProduceBatchStatus::NotAdded(record)) => {
-                        let is_full = batch.is_full();
-                        (is_full, Err(record))
-                    }
-                    Err(err) => {
-                        return Err(err);
-                    }
+                    return Ok(PushRecord::new(
+                        push_record.into_future_record_metadata(partition_id),
+                    ));
                 }
-            } else {
-                // No batches exist, need to create one
-                (false, Err(record.clone()))
-            }
-        }; // Drop the mutex guard here
+                Ok(ProduceBatchStatus::NotAdded(record)) => {
+                    if batch.is_full() {
+                        batch_events.notify_batch_full().await;
+                    }
 
-        // Notify batch full if needed (outside of lock)
-        if should_notify_full {
-            batch_events.notify_batch_full().await;
-        }
+                    // Create and push a new batch if needed
+                    let push_record = self
+                        .create_and_new_batch(batch_events, &mut batches, record, 1, created_at)
+                        .await?;
 
-        match result {
-            Ok(push_record) => Ok(PushRecord::new(
-                push_record.into_future_record_metadata(partition_id),
-            )),
-            Err(record_to_add) => {
-                // Need to create a new batch
-                trace!(partition_id, "Creating a new batch");
-
-                let push_record = {
-                    let mut batches = batches_deque.batches.lock();
-                    self.create_and_new_batch_sync(&mut batches, record_to_add, 1, created_at)?
-                }; // Drop the mutex guard here
-
-                // Notify about new batch (outside of lock)
-                batch_events.notify_new_batch().await;
-
-                Ok(PushRecord::new(
-                    push_record.into_future_record_metadata(partition_id),
-                ))
+                    return Ok(PushRecord::new(
+                        push_record.into_future_record_metadata(partition_id),
+                    ));
+                }
+                Err(err) => {
+                    return Err(err);
+                }
             }
         }
+
+        trace!(partition_id, "Creating a new batch");
+
+        // Create and push a new batch if needed
+        let push_record = self
+            .create_and_new_batch(batch_events, &mut batches, record, 1, created_at)
+            .await?;
+
+        Ok(PushRecord::new(
+            push_record.into_future_record_metadata(partition_id),
+        ))
     }
 
-    fn wait_for_space<'a>(
-        &self,
-        batches_lock: &'a Arc<BatchesDeque>,
-    ) -> Result<MutexGuard<'a, VecDeque<ProducerBatch>>, ProducerError> {
-        let mut batches = batches_lock.batches.lock();
+    /// Wait for space in the batch queue.
+    async fn wait_for_space(&self, batches_lock: Arc<BatchesDeque>) -> Result<(), ProducerError> {
+        let batches_lock = batches_lock.clone();
+        let batches = batches_lock.batches.read().await;
         if batches.len() >= self.queue_size {
-            let wait_result = batches_lock.control.wait_while_for(
-                &mut batches,
-                |queue: &mut VecDeque<ProducerBatch>| queue.len() >= self.queue_size,
-                RECORD_ENQUEUE_TIMEOUT,
-            );
-            if wait_result.timed_out() {
+            drop(batches);
+
+            let space_listener = batches_lock.space_event.listen();
+            let queue_size = self.queue_size;
+
+            // Notify the space event to wake up if there is space available
+            spawn(async move {
+                loop {
+                    let batches = batches_lock.batches.read().await;
+                    if batches.len() < queue_size {
+                        batches_lock.space_event.notify(1);
+                        break;
+                    }
+                }
+            });
+
+            let wait = timeout(RECORD_ENQUEUE_TIMEOUT, space_listener).await;
+
+            if wait.is_err() {
                 return Err(ProducerError::BatchQueueWaitTimeout);
             }
         }
-        Ok(batches)
+
+        Ok(())
     }
 
-    fn create_and_new_batch_sync(
+    async fn create_and_new_batch(
         &self,
+        batch_events: &BatchEvents,
         batches: &mut VecDeque<ProducerBatch>,
         record: Record,
         attempts: usize,
@@ -205,73 +215,37 @@ impl RecordAccumulator {
 
         match batch.push_record(record) {
             Ok(ProduceBatchStatus::Added(push_record)) => {
+                batch_events.notify_new_batch().await;
+                if batch.is_full() {
+                    batch_events.notify_batch_full().await;
+                }
+
                 batches.push_back(batch);
                 Ok(push_record)
             }
             Ok(ProduceBatchStatus::NotAdded(record)) => {
+                batch_events.notify_new_batch().await;
+                if batch.is_full() {
+                    batch_events.notify_batch_full().await;
+                }
+
                 batches.push_back(batch);
-                // Recursively try again with a new batch
-                self.create_and_new_batch_sync(batches, record, attempts + 1, created_at)
+                // Box the future to avoid infinite size due to recursion
+                Box::pin(self.create_and_new_batch(
+                    batch_events,
+                    batches,
+                    record,
+                    attempts + 1,
+                    created_at,
+                ))
+                .await
             }
             Err(err) => Err(err),
         }
     }
 
-    // async fn create_and_new_batch(
-    //     &self,
-    //     batch_events: &BatchEvents,
-    //     batches: &mut VecDeque<ProducerBatch>,
-    //     record: Record,
-    //     attempts: usize,
-    //     created_at: Instant,
-    // ) -> Result<PartialFutureRecordMetadata, ProducerError> {
-    //     if attempts > 2 {
-    //         // This should never happen, but if it does, we should stop the recursion
-    //         return Err(ProducerError::Internal(
-    //             "Attempts exceeded while creating a new batch".to_string(),
-    //         ));
-    //     }
-    //
-    //     let mut batch = ProducerBatch::new(
-    //         self.max_request_size,
-    //         self.batch_size,
-    //         self.compression,
-    //         created_at,
-    //     );
-    //
-    //     match batch.push_record(record) {
-    //         Ok(ProduceBatchStatus::Added(push_record)) => {
-    //             batch_events.notify_new_batch().await;
-    //             if batch.is_full() {
-    //                 batch_events.notify_batch_full().await;
-    //             }
-    //
-    //             batches.push_back(batch);
-    //             Ok(push_record)
-    //         }
-    //         Ok(ProduceBatchStatus::NotAdded(record)) => {
-    //             batch_events.notify_new_batch().await;
-    //             if batch.is_full() {
-    //                 batch_events.notify_batch_full().await;
-    //             }
-    //
-    //             batches.push_back(batch);
-    //             // Box the future to avoid infinite size due to recursion
-    //             Box::pin(self.create_and_new_batch(
-    //                 batch_events,
-    //                 batches,
-    //                 record,
-    //                 attempts + 1,
-    //                 created_at,
-    //             ))
-    //             .await
-    //         }
-    //         Err(err) => Err(err),
-    //     }
-    // }
-
     pub(crate) async fn batches(&self) -> HashMap<PartitionId, BatchHandler> {
-        self.batches.read().clone()
+        self.batches.read().await.clone()
     }
 }
 

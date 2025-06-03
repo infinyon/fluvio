@@ -49,6 +49,7 @@ tracing = { workspace = true }
 
 # Fluvio dependencies
 fluvio-future = { workspace = true, features = [
+    "future",
     "task",
     "retry",
 ] }

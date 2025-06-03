@@ -169,7 +169,7 @@ where
 
         let mut batches_ready = vec![];
         {
-            let mut batches = self.batches_lock.batches.lock();
+            let mut batches = self.batches_lock.batches.write().await;
             while !batches.is_empty() {
                 let ready = force
                     || batches.front().is_some_and(|batch| {
@@ -178,7 +178,7 @@ where
                 if ready {
                     if let Some(batch) = batches.pop_front() {
                         batches_ready.push(batch);
-                        self.batches_lock.control.notify_all();
+                        self.batches_lock.space_event.notify(1);
                     }
                 } else {
                     break;
