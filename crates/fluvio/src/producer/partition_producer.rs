@@ -178,7 +178,7 @@ where
                 if ready {
                     if let Some(batch) = batches.pop_front() {
                         batches_ready.push(batch);
-                        self.batches_lock.space_event.notify(1);
+                        self.batches_lock.free_space_event.notify(1);
                     }
                 } else {
                     break;

@@ -137,7 +137,6 @@ serde-tuple-vec-map = "1.0.1"
 serde_yaml = { version = "0.9.0", default-features = false }
 sha2 = { version = "0.10" }
 siphasher = "1.0.0"
-smol = "2.0.2"
 static_assertions = "1.1.0"
 syn = "2.0"
 sysinfo = { version = "0.33.1", default-features = false, features = [
@@ -177,9 +176,9 @@ fluvio-future = { version = "0.8.0", default-features = false }
 fluvio-helm = { version = "0.4.1" }
 flv-tls-proxy = { version = "0.11.0" }
 flv-util = { version = "0.5.2", default-features = false }
-k8-client = { version = "13.1.0" }
-k8-config = { version = "2.3.0" }
-k8-types = { version = "0.8.8" }
+k8-client = { version = "14.0.0" }
+k8-config = { version = "3.0.0" }
+k8-types = { version = "0.9.0" }
 k8-diff = { version = "0.1.2" }
 trybuild = { branch = "check_option", git = "https://github.com/infinyon/trybuild" }
 

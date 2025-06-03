@@ -18,7 +18,6 @@ use futures_util::future::{BoxFuture, Either, Shared};
 use futures_util::{FutureExt, ready};
 
 use fluvio_future::future::timeout;
-use fluvio_future::task::spawn;
 use fluvio_protocol::record::Batch;
 use fluvio_compression::Compression;
 use fluvio_protocol::record::Offset;
@@ -41,14 +40,14 @@ pub(crate) type BatchHandler = (Arc<BatchEvents>, Arc<BatchesDeque>);
 
 pub(crate) struct BatchesDeque {
     pub batches: RwLock<VecDeque<ProducerBatch>>,
-    pub space_event: Event,
+    pub free_space_event: Event,
 }
 
 impl BatchesDeque {
     pub(crate) fn new() -> Self {
         Self {
             batches: RwLock::new(VecDeque::new()),
-            space_event: Event::new(),
+            free_space_event: Event::new(),
         }
     }
 
@@ -162,33 +161,19 @@ impl RecordAccumulator {
 
     /// Wait for space in the batch queue.
     async fn wait_for_space(&self, batches_lock: Arc<BatchesDeque>) -> Result<(), ProducerError> {
-        let batches_lock = batches_lock.clone();
+        let space_listener = batches_lock.free_space_event.listen();
+
         let batches = batches_lock.batches.read().await;
-        if batches.len() >= self.queue_size {
-            drop(batches);
-
-            let space_listener = batches_lock.space_event.listen();
-            let queue_size = self.queue_size;
-
-            // Notify the space event to wake up if there is space available
-            spawn(async move {
-                loop {
-                    let batches = batches_lock.batches.read().await;
-                    if batches.len() < queue_size {
-                        batches_lock.space_event.notify(1);
-                        break;
-                    }
-                }
-            });
-
-            let wait = timeout(RECORD_ENQUEUE_TIMEOUT, space_listener).await;
-
-            if wait.is_err() {
-                return Err(ProducerError::BatchQueueWaitTimeout);
-            }
+        if batches.len() < self.queue_size {
+            return Ok(()); // Space available, no need to wait
         }
+        drop(batches);
 
-        Ok(())
+        // Wait for space to become available
+        match timeout(RECORD_ENQUEUE_TIMEOUT, space_listener).await {
+            Ok(_) => Ok(()),
+            Err(_) => Err(ProducerError::BatchQueueWaitTimeout),
+        }
     }
 
     async fn create_and_new_batch(
