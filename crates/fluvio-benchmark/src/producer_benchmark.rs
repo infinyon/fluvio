@@ -77,13 +77,15 @@ impl ProducerBenchmark {
                 let (event_sender, event_receiver) = unbounded();
                 stat_collector.add_producer(event_receiver);
                 let config = config.clone();
-                let jh = spawn(timeout(config.worker_timeout, async move {
-                    debug!("starting up producer {}", producer_id);
-                    let worker = ProducerWorker::new(producer_id, config, event_sender)
-                        .await
-                        .expect("create producer worker");
-                    ProducerDriver::main_loop(worker).await.expect("main loop");
-                }));
+                let jh = timeout(config.worker_timeout, async move {
+                    ProducerDriver::main_loop(
+                        ProducerWorker::new(producer_id, config.clone(), event_sender)
+                            .await
+                            .expect("create producer worker"),
+                    )
+                    .await
+                    .expect("producer worker failed");
+                });
 
                 worker_futures.push(jh);
             }

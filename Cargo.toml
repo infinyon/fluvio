@@ -63,10 +63,9 @@ resolver = "2"
 adaptive_backoff = "0.2.1"
 anyhow = "1.0.86"
 async-channel = { version = "2.3.1",  features = ["std"] }
-async-io = "2.3.3"
+async-io = "2.4"
 async-lock = "3.4.0"
-async-std = { version = "1.8.0", default-features = false }
-async-trait = { version = "0.1.41", default-features = false }
+async-trait = { version = "0.1.88", default-features = false }
 base64 = "0.22.1"
 blocking = "1.1.0"
 bytes = "1.7.2"
@@ -173,18 +172,18 @@ x509-parser = "0.17.0"
 # External fluvio dependencies
 fluvio_ws_stream_wasm = "0.7.0"
 fluvio-command = { version = "0.2.0" }
-fluvio-future = { version = "0.7.2", default-features = false }
+fluvio-future = { version = "0.8.0", default-features = false }
 fluvio-helm = { version = "0.4.1" }
-flv-tls-proxy = { version = "0.10.0" }
+flv-tls-proxy = { version = "0.11.0" }
 flv-util = { version = "0.5.2", default-features = false }
-k8-client = { version = "13.1.0" }
-k8-config = { version = "2.3.0" }
-k8-types = { version = "0.8.8" }
+k8-client = { version = "14.0.0" }
+k8-config = { version = "3.0.0" }
+k8-types = { version = "0.9.0" }
 k8-diff = { version = "0.1.2" }
 trybuild = { branch = "check_option", git = "https://github.com/infinyon/trybuild" }
 
 # Internal fluvio dependencies
-fluvio = { version = "0.28.0", path = "crates/fluvio" }
+fluvio = { version = "0.29.0", path = "crates/fluvio" }
 fluvio-auth = { path = "crates/fluvio-auth" }
 fluvio-benchmark = { path = "crates/fluvio-benchmark" }
 fluvio-channel = { path = "crates/fluvio-channel" }

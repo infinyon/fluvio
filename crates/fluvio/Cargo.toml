@@ -1,6 +1,6 @@
 [package]
 name = "fluvio"
-version = "0.28.2"
+version = "0.29.0"
 edition = "2024"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -32,11 +32,12 @@ async-trait = { workspace = true }
 anyhow = { workspace = true }
 cfg-if = { workspace = true }
 derive_builder = { workspace = true }
+parking_lot = { workspace = true }
 event-listener = { workspace = true }
 futures-util = { workspace = true }
 once_cell = { workspace = true }
 serde = { workspace = true, features = ['derive'] }
-tokio = { workspace = true, features = ["macros", "sync"] }
+tokio = { workspace = true, features = ["macros"] }
 thiserror = { workspace = true }
 semver = { workspace = true }
 pin-project = { workspace = true }
@@ -48,10 +49,9 @@ tracing = { workspace = true }
 
 # Fluvio dependencies
 fluvio-future = { workspace = true, features = [
+    "future",
     "task",
-    "task_unstable",
     "retry",
-    "sync",
 ] }
 fluvio-types = { workspace = true, features = ["events"] }
 fluvio-sc-schema = { workspace = true }
@@ -79,8 +79,7 @@ fluvio-spu-schema = { workspace = true }
 chrono = { workspace = true, features = ["wasmbind", "clock"] }
 
 [dev-dependencies]
-async-std = { workspace = true }
-fluvio-future = { workspace = true, features = ["io", "fixture"] }
+fluvio-future = { workspace = true, features = ["io", "fixture", "future"] }
 mockall = { workspace = true }
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]

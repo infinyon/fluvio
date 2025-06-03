@@ -4,6 +4,7 @@ use std::fmt::Debug;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 
+use fluvio_future::task::spawn;
 use fluvio_stream_model::core::MetadataItem;
 use fluvio_stream_model::store::NameSpace;
 use futures_util::stream::StreamExt;
@@ -15,8 +16,6 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 use once_cell::sync::Lazy;
 
-use fluvio_future::task::spawn;
-use fluvio_future::task::JoinHandle;
 use fluvio_future::timer::sleep;
 
 use crate::core::Spec;
@@ -69,7 +68,7 @@ where
         namespace: impl Into<NameSpace>,
         client: SharedClient<C>,
         ctx: StoreContext<S, M>,
-    ) -> JoinHandle<()> {
+    ) {
         let dispatcher = Self {
             namespace: namespace.into(),
             client,

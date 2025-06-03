@@ -2,8 +2,8 @@ use std::time::Duration;
 
 use anyhow::{ensure, Result};
 use fluvio::{consumer::ConsumerStream, Fluvio};
-use fluvio_future::future::timeout;
 use futures_lite::StreamExt;
+use fluvio_future::future::timeout;
 
 use crate::tests::consumer_offsets::utils::{self, create_consumer_config, now};
 

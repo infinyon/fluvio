@@ -3,7 +3,7 @@ use std::time::{Duration, SystemTime};
 
 use clap::Parser;
 use fluvio_types::PartitionId;
-use futures_lite::stream::StreamExt;
+use futures::{Stream, StreamExt};
 use tokio::select;
 use hdrhistogram::Histogram;
 
@@ -16,7 +16,6 @@ use fluvio_test_derive::fluvio_test;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase};
 use fluvio_test_util::async_process;
-use fluvio_future::io::Stream;
 
 use crate::tests::{TestRecord, TestRecordBuilder};
 

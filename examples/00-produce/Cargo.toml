@@ -6,7 +6,7 @@ edition = "2024"
 publish = false
 
 [dependencies]
-async-std = { workspace = true,  features = ["attributes"] }
+tokio = { workspace = true }
 anyhow = { workspace = true }
 
 fluvio = { workspace = true  }

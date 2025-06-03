@@ -3,6 +3,7 @@ use std::time::Duration;
 
 use fluvio::consumer::ConsumerConfigExtBuilder;
 use futures::FutureExt;
+use futures::Stream;
 use futures_lite::StreamExt;
 use futures::future::try_join_all;
 use tokio::select;
@@ -13,7 +14,6 @@ use fluvio_test_util::test_runner::test_driver::TestDriver;
 use fluvio_test_util::test_meta::environment::EnvDetail;
 use fluvio::Offset;
 use fluvio_future::timer::sleep;
-use fluvio_future::io::Stream;
 use fluvio_protocol::record::ConsumerRecord;
 use fluvio_protocol::link::ErrorCode;
 use crate::tests::TestRecord;
