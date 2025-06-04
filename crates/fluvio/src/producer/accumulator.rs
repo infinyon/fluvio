@@ -163,11 +163,13 @@ impl RecordAccumulator {
     async fn wait_for_space(&self, batches_lock: Arc<BatchesDeque>) -> Result<(), ProducerError> {
         let space_listener = batches_lock.free_space_event.listen();
 
-        let batches = batches_lock.batches.read().await;
-        if batches.len() < self.queue_size {
-            return Ok(()); // Space available, no need to wait
+        loop {
+            let batches = batches_lock.batches.read().await;
+            if batches.len() < self.queue_size {
+                batches_lock.free_space_event.notify(1);
+                break;
+            }
         }
-        drop(batches);
 
         // Wait for space to become available
         match timeout(RECORD_ENQUEUE_TIMEOUT, space_listener).await {
