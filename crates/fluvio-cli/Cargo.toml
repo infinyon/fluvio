@@ -72,7 +72,7 @@ which = { workspace = true }
 k8-config = { workspace = true, optional = true }
 k8-client = { workspace = true, optional = true }
 k8-types = { workspace = true , features = ["core"] }
-fluvio-cluster = { path = "../fluvio-cluster", default-features = false, features = ["cli"], optional = true }
+fluvio-cluster = { workspace = true, features = ["cli"], optional = true }
 
 fluvio = { workspace = true }
 fluvio-auth = { workspace = true }

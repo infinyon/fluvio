@@ -28,7 +28,7 @@ anyhow = { workspace = true }
 fluvio = { workspace = true  }
 fluvio-types = { workspace = true }
 fluvio-future = { workspace = true, features = ["task", "timer", "subscriber", "fixture"] }
-fluvio-cluster = { path = "../fluvio-cluster" }
+fluvio-cluster = { workspace = true }
 fluvio-command = { workspace = true  }
 
 [lib]

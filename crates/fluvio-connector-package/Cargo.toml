@@ -31,13 +31,13 @@ toml = { workspace = true, optional = true, features = [
 tracing = { workspace = true }
 
 # fluvio dependencies
-fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata/", default-features = false, features = [
+fluvio-controlplane-metadata = { workspace = true, default-features = false, features = [
     "use_serde",
 ] }
-fluvio-smartengine = { path = "../fluvio-smartengine", default-features = false, features = [
+fluvio-smartengine = { workspace = true, default-features = false, features = [
     "transformation",
 ] }
-fluvio-types = { path = "../fluvio-types" }
+fluvio-types = { workspace = true }
 bytesize-serde = "0.2.1"
 
 [dev-dependencies]

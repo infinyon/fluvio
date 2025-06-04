@@ -26,7 +26,7 @@ tracing = { workspace = true }
 thiserror = { workspace = true }
 
 eyre = { default-features = false, features = ["auto-install"], workspace = true }
-fluvio-smartmodule-derive = { workspace = true, path = "../fluvio-smartmodule-derive" }
+fluvio-smartmodule-derive = { workspace = true }
 fluvio-protocol = { workspace = true, features = ["link", "types"] }
 
 [dev-dependencies]

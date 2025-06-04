@@ -58,10 +58,10 @@ tokio-util = { workspace = true, features = ["codec","compat"], optional = true 
 tracing = { workspace = true }
 
 
-fluvio-protocol-derive = { workspace = true, path = "../fluvio-protocol-derive", optional = true }
+fluvio-protocol-derive = { workspace = true, optional = true }
 fluvio-future = { workspace = true, optional = true }
 flv-util = { workspace = true,  optional = true }
-fluvio-compression = { workspace = true, path = "../fluvio-compression", default-features = false, optional = true }
+fluvio-compression = { workspace = true, default-features = false, optional = true }
 fluvio-types = { workspace = true,  optional = true }
 
 [dev-dependencies]

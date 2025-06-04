@@ -26,11 +26,11 @@ tempfile = { workspace = true }
 lib-cargo-crate = "0.2.1"
 
 
-fluvio = { path = "../fluvio", default-features = false }
-fluvio-hub-util = { path = "../fluvio-hub-util" }
+fluvio = { workspace = true }
+fluvio-hub-util = { workspace = true }
 fluvio-future = { workspace = true, features = ["subscriber"]}
-fluvio-smartengine = { path = "../fluvio-smartengine", features = ["transformation"] }
-fluvio-extension-common = { path = "../fluvio-extension-common", features = ["target"] }
-fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata", features = ["smartmodule"] }
-fluvio-cli-common = { path = "../fluvio-cli-common", features = ["file-records", "version-cmd", "serde", "smartmodule-test"] }
+fluvio-smartengine = { workspace = true, features = ["transformation"] }
+fluvio-extension-common = { workspace = true, features = ["target"] }
+fluvio-controlplane-metadata = { workspace = true, features = ["smartmodule"] }
+fluvio-cli-common = { workspace = true, features = ["file-records", "version-cmd", "serde", "smartmodule-test"] }
 cargo-builder = { path = "../cargo-builder"}

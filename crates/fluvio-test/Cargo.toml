@@ -47,13 +47,13 @@ fluvio-future = { workspace = true, features = [
     "fixture",
 ] }
 fluvio-command = { version = "0.2.0" }
-fluvio-cli = { path = "../fluvio-cli" }
+fluvio-cli = { workspace = true }
 fluvio-controlplane-metadata = { workspace = true, features = ["k8"] }
 
 # Fluvio test framework Attribute macro
-fluvio-test-derive = { path = "../fluvio-test-derive" }
-fluvio-test-util = { path = "../fluvio-test-util" }
+fluvio-test-derive = { workspace = true }
+fluvio-test-util = { workspace = true }
 fluvio-protocol = { workspace = true, features = ["api"] }
 
 # Fluvio test framework Options derive
-fluvio-test-case-derive = { path = "../fluvio-test-case-derive" }
+fluvio-test-case-derive = { workspace = true }
