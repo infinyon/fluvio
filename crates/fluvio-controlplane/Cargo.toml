@@ -1,12 +1,12 @@
 [package]
 name = "fluvio-controlplane"
-version = "0.0.0"
-edition = "2024"
-license = "Apache-2.0"
 description = "API for Fluvio Control Plane"
-authors = ["fluvio.io"]
-repository = "https://github.com/infinyon/fluvio"
+version = "0.0.0"
 publish = false
+repository.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
 
 [lib]
 name = "fluvio_controlplane"

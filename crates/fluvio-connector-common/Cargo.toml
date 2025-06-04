@@ -1,11 +1,11 @@
 [package]
 name = "fluvio-connector-common"
-version = "0.0.0"
-edition = "2024"
-license = "Apache-2.0"
-authors = ["Fluvio Contributors <team@fluvio.io>"]
-repository = "https://github.com/infinyon/fluvio"
 description = "Fluvio Connector Common SDK"
+version = "0.0.0"
+repository.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
 
 [features]
 default = []

@@ -1,12 +1,12 @@
 [package]
-authors = ["Fluvio Contributors <team@fluvio.io>"]
-description = "Fluvio Test - TestCase derive macro"
-edition = "2024"
-license = "Apache-2.0"
 name = "fluvio-test-case-derive"
-publish = false
-repository = "https://github.com/infinyon/fluvio"
+description = "Fluvio Test - TestCase derive macro"
 version = "0.0.0"
+publish = false
+repository.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
 
 [lib]
 proc-macro = true

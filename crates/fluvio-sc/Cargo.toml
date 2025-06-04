@@ -1,13 +1,12 @@
 [package]
 name = "fluvio-sc"
-edition = "2024"
-version = "0.0.0"
-authors = ["fluvio.io"]
 description = "Fluvio Stream Controller"
-repository = "https://github.com/infinyon/fluvio"
-license = "Apache-2.0"
 publish = false
 build = "build.rs"
+repository.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
 
 [lib]
 name = "fluvio_sc"

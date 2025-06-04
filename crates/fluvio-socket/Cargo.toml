@@ -1,12 +1,12 @@
 [package]
 name = "fluvio-socket"
-version = "0.15.3"
-edition = "2024"
-authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Provide TCP socket wrapper for fluvio protocol"
-repository = "https://github.com/infinyon/fluvio"
-license = "Apache-2.0"
 categories = ["encoding"]
+version.workspace = true
+repository.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
 
 [lib]
 name = "fluvio_socket"

@@ -1,14 +1,13 @@
 [package]
 name = "fluvio-smartmodule"
-version = "0.8.1"
-edition = "2024"
-license = "Apache-2.0"
-authors = ["Fluvio Contributors <team@fluvio.io>"]
+description = "Used by Fluvio SmartModule"
 categories = ["wasm", "database", "encoding"]
 keywords = ["streaming", "stream", "wasm", "fluvio"]
-repository = "https://github.com/infinyon/fluvio"
-description = "Used by Fluvio SmartModule"
-
+version.workspace = true
+repository.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
 
 [lib]
 bench = false
@@ -27,7 +26,7 @@ tracing = { workspace = true }
 thiserror = { workspace = true }
 
 eyre = { default-features = false, features = ["auto-install"], workspace = true }
-fluvio-smartmodule-derive = { version = "0.6.4", path = "../fluvio-smartmodule-derive" }
+fluvio-smartmodule-derive = { workspace = true, path = "../fluvio-smartmodule-derive" }
 fluvio-protocol = { workspace = true, features = ["link", "types"] }
 
 [dev-dependencies]

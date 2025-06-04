@@ -1,11 +1,11 @@
 [package]
 name = "fluvio-auth"
-version = "0.0.0"
-authors = ["Fluvio Contributors <team@fluvio.io>"]
-edition = "2024"
-license = "Apache-2.0"
-repository = "https://github.com/infinyon/fluvio"
 description = "Authorization framework for Fluvio"
+version = "0.0.0"
+repository.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
 publish = false
 
 
