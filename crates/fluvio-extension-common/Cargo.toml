@@ -1,11 +1,11 @@
 [package]
 name = "fluvio-extension-common"
-version = "0.15.1"
-edition = "2024"
-authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Fluvio extension common"
-repository = "https://github.com/infinyon/fluvio"
-license = "Apache-2.0"
+version.workspace = true
+repository.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
 
 [lib]
 name = "fluvio_extension_common"

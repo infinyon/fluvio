@@ -1,12 +1,12 @@
 [package]
 name = "fluvio-protocol-derive"
-version = "0.5.5"
-edition = "2024"
-authors = ["Fluvio Contributors <team@fluvio.io>"]
 description =  "Procedure macro to encode/decode fluvio protocol"
-repository = "https://github.com/infinyon/fluvio-protocol"
-license = "Apache-2.0"
 categories = ["encoding"]
+version.workspace = true
+repository.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
 
 [lib]
 proc-macro = true

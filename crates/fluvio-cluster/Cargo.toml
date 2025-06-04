@@ -1,11 +1,11 @@
 [package]
 name = "fluvio-cluster"
-version = "0.0.0"
-edition = "2024"
-license = "Apache-2.0"
-authors = ["Fluvio Contributors <team@fluvio.io>"]
-repository = "https://github.com/infinyon/fluvio"
 description = "Tools for installing and managing Fluvio clusters"
+version = "0.0.0"
+repository.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
 
 [lib]
 name = "fluvio_cluster"

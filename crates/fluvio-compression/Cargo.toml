@@ -1,13 +1,13 @@
 [package]
 name = "fluvio-compression"
-version = "0.3.6"
-edition = "2024"
-license = "Apache-2.0"
-authors = ["Fluvio Contributors <team@fluvio.io>"]
+description = "Fluvio Compression library"
 categories = ["compression"]
 keywords = ["fluvio", "compression"]
-repository = "https://github.com/infinyon/fluvio"
-description = "Fluvio Compression library"
+version.workspace = true
+repository.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
 
 [features]
 default = ["compress"]

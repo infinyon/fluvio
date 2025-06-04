@@ -2,8 +2,10 @@
 name = "check-crate-version"
 version = "0.0.0"
 publish = false
-edition = "2024"
-license = "Apache-2.0"
+repository.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -11,7 +13,7 @@ license = "Apache-2.0"
 toml-diff = { path = "toml-diff" }
 clap = { workspace = true, features = ["std", "derive", "env"] }
 flate2 = { workspace = true }
-reqwest = { version = "0.12.5", features = ["json"] }
+reqwest = { workspace = true, features = ["json"] }
 semver = { workspace = true }
 serde = { workspace = true, features = ["serde_derive"] }
 serde_json = { workspace = true }

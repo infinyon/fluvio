@@ -1,12 +1,12 @@
 [package]
 name = "cargo-builder"
-version = "0.0.0"
-edition = "2024"
-authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Build Cargo project programmability"
-repository = "https://github.com/infinyon/fluvio"
-license = "Apache-2.0"
+version = "0.0.0"
 publish = false
+repository.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
 
 
 

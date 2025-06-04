@@ -1,14 +1,14 @@
 [package]
 name = "fluvio"
-version = "0.29.0"
-edition = "2024"
-license = "Apache-2.0"
-authors = ["Fluvio Contributors <team@fluvio.io>"]
+description = "The official Fluvio driver for Rust"
 categories = ["database"]
 keywords = ["streaming", "stream", "queue"]
-repository = "https://github.com/infinyon/fluvio"
-description = "The official Fluvio driver for Rust"
 readme = "README.md"
+version.workspace = true
+repository.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
 
 [lib]
 name = "fluvio"
