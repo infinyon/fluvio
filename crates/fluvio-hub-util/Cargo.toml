@@ -48,7 +48,7 @@ clap = { workspace = true, optional = true }
 comfy-table = { workspace = true, optional = true }
 
 fluvio-future = { workspace = true, features = ["fixture", "task", "tls"] }
-fluvio-hub-protocol = { path = "../fluvio-hub-protocol" }
+fluvio-hub-protocol = { workspace = true }
 fluvio-types = { workspace = true }
 fluvio-extension-common = { workspace = true,  optional = true }
 

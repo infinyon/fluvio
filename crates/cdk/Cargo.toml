@@ -33,7 +33,7 @@ tracing = { workspace = true }
 
 fluvio = { workspace = true }
 fluvio-cli-common = { workspace = true, features = ["serde", "version-cmd"] }
-fluvio-connector-deployer = { path = "../fluvio-connector-deployer"}
+fluvio-connector-deployer = { workspace = true }
 fluvio-connector-package = { workspace = true,  features = ["toml"]}
 fluvio-extension-common = { workspace = true }
 fluvio-future = { workspace = true, features = ["subscriber"]}

@@ -32,7 +32,7 @@ tokio = { workspace = true }
 fluvio = { workspace = true, features = ["smartengine"] }
 fluvio-future = { workspace = true, features = ["subscriber"] }
 fluvio-connector-package = { workspace = true  }
-fluvio-connector-derive = { path = "../fluvio-connector-derive/", optional = true }
+fluvio-connector-derive = { workspace = true, optional = true }
 fluvio-sc-schema = { workspace = true }
 fluvio-smartengine = { workspace = true , features = [ "transformation", "engine"] }
 

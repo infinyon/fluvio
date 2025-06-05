@@ -193,6 +193,7 @@ trybuild = { branch = "check_option", git = "https://github.com/infinyon/trybuil
 fluvio-auth = { path = "crates/fluvio-auth" }
 fluvio-benchmark = { path = "crates/fluvio-benchmark" }
 fluvio-channel = { path = "crates/fluvio-channel" }
+fluvio-cli = { path = "crates/fluvio-cli" }
 fluvio-cli-common = { path = "crates/fluvio-cli-common" }
 fluvio-connector-package = { path = "crates/fluvio-connector-package/" }
 fluvio-controlplane = { path = "crates/fluvio-controlplane" }
@@ -201,6 +202,15 @@ fluvio-hub-util = { path = "crates/fluvio-hub-util" }
 fluvio-service = { path = "crates/fluvio-service" }
 fluvio-storage = { path = "crates/fluvio-storage" }
 fluvio-kv-storage = { path = "crates/fluvio-kv-storage", default-features = false }
+fluvio-test-derive = { path = "crates/fluvio-test-derive" }
+fluvio-test-util = { path = "crates/fluvio-test-util" }
+fluvio-test-case-derive = { path = "crates/fluvio-test-case-derive" }
+fluvio-cluster = { path = "crates/fluvio-cluster" }
+fluvio-hub-protocol = { path = "crates/fluvio-hub-protocol", default-features = false }
+fluvio-connector-deployer = { path = "crates/fluvio-connector-deployer" }
+fluvio-sc = { path = "crates/fluvio-sc", default-features = false }
+fluvio-spu = { path = "crates/fluvio-spu", default-features = false }
+fluvio-connector-derive = { path = "crates/fluvio-connector-derive" }
 # Published fluvio dependencies
 fluvio = { version = "0.32.0", path = "crates/fluvio" }
 fluvio-compression = { version = "0.32.0", path = "crates/fluvio-compression", default-features = false }
