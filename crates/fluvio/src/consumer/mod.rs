@@ -858,7 +858,7 @@ impl MultiplePartitionConsumer {
     pub async fn stream(
         &self,
         offset: Offset,
-    ) -> Result<impl Stream<Item = Result<Record, ErrorCode>>> {
+    ) -> Result<impl Stream<Item = Result<Record, ErrorCode>> + use<>> {
         let config = ConsumerConfig::builder().build()?;
         let stream = self.stream_with_config(offset, config).await?;
 
@@ -913,7 +913,7 @@ impl MultiplePartitionConsumer {
         &self,
         offset: Offset,
         config: ConsumerConfig,
-    ) -> Result<impl Stream<Item = Result<Record, ErrorCode>>> {
+    ) -> Result<impl Stream<Item = Result<Record, ErrorCode>> + use<>> {
         let consumers: Vec<_> = self
             .strategy
             .selection(self.pool.clone())
