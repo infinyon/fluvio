@@ -171,7 +171,7 @@ wasm-bindgen-test = "0.3.50"
 wasm-bindgen = "0.2.100"
 wasi-common = { version = "33.0.0" }
 wasmtime = { version = "33.0.0" }
-wasmparser = "0.227.1"
+wasmparser = "0.233.0"
 web-time = "1.1.0"
 which = "8.0"
 x509-parser = "0.17.0"
