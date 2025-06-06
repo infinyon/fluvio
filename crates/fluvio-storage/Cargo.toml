@@ -17,7 +17,7 @@ required-features = ["cli", "fluvio-future/subscriber"]
 [features]
 default = ["iterators"]
 cli = ["clap", "humantime"]
-iterators = []
+iterators = ["nix/uio"]
 fixture = []
 
 
