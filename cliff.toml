@@ -41,8 +41,8 @@ commit_preprocessors = [
 # regex for parsing and grouping commits
 commit_parsers = [
 
-    { message = ".*[Bb]ump", group = "Noise", skip = true},
-    { message = ".*[Rr]evert", group = "Noise", skip = true},
+    { message = "^[Bb]ump", group = "Noise", skip = true},
+    { message = "^[Rr]evert", group = "Noise", skip = true},
     { message = ".*[Cl]ippy", group = "Noise", skip = true},
     { message = "^Merge pull request", group = "Noise", skip = true},
     { message = "[Ss]kip [Cc]hangelog|[Cc]hangelog [Ss]kip", group = "Noise", skip = true},
