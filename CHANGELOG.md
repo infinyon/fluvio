@@ -2,7 +2,32 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
-## Platform Version 0.17.4-dev-1 - UNRELEASED
+## Platform Version 0.18.0-dev-1 - 2025-06-09
+
+### Added
+
+* Improve metrics granularity around smartmodules ([#4509](https://github.com/infinyon/fluvio/issues/4509))
+
+### CI
+
+* Pos release fluvio v0.17.3 ([#4533](https://github.com/infinyon/fluvio/issues/4533))
+* Update rust edition to 2024 ([#4539](https://github.com/infinyon/fluvio/issues/4539))
+* Apply suggestion from compiler ([#4551](https://github.com/infinyon/fluvio/issues/4551))
+
+### Changed
+
+* Configurable priorityClassName ([#4526](https://github.com/infinyon/fluvio/issues/4526))
+* Update rust-toolchain.toml ([#4547](https://github.com/infinyon/fluvio/issues/4547))
+* Use tokio as runtime and update future-fluvio ([#4544](https://github.com/infinyon/fluvio/issues/4544))
+
+### Other
+
+* Bump up async-channel to v2.3.1 ([#4540](https://github.com/infinyon/fluvio/issues/4540))
+* Share workspace version ([#4548](https://github.com/infinyon/fluvio/issues/4548))
+* Centrilize paths in root Cargo.toml ([#4549](https://github.com/infinyon/fluvio/issues/4549))
+* Downgrade openssl ([#4550](https://github.com/infinyon/fluvio/issues/4550))
+* Bump up fluvio crates to 0.50.0 ([#4552](https://github.com/infinyon/fluvio/issues/4552))
+
 
 ## Platform Version 0.17.3 - 2025-05-13
 
