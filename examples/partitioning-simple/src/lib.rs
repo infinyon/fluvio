@@ -53,20 +53,44 @@ mod test {
     fn test() {
         let partitioner = AlphabetPartitioning::default();
         assert_eq!(
-            partitioner.partition(&PartitionerConfig { partition_count: 3 }, Some(b"aa"), &[]),
+            partitioner.partition(
+                &PartitionerConfig {
+                    partition_count: 3,
+                    available_partitions: vec![0, 1, 2]
+                },
+                Some(b"aa"),
+                &[]
+            ),
             2
         );
         assert_eq!(
-            partitioner.partition(&PartitionerConfig { partition_count: 3 }, Some(b"a"), &[]),
+            partitioner.partition(
+                &PartitionerConfig {
+                    partition_count: 3,
+                    available_partitions: vec![0, 1, 2]
+                },
+                Some(b"a"),
+                &[]
+            ),
             1
         );
         assert_eq!(
-            partitioner.partition(&PartitionerConfig { partition_count: 3 }, None, &[]),
+            partitioner.partition(
+                &PartitionerConfig {
+                    partition_count: 3,
+                    available_partitions: vec![0, 1, 2]
+                },
+                None,
+                &[]
+            ),
             0
         );
         assert_eq!(
             partitioner.partition(
-                &PartitionerConfig { partition_count: 3 },
+                &PartitionerConfig {
+                    partition_count: 3,
+                    available_partitions: vec![0, 1, 2]
+                },
                 Some(b"abcdefg"),
                 &[]
             ),

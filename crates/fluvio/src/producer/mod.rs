@@ -235,6 +235,8 @@ where
     spu_pool: Arc<S>,
     record_accumulator: Arc<RecordAccumulator>,
     producer_pool: Arc<RwLock<ProducerPool>>,
+    partition_count: u32,
+    available_partitions: Vec<PartitionId>,
     metrics: Arc<ClientMetrics>,
 }
 
@@ -249,15 +251,12 @@ where
     }
 
     async fn push_record(self: Arc<Self>, record: Record) -> Result<PushRecord> {
-        let topics = self.spu_pool.topics();
-
-        let topic_spec = topics
-            .lookup_by_key(&self.topic)
-            .await?
-            .ok_or_else(|| FluvioError::TopicNotFound(self.topic.to_string()))?
-            .spec;
-        let partition_count = topic_spec.partitions();
-        let partition_config = PartitionerConfig { partition_count };
+        let partition_count = self.partition_count;
+        let available_partitions = self.available_partitions.clone();
+        let partition_config = PartitionerConfig {
+            partition_count,
+            available_partitions,
+        };
 
         let key = record.key.as_ref().map(|k| k.as_ref());
         let value = record.value.as_ref();
@@ -412,12 +411,14 @@ where
         config: Arc<TopicProducerConfig>,
         metrics: Arc<ClientMetrics>,
     ) -> Result<Self> {
-        let topics = spu_pool.topics();
-        let topic_spec: fluvio_sc_schema::topic::TopicSpec = topics
+        let topic_store = spu_pool.topics();
+        let partition_store = spu_pool.partitions();
+        let topic_spec = topic_store
             .lookup_by_key(&topic)
             .await?
             .ok_or_else(|| FluvioError::TopicNotFound(topic.to_string()))?
             .spec;
+
         let partition_count = topic_spec.partitions();
 
         cfg_if::cfg_if! {
@@ -444,6 +445,18 @@ where
             config.callback.clone(),
         );
 
+        let mut available_partitions = vec![];
+        for partition_id in 0..partition_count {
+            if let Some(partition) = partition_store
+                .lookup_by_key(&ReplicaKey::new(topic.clone(), partition_id))
+                .await?
+            {
+                if partition.status.is_online() {
+                    available_partitions.push(partition_id);
+                }
+            }
+        }
+
         Ok(Self {
             inner: Arc::new(InnerTopicProducer {
                 config,
@@ -451,6 +464,8 @@ where
                 spu_pool,
                 producer_pool: Arc::new(RwLock::new(producer_pool)),
                 record_accumulator: Arc::new(record_accumulator),
+                partition_count,
+                available_partitions,
                 metrics: metrics.clone(),
             }),
             #[cfg(feature = "smartengine")]

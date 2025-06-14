@@ -24,11 +24,18 @@ pub trait Partitioner {
 
 pub struct PartitionerConfig {
     pub partition_count: PartitionCount,
+    pub available_partitions: Vec<PartitionCount>,
 }
 
 impl PartitionerConfig {
+    /// Creates a new `PartitionerConfig` with the given partition count and available partitions.
     pub fn partition_count(&self) -> PartitionCount {
         self.partition_count
+    }
+
+    /// Returns the available partition count, which is a vector of partition IDs
+    pub fn available_partitions(&self) -> Vec<PartitionCount> {
+        self.available_partitions.clone()
     }
 }
 
@@ -60,8 +67,9 @@ impl Partitioner for SiphashRoundRobinPartitioner {
             None => {
                 // Atomic increment. This will wrap on overflow, which is fine
                 // because we are only interested in the modulus anyway
-                let partition = self.index.fetch_add(1, Ordering::Relaxed);
-                partition % config.partition_count
+                let index = self.index.fetch_add(1, Ordering::Relaxed);
+                let partition = index as usize % config.available_partitions.len();
+                config.available_partitions[partition]
             }
         }
     }
@@ -110,7 +118,10 @@ mod tests {
     /// Ensure that feeding keyless records one-at-a-time does not assign the same partition
     #[test]
     fn test_round_robin_individual() {
-        let config = PartitionerConfig { partition_count: 3 };
+        let config = PartitionerConfig {
+            partition_count: 3,
+            available_partitions: vec![0, 1, 2],
+        };
         let partitioner = SiphashRoundRobinPartitioner::new();
 
         let key1_partition = partitioner.partition(&config, None, &[]);
@@ -133,7 +144,10 @@ mod tests {
 
         let (tx, rx) = std::sync::mpsc::channel();
         let partitioner = Arc::new(SiphashRoundRobinPartitioner::new());
-        let config = Arc::new(PartitionerConfig { partition_count: 4 });
+        let config = Arc::new(PartitionerConfig {
+            partition_count: 4,
+            available_partitions: vec![0, 1, 2, 3],
+        });
 
         // We have 5 threads calculating partitions 400 times each for NULL key (aka round-robin).
         // This is 20,000 records total, among 4 partitions. If it is evenly distributed like we
@@ -161,5 +175,27 @@ mod tests {
         for (_partition, &count) in counts.iter() {
             assert_eq!(count, 500);
         }
+    }
+
+    #[test]
+    fn test_available_partitions() {
+        let config = PartitionerConfig {
+            partition_count: 3,
+            available_partitions: vec![0, 2], // Only partitions 0 and 2 are available
+        };
+        let partitioner = SiphashRoundRobinPartitioner::new();
+
+        let key1_partition = partitioner.partition(&config, None, &[]);
+        assert_eq!(key1_partition, 0);
+        let key2_partition = partitioner.partition(&config, None, &[]);
+        assert_eq!(key2_partition, 2);
+        let key3_partition = partitioner.partition(&config, None, &[]);
+        assert_eq!(key3_partition, 0);
+        let key4_partition = partitioner.partition(&config, None, &[]);
+        assert_eq!(key4_partition, 2);
+        let key5_partition = partitioner.partition(&config, None, &[]);
+        assert_eq!(key5_partition, 0);
+        let key6_partition = partitioner.partition(&config, None, &[]);
+        assert_eq!(key6_partition, 2);
     }
 }
