@@ -671,6 +671,7 @@ mod tests {
 
     struct SpuPoolMock {
         topics: StoreContext<TopicSpec>,
+        partitions: StoreContext<PartitionSpec>,
     }
 
     #[async_trait]
@@ -706,7 +707,7 @@ mod tests {
         }
 
         fn partitions(&self) -> &StoreContext<PartitionSpec> {
-            todo!()
+            &self.partitions
         }
     }
 
@@ -725,7 +726,8 @@ mod tests {
         ];
 
         let topics = StoreContext::<TopicSpec>::new();
-        let spu_pool = Arc::new(SpuPoolMock { topics });
+        let partitions = StoreContext::<PartitionSpec>::new();
+        let spu_pool = Arc::new(SpuPoolMock { topics, partitions });
         spu_pool.topics().store().sync_all(topic_2_partitions).await;
         let producer = TopicProducer::new(topic.clone(), spu_pool.clone(), config, metrics)
             .await
