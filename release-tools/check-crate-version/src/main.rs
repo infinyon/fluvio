@@ -22,8 +22,8 @@ pub struct Cli {
     verbose: bool,
     #[arg(long, env, default_value = "./publish-list.toml")]
     publish_list_path: String,
-    #[arg(long, env, default_value = "../../crates")]
-    crates_dir: String,
+    #[arg(long, env, default_value = "../../")]
+    root_cargo_dir: String,
     #[arg(long, env, default_value = "./crates_io")]
     crates_io_dir: String,
 }
@@ -47,7 +47,7 @@ async fn main() {
             crate_name.clone(),
             tokio::spawn(check_crate_status(
                 crate_name,
-                cli.crates_dir.clone(),
+                cli.root_cargo_dir.clone(),
                 cli.crates_io_dir.clone(),
             )),
         ));
@@ -58,7 +58,7 @@ async fn main() {
             crate_name.clone(),
             tokio::spawn(check_crate_status(
                 crate_name,
-                cli.crates_dir.clone(),
+                cli.root_cargo_dir.clone(),
                 cli.crates_io_dir.clone(),
             )),
         ));
@@ -77,7 +77,12 @@ async fn main() {
         match status {
             CrateStatus::VersionBumped(manifest_diff) => {
                 println!("🟢 {crate_name:-padding$} Version number has been updated");
-                diff_crate_src(&crate_name, &cli.crates_dir, &cli.crates_io_dir, verbose);
+                diff_crate_src(
+                    &crate_name,
+                    &cli.root_cargo_dir,
+                    &cli.crates_io_dir,
+                    verbose,
+                );
                 if verbose {
                     println!("{manifest_diff}");
                 }
@@ -87,7 +92,7 @@ async fn main() {
             }
             CrateStatus::CodeChanged(manifest_diff) => {
                 println!("⛔ {crate_name:-padding$} Code changed but version number did not:");
-                diff_crate_src(&crate_name, &cli.crates_dir, &cli.crates_io_dir, true);
+                diff_crate_src(&crate_name, &cli.root_cargo_dir, &cli.crates_io_dir, true);
                 if let Some(manifest_diff) = manifest_diff {
                     println!("{manifest_diff}");
                 }
@@ -112,7 +117,7 @@ async fn main() {
 
 async fn check_crate_status(
     crate_name: String,
-    crates_dir: String,
+    root_cargo_dir: String,
     crates_io_dir: String,
 ) -> CrateStatus {
     if !check_crate_published(&crate_name).await {
@@ -120,11 +125,11 @@ async fn check_crate_status(
     }
     download_crate(&crate_name, &crates_io_dir).await;
 
-    let manifests = Manifests::read(&crate_name, crates_dir.as_ref(), crates_io_dir.as_ref());
+    let manifests = Manifests::read(&crate_name, root_cargo_dir.as_ref(), crates_io_dir.as_ref());
     let manifest_diff = manifests.diff();
 
     match (
-        diff_crate_src(&crate_name, &crates_dir, &crates_io_dir, false),
+        diff_crate_src(&crate_name, &root_cargo_dir, &crates_io_dir, false),
         manifest_diff.is_some(),
         manifests.diff_versions(),
     ) {
@@ -160,11 +165,16 @@ async fn check_crate_published(crate_name: &str) -> bool {
 }
 
 /// Returns `true` if the local crate source is different from crates.io
-fn diff_crate_src(crate_name: &str, crates_dir: &str, crates_io_dir: &str, verbose: bool) -> bool {
+fn diff_crate_src(
+    crate_name: &str,
+    root_cargo_dir: &str,
+    crates_io_dir: &str,
+    verbose: bool,
+) -> bool {
     let mut cmd = Command::new("diff");
     cmd.arg("-brq")
         .arg(format!("{crates_io_dir}/{crate_name}/src"))
-        .arg(format!("{crates_dir}/{crate_name}/src"));
+        .arg(format!("{root_cargo_dir}/crates/{crate_name}/src"));
     if verbose {
         !cmd.status().unwrap().success()
     } else {
@@ -178,13 +188,11 @@ struct Manifests {
 }
 
 impl Manifests {
-    fn read(crate_name: &str, crates_dir: &str, crates_io_dir: &str) -> Self {
-        let local_path = PathBuf::from(crates_dir)
-            .join(crate_name)
-            .join("Cargo.toml");
+    fn read(crate_name: &str, root_cargo_dir: &str, crates_io_dir: &str) -> Self {
+        let local_path = PathBuf::from(root_cargo_dir).join("Cargo.toml");
         let crates_io_path = PathBuf::from(crates_io_dir)
             .join(crate_name)
-            .join("Cargo.toml.orig");
+            .join("Cargo.toml");
 
         let local_text = fs::read_to_string(&local_path)
             .unwrap_or_else(|_| panic!("{} not found", local_path.display()));
@@ -197,7 +205,11 @@ impl Manifests {
     }
 
     fn diff_versions(&self) -> bool {
-        self.local["package"]["version"] != self.crates_io["package"]["version"]
+        println!(
+            "Comparing versions: local={} crates.io={}",
+            self.local["workspace"]["package"]["version"], self.crates_io["package"]["version"]
+        );
+        self.local["workspace"]["package"]["version"] != self.crates_io["package"]["version"]
     }
 
     fn diff(&self) -> Option<String> {
