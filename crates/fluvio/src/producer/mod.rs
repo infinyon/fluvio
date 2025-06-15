@@ -235,8 +235,6 @@ where
     spu_pool: Arc<S>,
     record_accumulator: Arc<RecordAccumulator>,
     producer_pool: Arc<RwLock<ProducerPool>>,
-    partition_count: u32,
-    available_partitions: Vec<PartitionId>,
     metrics: Arc<ClientMetrics>,
 }
 
@@ -251,8 +249,28 @@ where
     }
 
     async fn push_record(self: Arc<Self>, record: Record) -> Result<PushRecord> {
-        let partition_count = self.partition_count;
-        let available_partitions = self.available_partitions.clone();
+        let topics = self.spu_pool.topics();
+        let partitions = self.spu_pool.partitions();
+        let topic = topics
+            .lookup_by_key(&self.topic)
+            .await?
+            .ok_or_else(|| FluvioError::TopicNotFound(self.topic.to_string()))?;
+        let topic_name = topic.key().clone();
+        let topic_spec = topic.spec;
+        let partition_count = topic_spec.partitions();
+
+        let mut available_partitions = vec![];
+        for partition_id in 0..partition_count {
+            if let Some(partition) = partitions
+                .lookup_by_key(&ReplicaKey::new(&topic_name, partition_id))
+                .await?
+            {
+                if partition.status.is_online() {
+                    available_partitions.push(partition_id);
+                }
+            }
+        }
+
         let partition_config = PartitionerConfig {
             partition_count,
             available_partitions,
@@ -412,7 +430,6 @@ where
         metrics: Arc<ClientMetrics>,
     ) -> Result<Self> {
         let topic_store = spu_pool.topics();
-        let partition_store = spu_pool.partitions();
         let topic_spec = topic_store
             .lookup_by_key(&topic)
             .await?
@@ -445,18 +462,6 @@ where
             config.callback.clone(),
         );
 
-        let mut available_partitions = vec![];
-        for partition_id in 0..partition_count {
-            if let Some(partition) = partition_store
-                .lookup_by_key(&ReplicaKey::new(topic.clone(), partition_id))
-                .await?
-            {
-                if partition.status.is_online() {
-                    available_partitions.push(partition_id);
-                }
-            }
-        }
-
         Ok(Self {
             inner: Arc::new(InnerTopicProducer {
                 config,
@@ -464,8 +469,6 @@ where
                 spu_pool,
                 producer_pool: Arc::new(RwLock::new(producer_pool)),
                 record_accumulator: Arc::new(record_accumulator),
-                partition_count,
-                available_partitions,
                 metrics: metrics.clone(),
             }),
             #[cfg(feature = "smartengine")]
@@ -656,11 +659,15 @@ mod tests {
     use std::sync::Arc;
 
     use async_trait::async_trait;
-    use fluvio_protocol::record::RecordKey;
-    use fluvio_sc_schema::{partition::PartitionSpec, store::MetadataStoreObject, topic::TopicSpec};
+    use fluvio_protocol::record::{RecordKey, ReplicaKey};
+    use fluvio_sc_schema::{
+        partition::{PartitionSpec},
+        store::MetadataStoreObject,
+        topic::TopicSpec,
+    };
     use fluvio_socket::{ClientConfig, SocketError, StreamSocket, VersionedSerialSocket};
     use fluvio_stream_dispatcher::metadata::local::LocalMetadataItem;
-    use fluvio_types::SpuId;
+    use fluvio_types::{PartitionId, SpuId};
 
     use crate::{
         metrics::ClientMetrics,
@@ -724,11 +731,21 @@ mod tests {
                 (partitions_count, 2, false).into(), // 2 partitions, 2 replicas, not ignore rack
             ),
         ];
-
+        let partition_2 = vec![
+            MetadataStoreObject::<PartitionSpec, LocalMetadataItem>::with_spec(
+                ReplicaKey::new(topic.clone(), 0 as PartitionId),
+                vec![0, 1].into(),
+            ),
+            MetadataStoreObject::<PartitionSpec, LocalMetadataItem>::with_spec(
+                ReplicaKey::new(topic.clone(), 1 as PartitionId),
+                vec![0, 1].into(),
+            ),
+        ];
         let topics = StoreContext::<TopicSpec>::new();
         let partitions = StoreContext::<PartitionSpec>::new();
         let spu_pool = Arc::new(SpuPoolMock { topics, partitions });
         spu_pool.topics().store().sync_all(topic_2_partitions).await;
+        spu_pool.partitions().store().sync_all(partition_2).await;
         let producer = TopicProducer::new(topic.clone(), spu_pool.clone(), config, metrics)
             .await
             .expect("producer");
