@@ -7,8 +7,13 @@
 //! to specific topics and partitions, respectively.
 //!
 use std::collections::HashMap;
+use std::sync::atomic::AtomicU32;
 use std::sync::Arc;
 
+use fluvio_future::task::spawn;
+use fluvio_future::timer::sleep;
+use fluvio_sc_schema::partition::PartitionSpec;
+use fluvio_sc_schema::topic::TopicSpec;
 use tracing::instrument;
 use async_lock::RwLock;
 use anyhow::Result;
@@ -36,6 +41,7 @@ pub use fluvio_protocol::record::{RecordKey, RecordData};
 
 use crate::spu::SpuPool;
 use crate::spu::SpuSocketPool;
+use crate::sync::StoreContext;
 use crate::FluvioError;
 use crate::metrics::ClientMetrics;
 use crate::producer::accumulator::{RecordAccumulator, PushRecord};
@@ -234,6 +240,7 @@ where
     topic: String,
     spu_pool: Arc<S>,
     record_accumulator: Arc<RecordAccumulator>,
+    partition_tracker: Arc<PartitionAvailabilityTracker>,
     producer_pool: Arc<RwLock<ProducerPool>>,
     metrics: Arc<ClientMetrics>,
 }
@@ -249,32 +256,16 @@ where
     }
 
     async fn push_record(self: Arc<Self>, record: Record) -> Result<PushRecord> {
-        let topics = self.spu_pool.topics();
-        let partitions = self.spu_pool.partitions();
-        let topic = topics
-            .lookup_by_key(&self.topic)
-            .await?
-            .ok_or_else(|| FluvioError::TopicNotFound(self.topic.to_string()))?;
-        let topic_name = topic.key().clone();
-        let topic_spec = topic.spec;
-        let partition_count = topic_spec.partitions();
-
-        let mut available_partitions = vec![];
-        for partition_id in 0..partition_count {
-            if let Some(partition) = partitions
-                .lookup_by_key(&ReplicaKey::new(&topic_name, partition_id))
-                .await?
-            {
-                if partition.status.is_online() {
-                    available_partitions.push(partition_id);
-                }
-            }
-        }
+        let partition_count = self.partition_tracker.partition_count();
+        let available_partitions = self.partition_tracker.available_partitions();
+        let available_partitions_lock = available_partitions.read().await;
 
         let partition_config = PartitionerConfig {
             partition_count,
-            available_partitions,
+            available_partitions: available_partitions_lock.clone(),
         };
+
+        drop(available_partitions_lock);
 
         let key = record.key.as_ref().map(|k| k.as_ref());
         let value = record.value.as_ref();
@@ -419,6 +410,81 @@ cfg_if::cfg_if! {
     }
 }
 
+/// Tracks the availability of partitions for a given topic
+struct PartitionAvailabilityTracker {
+    available_partitions: Arc<RwLock<Vec<PartitionId>>>,
+    partition_count: AtomicU32,
+}
+
+impl PartitionAvailabilityTracker {
+    // Spawn a task to update available partitions
+    fn start(
+        initial_partition_count: u32,
+        topic_name: String,
+        partitions: StoreContext<PartitionSpec>,
+        topics: StoreContext<TopicSpec>,
+    ) -> Arc<Self> {
+        let tracker = Arc::new(Self {
+            available_partitions: Arc::new(RwLock::new(vec![])),
+            partition_count: AtomicU32::new(initial_partition_count),
+        });
+        let shared_tracker = tracker.clone();
+
+        spawn(async move {
+            loop {
+                let mut available_partitions = vec![];
+                if let Ok(Some(topic)) = topics.lookup_by_key(&topic_name).await {
+                    let partition_count = topic.spec().partitions();
+
+                    // Update the partition count if it has changed
+                    if partition_count
+                        != shared_tracker
+                            .partition_count
+                            .load(std::sync::atomic::Ordering::Relaxed)
+                    {
+                        shared_tracker
+                            .partition_count
+                            .store(partition_count, std::sync::atomic::Ordering::Relaxed);
+                    }
+
+                    for partition_id in 0..partition_count {
+                        if let Ok(Some(partition)) = partitions
+                            .lookup_by_key(&ReplicaKey::new(&topic_name, partition_id))
+                            .await
+                        {
+                            if partition.status.is_online() {
+                                available_partitions.push(partition_id);
+                            }
+                        }
+                    }
+
+                    // Update the shared available partitions if they have changed
+                    let read_lock = shared_tracker.available_partitions.read().await;
+                    if available_partitions != read_lock.clone() {
+                        drop(read_lock);
+                        let mut write_lock = shared_tracker.available_partitions.write().await;
+                        *write_lock = available_partitions;
+                        drop(write_lock);
+                    }
+                }
+
+                sleep(std::time::Duration::from_secs(1)).await;
+            }
+        });
+
+        tracker
+    }
+
+    fn available_partitions(&self) -> Arc<RwLock<Vec<PartitionId>>> {
+        self.available_partitions.clone()
+    }
+
+    fn partition_count(&self) -> u32 {
+        self.partition_count
+            .load(std::sync::atomic::Ordering::Relaxed)
+    }
+}
+
 impl<S> TopicProducer<S>
 where
     S: SpuPool + Send + Sync + 'static,
@@ -453,6 +519,9 @@ where
             partition_count,
             compression,
         );
+
+        let partitions = spu_pool.partitions().clone();
+
         let producer_pool = ProducerPool::new(
             config.clone(),
             topic.clone(),
@@ -462,6 +531,13 @@ where
             config.callback.clone(),
         );
 
+        let partition_tracker = PartitionAvailabilityTracker::start(
+            partition_count,
+            topic.clone(),
+            partitions,
+            spu_pool.topics().clone(),
+        );
+
         Ok(Self {
             inner: Arc::new(InnerTopicProducer {
                 config,
@@ -469,6 +545,7 @@ where
                 spu_pool,
                 producer_pool: Arc::new(RwLock::new(producer_pool)),
                 record_accumulator: Arc::new(record_accumulator),
+                partition_tracker,
                 metrics: metrics.clone(),
             }),
             #[cfg(feature = "smartengine")]
@@ -659,6 +736,7 @@ mod tests {
     use std::sync::Arc;
 
     use async_trait::async_trait;
+    use fluvio_future::timer::sleep;
     use fluvio_protocol::record::{RecordKey, ReplicaKey};
     use fluvio_sc_schema::{
         partition::{PartitionSpec},
@@ -783,6 +861,8 @@ mod tests {
         ];
 
         spu_pool.topics.store().sync_all(topic_3_partitions).await;
+
+        sleep(std::time::Duration::from_secs(2)).await;
 
         let _ = producer
             .send(RecordKey::NULL, "789".to_string())
