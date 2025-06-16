@@ -188,7 +188,7 @@ jobs:
         run: make run-all-unit-test
       - name: Crate version check
         if: matrix.check == 'crate-version'
-        run: cargo run --manifest-path release-tools/check-crate-version/Cargo.toml -- --crates-dir crates --publish-list-path release-tools/check-crate-version/publish-list.toml
+        run: cargo run --manifest-path release-tools/check-crate-version/Cargo.toml -- --root-cargo-dir . --publish-list-path release-tools/check-crate-version/publish-list.toml
       - name: Audit crate licenses + advisories
         if: matrix.check == 'crate-audit'
         continue-on-error: true
