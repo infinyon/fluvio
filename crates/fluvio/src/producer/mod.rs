@@ -250,14 +250,31 @@ where
 
     async fn push_record(self: Arc<Self>, record: Record) -> Result<PushRecord> {
         let topics = self.spu_pool.topics();
-
-        let topic_spec = topics
+        let partitions = self.spu_pool.partitions();
+        let topic = topics
             .lookup_by_key(&self.topic)
             .await?
-            .ok_or_else(|| FluvioError::TopicNotFound(self.topic.to_string()))?
-            .spec;
+            .ok_or_else(|| FluvioError::TopicNotFound(self.topic.to_string()))?;
+        let topic_name = topic.key().clone();
+        let topic_spec = topic.spec;
         let partition_count = topic_spec.partitions();
-        let partition_config = PartitionerConfig { partition_count };
+
+        let mut available_partitions = vec![];
+        for partition_id in 0..partition_count {
+            if let Some(partition) = partitions
+                .lookup_by_key(&ReplicaKey::new(&topic_name, partition_id))
+                .await?
+            {
+                if partition.status.is_online() {
+                    available_partitions.push(partition_id);
+                }
+            }
+        }
+
+        let partition_config = PartitionerConfig {
+            partition_count,
+            available_partitions,
+        };
 
         let key = record.key.as_ref().map(|k| k.as_ref());
         let value = record.value.as_ref();
@@ -412,12 +429,13 @@ where
         config: Arc<TopicProducerConfig>,
         metrics: Arc<ClientMetrics>,
     ) -> Result<Self> {
-        let topics = spu_pool.topics();
-        let topic_spec: fluvio_sc_schema::topic::TopicSpec = topics
+        let topic_store = spu_pool.topics();
+        let topic_spec = topic_store
             .lookup_by_key(&topic)
             .await?
             .ok_or_else(|| FluvioError::TopicNotFound(topic.to_string()))?
             .spec;
+
         let partition_count = topic_spec.partitions();
 
         cfg_if::cfg_if! {
@@ -641,11 +659,15 @@ mod tests {
     use std::sync::Arc;
 
     use async_trait::async_trait;
-    use fluvio_protocol::record::RecordKey;
-    use fluvio_sc_schema::{partition::PartitionSpec, store::MetadataStoreObject, topic::TopicSpec};
+    use fluvio_protocol::record::{RecordKey, ReplicaKey};
+    use fluvio_sc_schema::{
+        partition::{PartitionSpec},
+        store::MetadataStoreObject,
+        topic::TopicSpec,
+    };
     use fluvio_socket::{ClientConfig, SocketError, StreamSocket, VersionedSerialSocket};
     use fluvio_stream_dispatcher::metadata::local::LocalMetadataItem;
-    use fluvio_types::SpuId;
+    use fluvio_types::{PartitionId, SpuId};
 
     use crate::{
         metrics::ClientMetrics,
@@ -656,6 +678,7 @@ mod tests {
 
     struct SpuPoolMock {
         topics: StoreContext<TopicSpec>,
+        partitions: StoreContext<PartitionSpec>,
     }
 
     #[async_trait]
@@ -691,7 +714,7 @@ mod tests {
         }
 
         fn partitions(&self) -> &StoreContext<PartitionSpec> {
-            todo!()
+            &self.partitions
         }
     }
 
@@ -708,10 +731,21 @@ mod tests {
                 (partitions_count, 2, false).into(), // 2 partitions, 2 replicas, not ignore rack
             ),
         ];
-
+        let partition_2 = vec![
+            MetadataStoreObject::<PartitionSpec, LocalMetadataItem>::with_spec(
+                ReplicaKey::new(topic.clone(), 0 as PartitionId),
+                vec![0, 1].into(),
+            ),
+            MetadataStoreObject::<PartitionSpec, LocalMetadataItem>::with_spec(
+                ReplicaKey::new(topic.clone(), 1 as PartitionId),
+                vec![0, 1].into(),
+            ),
+        ];
         let topics = StoreContext::<TopicSpec>::new();
-        let spu_pool = Arc::new(SpuPoolMock { topics });
+        let partitions = StoreContext::<PartitionSpec>::new();
+        let spu_pool = Arc::new(SpuPoolMock { topics, partitions });
         spu_pool.topics().store().sync_all(topic_2_partitions).await;
+        spu_pool.partitions().store().sync_all(partition_2).await;
         let producer = TopicProducer::new(topic.clone(), spu_pool.clone(), config, metrics)
             .await
             .expect("producer");
