@@ -10,19 +10,21 @@ use std::collections::HashMap;
 use std::sync::atomic::AtomicU32;
 use std::sync::Arc;
 
-use fluvio_future::task::spawn;
-use fluvio_future::timer::sleep;
-use fluvio_sc_schema::partition::PartitionSpec;
-use fluvio_sc_schema::topic::TopicSpec;
+use event_listener::Event;
+use tokio::select;
 use tracing::instrument;
 use async_lock::RwLock;
 use anyhow::Result;
 
+use fluvio_future::task::spawn;
+use fluvio_future::timer::sleep;
 use fluvio_protocol::record::ReplicaKey;
 use fluvio_protocol::record::Record;
 use fluvio_compression::Compression;
 #[cfg(feature = "compress")]
 use fluvio_sc_schema::topic::CompressionAlgorithm;
+use fluvio_sc_schema::topic::TopicSpec;
+use fluvio_sc_schema::partition::PartitionSpec;
 use fluvio_types::PartitionId;
 use fluvio_types::event::StickyEvent;
 
@@ -412,8 +414,18 @@ cfg_if::cfg_if! {
 
 /// Tracks the availability of partitions for a given topic
 struct PartitionAvailabilityTracker {
+    topic_name: String,
     available_partitions: Arc<RwLock<Vec<PartitionId>>>,
     partition_count: AtomicU32,
+    partitions: StoreContext<PartitionSpec>,
+    topics: StoreContext<TopicSpec>,
+    terminate: Arc<Event>,
+}
+
+impl Drop for PartitionAvailabilityTracker {
+    fn drop(&mut self) {
+        self.terminate.notify(usize::MAX);
+    }
 }
 
 impl PartitionAvailabilityTracker {
@@ -425,54 +437,66 @@ impl PartitionAvailabilityTracker {
         topics: StoreContext<TopicSpec>,
     ) -> Arc<Self> {
         let tracker = Arc::new(Self {
+            topic_name,
             available_partitions: Arc::new(RwLock::new(vec![])),
             partition_count: AtomicU32::new(initial_partition_count),
+            partitions: partitions.clone(),
+            topics: topics.clone(),
+            terminate: Arc::new(Event::new()),
         });
         let shared_tracker = tracker.clone();
 
         spawn(async move {
             loop {
-                let mut available_partitions = vec![];
-                if let Ok(Some(topic)) = topics.lookup_by_key(&topic_name).await {
-                    let partition_count = topic.spec().partitions();
-
-                    // Update the partition count if it has changed
-                    if partition_count
-                        != shared_tracker
-                            .partition_count
-                            .load(std::sync::atomic::Ordering::Relaxed)
-                    {
-                        shared_tracker
-                            .partition_count
-                            .store(partition_count, std::sync::atomic::Ordering::Relaxed);
-                    }
-
-                    for partition_id in 0..partition_count {
-                        if let Ok(Some(partition)) = partitions
-                            .lookup_by_key(&ReplicaKey::new(&topic_name, partition_id))
-                            .await
-                        {
-                            if partition.status.is_online() {
-                                available_partitions.push(partition_id);
-                            }
-                        }
-                    }
-
-                    // Update the shared available partitions if they have changed
-                    let read_lock = shared_tracker.available_partitions.read().await;
-                    if available_partitions != read_lock.clone() {
-                        drop(read_lock);
-                        let mut write_lock = shared_tracker.available_partitions.write().await;
-                        *write_lock = available_partitions;
-                        drop(write_lock);
-                    }
+                select! {
+                    _ = async {
+                        shared_tracker.update_available_partitions().await;
+                        sleep(std::time::Duration::from_secs(1)).await;
+                    } => {}
+                    _ = shared_tracker.terminate.listen() => {
+                        break;
+                    },
                 }
-
-                sleep(std::time::Duration::from_secs(1)).await;
             }
         });
 
         tracker
+    }
+
+    async fn update_available_partitions(&self) {
+        let mut available_partitions = vec![];
+        if let Ok(Some(topic)) = self.topics.lookup_by_key(&self.topic_name).await {
+            let partition_count = topic.spec().partitions();
+            // Update the partition count if it has changed
+            if partition_count
+                != self
+                    .partition_count
+                    .load(std::sync::atomic::Ordering::Relaxed)
+            {
+                self.partition_count
+                    .store(partition_count, std::sync::atomic::Ordering::Relaxed);
+            }
+
+            for partition_id in 0..partition_count {
+                if let Ok(Some(partition)) = self
+                    .partitions
+                    .lookup_by_key(&ReplicaKey::new(&self.topic_name, partition_id))
+                    .await
+                {
+                    if partition.status.is_online() {
+                        available_partitions.push(partition_id);
+                    }
+                }
+            }
+            // Update the shared available partitions if they have changed
+            {
+                let read_lock = self.available_partitions.read().await;
+                if available_partitions == *read_lock {
+                    return; // No change needed
+                }
+            }
+            *self.available_partitions.write().await = available_partitions;
+        }
     }
 
     fn available_partitions(&self) -> Arc<RwLock<Vec<PartitionId>>> {
