@@ -7,14 +7,13 @@
 use std::process;
 
 use anyhow::{anyhow, Result};
-use fluvio_future::openssl::SslVerifyMode;
 use tracing::debug;
 use tracing::info;
 use clap::Parser;
 
 use fluvio_types::print_cli_err;
 use fluvio_types::SpuId;
-use fluvio_future::openssl::TlsAcceptor;
+use fluvio_future::rust_tls::TlsAcceptor;
 use fluvio_types::defaults::SPU_PEER_MAX_BYTES;
 
 use super::SpuConfig;
@@ -170,20 +169,23 @@ impl SpuOpt {
             .as_ref()
             .ok_or_else(|| anyhow!("missing server key"))?;
 
-        let builder = (if tls_config.enable_client_cert {
+        let acceptor = if tls_config.enable_client_cert {
             let ca_path = tls_config
                 .ca_cert
                 .as_ref()
                 .ok_or_else(|| anyhow!("missing ca cert"))?;
-            TlsAcceptor::builder()?
-                .with_ssl_verify_mode(SslVerifyMode::PEER)
-                .with_ca_from_pem_file(ca_path)?
+            fluvio_future::rust_tls::AcceptorBuilder::with_safe_defaults()
+                .client_authenticate(ca_path)?
+                .load_server_certs(server_crt_path, server_key_path)?
+                .build()
         } else {
-            TlsAcceptor::builder()?
-        })
-        .with_certifiate_and_key_from_pem_files(server_crt_path, server_key_path)?;
+            fluvio_future::rust_tls::AcceptorBuilder::with_safe_defaults()
+                .no_client_authentication()
+                .load_server_certs(server_crt_path, server_key_path)?
+                .build()
+        };
 
-        Ok(Some(builder.build()))
+        Ok(Some(acceptor))
     }
 
     pub fn process_spu_cli_or_exit(self) -> (SpuConfig, Option<(TlsAcceptor, String)>) {

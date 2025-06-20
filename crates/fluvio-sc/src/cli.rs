@@ -21,8 +21,7 @@ use clap::Parser;
 
 use fluvio_types::print_cli_err;
 use fluvio_types::defaults::TLS_SERVER_SECRET_NAME;
-use fluvio_future::openssl::TlsAcceptor;
-use fluvio_future::openssl::SslVerifyMode;
+use fluvio_future::rust_tls::TlsAcceptor;
 
 use crate::services::auth::basic::BasicRbacPolicy;
 use crate::config::ScConfig;
@@ -217,21 +216,24 @@ impl TlsConfig {
             .ok_or_else(|| anyhow!("missing server key"))?;
         info!("using server key: {}", server_key_path);
 
-        let builder = (if self.enable_client_cert {
+        let acceptor = if self.enable_client_cert {
             let ca_path = self
                 .ca_cert
                 .as_ref()
                 .ok_or_else(|| anyhow!("missing ca cert"))?;
             info!("using client cert CA path: {}", ca_path);
-            TlsAcceptor::builder()?
-                .with_ssl_verify_mode(SslVerifyMode::PEER)
-                .with_ca_from_pem_file(ca_path)?
+            fluvio_future::rust_tls::AcceptorBuilder::with_safe_defaults()
+                .client_authenticate(ca_path)?
+                .load_server_certs(server_crt_path, server_key_path)?
+                .build()
         } else {
             info!("using tls anonymous access");
-            TlsAcceptor::builder()?
-        })
-        .with_certifiate_and_key_from_pem_files(server_crt_path, server_key_path)?;
+            fluvio_future::rust_tls::AcceptorBuilder::with_safe_defaults()
+                .no_client_authentication()
+                .load_server_certs(server_crt_path, server_key_path)?
+                .build()
+        };
 
-        Ok(builder.build())
+        Ok(acceptor)
     }
 }

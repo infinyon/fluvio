@@ -58,4 +58,4 @@ ureq = { workspace = true }
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 http = { workspace = true, features = ["std"] }
 getrandom = { workspace = true, features = ["js"] }
-reqwest = { workspace = true, features = ["json"] }
+reqwest = { workspace = true, features = ["json", "rustls-tls"] }

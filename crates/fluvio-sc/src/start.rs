@@ -145,7 +145,7 @@ mod proxy {
     use tracing::info;
 
     use fluvio_types::print_cli_err;
-    pub use fluvio_future::openssl::TlsAcceptor;
+    pub use fluvio_future::rust_tls::TlsAcceptor;
 
     use fluvio_auth::x509::X509Authenticator;
     use flv_tls_proxy::{

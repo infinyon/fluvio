@@ -125,7 +125,9 @@ mime = "0.3"
 mockall = { version = "0.13.1", default-features = false }
 nix = { version = "0.29.0", default-features = false }
 once_cell = "1.7.2"
+openssl = { version = "0.10", default-features = false }
 parking_lot = { version = "0.12.3", default-features = false }
+lib-cargo-crate = "0.2.1"
 pin-project = "1.1.0"
 pin-utils = "0.1.0"
 portpicker = "0.1.1"
@@ -135,7 +137,7 @@ rand = "0.8.5"
 rayon = "1.10.0"
 rand_xoshiro = "0.6.0"
 regex = "1.7"
-reqwest = "0.12"
+reqwest = { version = "0.12", default-features = false }
 schemars = { version = "0.8.22" }
 semver = "1.0.13"
 serde = { version = "1.0", default-features = false }
@@ -179,9 +181,9 @@ x509-parser = "0.17.0"
 # External fluvio dependencies
 fluvio_ws_stream_wasm = "0.7.0"
 fluvio-command = { version = "0.2.0" }
-fluvio-future = { version = "0.8.1", default-features = false }
+fluvio-future = { version = "0.8.2", default-features = false }
 fluvio-helm = { version = "0.4.1" }
-flv-tls-proxy = { version = "0.11.0" }
+flv-tls-proxy = { version = "0.12.0" }
 flv-util = { version = "0.5.2", default-features = false }
 k8-client = { version = "14.0.0" }
 k8-config = { version = "3.0.0" }

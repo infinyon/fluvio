@@ -23,7 +23,8 @@ toml = { workspace = true }
 cargo-generate = { workspace = true }
 include_dir = { workspace = true }
 tempfile = { workspace = true }
-lib-cargo-crate = "0.2.1"
+lib-cargo-crate = { workspace = true }
+openssl = { workspace = true, features = ["vendored"] } # cargo-generate requires openssl
 
 
 fluvio = { workspace = true }

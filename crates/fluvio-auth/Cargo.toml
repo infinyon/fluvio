@@ -24,7 +24,7 @@ tracing = { workspace = true }
 x509-parser = { workspace = true }
 
 fluvio-controlplane-metadata = { workspace = true  }
-fluvio-future = { workspace = true, features = ["net", "openssl_tls"] }
+fluvio-future = { workspace = true, features = ["net"] }
 fluvio-protocol = { workspace = true }
 fluvio-socket = { workspace = true }
 flv-tls-proxy = { workspace = true }
