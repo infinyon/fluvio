@@ -43,7 +43,6 @@ fluvio = { workspace = true }
 fluvio-auth = { workspace = true }
 fluvio-future = { workspace = true, features = [
     "subscriber",
-    "openssl_tls",
     "zero_copy",
 ] }
 fluvio-types = { workspace = true,  features = [

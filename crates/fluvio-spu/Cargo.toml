@@ -58,7 +58,6 @@ flv-tls-proxy = { workspace = true }
 flv-util = { workspace = true }
 fluvio-future = { workspace = true,features = [
     "subscriber",
-    "openssl_tls",
     "zero_copy",
 ] }
 fluvio-smartengine = { workspace = true, optional = true, features = ["engine"] }
