@@ -80,6 +80,21 @@ impl RecordKey {
     }
 }
 
+impl From<RecordData> for RecordKey {
+    fn from(k: RecordData) -> Self {
+        Self(RecordKeyInner::Key(k))
+    }
+}
+
+impl From<RecordKey> for Option<RecordData> {
+    fn from(k: RecordKey) -> Self {
+        match k.0 {
+            RecordKeyInner::Key(data) => Some(data),
+            RecordKeyInner::Null => None,
+        }
+    }
+}
+
 #[derive(Hash)]
 enum RecordKeyInner {
     Null,
@@ -807,5 +822,16 @@ mod test {
             partition: 0,
         };
         assert_eq!(record.timestamp(), 1_000_000_800);
+    }
+
+    #[test]
+    fn test_key_conversion() {
+        let null_key = RecordKey::NULL;
+        let data: Option<RecordData> = null_key.into();
+        assert_eq!(data, None);
+        let data = RecordData::from("test");
+        let key = RecordKey::from(data.clone());
+        let data2: Option<RecordData> = key.into();
+        assert_eq!(data2, Some(data));
     }
 }

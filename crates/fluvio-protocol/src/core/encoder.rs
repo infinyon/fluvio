@@ -463,6 +463,42 @@ where
     }
 }
 
+impl Encoder for &str {
+    fn write_size(&self, _version: Version) -> usize {
+        2 + self.len()
+    }
+
+    fn encode<T>(&self, dest: &mut T, _version: Version) -> Result<(), Error>
+    where
+        T: BufMut,
+    {
+        if dest.remaining_mut() < 2 + self.len() {
+            return Err(Error::new(
+                ErrorKind::UnexpectedEof,
+                "not enough capacity for string",
+            ));
+        }
+
+        dest.put_u16(self.len() as u16);
+
+        let mut writer = dest.writer();
+        let bytes_written = writer.write(<str>::as_bytes(self))?;
+
+        if bytes_written != self.len() {
+            return Err(Error::new(
+                ErrorKind::UnexpectedEof,
+                format!(
+                    "out of {} bytes, {} not written",
+                    self.len(),
+                    self.len() - bytes_written
+                ),
+            ));
+        }
+
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod test {
 
