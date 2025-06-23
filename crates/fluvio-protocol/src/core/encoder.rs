@@ -463,7 +463,7 @@ where
     }
 }
 
-impl<'a> Encoder for &'a str {
+impl Encoder for &str {
     fn write_size(&self, _version: Version) -> usize {
         2 + self.len()
     }
