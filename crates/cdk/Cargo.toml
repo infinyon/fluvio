@@ -30,6 +30,7 @@ sysinfo = { workspace = true, default-features = false }
 tempfile = { workspace = true }
 toml = { workspace = true, features = ["parse", "display", "preserve_order"] }
 tracing = { workspace = true }
+openssl = { workspace = true, features = ["vendored"] } # cargo-generate requires openssl
 
 fluvio = { workspace = true }
 fluvio-cli-common = { workspace = true, features = ["serde", "version-cmd"] }
