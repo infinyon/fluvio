@@ -77,7 +77,7 @@ impl Fluvio {
     /// ```
     pub async fn connect_with_config(config: &FluvioClusterConfig) -> Result<Self> {
         // if crate tls is not configured and the profile has tls, return an error
-        #[cfg(not(any(feature = "openssl", feature = "rustls")))]
+        #[cfg(not(any(feature = "openssl", feature = "rustls", feature = "rustls-ring")))]
         if crate::config::TlsPolicy::Disabled != config.tls {
             return Err(anyhow::anyhow!(
                 "Error: cluster config requires TLS, but client was not built with TLS features.\nPlease enable the `openssl` feature."
