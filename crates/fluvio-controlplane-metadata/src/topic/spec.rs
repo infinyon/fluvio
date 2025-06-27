@@ -636,10 +636,10 @@ impl std::fmt::Display for MirrorConfig {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             MirrorConfig::Remote(r) => {
-                write!(f, "Mirror Remote {:?} ", r)
+                write!(f, "Mirror Remote {r:?} ")
             }
             MirrorConfig::Home(h) => {
-                write!(f, "Mirror Home {:?} ", h)
+                write!(f, "Mirror Home {h:?} ")
             }
         }
     }

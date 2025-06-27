@@ -79,6 +79,7 @@ mod delete_handler {
 
     /// Handler for object delete
     #[instrument(skip(auth_ctx, object_ctx, error_code, not_found_code))]
+    #[allow(dead_code)]
     pub async fn process<AC: AuthContext, S, F, G, C: MetadataItem>(
         name: String,
         auth_ctx: &AuthServiceContext<AC, C>,

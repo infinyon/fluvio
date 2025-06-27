@@ -57,6 +57,7 @@ impl LeaderConnections {
 
     /// create consumer connection to a leader
     #[instrument(skip(self))]
+    #[allow(dead_code)]
     pub async fn partition_consumer<S>(
         self: Arc<Self>,
         topic: S,

@@ -125,7 +125,7 @@ fn configure_ureq_proxy() -> Result<Agent> {
     ];
 
     let proxy_creation = |proxy_str: &str, proxy_type: &str| -> Result<Proxy> {
-        Proxy::new(proxy_str).with_context(|| format!("Failed to create {} proxy", proxy_type))
+        Proxy::new(proxy_str).with_context(|| format!("Failed to create {proxy_type} proxy"))
     };
 
     for &(upper_var, lower_var, proxy_type) in &proxy_vars {

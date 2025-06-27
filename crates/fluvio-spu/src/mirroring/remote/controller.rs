@@ -426,9 +426,9 @@ where
                     leader_leo,
                     new_home_leo, "home has more records, this should not happen, this is error"
                 );
-                return Err(anyhow!(
+                Err(anyhow!(
                     "home's leo: {new_home_leo} > leader's leo: {leader_leo} this should not happen since this is target, this is error"
-                ));
+                ))
             }
             std::cmp::Ordering::Less => {
                 debug!(

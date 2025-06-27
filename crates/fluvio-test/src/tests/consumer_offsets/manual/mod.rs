@@ -16,7 +16,7 @@ pub async fn run_manual_test(
     partitions: usize,
     start_offset: TestOffsetStart,
 ) -> Result<()> {
-    println!("Running manual test with start offset: {:?}", start_offset);
+    println!("Running manual test with start offset: {start_offset:?}");
 
     match start_offset {
         TestOffsetStart::Beginning => {

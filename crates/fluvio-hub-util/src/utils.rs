@@ -248,7 +248,7 @@ pub async fn push_package_api(put_url: &str, pkgpath: &str, access: &HubAccess) 
             let bodymsg = res
                 .body_string()
                 .map_err(|_e| HubError::HubAccess("Failed to download err body".into()))?;
-            let msg = format!("error status code({}) {}", status, bodymsg);
+            let msg = format!("error status code({status}) {bodymsg}");
             Err(HubError::HubAccess(msg))
         }
     }

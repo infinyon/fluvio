@@ -24,7 +24,7 @@ impl MirrorSpec {
 
 impl fmt::Display for MirrorSpec {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Mirror: {:?}", self)
+        write!(f, "Mirror: {self:?}")
     }
 }
 
@@ -45,7 +45,7 @@ impl fmt::Display for MirrorType {
             MirrorType::Remote(remote) => format!("remote: {}", remote.id),
             MirrorType::Home(home) => format!("home: {}", home.id),
         };
-        write!(f, "{}", ts)
+        write!(f, "{ts}")
     }
 }
 

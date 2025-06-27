@@ -69,6 +69,7 @@ mod create_handler {
     use crate::services::auth::AuthServiceContext;
 
     #[instrument(skip(create, spec, auth_ctx, object_ctx, error_code))]
+    #[allow(dead_code)]
     pub async fn process<AC: AuthContext, S, F, C: MetadataItem>(
         create: CommonCreateRequest,
         spec: S,

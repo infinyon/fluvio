@@ -51,7 +51,7 @@ impl MirrorStatus {
     pub fn pair_errors(self) -> String {
         match (self.pairing_sc, self.pairing_spu) {
             (MirrorPairStatus::DetailFailure(sc_err), MirrorPairStatus::DetailFailure(spu_err)) => {
-                format!("SC: {} - SPU: {}", sc_err, spu_err)
+                format!("SC: {sc_err} - SPU: {spu_err}")
             }
             (MirrorPairStatus::DetailFailure(sc_err), _) => sc_err,
             (_, MirrorPairStatus::DetailFailure(spu_err)) => spu_err,
@@ -136,7 +136,7 @@ impl std::fmt::Display for MirrorPairStatus {
             MirrorPairStatus::Unauthorized => "Unauthorized",
             MirrorPairStatus::DetailFailure(_) => "Failed", // the msg is showed with pair_errors
         };
-        write!(f, "{}", status)
+        write!(f, "{status}")
     }
 }
 
@@ -146,7 +146,7 @@ impl std::fmt::Display for ConnectionStatus {
             ConnectionStatus::Online => "online",
             ConnectionStatus::Offline => "offline",
         };
-        write!(f, "{}", status)
+        write!(f, "{status}")
     }
 }
 

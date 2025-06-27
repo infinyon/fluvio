@@ -61,25 +61,25 @@ pub fn pretty_duration(d: Duration) -> String {
 
     if nanos < 1_000 {
         // Less than 1µs, display in ns
-        format!("{}ns", nanos)
+        format!("{nanos}ns")
     } else if nanos < 1_000_000 {
         // Less than 1ms, display in µs
         let us = nanos as f64 / 1_000.0;
-        format!("{:.1}µs", us)
+        format!("{us:.1}µs")
     } else if nanos < 1_000_000_000 {
         // Less than 1s, display in ms
         let ms = nanos as f64 / 1_000_000.0;
-        format!("{:.1}ms", ms)
+        format!("{ms:.1}ms")
     } else {
         // Now we’re at least 1 second
         let secs = nanos as f64 / 1_000_000_000.0;
         if secs < 60.0 {
             // Less than a minute, display in seconds
-            format!("{:.1}s", secs)
+            format!("{secs:.1}s")
         } else {
             // Otherwise, display in minutes
             let mins = secs / 60.0;
-            format!("{:.1}m", mins)
+            format!("{mins:.1}m")
         }
     }
 }

@@ -55,7 +55,7 @@ impl SwitchOpt {
                 version.to_string().bold()
             ));
 
-            let help = format!("fvm install {}", version);
+            let help = format!("fvm install {version}");
 
             notify.help(format!(
                 "Install the desired version using {}, and then retry this command.",

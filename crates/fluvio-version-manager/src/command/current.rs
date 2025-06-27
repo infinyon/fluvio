@@ -20,8 +20,8 @@ impl CurrentOpt {
 
         if let (Some(channel), Some(version)) = (settings.channel, settings.version) {
             match channel {
-                Channel::Latest | Channel::Stable => println!("{} ({})", version, channel),
-                _ => println!("{}", version),
+                Channel::Latest | Channel::Stable => println!("{version} ({channel})"),
+                _ => println!("{version}"),
             }
         } else {
             notify.warn("No active version set");

@@ -71,7 +71,7 @@ impl PackageMetaExt for PackageMeta {
             )))?;
 
         let publisted_at = DateTime::parse_from_rfc2822(published_at_pkg_tag.value.as_str())
-            .map_err(|err| HubError::General(format!("Failed to parse publish date. {}", err)))?;
+            .map_err(|err| HubError::General(format!("Failed to parse publish date. {err}")))?;
 
         Ok(publisted_at.to_utc())
     }

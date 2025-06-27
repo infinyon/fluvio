@@ -130,7 +130,7 @@ mod policy {
             let parts: Vec<&str> = urn.split(':').collect();
 
             let action_str = parts.first().ok_or(Error::custom("missing action"))?;
-            let action = serde_json::from_str(format!("\"{}\"", action_str).as_str())
+            let action = serde_json::from_str(format!("\"{action_str}\"").as_str())
                 .map_err(Error::custom)?;
 
             let instance = if parts.len() > 1 {

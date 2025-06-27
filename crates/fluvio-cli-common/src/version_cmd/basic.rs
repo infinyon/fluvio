@@ -50,7 +50,7 @@ impl BasicVersionCmd {
             }
         }
 
-        println!("{}", fluvio_version_printer);
+        println!("{fluvio_version_printer}");
 
         Ok(())
     }

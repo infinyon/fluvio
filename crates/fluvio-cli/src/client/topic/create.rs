@@ -209,8 +209,7 @@ impl CreateTopicOpt {
 
             if !not_registered_mirrors.is_empty() {
                 return Err(CliError::InvalidArg(format!(
-                    "Remote clusters not registered: {:?}",
-                    not_registered_mirrors
+                    "Remote clusters not registered: {not_registered_mirrors:?}"
                 ))
                 .into());
             }
@@ -285,7 +284,7 @@ fn validate(name: &str, _spec: &TopicSpec) -> Result<()> {
         return Err(CliError::InvalidArg("Topic name is required".to_string()).into());
     }
     validate_resource_name(name)
-        .map_err(|err| CliError::InvalidArg(format!("Invalid Topic name {}. {err}", name)))?;
+        .map_err(|err| CliError::InvalidArg(format!("Invalid Topic name {name}. {err}")))?;
     Ok(())
 }
 

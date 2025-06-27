@@ -293,7 +293,7 @@ async fn apply_smartmodules(
     };
 
     let smartmoduled_records = Batch::<RawRecords>::try_from(sm_result)
-        .map_err(|e| ErrorCode::Other(format!("Compression Error: {:?}", e)))?;
+        .map_err(|e| ErrorCode::Other(format!("Compression Error: {e:?}")))?;
 
     partition_request.records = RecordSet {
         batches: vec![smartmoduled_records],

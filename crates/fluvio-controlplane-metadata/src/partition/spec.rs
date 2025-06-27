@@ -82,17 +82,17 @@ impl PartitionSpec {
             match mirror {
                 PartitionMirrorConfig::Remote(remote) => {
                     if remote.target {
-                        format!("{}(from-home)", external)
+                        format!("{external}(from-home)")
                     } else {
-                        format!("{}(to-home)", external)
+                        format!("{external}(to-home)")
                     }
                 }
 
                 PartitionMirrorConfig::Home(home) => {
                     if home.source {
-                        format!("{}(to-remote)", external)
+                        format!("{external}(to-remote)")
                     } else {
-                        format!("{}(from-remote)", external)
+                        format!("{external}(from-remote)")
                     }
                 }
             }
@@ -192,8 +192,8 @@ impl PartitionMirrorConfig {
 impl std::fmt::Display for PartitionMirrorConfig {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            PartitionMirrorConfig::Remote(cfg) => write!(f, "{}", cfg),
-            PartitionMirrorConfig::Home(cfg) => write!(f, "{}", cfg),
+            PartitionMirrorConfig::Remote(cfg) => write!(f, "{cfg}"),
+            PartitionMirrorConfig::Home(cfg) => write!(f, "{cfg}"),
         }
     }
 }

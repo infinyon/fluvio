@@ -37,7 +37,7 @@ pub async fn handle_register_mirror<AC: AuthContext, C: MetadataItem>(
             return Ok(Status::new(
                 name.clone(),
                 ErrorCode::MirrorAlreadyExists,
-                Some(format!("remote cluster {:?} already exists", name)),
+                Some(format!("remote cluster {name:?} already exists")),
             ));
         }
     }

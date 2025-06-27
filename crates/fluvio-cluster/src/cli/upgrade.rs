@@ -50,8 +50,7 @@ impl UpgradeOpt {
         if !self.force {
             let prompt = dialoguer::Confirm::new()
                 .with_prompt(format!(
-                    "Upgrade Local Fluvio cluster to version {}?",
-                    platform_version
+                    "Upgrade Local Fluvio cluster to version {platform_version}?"
                 ))
                 .interact()?;
 
@@ -121,7 +120,7 @@ impl UpgradeOpt {
 
         pb.println(format!(
             "🚀 {}",
-            format!("Upgrading Local Fluvio cluster to {}", platform_version).bold(),
+            format!("Upgrading Local Fluvio cluster to {platform_version}").bold(),
         ));
 
         let config = local_config
@@ -133,11 +132,7 @@ impl UpgradeOpt {
 
         pb.println(format!(
             "🎉 {}",
-            format!(
-                "Successfully upgraded Local Fluvio cluster to {}",
-                platform_version
-            )
-            .bold(),
+            format!("Successfully upgraded Local Fluvio cluster to {platform_version}").bold(),
         ));
 
         pb.println(format!(
