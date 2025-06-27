@@ -38,7 +38,7 @@ impl ConnectOpt {
         };
 
         admin.create(home_id.clone(), false, spec).await?;
-        println!("connecting with \"{}\" cluster", home_id);
+        println!("connecting with \"{home_id}\" cluster");
         Ok(())
     }
 }

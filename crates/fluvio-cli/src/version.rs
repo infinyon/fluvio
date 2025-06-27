@@ -43,7 +43,7 @@ impl VersionOpt {
             return Ok(());
         }
 
-        println!("{}", version_printer);
+        println!("{version_printer}");
 
         if let Some(metadata) = self.format_subcommand_metadata() {
             if !metadata.is_empty() {

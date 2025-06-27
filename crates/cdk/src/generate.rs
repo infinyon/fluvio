@@ -113,13 +113,13 @@ enum CdkTemplateValue {
 impl Display for CdkTemplateValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            CdkTemplateValue::Name(name) => write!(f, "project-name={}", name),
-            CdkTemplateValue::Group(group) => write!(f, "project-group={}", group),
+            CdkTemplateValue::Name(name) => write!(f, "project-name={name}"),
+            CdkTemplateValue::Group(group) => write!(f, "project-group={group}"),
             CdkTemplateValue::Description(description) => {
-                write!(f, "project-description={}", description)
+                write!(f, "project-description={description}")
             }
             CdkTemplateValue::ConnFluvioDependencyHash(hash) => {
-                write!(f, "fluvio-cargo-dependency-hash={}", hash)
+                write!(f, "fluvio-cargo-dependency-hash={hash}")
             }
             CdkTemplateValue::ConnType(conn_type) => write!(f, "connector-type={conn_type}"),
             CdkTemplateValue::ConnPublic(conn_public) => {

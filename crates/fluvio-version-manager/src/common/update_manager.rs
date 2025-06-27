@@ -29,14 +29,12 @@ impl UpdateManager {
 
     async fn fetch_checksum_for_version(&self, version: &Version) -> Result<String> {
         let checksum_url = format!(
-            "https://packages.fluvio.io/v1/packages/fluvio/fvm/{}/{}/fvm.sha256",
-            version, TARGET
+            "https://packages.fluvio.io/v1/packages/fluvio/fvm/{version}/{TARGET}/fvm.sha256"
         );
         let request = ureq::get(&checksum_url);
 
         let response = request.call().or_any_status().context(format!(
-            "Failed to fetch checksum for fvm@{} from {}",
-            version, checksum_url
+            "Failed to fetch checksum for fvm@{version} from {checksum_url}"
         ))?;
 
         let checksum = response.into_string()?;
@@ -44,13 +42,13 @@ impl UpdateManager {
     }
 
     pub async fn update(&self, version: &Version) -> Result<()> {
-        self.notify.info(format!("Downloading fvm@{}", version));
+        self.notify.info(format!("Downloading fvm@{version}"));
         let (_tmp_dir, new_fvm_bin) = self.download(version).await?;
 
-        self.notify.info(format!("Installing fvm@{}", version));
+        self.notify.info(format!("Installing fvm@{version}"));
         self.install(&new_fvm_bin).await?;
         self.notify
-            .done(format!("Installed fvm@{} with success", version));
+            .done(format!("Installed fvm@{version} with success"));
 
         Ok(())
     }
@@ -58,17 +56,14 @@ impl UpdateManager {
     /// Downloads Fluvio Version Manager binary into a temporary directory
     async fn download(&self, version: &Version) -> Result<(TempDir, PathBuf)> {
         let tmp_dir = TempDir::new()?;
-        let download_url = format!(
-            "https://packages.fluvio.io/v1/packages/fluvio/fvm/{}/{}/fvm",
-            version, TARGET
-        );
+        let download_url =
+            format!("https://packages.fluvio.io/v1/packages/fluvio/fvm/{version}/{TARGET}/fvm");
         let request = ureq::get(&download_url);
 
         tracing::info!(download_url, "Downloading FVM");
 
         let response = request.call().or_any_status().context(format!(
-            "Failed to download fvm@{} from {}",
-            version, download_url
+            "Failed to download fvm@{version} from {download_url}"
         ))?;
 
         let out_path = tmp_dir.path().join("fvm");

@@ -235,7 +235,7 @@ mod infinyon_tok_tests {
         "#;
 
         let cli_access_tokens = serde_json::from_str::<CliAccessTokens>(with_uat);
-        assert!(cli_access_tokens.is_ok(), "{:?} ", cli_access_tokens);
+        assert!(cli_access_tokens.is_ok(), "{cli_access_tokens:?} ");
         let cli_access_tokens = cli_access_tokens.expect("should succeed");
         let org_token = cli_access_tokens
             .get_current_org_token()
@@ -255,7 +255,7 @@ mod infinyon_tok_tests {
     }
         "#;
         let cli_access_tokens = serde_json::from_str::<CliAccessTokens>(no_uat);
-        assert!(cli_access_tokens.is_ok(), "{:?} ", cli_access_tokens);
+        assert!(cli_access_tokens.is_ok(), "{cli_access_tokens:?} ");
         let cli_access_tokens = cli_access_tokens.expect("should succeed");
         let org_token = cli_access_tokens
             .get_current_org_token()

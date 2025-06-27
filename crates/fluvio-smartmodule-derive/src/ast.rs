@@ -46,7 +46,7 @@ impl Display for SmartModuleKind {
             SmartModuleKind::FilterMap => "filter_map",
         };
 
-        write!(f, "{}", string)
+        write!(f, "{string}")
     }
 }
 

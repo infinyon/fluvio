@@ -2453,7 +2453,7 @@ async fn test_stream_metrics() {
         let metrics_sm = ctx.metrics().smartmodule_metrics();
         assert_eq!(metrics_sm.len(), 1);
 
-        println!("metrics: {:#?}", metrics_sm);
+        println!("metrics: {metrics_sm:#?}");
 
         if let Some(filter_metrics) = metrics_sm.get(FLUVIO_WASM_FILTER) {
             assert_eq!(filter_metrics.bytes_in(), 24);

@@ -25,7 +25,7 @@ pub async fn handle_unregister_mirror<AC: AuthContext, C: MetadataItem>(
         return Ok(Status::new(
             name.clone(),
             ErrorCode::MirrorNotFound,
-            Some(format!("remote cluster {:?} not found", name)),
+            Some(format!("remote cluster {name:?} not found")),
         ));
     }
 

@@ -45,7 +45,7 @@ impl ResumeOpt {
         };
 
         if let Some(err) = resume_result.err() {
-            pb.println(format!("❌ Resume failed with {:#}", err));
+            pb.println(format!("❌ Resume failed with {err:#}"));
         }
 
         Ok(())

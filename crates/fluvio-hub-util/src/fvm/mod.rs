@@ -36,10 +36,10 @@ pub enum Channel {
 impl Display for Channel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Channel::Stable => write!(f, "{}", STABLE_VERSION_CHANNEL),
-            Channel::Latest => write!(f, "{}", LATEST_VERSION_CHANNEL),
-            Channel::Tag(version) => write!(f, "{}", version),
-            Channel::Other(version) => write!(f, "{}", version),
+            Channel::Stable => write!(f, "{STABLE_VERSION_CHANNEL}"),
+            Channel::Latest => write!(f, "{LATEST_VERSION_CHANNEL}"),
+            Channel::Tag(version) => write!(f, "{version}"),
+            Channel::Other(version) => write!(f, "{version}"),
         }
     }
 }

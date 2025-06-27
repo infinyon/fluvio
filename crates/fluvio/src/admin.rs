@@ -354,7 +354,7 @@ impl FluvioAdmin {
             Ok(response) => {
                 let watch_response = response
                     .downcast()
-                    .map_err(|err| IoError::other(format!("downcast error: {:#?}", err)))?;
+                    .map_err(|err| IoError::other(format!("downcast error: {err:#?}")))?;
                 watch_response.ok_or(IoError::other(format!(
                     "cannot decoded as {s}",
                     s = S::LABEL

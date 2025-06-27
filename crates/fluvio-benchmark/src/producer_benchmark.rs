@@ -42,7 +42,7 @@ impl ProducerBenchmark {
         sleep(std::time::Duration::from_millis(100)).await;
 
         if let Err(result_err) = result {
-            println!("Error running samples: {:#?}", result_err);
+            println!("Error running samples: {result_err:#?}");
         }
 
         // Clean up topic
@@ -132,7 +132,7 @@ impl ProducerBenchmark {
                 ));
             }
             println!();
-            println!("{}", latency_yaml);
+            println!("{latency_yaml}");
 
             let human_readable_bytes = ByteSize(end.bytes_per_sec).to_string();
             println!(

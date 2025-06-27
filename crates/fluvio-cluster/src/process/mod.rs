@@ -69,7 +69,7 @@ pub fn delete_fs<T: AsRef<Path>>(
                 Ok(_) => {
                     debug!("Removed {}: {}", tag, path_ref.display());
                     if let Some(pb) = pb {
-                        pb.println(format!("Removed {}", tag))
+                        pb.println(format!("Removed {tag}"))
                     }
                 }
                 Err(io_err) if io_err.kind() == std::io::ErrorKind::NotFound => {

@@ -72,6 +72,7 @@ impl ChartLocation {
     }
 
     #[instrument(skip(self))]
+    #[allow(dead_code)]
     fn setup_remote_chart(&self, chart_location: &str) -> Result<()> {
         Ok(())
     }

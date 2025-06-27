@@ -17,7 +17,7 @@ impl VersionOpt {
         println!("{BINARY_NAME} CLI Arch: {CURRENT_PLATFORM}");
 
         if let Some(sha) = self.format_cli_sha() {
-            println!("{BINARY_NAME} CLI SHA256: {}", sha);
+            println!("{BINARY_NAME} CLI SHA256: {sha}");
         }
 
         if let Some(info) = os_info() {

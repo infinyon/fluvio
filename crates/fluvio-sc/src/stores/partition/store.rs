@@ -646,7 +646,7 @@ mod test2 {
         ]);
 
         let groups = partitions.group_by_spu().await;
-        println!("groups: {:#?}", groups);
+        println!("groups: {groups:#?}");
         assert_eq!(groups.len(), 6); // spus are 0,1,2,3,4,5
         assert_eq!(groups[&0].leaders, 2); // spu 0 is leader for 1 partition
         assert_eq!(groups[&0].followers, 1); // spu 0 is follower for 1 partition

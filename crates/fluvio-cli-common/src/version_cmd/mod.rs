@@ -145,7 +145,7 @@ impl Display for FluvioVersionPrinter {
             table.add_row(vec![key, value]);
         }
 
-        write!(f, "{}", table)
+        write!(f, "{table}")
     }
 }
 
@@ -164,7 +164,7 @@ mod test {
             "Linux 5.4.0-42-generic (kernel 4.19.76-linuxkit)",
         );
 
-        let lines = format!("{}", fluvio_version_printer)
+        let lines = format!("{fluvio_version_printer}")
             .lines()
             .map(String::from)
             .collect::<Vec<String>>();

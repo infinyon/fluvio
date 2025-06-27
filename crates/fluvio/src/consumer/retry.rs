@@ -361,7 +361,7 @@ impl ConsumerRetryStream {
                             return Err(ErrorCode::MaxRetryReached);
                         }
                         RetryMode::Disabled => {
-                            return Err(ErrorCode::Other(format!("{}", e)));
+                            return Err(ErrorCode::Other(format!("{e}")));
                         }
                         _ => {
                             continue; // Retry

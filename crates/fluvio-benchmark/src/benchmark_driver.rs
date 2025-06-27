@@ -25,7 +25,7 @@ impl BenchmarkDriver {
                 };
                 let benchmarks_configs = matrix_config.generate_configs();
                 for benchmark_config in benchmarks_configs {
-                    println!("Running benchmark: {:#?}", benchmark_config);
+                    println!("Running benchmark: {benchmark_config:#?}");
                     match benchmark_config {
                         crate::config::BenchmarkConfig::Producer(producer) => {
                             ProducerBenchmark::run_benchmark(producer).await?;

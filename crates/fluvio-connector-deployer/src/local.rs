@@ -58,7 +58,7 @@ pub(crate) fn deploy_local<P: AsRef<Path>>(
     }
     let mut child = cmd.spawn()?;
     println!("Connector runs with process id: {}", child.id());
-    println!("Started connector `{}`", name);
+    println!("Started connector `{name}`");
     if wait {
         child.wait()?;
     }

@@ -52,7 +52,7 @@ impl Client {
 
         let error = res.json::<ApiError>().map_err(|err| {
             tracing::debug!(?err, "Failed to parse API Error from Hub");
-            Error::msg(format!("Server responded with status code {}", res_status))
+            Error::msg(format!("Server responded with status code {res_status}"))
         })?;
 
         tracing::debug!(?error, "Server responded with not successful status code");

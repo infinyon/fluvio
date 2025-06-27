@@ -46,7 +46,7 @@ fn hub_pkg_check(opts: HubPkgCheckOpts) -> Result<()> {
     const TAG_ARCH: &str = "arch";
 
     if let Err(reason) = verify::connector_ipkg(&opts.ipkg_file) {
-        println!("Error: {}", reason);
+        println!("Error: {reason}");
     }
 
     if !opts.brief {
@@ -83,11 +83,11 @@ fn hub_pkg_check(opts: HubPkgCheckOpts) -> Result<()> {
 
         println!("=== Manifest entries:");
         for entry in entries {
-            println!("\t{:?}", entry);
+            println!("\t{entry:?}");
         }
         println!();
 
-        println!("=== {CONNECTOR_TOML}:\n{}", str_ctoml);
+        println!("=== {CONNECTOR_TOML}:\n{str_ctoml}");
         println!();
     }
     Ok(())

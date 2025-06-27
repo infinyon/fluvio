@@ -116,6 +116,6 @@ impl ListOpt {
 
         table.load_preset(comfy_table::presets::NOTHING);
 
-        println!("{}", table);
+        println!("{table}");
     }
 }
