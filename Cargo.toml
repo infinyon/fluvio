@@ -151,6 +151,7 @@ syn = "2.0"
 sysinfo = { version = "0.33.1", default-features = false, features = [
     "system",
 ] }
+rustls = { version = "0.23.0", default-features = false }
 tar = { version = "0.4.38", default-features = false }
 tempfile = "3.4.0"
 thiserror = "2.0.11"

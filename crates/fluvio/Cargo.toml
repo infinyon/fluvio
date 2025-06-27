@@ -19,7 +19,8 @@ default = ["rustls", "compress"]
 admin = ["fluvio-sc-schema/use_serde"]
 smartengine = ["fluvio-smartengine"]
 openssl = ["fluvio-future/openssl_tls"]
-rustls = ["fluvio-future/rust_tls"]
+rustls = ["fluvio-future/rust_tls", "dep:rustls", "rustls?/aws-lc-rs"]
+rustls-ring = ["fluvio-future/rust_tls", "dep:rustls", "rustls?/ring"]
 compress = ["fluvio-compression/compress", "fluvio-protocol/compress"]
 nightly = []
 unstable = []
@@ -53,6 +54,7 @@ fluvio-future = { workspace = true, features = [
     "task",
     "retry",
 ] }
+rustls = { workspace = true, optional = true, default-features = false }
 fluvio-types = { workspace = true, features = ["events"] }
 fluvio-sc-schema = { workspace = true }
 fluvio-socket = { workspace = true }
