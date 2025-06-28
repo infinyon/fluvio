@@ -238,7 +238,6 @@ impl ScDispatcher<FileReplica> {
     {
         if requests.is_empty() {
             trace!("sending empty status");
-            return Ok(());
         }
 
         let unique_requests: Vec<_> = requests
