@@ -2268,6 +2268,7 @@ dependencies = [
  "once_cell",
  "parking_lot 0.12.4",
  "pin-project",
+ "rustls 0.23.28",
  "semver 1.0.26",
  "serde",
  "siphasher",
