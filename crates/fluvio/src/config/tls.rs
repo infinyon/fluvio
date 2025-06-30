@@ -241,12 +241,28 @@ cfg_if::cfg_if! {
                 }
             }
         }
-    }  else if #[cfg(feature = "rustls")] {
+    } else if #[cfg(any(feature = "rustls"))] {
 
         impl TryFrom<TlsPolicy> for DomainConnector {
             type Error = anyhow::Error;
 
             fn try_from(config: TlsPolicy) -> Result<Self, Self::Error> {
+
+                if rustls::crypto::CryptoProvider::get_default().is_none() {
+                    cfg_if::cfg_if! {
+                        if #[cfg(feature = "ring")] {
+                            info!("Using rustls-ring as crypto provider");
+                            let _ = rustls::crypto::ring::default_provider().install_default();
+                        } else if #[cfg(feature = "aws-lc-rs")] {
+                            info!("Using aws-lc-rs as crypto provider");
+                            let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
+                        } else {
+                            let err_msg = "No crypto provider selected for rustls, please enable either aws-lc-rs or ring feature";
+                            error!("{error_msg}");
+                            return Err(anyhow::anyhow!(err_msg));
+                        }
+                    }
+                }
 
 
                 use fluvio_future::rust_tls:: ConnectorBuilder;
@@ -269,7 +285,7 @@ cfg_if::cfg_if! {
                             ca_cert_path = ?tls.ca_cert,
                             client.cert = ?tls.cert,
                             client.key = ?tls.key,
-                            "Using verified TLS with certificates from paths"
+                            "Using verified TLS with rustls and certificates from paths"
                         );
 
                         let connector = ConnectorBuilder::with_safe_defaults()
@@ -286,7 +302,7 @@ cfg_if::cfg_if! {
                     TlsPolicy::Verified(TlsConfig::Inline(tls)) => {
                         info!(
                             domain = &*tls.domain,
-                            "Using verified TLS with inline certificates"
+                            "Using verified TLS with rustls and inline certificates"
                         );
                         let connector = ConnectorBuilder::with_safe_defaults()
                         .load_ca_cert_from_bytes(tls.ca_cert.as_bytes())?
