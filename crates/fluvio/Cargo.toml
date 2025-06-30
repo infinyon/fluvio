@@ -15,7 +15,7 @@ name = "fluvio"
 path = "src/lib.rs"
 
 [features]
-default = ["rustls", "compress", "aws-lc-rs"]
+default = ["rustls", "compress", "rustls-aws"]
 admin = ["fluvio-sc-schema/use_serde"]
 smartengine = ["fluvio-smartengine"]
 openssl = ["fluvio-future/openssl_tls"]
@@ -24,8 +24,8 @@ compress = ["fluvio-compression/compress", "fluvio-protocol/compress"]
 nightly = []
 unstable = []
 # Crypto providers for rustls (mutually exclusive)
-aws-lc-rs = ["rustls?/aws-lc-rs", "rustls?/prefer-post-quantum"]
-ring = ["rustls?/ring"]
+rustls-aws = ["rustls?/aws-lc-rs", "rustls?/prefer-post-quantum"]
+rustls-ring = ["rustls?/ring"]
 
 [dependencies]
 adaptive_backoff = { workspace = true }

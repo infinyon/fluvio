@@ -241,7 +241,7 @@ cfg_if::cfg_if! {
                 }
             }
         }
-    } else if #[cfg(any(feature = "rustls"))] {
+    } else if #[cfg(feature = "rustls")] {
 
         impl TryFrom<TlsPolicy> for DomainConnector {
             type Error = anyhow::Error;
@@ -250,10 +250,10 @@ cfg_if::cfg_if! {
 
                 if rustls::crypto::CryptoProvider::get_default().is_none() {
                     cfg_if::cfg_if! {
-                        if #[cfg(feature = "ring")] {
+                        if #[cfg(feature = "rustls-ring")] {
                             info!("Using rustls-ring as crypto provider");
                             let _ = rustls::crypto::ring::default_provider().install_default();
-                        } else if #[cfg(feature = "aws-lc-rs")] {
+                        } else if #[cfg(feature = "rustls-aws")] {
                             info!("Using aws-lc-rs as crypto provider");
                             let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
                         } else {
