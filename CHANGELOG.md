@@ -2,7 +2,23 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
-## Platform Version 0.18.1 - UNRELEASED
+## Platform Version 0.18.1 - 2025-06-30
+
+### Added
+* Use rustls instead openssl ([#4569](https://github.com/infinyon/fluvio/issues/4569))
+* Add support for encoding string slice ([#4570](https://github.com/infinyon/fluvio/pull/4570))
+
+### Other
+
+* Rename fluvio rustls features ([#4580](https://github.com/infinyon/fluvio/issues/4580))
+
+### Fixed
+
+* Send empty msgs from SPU as ping again ([#4576](https://github.com/infinyon/fluvio/issues/4576))
+* Ensure that crypto provider is set ([#4574](https://github.com/infinyon/fluvio/issues/4574))
+* Check crate workspace instead each crate ([#4560](https://github.com/infinyon/fluvio/issues/4560))
+* Produce only on available partitions ([#4559](https://github.com/infinyon/fluvio/issues/4559))
+
 
 ## Platform Version 0.18.0 - 2025-06-09
 
