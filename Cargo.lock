@@ -2654,9 +2654,9 @@ dependencies = [
 
 [[package]]
 name = "fluvio-future"
-version = "0.8.2"
+version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b4611137eb94e35831ce58a7b05f0a8efb394d12fb816a4462b145a22263ea53"
+checksum = "404e1beb0ba16331eb7b82b4e4e586f03e7de9438368880a3b9870f53105b2b0"
 dependencies = [
  "anyhow",
  "async-fs",
@@ -5050,9 +5050,9 @@ dependencies = [
 
 [[package]]
 name = "minijinja"
-version = "2.10.2"
+version = "2.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dd72e8b4e42274540edabec853f607c015c73436159b06c39c7af85a20433155"
+checksum = "4e60ac08614cc09062820e51d5d94c2fce16b94ea4e5003bb81b99a95f84e876"
 dependencies = [
  "aho-corasick",
  "serde",
