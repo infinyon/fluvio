@@ -121,6 +121,7 @@ inventory = "0.3"
 libc = "0.2.116"
 madato = "0.7.0"
 mimalloc = "0.1.39"
+minijinja = { version = "2.6", default-features = false }
 mime = "0.3"
 mockall = { version = "0.13.1", default-features = false }
 nix = { version = "0.29.0", default-features = false }
