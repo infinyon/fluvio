@@ -3,7 +3,7 @@ kind: ConfigMap
 metadata:
   name: spu-k8
 data:
-  image: {{ .Values.image.registry }}/fluvio:{{ .Values.image.tag | default .Chart.AppVersion }}
+  image: '{{ printf "%s/fluvio:%s" .Values.image.registry (.Values.image.tag | default .Chart.AppVersion) }}'
   podSecurityContext: {{ .Values.podSecurityContext | toJson | quote }}
   spuPodConfig: {{ .Values.spuPod | toJson | quote }}
   lbServiceAnnotations: {{ .Values.loadBalancer.serviceAnnotations | toJson | quote }}
