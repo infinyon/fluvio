@@ -22,7 +22,7 @@
 
 **Fluvio** is a lean and mean distributed data streaming engine written in Rust. Combined with **Stateful DataFlow** distributed stream processing framework, Fluvio provides a *unified* *composable* *distributed streaming* and *stream processin*g paradigm for developers. It is the foundation of [InfinyOn Cloud](https://infinyon.cloud/).
 
-## Quick Start - Get started with Fluvio and Stateful DataFlow in 5 minutes or less on your system!
+## Quick Start - Get started with Fluvio in 2 minutes or less!
 
 ### Step 1. Download Fluvio Version Manager:
 
@@ -47,128 +47,48 @@ Start cluster on you local machine with the following command:
 fluvio cluster start
 ```
 
-### Step 3. Install SDF CLI
+### Step 3. Create Topic:
 
-Stateful dataflows are managed via `sdf cli` that we install it using `fvm`.
-
-```bash
-fvm install sdf-beta11
-```
-
-### Step 4. Create the Dataflow file
-
-Create a dataflow file in the directory `split-sentence` directory:
+The following command will create a topic called hello-fluvio:
 
 ```bash
-mkdir -p split-sentence-inline
-cd split-sentence-inline
+fluvio topic create hello-fluvio
 ```
 
-Create the `dataflow.yaml` and add the following content:
+### Step 4. Produce to Topic, Consume From Topic:
 
-```yaml
-apiVersion: 0.5.0
-
-meta:
-  name: split-sentence-inline
-  version: 0.1.0
-  namespace: example
-
-config:
-  converter: raw
-
-topics:
-  sentence:
-    schema:
-      value:
-        type: string
-        converter: raw
-  words:
-    schema:
-      value:
-        type: string
-        converter: raw
-
-services:
-  sentence-words:
-    sources:
-      - type: topic
-        id: sentence
-
-    transforms:
-      - operator: flat-map
-        run: |
-          fn sentence_to_words(sentence: String) -> Result<Vec<String>> {
-            Ok(sentence.split_whitespace().map(String::from).collect())
-          }
-      - operator: map
-        run: |
-          pub fn augment_count(word: String) -> Result<String> {
-            Ok(format!("{}({})", word, word.chars().count()))
-          }
-
-    sinks:
-      - type: topic
-        id: words
-```
-
-### Step 5. Run the DataFlow
-
-Use sdf command line tool to run the dataflow:
+Produce data to your topic. Run the command first and then type some messages:
 
 ```bash
-sdf run --ui
-```
-> The --ui flag serves the graphical representation of the dataflow on SDF Studio.
-
-### Step 6. Test the DataFlow
-
-Produce sentences to in `sentence` topic:
-```bash
-fluvio produce sentence
-```
-Input some text, for example:
-```bash
-Hello world
-Hi there
-```
-Consume from `words` to retrieve the result:
-```bash
-fluvio consume words -Bd
-```
-See the results, for example:
-```bash
-Hello(1)
-world(1)
-Hi(1)
-there(1)
+fluvio produce hello-fluvio
+> hello fluvio
+Ok!
+> test message
+Ok!
 ```
 
-### Step 6. Inspect State
+Consume data from the topic, Run the following command in a different terminal:
 
-The dataflow collects runtime metrics that you can inspect in the runtime terminal.
-
-Check the sentence-to-words counters:
 ```bash
-show state sentence-words/sentence-to-words/metrics
+fluvio consume hello-fluvio -B -d
 ```
-See results, for example:
-```bash
- Key    Window  succeeded  failed
- stats  *       2          0
- ```
- Check the augment-count counters:
- ```bash
- show state sentence-words/augment-count/metrics
- ```
- See results, for example:
- ```bash
- Key    Window  succeeded  failed
- stats  *       4          0
- ```
-Congratulations! You've successfully built and run a composable dataflow!
 
-More examples of Stateful DataFlow are on GitHub - https://github.com/infinyon/stateful-dataflows-examples/.
+Just like that! You have a local cluster running.
+
+## Using Pre-Build Fluvio Versions
+
+You may want to prefer other Fluvio versions than the latest stable release. You can do so by specifying the version in the `VERSION` environment variable.
+**Install Latest Release (as of `master` branch)**
+
+```bash
+$ curl -fsS https://hub.infinyon.cloud/install/install.sh | VERSION=latest bash
+```
+
+**Install Specific Version**
+
+```bash
+$ curl -fsS https://hub.infinyon.cloud/install/install.sh | VERSION=x.y.z bash
+```
 
 #### Check Fluvio Core Documentation
 Fluvio documentation will provide additional context on how to use the Fluvio clusters, CLI, clients, a development kits.
@@ -179,8 +99,9 @@ Fluvio documentation will provide additional context on how to use the Fluvio cl
 #### Check Stateful DataFlow Documentation
 Stateful DataFlow designed to handle complex data processing workflows, allowing for customization and scalability through various programming languages and system primitives.
 
-- [SDF overview](https://www.fluvio.io/sdf/)
+- [SDF quickstart](https://www.fluvio.io/sdf/quickstart/)
 - [SDF Architecture](https://www.fluvio.io/sdf/concepts/architecture)
+- [SDF Examples](https://github.com/infinyon/stateful-dataflows-examples/)
 
 #### Learn how to build custom connectors
 Fluvio can connect to practically any system that you can think of.
