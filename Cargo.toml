@@ -60,7 +60,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.50.1"
+version = "0.50.2"
 edition = "2024"
 license = "Apache-2.0"
 repository = "https://github.com/infinyon/fluvio"
@@ -216,21 +216,21 @@ fluvio-sc = { path = "crates/fluvio-sc", default-features = false }
 fluvio-spu = { path = "crates/fluvio-spu", default-features = false }
 fluvio-connector-derive = { path = "crates/fluvio-connector-derive" }
 # Published fluvio dependencies
-fluvio = { version = "0.50.1", path = "crates/fluvio" }
-fluvio-compression = { version = "0.50.1", path = "crates/fluvio-compression", default-features = false }
-fluvio-controlplane-metadata = { version = "0.50.1", default-features = false, path = "crates/fluvio-controlplane-metadata" }
-fluvio-package-index = { version = "0.50.1", path = "crates/fluvio-package-index", default-features = false }
-fluvio-protocol = { version = "0.50.1", path = "crates/fluvio-protocol" }
-fluvio-sc-schema = { version = "0.50.1", path = "crates/fluvio-sc-schema", default-features = false }
-fluvio-smartengine = { version = "0.50.1", path = "crates/fluvio-smartengine", default-features = false }
-fluvio-smartmodule = { version = "0.50.1", path = "crates/fluvio-smartmodule", default-features = false }
-fluvio-smartmodule-derive = { version = "0.50.1", path = "crates/fluvio-smartmodule-derive", default-features = false }
-fluvio-socket = { version = "0.50.1", path = "crates/fluvio-socket", default-features = false }
-fluvio-spu-schema = { version = "0.50.1", path = "crates/fluvio-spu-schema", default-features = false }
-fluvio-stream-dispatcher = { version = "0.50.1", path = "crates/fluvio-stream-dispatcher" }
-fluvio-stream-model = { version = "0.50.1", path = "crates/fluvio-stream-model", default-features = false }
-fluvio-protocol-derive = { version = "0.50.1", path = "crates/fluvio-protocol-derive", default-features = false }
-fluvio-types = { version = "0.50.1", path = "crates/fluvio-types", default-features = false }
+fluvio = { version = "0.50.2", path = "crates/fluvio" }
+fluvio-compression = { version = "0.50.2", path = "crates/fluvio-compression", default-features = false }
+fluvio-controlplane-metadata = { version = "0.50.2", default-features = false, path = "crates/fluvio-controlplane-metadata" }
+fluvio-package-index = { version = "0.50.2", path = "crates/fluvio-package-index", default-features = false }
+fluvio-protocol = { version = "0.50.2", path = "crates/fluvio-protocol" }
+fluvio-sc-schema = { version = "0.50.2", path = "crates/fluvio-sc-schema", default-features = false }
+fluvio-smartengine = { version = "0.50.2", path = "crates/fluvio-smartengine", default-features = false }
+fluvio-smartmodule = { version = "0.50.2", path = "crates/fluvio-smartmodule", default-features = false }
+fluvio-smartmodule-derive = { version = "0.50.2", path = "crates/fluvio-smartmodule-derive", default-features = false }
+fluvio-socket = { version = "0.50.2", path = "crates/fluvio-socket", default-features = false }
+fluvio-spu-schema = { version = "0.50.2", path = "crates/fluvio-spu-schema", default-features = false }
+fluvio-stream-dispatcher = { version = "0.50.2", path = "crates/fluvio-stream-dispatcher" }
+fluvio-stream-model = { version = "0.50.2", path = "crates/fluvio-stream-model", default-features = false }
+fluvio-protocol-derive = { version = "0.50.2", path = "crates/fluvio-protocol-derive", default-features = false }
+fluvio-types = { version = "0.50.2", path = "crates/fluvio-types", default-features = false }
 
 # Used to make eyre faster on debug builds
 # See https://github.com/yaahc/color-eyre#improving-perf-on-debug-builds
