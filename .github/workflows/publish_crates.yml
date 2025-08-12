@@ -27,7 +27,7 @@ jobs:
   #  name: CD_Dev check
   #  runs-on: ubuntu-latest
   #  steps:
-  #    - uses: actions/checkout@v4
+  #    - uses: actions/checkout@v5
   #    - name: Login GH CLI
   #      run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
   #    - name: Get status of latest CD_Dev run
@@ -57,7 +57,7 @@ jobs:
         with:
           toolchain: ${{ matrix.rust }}
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ github.event.inputs.commit }}
 

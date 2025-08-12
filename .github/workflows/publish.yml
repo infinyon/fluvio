@@ -65,7 +65,7 @@ jobs:
     env:
       TGT_SHA: ${{ needs.setup.outputs.pub_sha }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ needs.setup.outputs.pub_sha }}
       - name: Publish latest development Fluvio Image
@@ -94,7 +94,7 @@ jobs:
       BPKG_TOKEN: ${{ secrets.BPKG_TOKEN }}
       TGT_SHA: ${{needs.setup.outputs.pub_sha }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ needs.setup.outputs.pub_sha }}
       - name: Install fluvio-package
@@ -146,7 +146,7 @@ jobs:
       TGT_SHA: ${{ needs.setup.outputs.pub_sha }}
     steps:
       - name: Checkout ${{needs.setup.outputs.pub_sha }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{needs.setup.outputs.pub_sha }}
       - name: Install stable Fluvio CLI
