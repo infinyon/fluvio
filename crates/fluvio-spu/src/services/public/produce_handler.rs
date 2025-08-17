@@ -115,14 +115,14 @@ async fn handle_produce_topic(
             }
         };
 
-        if let Some(mirror) = &leader_state.get_replica().mirror {
-            if let Some(err) = mirror.accept_traffic() {
-                debug!(%replica_id, "Mirror replica is not supported for produce");
-                topic_result
-                    .partitions
-                    .push(PartitionWriteResult::error(replica_id, err));
-                continue;
-            }
+        if let Some(mirror) = &leader_state.get_replica().mirror
+            && let Some(err) = mirror.accept_traffic()
+        {
+            debug!(%replica_id, "Mirror replica is not supported for produce");
+            topic_result
+                .partitions
+                .push(PartitionWriteResult::error(replica_id, err));
+            continue;
         }
 
         if let Err(err) = apply_smartmodules(

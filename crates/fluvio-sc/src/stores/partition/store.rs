@@ -367,19 +367,18 @@ impl PartitonStatusExtension for PartitionStatus {
 
         for candidate in &self.replicas {
             // only do for live replicas
-            if online.contains(&candidate.spu) {
-                if let ElectionScoring::Score(score) =
+            if online.contains(&candidate.spu)
+                && let ElectionScoring::Score(score) =
                     policy.potential_leader_score(candidate, &self.leader)
-                {
-                    if candidate_spu.is_some() {
-                        if score < best_score {
-                            best_score = score;
-                            candidate_spu = Some(candidate.spu);
-                        }
-                    } else {
+            {
+                if candidate_spu.is_some() {
+                    if score < best_score {
                         best_score = score;
                         candidate_spu = Some(candidate.spu);
                     }
+                } else {
+                    best_score = score;
+                    candidate_spu = Some(candidate.spu);
                 }
             }
         }

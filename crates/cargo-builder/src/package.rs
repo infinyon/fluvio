@@ -47,14 +47,14 @@ impl PackageInfo {
 
         let package = if let Some(root_package) = metadata.root_package() {
             // we found a root project already, if the user is expecting something else raise an error
-            if let Some(package_name) = &options.package_name {
-                if package_name != &root_package.name {
-                    return Err(anyhow!(
-                        "Current package name ({}) does not match the supplied package name ({}).",
-                        root_package.name,
-                        package_name
-                    ));
-                }
+            if let Some(package_name) = &options.package_name
+                && package_name != &root_package.name
+            {
+                return Err(anyhow!(
+                    "Current package name ({}) does not match the supplied package name ({}).",
+                    root_package.name,
+                    package_name
+                ));
             }
             root_package
         } else if let Some(package_name) = &options.package_name {

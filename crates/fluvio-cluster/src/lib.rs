@@ -100,7 +100,7 @@ mod common {
         Remote(String),
     }
 
-    pub fn tls_config_to_cert_paths(config: &TlsConfig) -> Result<Cow<TlsPaths>> {
+    pub fn tls_config_to_cert_paths(config: &TlsConfig) -> Result<Cow<'_, TlsPaths>> {
         use std::fs::write;
         use rand::distributions::Alphanumeric;
         use std::iter;

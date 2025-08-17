@@ -70,17 +70,16 @@ impl<AC: AuthContext, C: MetadataItem> RemoteFetchingFromHomeController<AC, C> {
                     &self.req.remote_id,
                 )
                 .await
+                && !authorized
             {
-                if !authorized {
-                    if let Err(err) = self
-                        .update_status(MirrorPairStatus::Unauthorized, status)
-                        .await
-                    {
-                        error!("error updating status: {}", err);
-                    }
-                    warn!("identity mismatch for remote_id: {}", self.req.remote_id);
-                    return;
+                if let Err(err) = self
+                    .update_status(MirrorPairStatus::Unauthorized, status)
+                    .await
+                {
+                    error!("error updating status: {}", err);
                 }
+                warn!("identity mismatch for remote_id: {}", self.req.remote_id);
+                return;
             }
         } else {
             // check if remote cluster exists
@@ -105,13 +104,12 @@ impl<AC: AuthContext, C: MetadataItem> RemoteFetchingFromHomeController<AC, C> {
             {
                 error!("error syncing topics: {}", err);
                 let remote = self.get_remote_mirror().await;
-                if let Ok((_, status)) = remote {
-                    if let Err(err) = self
+                if let Ok((_, status)) = remote
+                    && let Err(err) = self
                         .update_status(MirrorPairStatus::DetailFailure(err.to_string()), status)
                         .await
-                    {
-                        error!("error updating status: {}", err);
-                    }
+                {
+                    error!("error updating status: {}", err);
                 }
                 break;
             }
@@ -120,14 +118,13 @@ impl<AC: AuthContext, C: MetadataItem> RemoteFetchingFromHomeController<AC, C> {
                 _ = self.end_event.listen() => {
                     info!("connection has been terminated");
                     let remote = self.get_remote_mirror().await;
-                    if let Ok((_, status)) = remote {
-                        if let Err(err) = self
+                    if let Ok((_, status)) = remote
+                        && let Err(err) = self
                             .update_status(MirrorPairStatus::DetailFailure("connection closed".to_owned()), status)
                             .await
                         {
                             error!("error updating status: {}", err);
                         }
-                    }
                     break;
                 },
 

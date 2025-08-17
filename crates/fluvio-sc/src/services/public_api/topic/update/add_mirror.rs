@@ -53,19 +53,18 @@ pub async fn handle_add_mirror<AC: AuthContext, C: MetadataItem>(
                     match topic.spec().replicas() {
                         ReplicaSpec::Mirror(mc) => {
                             for (i, partition) in mc.as_partition_maps().maps().iter().enumerate() {
-                                if let Some(partitions_mirror_config) = &partition.mirror {
-                                    if let Some(home) = partitions_mirror_config.home() {
-                                        if home.remote_cluster == request.remote_cluster {
-                                            return Ok(Status::new(
-                                                topic_name,
-                                                ErrorCode::MirrorAlreadyExists,
-                                                Some(format!(
-                                                    "remote \"{}\" is already assigned to partition: \"{}\"",
-                                                    home.remote_cluster, i
-                                                )),
-                                            ));
-                                        }
-                                    }
+                                if let Some(partitions_mirror_config) = &partition.mirror
+                                    && let Some(home) = partitions_mirror_config.home()
+                                    && home.remote_cluster == request.remote_cluster
+                                {
+                                    return Ok(Status::new(
+                                        topic_name,
+                                        ErrorCode::MirrorAlreadyExists,
+                                        Some(format!(
+                                            "remote \"{}\" is already assigned to partition: \"{}\"",
+                                            home.remote_cluster, i
+                                        )),
+                                    ));
                                 }
                             }
                         }

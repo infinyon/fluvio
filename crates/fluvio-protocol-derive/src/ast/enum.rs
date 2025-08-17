@@ -71,16 +71,15 @@ impl EnumProp {
         prop.variant_name = variant_ident.to_string();
         // Find all supported field level attributes in one go.
         for attribute in &variant.attrs {
-            if attribute.path.is_ident("fluvio") {
-                if let Ok(Meta::List(list)) = attribute.parse_meta() {
-                    for kf_attr in list.nested {
-                        if let NestedMeta::Meta(Meta::NameValue(name_value)) = kf_attr {
-                            if name_value.path.is_ident("tag") {
-                                if let Lit::Int(lit_int) = name_value.lit {
-                                    prop.tag = Some(lit_int.base10_digits().to_owned());
-                                }
-                            }
-                        }
+            if attribute.path.is_ident("fluvio")
+                && let Ok(Meta::List(list)) = attribute.parse_meta()
+            {
+                for kf_attr in list.nested {
+                    if let NestedMeta::Meta(Meta::NameValue(name_value)) = kf_attr
+                        && name_value.path.is_ident("tag")
+                        && let Lit::Int(lit_int) = name_value.lit
+                    {
+                        prop.tag = Some(lit_int.base10_digits().to_owned());
                     }
                 }
             }

@@ -290,13 +290,12 @@ fn main() -> Result<()> {
         )
     };
 
-    if let RootCmd::Other(args) = channel_cli.command {
-        if args.contains(&"update".to_string())
-            && fluvio_channel::is_pinned_version_channel(channel_name.as_str())
-        {
-            println!("Unsupported Feature: The `fluvio update` command is not supported use fvm");
-            std::process::exit(1);
-        }
+    if let RootCmd::Other(args) = channel_cli.command
+        && args.contains(&"update".to_string())
+        && fluvio_channel::is_pinned_version_channel(channel_name.as_str())
+    {
+        println!("Unsupported Feature: The `fluvio update` command is not supported use fvm");
+        std::process::exit(1);
     }
 
     // Set env vars

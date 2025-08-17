@@ -183,10 +183,10 @@ impl PackageSet {
         let mut new_artifacts: Vec<Artifact> = Vec::with_capacity(theirs.len());
 
         for (art_name, their_artifact) in theirs {
-            if let Some(our_artifact) = ours.get(&art_name) {
-                if our_artifact.version == their_artifact.version {
-                    continue;
-                }
+            if let Some(our_artifact) = ours.get(&art_name)
+                && our_artifact.version == their_artifact.version
+            {
+                continue;
             }
 
             new_artifacts.push(their_artifact.to_owned());

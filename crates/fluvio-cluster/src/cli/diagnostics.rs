@@ -457,15 +457,15 @@ impl ProcessInfo {
         for (pid, process) in sys.processes() {
             let process_name = process.name().to_str();
 
-            if let Some(process_name) = process_name {
-                if process_name.contains(FLUVIO_PROCESS_NAME) {
-                    processes.push(ProcessInfo {
-                        pid: pid.as_u32(),
-                        name: process_name.to_string(),
-                        disk_usage: format!("{:?}", process.disk_usage()),
-                        cmd: format!("{:?}", process.cmd()),
-                    });
-                }
+            if let Some(process_name) = process_name
+                && process_name.contains(FLUVIO_PROCESS_NAME)
+            {
+                processes.push(ProcessInfo {
+                    pid: pid.as_u32(),
+                    name: process_name.to_string(),
+                    disk_usage: format!("{:?}", process.disk_usage()),
+                    cmd: format!("{:?}", process.cmd()),
+                });
             }
         }
 

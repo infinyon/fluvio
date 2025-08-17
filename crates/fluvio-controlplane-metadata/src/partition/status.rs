@@ -134,7 +134,7 @@ impl PartitionStatus {
         self.lsr
     }
 
-    pub fn replica_iter(&self) -> Iter<ReplicaStatus> {
+    pub fn replica_iter(&self) -> Iter<'_, ReplicaStatus> {
         self.replicas.iter()
     }
 

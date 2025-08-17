@@ -243,21 +243,21 @@ impl TestDriver {
 
     pub fn is_env_acceptable(test_reqs: &TestRequirements, test_case: &TestCase) -> bool {
         // if `min_spu` undefined, min 1
-        if let Some(min_spu) = test_reqs.min_spu {
-            if min_spu > test_case.environment.spu() {
-                println!("Test requires {min_spu} spu");
-                return false;
-            }
+        if let Some(min_spu) = test_reqs.min_spu
+            && min_spu > test_case.environment.spu()
+        {
+            println!("Test requires {min_spu} spu");
+            return false;
         }
 
         // if `cluster_type` undefined, no cluster restrictions
         // if `cluster_type = local` is defined, then environment must be local or skip
         // if `cluster_type = k8`, then environment must be k8 or skip
-        if let Some(cluster_type) = &test_reqs.cluster_type {
-            if &test_case.environment.cluster_type() != cluster_type {
-                println!("Test requires cluster type {cluster_type:?} ");
-                return false;
-            }
+        if let Some(cluster_type) = &test_reqs.cluster_type
+            && &test_case.environment.cluster_type() != cluster_type
+        {
+            println!("Test requires cluster type {cluster_type:?} ");
+            return false;
         }
 
         true

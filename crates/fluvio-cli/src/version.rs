@@ -45,13 +45,13 @@ impl VersionOpt {
 
         println!("{version_printer}");
 
-        if let Some(metadata) = self.format_subcommand_metadata() {
-            if !metadata.is_empty() {
-                println!("=== Plugin Versions ===");
+        if let Some(metadata) = self.format_subcommand_metadata()
+            && !metadata.is_empty()
+        {
+            println!("=== Plugin Versions ===");
 
-                for (name, version) in metadata {
-                    self.print_width(&name, &version, 30);
-                }
+            for (name, version) in metadata {
+                self.print_width(&name, &version, 30);
             }
         }
 
@@ -80,11 +80,11 @@ impl VersionOpt {
         // Attempt to connect to a Fluvio cluster to get platform version
         // Even if we fail to connect, we should not fail the other printouts
         let mut platform_version = String::from("Not available");
-        if let Ok(fluvio_config) = target.load() {
-            if let Ok(fluvio) = Fluvio::connect_with_config(&fluvio_config).await {
-                let version = fluvio.platform_version();
-                platform_version = version.to_string();
-            }
+        if let Ok(fluvio_config) = target.load()
+            && let Ok(fluvio) = Fluvio::connect_with_config(&fluvio_config).await
+        {
+            let version = fluvio.platform_version();
+            platform_version = version.to_string();
         }
 
         let profile_name = ConfigFile::load(None)

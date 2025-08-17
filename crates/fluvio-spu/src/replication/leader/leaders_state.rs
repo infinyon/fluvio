@@ -96,10 +96,11 @@ where
         let read = self.read().await;
         for (_replica_key, state) in read.iter() {
             let replica_config = state.get_replica();
-            if let Some(PartitionMirrorConfig::Home(home)) = &replica_config.mirror {
-                if home.remote_cluster == remote_cluster && home.remote_replica == home_replica {
-                    return Some((state.clone(), home.source));
-                }
+            if let Some(PartitionMirrorConfig::Home(home)) = &replica_config.mirror
+                && home.remote_cluster == remote_cluster
+                && home.remote_replica == home_replica
+            {
+                return Some((state.clone(), home.source));
             }
         }
         None

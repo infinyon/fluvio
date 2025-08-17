@@ -967,11 +967,9 @@ impl ClusterChecker {
                 failed = true;
             }
 
-            if passed {
-                if let Some(component) = component {
-                    debug!(?component, "component registered");
-                    components.insert(component);
-                }
+            if passed && let Some(component) = component {
+                debug!(?component, "component registered");
+                components.insert(component);
             }
 
             pb.finish_and_clear();

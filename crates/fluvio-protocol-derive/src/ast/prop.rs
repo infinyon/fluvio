@@ -193,28 +193,28 @@ impl PropAttrs {
         for attribute in attrs.iter() {
             if attribute.path.is_ident("varint") {
                 prop_attrs.varint = true;
-            } else if attribute.path.is_ident("fluvio") {
-                if let Ok(Meta::List(list)) = attribute.parse_meta() {
-                    for kf_attr in list.nested {
-                        if let NestedMeta::Meta(Meta::NameValue(name_value)) = kf_attr {
-                            if name_value.path.is_ident("min_version") {
-                                if let Lit::Int(lit_int) = name_value.lit {
-                                    prop_attrs.min_version = lit_int.base10_parse::<i16>()?;
-                                }
-                            } else if name_value.path.is_ident("max_version") {
-                                if let Lit::Int(lit_int) = name_value.lit {
-                                    prop_attrs.max_version = Some(lit_int.base10_parse::<i16>()?);
-                                }
-                            } else if name_value.path.is_ident("default") {
-                                if let Lit::Str(lit_str) = name_value.lit {
-                                    prop_attrs.default_value = Some(lit_str.value());
-                                }
-                            } else {
-                                tracing::warn!(
-                                    "#[fluvio({})] does nothing here.",
-                                    name_value.to_token_stream().to_string(),
-                                )
+            } else if attribute.path.is_ident("fluvio")
+                && let Ok(Meta::List(list)) = attribute.parse_meta()
+            {
+                for kf_attr in list.nested {
+                    if let NestedMeta::Meta(Meta::NameValue(name_value)) = kf_attr {
+                        if name_value.path.is_ident("min_version") {
+                            if let Lit::Int(lit_int) = name_value.lit {
+                                prop_attrs.min_version = lit_int.base10_parse::<i16>()?;
                             }
+                        } else if name_value.path.is_ident("max_version") {
+                            if let Lit::Int(lit_int) = name_value.lit {
+                                prop_attrs.max_version = Some(lit_int.base10_parse::<i16>()?);
+                            }
+                        } else if name_value.path.is_ident("default") {
+                            if let Lit::Str(lit_str) = name_value.lit {
+                                prop_attrs.default_value = Some(lit_str.value());
+                            }
+                        } else {
+                            tracing::warn!(
+                                "#[fluvio({})] does nothing here.",
+                                name_value.to_token_stream().to_string(),
+                            )
                         }
                     }
                 }
