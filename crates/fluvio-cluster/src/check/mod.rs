@@ -98,6 +98,7 @@ pub enum ClusterCheckError {
     ProgressError(#[from] TemplateError),
 }
 
+#[allow(dead_code)]
 /// An error occurred during the checking process
 #[derive(thiserror::Error, Debug)]
 pub enum ClusterAutoFixError {

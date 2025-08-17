@@ -33,6 +33,7 @@ mod context {
         wait_time
     });
 
+    #[allow(dead_code)]
     /// context that always updates
     #[derive(Debug, Default, Clone, Eq, PartialEq)]
     pub struct AlwaysNewContext {}
