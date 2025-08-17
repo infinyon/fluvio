@@ -70,12 +70,11 @@ pub async fn handle_fetch_spus_request<AC: AuthContext, C: MetadataItem>(
         .auth
         .allow_type_action(SpuSpec::OBJECT_TYPE, TypeAction::Read)
         .await
+        && !authorized
     {
-        if !authorized {
-            trace!("authorization failed");
-            // If permission denied, return empty list;
-            return Ok(ListResponse::new(vec![]));
-        }
+        trace!("authorization failed");
+        // If permission denied, return empty list;
+        return Ok(ListResponse::new(vec![]));
     }
 
     let spus: Vec<Metadata<SpuSpec>> = auth_ctx

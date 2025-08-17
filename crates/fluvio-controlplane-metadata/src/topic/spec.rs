@@ -156,23 +156,23 @@ impl TopicSpec {
 
     /// validate configuration, return string with errors
     pub fn validate_config(&self) -> Option<String> {
-        if let Some(policy) = self.get_clean_policy() {
-            if policy.retention_secs() < STORAGE_RETENTION_SECONDS_MIN {
-                return Some(format!(
-                    "retention_secs {} is less than minimum {}",
-                    policy.retention_secs(),
-                    STORAGE_RETENTION_SECONDS_MIN
-                ));
-            }
+        if let Some(policy) = self.get_clean_policy()
+            && policy.retention_secs() < STORAGE_RETENTION_SECONDS_MIN
+        {
+            return Some(format!(
+                "retention_secs {} is less than minimum {}",
+                policy.retention_secs(),
+                STORAGE_RETENTION_SECONDS_MIN
+            ));
         }
 
         if let Some(storage) = self.get_storage() {
-            if let Some(segment_size) = storage.segment_size {
-                if segment_size < SPU_LOG_LOG_SEGMENT_MAX_BYTE_MIN {
-                    return Some(format!(
-                        "segment_size {segment_size} is less than minimum {SPU_LOG_LOG_SEGMENT_MAX_BYTE_MIN}"
-                    ));
-                }
+            if let Some(segment_size) = storage.segment_size
+                && segment_size < SPU_LOG_LOG_SEGMENT_MAX_BYTE_MIN
+            {
+                return Some(format!(
+                    "segment_size {segment_size} is less than minimum {SPU_LOG_LOG_SEGMENT_MAX_BYTE_MIN}"
+                ));
             }
             if let Some(max_partition_size) = storage.max_partition_size {
                 if max_partition_size < SPU_PARTITION_MAX_BYTES_MIN {

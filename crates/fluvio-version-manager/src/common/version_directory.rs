@@ -137,11 +137,11 @@ impl VersionDirectory {
             if path.is_dir() {
                 let version_dir = VersionDirectory::open(path.to_path_buf())?;
 
-                if let Some(ref active_channel) = maybe_active {
-                    if *active_channel == version_dir.manifest.channel {
-                        active_version = Some(version_dir.manifest);
-                        continue;
-                    }
+                if let Some(ref active_channel) = maybe_active
+                    && *active_channel == version_dir.manifest.channel
+                {
+                    active_version = Some(version_dir.manifest);
+                    continue;
                 }
 
                 manifests.push(version_dir.manifest);

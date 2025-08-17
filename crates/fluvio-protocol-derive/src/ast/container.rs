@@ -65,14 +65,14 @@ impl ContainerAttributes {
                         }
                     }
                 }
-            } else if attribute.path.is_ident("repr") {
-                if let Ok(Meta::List(list)) = attribute.parse_meta() {
-                    for repr_attr in list.nested {
-                        if let NestedMeta::Meta(Meta::Path(path)) = repr_attr {
-                            if let Some(int_type) = path.get_ident() {
-                                cont_attr.repr_type_name = Some(int_type.to_string());
-                            }
-                        }
+            } else if attribute.path.is_ident("repr")
+                && let Ok(Meta::List(list)) = attribute.parse_meta()
+            {
+                for repr_attr in list.nested {
+                    if let NestedMeta::Meta(Meta::Path(path)) = repr_attr
+                        && let Some(int_type) = path.get_ident()
+                    {
+                        cont_attr.repr_type_name = Some(int_type.to_string());
                     }
                 }
             }

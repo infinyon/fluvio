@@ -170,10 +170,10 @@ impl PublishCmd {
         let sm_toml_file = read_to_string(sm_toml_path)?;
         let sm_toml: Value = toml::from_str(&sm_toml_file)?;
 
-        if let Value::Table(package) = &sm_toml["package"] {
-            if let Some(Value::String(groupname)) = package.get("group") {
-                return set_hubid(groupname, access);
-            }
+        if let Value::Table(package) = &sm_toml["package"]
+            && let Some(Value::String(groupname)) = package.get("group")
+        {
+            return set_hubid(groupname, access);
         }
 
         bail!("Failed to read group from smartmodule.toml")

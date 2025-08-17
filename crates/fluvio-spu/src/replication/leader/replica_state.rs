@@ -576,10 +576,10 @@ fn compute_hw(
     // insert and sort with O((n - min_lrs)*log(min_lrs)) in the worst case
     // without allocating memory
     for leo in qualified_leos_iter {
-        if let Some(mut min) = sorted_leos.peek_mut() {
-            if min.0 < leo {
-                min.0 = leo;
-            }
+        if let Some(mut min) = sorted_leos.peek_mut()
+            && min.0 < leo
+        {
+            min.0 = leo;
         }
     }
     sorted_leos.peek().map(|r| r.0)

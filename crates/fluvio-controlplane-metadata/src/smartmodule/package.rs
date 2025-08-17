@@ -189,16 +189,16 @@ impl SmartModulePackageKey {
     /// otherwise it should match against package
     pub fn is_match(&self, name: &str, package: Option<&SmartModulePackage>) -> bool {
         if let Some(package) = package {
-            if let Some(version) = &self.version {
-                if package.version != *version {
-                    return false;
-                }
+            if let Some(version) = &self.version
+                && package.version != *version
+            {
+                return false;
             }
 
-            if let Some(group) = &self.group {
-                if package.group != *group {
-                    return false;
-                }
+            if let Some(group) = &self.group
+                && package.group != *group
+            {
+                return false;
             }
 
             self.name == package.name

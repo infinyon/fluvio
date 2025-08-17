@@ -137,13 +137,13 @@ pub fn package_meta_from_bytes(reader: &[u8]) -> Result<PackageMeta> {
             continue;
         }
         let mut f = file?;
-        if let Ok(fp) = f.path() {
-            if fp == pkg_meta {
-                let mut buf = String::new();
-                f.read_to_string(&mut buf)?;
-                let pm: PackageMeta = serde_yaml::from_str(&buf)?;
-                return Ok(pm);
-            }
+        if let Ok(fp) = f.path()
+            && fp == pkg_meta
+        {
+            let mut buf = String::new();
+            f.read_to_string(&mut buf)?;
+            let pm: PackageMeta = serde_yaml::from_str(&buf)?;
+            return Ok(pm);
         }
     }
 

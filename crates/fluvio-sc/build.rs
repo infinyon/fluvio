@@ -1,10 +1,10 @@
 fn main() {
     use std::process::Command;
 
-    if let Ok(verpath) = std::fs::canonicalize("../../VERSION") {
-        if verpath.exists() {
-            println!("cargo:rerun-if-changed=../../VERSION");
-        }
+    if let Ok(verpath) = std::fs::canonicalize("../../VERSION")
+        && verpath.exists()
+    {
+        println!("cargo:rerun-if-changed=../../VERSION");
     }
     println!("cargo:rerun-if-changed=build.rs");
 

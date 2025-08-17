@@ -368,19 +368,16 @@ mod cmd {
                 builder.disable_continuous(true);
             }
 
-            if let Some(end_offset) = self.end {
-                if let Some(start_offset) = self.start {
-                    if end_offset < start_offset {
-                        eprintln!(
-                            "Argument end-offset must be greater than or equal to specified start offset"
-                        );
-                        return Err(CliError::from(FluvioError::CrossingOffsets(
-                            start_offset,
-                            end_offset,
-                        ))
-                        .into());
-                    }
-                }
+            if let Some(end_offset) = self.end
+                && let Some(start_offset) = self.start
+                && end_offset < start_offset
+            {
+                eprintln!(
+                    "Argument end-offset must be greater than or equal to specified start offset"
+                );
+                return Err(
+                    CliError::from(FluvioError::CrossingOffsets(start_offset, end_offset)).into(),
+                );
             }
 
             if let Some(isolation) = self.isolation {
@@ -507,12 +504,11 @@ mod cmd {
                                     &pb,
                                 );
 
-                                if let Some(potential_offset) = maybe_potential_end_offset {
-                                    if record.offset >= potential_offset as i64 {
+                                if let Some(potential_offset) = maybe_potential_end_offset
+                                    && record.offset >= potential_offset as i64 {
                                         eprintln!("End-offset has been reached; exiting");
                                         break;
                                     }
-                                }
                             },
                             None => break,
                         },
@@ -567,12 +563,11 @@ mod cmd {
                                     &pb,
                                 );
 
-                                if let Some(potential_offset) = maybe_potential_end_offset {
-                                    if record.offset >= potential_offset as i64 {
+                                if let Some(potential_offset) = maybe_potential_end_offset
+                                    && record.offset >= potential_offset as i64 {
                                         eprintln!("End-offset has been reached; exiting");
                                         break;
                                     }
-                                }
                             },
                             None => break,
                         },
@@ -584,12 +579,12 @@ mod cmd {
                 }
             }
 
-            if let Some(ConsumeOutputType::full_table) = &self.output {
-                if let Some(mut terminal_stdout) = maybe_terminal_stdout {
-                    disable_raw_mode()?;
-                    execute!(terminal_stdout.backend_mut(), LeaveAlternateScreen,)?;
-                    terminal_stdout.show_cursor()?;
-                }
+            if let Some(ConsumeOutputType::full_table) = &self.output
+                && let Some(mut terminal_stdout) = maybe_terminal_stdout
+            {
+                disable_raw_mode()?;
+                execute!(terminal_stdout.backend_mut(), LeaveAlternateScreen,)?;
+                terminal_stdout.show_cursor()?;
             }
 
             debug!("fetch loop exited");
@@ -697,10 +692,10 @@ mod cmd {
                     // (Some(_), None) only if JSON cannot be printed, so skip.
                     _ => debug!("Skipping record that cannot be formatted"),
                 }
-            } else if let Some(term) = terminal {
-                if let Some(table) = table_model {
-                    table.render(term);
-                }
+            } else if let Some(term) = terminal
+                && let Some(table) = table_model
+            {
+                table.render(term);
             }
         }
 

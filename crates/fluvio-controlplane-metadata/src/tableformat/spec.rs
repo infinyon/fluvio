@@ -22,10 +22,10 @@ impl TableFormatSpec {
             let mut primary_keys = Vec::new();
 
             for c in columns {
-                if let Some(is_primary_key) = c.primary_key {
-                    if is_primary_key {
-                        primary_keys.push(c.key_path.clone());
-                    }
+                if let Some(is_primary_key) = c.primary_key
+                    && is_primary_key
+                {
+                    primary_keys.push(c.key_path.clone());
                 }
             }
 

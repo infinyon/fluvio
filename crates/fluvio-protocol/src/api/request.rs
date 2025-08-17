@@ -272,6 +272,7 @@ mod test {
         assert_eq!(result, expected_result);
     }
 
+    #[allow(dead_code)]
     pub enum TestApiRequest {
         ApiVersionRequest(RequestMessage<ApiVersionRequest>),
     }

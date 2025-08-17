@@ -79,12 +79,11 @@ pub(crate) struct LogOpt {
 }
 
 async fn dump_log(opt: LogOpt) -> Result<()> {
-    if let Some(max) = opt.max {
-        if let Some(min) = opt.min {
-            if min > max {
-                return Err(anyhow!("min > max"));
-            }
-        }
+    if let Some(max) = opt.max
+        && let Some(min) = opt.min
+        && min > max
+    {
+        return Err(anyhow!("min > max"));
     }
 
     println!("opening: {:#?} position: {}", opt.file_name, opt.position);
@@ -105,15 +104,15 @@ async fn dump_log(opt: LogOpt) -> Result<()> {
 
                 let base_offset = batch.get_base_offset();
 
-                if let Some(min) = opt.min {
-                    if (base_offset as usize) < min {
-                        continue;
-                    }
+                if let Some(min) = opt.min
+                    && (base_offset as usize) < min
+                {
+                    continue;
                 }
-                if let Some(max) = opt.max {
-                    if (base_offset as usize) > max {
-                        break;
-                    }
+                if let Some(max) = opt.max
+                    && (base_offset as usize) > max
+                {
+                    break;
                 }
 
                 if opt.print {

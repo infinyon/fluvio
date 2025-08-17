@@ -45,25 +45,25 @@ impl SharedSegments {
         let files: Vec<_> = dirs.filter_map(|entry| entry.ok()).collect();
         let mut offsets: Vec<Offset> = vec![];
         for entry in files {
-            if let Ok(metadata) = entry.metadata() {
-                if metadata.is_file() {
-                    let path = entry.path();
-                    trace!("scanning file: {:#?}", path);
+            if let Ok(metadata) = entry.metadata()
+                && metadata.is_file()
+            {
+                let path = entry.path();
+                trace!("scanning file: {:#?}", path);
 
-                    if path.extension() == Some(OsStr::new("log")) {
-                        if let Ok(offset) = log_path_get_offset(&path) {
-                            trace!("detected valid log: {}", offset);
-                            offsets.push(offset);
-                            /*
-                            match Segment::open(offset,option).await {
-                                Ok(segment) => segments.add_segment(segment),
-                                Err(err) => error!("error opening segment: {:#?}",err)
-                            }
-                            } else {
-                                debug!("not log, skipping: {:#?}",path);
-                            */
-                        }
+                if path.extension() == Some(OsStr::new("log"))
+                    && let Ok(offset) = log_path_get_offset(&path)
+                {
+                    trace!("detected valid log: {}", offset);
+                    offsets.push(offset);
+                    /*
+                    match Segment::open(offset,option).await {
+                        Ok(segment) => segments.add_segment(segment),
+                        Err(err) => error!("error opening segment: {:#?}",err)
                     }
+                    } else {
+                        debug!("not log, skipping: {:#?}",path);
+                    */
                 }
             }
         }

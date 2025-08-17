@@ -241,10 +241,11 @@ mod cmd {
                         let partitions_maps =
                             Vec::<PartitionMap>::from(home_mirror_config.as_partition_maps());
                         partitions_maps.iter().find_map(|p| {
-                            if let Some(PartitionMirrorConfig::Home(remote)) = &p.mirror {
-                                if remote.remote_cluster == *mirror && remote.source {
-                                    return Some(p.id);
-                                }
+                            if let Some(PartitionMirrorConfig::Home(remote)) = &p.mirror
+                                && remote.remote_cluster == *mirror
+                                && remote.source
+                            {
+                                return Some(p.id);
                             }
                             None
                         })
@@ -253,10 +254,11 @@ mod cmd {
                         let partitions_maps =
                             Vec::<PartitionMap>::from(remote_mirror_config.as_partition_maps());
                         partitions_maps.iter().find_map(|p| {
-                            if let Some(PartitionMirrorConfig::Remote(remote)) = &p.mirror {
-                                if remote.home_cluster == *mirror && remote.target {
-                                    return Some(p.id);
-                                }
+                            if let Some(PartitionMirrorConfig::Remote(remote)) = &p.mirror
+                                && remote.home_cluster == *mirror
+                                && remote.target
+                            {
+                                return Some(p.id);
                             }
                             None
                         })
@@ -405,11 +407,11 @@ mod cmd {
             while let Some(Ok(line)) = lines.next() {
                 let produce_output = self.produce_line(producer, &line).await?;
 
-                if let Some(produce_output) = produce_output {
-                    if self.delivery_semantic != DeliverySemantic::AtMostOnce {
-                        // ensure it was properly sent
-                        produce_output.wait().await?;
-                    }
+                if let Some(produce_output) = produce_output
+                    && self.delivery_semantic != DeliverySemantic::AtMostOnce
+                {
+                    // ensure it was properly sent
+                    produce_output.wait().await?;
                 }
 
                 if self.interactive_mode() {

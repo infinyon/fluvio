@@ -3,6 +3,7 @@ use fluvio_types::PartitionError;
 use fluvio_storage::StorageError;
 use fluvio_socket::SocketError;
 
+#[allow(dead_code)]
 #[derive(Debug, thiserror::Error)]
 pub enum InternalServerError {
     #[error("Storage error")]

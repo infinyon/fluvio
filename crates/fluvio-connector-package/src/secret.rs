@@ -88,10 +88,10 @@ impl SecretStore for FileSecretStore {
         let file = File::open(&self.path)?;
         let buf_reader = BufReader::new(file);
         for line in buf_reader.lines() {
-            if let Some((key, value)) = line?.split_once('=') {
-                if key.trim().eq(name.trim()) {
-                    return Ok(value.trim().to_owned());
-                }
+            if let Some((key, value)) = line?.split_once('=')
+                && key.trim().eq(name.trim())
+            {
+                return Ok(value.trim().to_owned());
             }
         }
         anyhow::bail!("value not found for secret name {name}")

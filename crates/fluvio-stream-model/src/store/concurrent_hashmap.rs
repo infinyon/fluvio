@@ -77,7 +77,7 @@ where
         self.0.write().await
     }
 
-    pub fn try_write(&self) -> Option<RwLockWriteGuard<BTreeMap<K, V>>> {
+    pub fn try_write(&self) -> Option<RwLockWriteGuard<'_, BTreeMap<K, V>>> {
         self.0.try_write()
     }
 

@@ -169,14 +169,14 @@ impl Stream for ConsumerRetryStream {
 }
 
 impl ConsumerStream for ConsumerRetryStream {
-    fn offset_commit(&mut self) -> ConsumerBoxFuture {
+    fn offset_commit(&mut self) -> ConsumerBoxFuture<'_> {
         Box::pin(async move {
             let mut stream = self.stream.lock().await;
             stream.offset_commit().await
         })
     }
 
-    fn offset_flush(&mut self) -> ConsumerBoxFuture {
+    fn offset_flush(&mut self) -> ConsumerBoxFuture<'_> {
         Box::pin(async move {
             let mut stream = self.stream.lock().await;
             stream.offset_flush().await

@@ -616,7 +616,7 @@ impl ConnectorConfig {
         Ok(())
     }
 
-    pub fn meta(&self) -> MetaConfig {
+    pub fn meta(&self) -> MetaConfig<'_> {
         match self {
             Self::V0_0_0(inner) => MetaConfig::V0_1_0(&inner.meta),
             Self::V0_1_0(inner) => MetaConfig::V0_1_0(&inner.meta),

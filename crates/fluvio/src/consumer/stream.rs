@@ -157,22 +157,22 @@ impl<T: Stream<Item = Result<Record, ErrorCode>> + Unpin> Stream
 
 #[cfg(not(target_arch = "wasm32"))]
 impl ConsumerStream for Pin<Box<dyn ConsumerStream + Send>> {
-    fn offset_commit(&mut self) -> ConsumerBoxFuture {
+    fn offset_commit(&mut self) -> ConsumerBoxFuture<'_> {
         Box::pin(async move { self.as_mut().offset_commit().await })
     }
 
-    fn offset_flush(&mut self) -> ConsumerBoxFuture {
+    fn offset_flush(&mut self) -> ConsumerBoxFuture<'_> {
         Box::pin(async move { self.as_mut().offset_flush().await })
     }
 }
 
 #[cfg(target_arch = "wasm32")]
 impl ConsumerStream for Pin<Box<dyn ConsumerStream>> {
-    fn offset_commit(&mut self) -> ConsumerBoxFuture {
+    fn offset_commit(&mut self) -> ConsumerBoxFuture<'_> {
         Box::pin(async move { self.as_mut().offset_commit().await })
     }
 
-    fn offset_flush(&mut self) -> ConsumerBoxFuture {
+    fn offset_flush(&mut self) -> ConsumerBoxFuture<'_> {
         Box::pin(async move { self.as_mut().offset_flush().await })
     }
 }
@@ -180,11 +180,11 @@ impl ConsumerStream for Pin<Box<dyn ConsumerStream>> {
 impl<T: Stream<Item = Result<Record, ErrorCode>> + Unpin> ConsumerStream
     for SinglePartitionConsumerStream<T>
 {
-    fn offset_commit(&mut self) -> ConsumerBoxFuture {
+    fn offset_commit(&mut self) -> ConsumerBoxFuture<'_> {
         Box::pin(async { self.offset_mngt.commit() })
     }
 
-    fn offset_flush(&mut self) -> ConsumerBoxFuture {
+    fn offset_flush(&mut self) -> ConsumerBoxFuture<'_> {
         Box::pin(self.offset_mngt.flush())
     }
 }
@@ -192,7 +192,7 @@ impl<T: Stream<Item = Result<Record, ErrorCode>> + Unpin> ConsumerStream
 impl<T: Stream<Item = Result<Record, ErrorCode>> + Unpin> ConsumerStream
     for MultiplePartitionConsumerStream<T>
 {
-    fn offset_commit(&mut self) -> ConsumerBoxFuture {
+    fn offset_commit(&mut self) -> ConsumerBoxFuture<'_> {
         for partition in &self.offset_mgnts {
             if let Err(err) = partition.commit() {
                 return Box::pin(async { Err(err) });
@@ -202,7 +202,7 @@ impl<T: Stream<Item = Result<Record, ErrorCode>> + Unpin> ConsumerStream
         Box::pin(async { Ok(()) })
     }
 
-    fn offset_flush(&mut self) -> ConsumerBoxFuture {
+    fn offset_flush(&mut self) -> ConsumerBoxFuture<'_> {
         let futures: Vec<_> = self.offset_mgnts.iter().map(|p| p.flush()).collect();
         Box::pin(try_join_all(futures).map(|r| r.map(|_| ())))
     }
