@@ -24,6 +24,7 @@ cargo-generate = { workspace = true }
 include_dir = { workspace = true }
 tempfile = { workspace = true }
 lib-cargo-crate = { workspace = true }
+reqwest = { version = "0.12", features = ["native-tls"] } # we include the version of reqwest needed by lib-cargo-crate so we can add the native-tls feature
 openssl = { workspace = true, features = ["vendored"] } # cargo-generate requires openssl
 
 
