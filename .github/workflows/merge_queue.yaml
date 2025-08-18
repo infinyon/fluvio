@@ -358,7 +358,7 @@ jobs:
 
       # Download artifacts
       - name: Download fluvio-run
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: fluvio-run-${{ matrix.rust-target }}
           path: .
@@ -391,12 +391,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Download x86_64-unknown-linux-musl Docker Image as Artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: infinyon-fluvio-x86_64-unknown-linux-musl.tar
           path: /tmp
       - name: Download aarch64-unknown-linux-musl Docker Image as Artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: infinyon-fluvio-aarch64-unknown-linux-musl.tar
           path: /tmp
@@ -514,7 +514,7 @@ jobs:
       #- name: Login GH CLI
       #  run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
       - name: Download artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: ${{ matrix.artifact }}-${{ matrix.rust-target }}
       - name: Publish artifact

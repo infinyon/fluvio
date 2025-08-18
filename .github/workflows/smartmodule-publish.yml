@@ -40,7 +40,7 @@ jobs:
           fluvio cloud login --email "${{ secrets.ORG_HUB_SA_NAME }}" \
           --password "$CLOUD_LOGIN_PW" \
           ${{ !inputs.target_prod && '--remote' || '' }} ${{ !inputs.target_prod && secrets.ORG_CLOUD_URL_DEV || '' }}
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         id: download-file
         with:
           name: ${{ inputs.artifact-name }}
