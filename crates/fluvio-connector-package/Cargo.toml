@@ -19,7 +19,7 @@ minijinja = { workspace = true, features = [
     "fuel",
     "serde",
 ] }
-openapiv3 = { version = "2.0", default-features = false }
+openapiv3 = { version = "2.2", default-features = false }
 schemars = { workspace = true }
 serde = { workspace = true, features = ["derive"], default-features = false }
 serde_yaml = { workspace = true }
