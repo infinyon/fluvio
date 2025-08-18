@@ -74,7 +74,7 @@ jobs:
       TOPIC: foobar
     steps:
       - name: Checkout ${{ needs.setup.outputs.pub_sha }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ needs.setup.outputs.pub_sha }}
       - name: Set up K3d for Ubuntu
@@ -146,7 +146,7 @@ jobs:
       FLV_SOCKET_WAIT: 600
     steps:
       - name: Checkout ${{ needs.setup.outputs.pub_sha }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ needs.setup.outputs.pub_sha }}
       - name: Setup K3d
@@ -192,7 +192,7 @@ jobs:
         version: [latest]
     steps:
       - name: Checkout ${{ needs.setup.outputs.pub_sha }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ needs.setup.outputs.pub_sha }}
       - name: Set the expected fluvio version
@@ -235,7 +235,7 @@ jobs:
         cli_version: [stable, latest]
     steps:
       - name: Checkout ${{ needs.setup.outputs.pub_sha }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ needs.setup.outputs.pub_sha }}
       - name: Setup BATS

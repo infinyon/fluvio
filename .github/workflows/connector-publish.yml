@@ -52,7 +52,7 @@ jobs:
         uses: infinyon/fluvio/.github/actions/setup-fluvio@master
       - name: Fluvio Login
         run: fluvio cloud login --email ${{ secrets.CLOUD_USER_EMAIL }} --password ${{ secrets.CLOUD_USER_PASSWORD }} ${{ inputs.cloud-url != '' && '--remote' || '' }} ${{ inputs.cloud-url }}
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ inputs.branch }}
       - uses: Swatinem/rust-cache@v2
@@ -86,7 +86,7 @@ jobs:
         uses: infinyon/fluvio/.github/actions/setup-fluvio@master
       - name: Fluvio Login
         run: fluvio cloud login --email ${{ secrets.CLOUD_USER_EMAIL }} --password ${{ secrets.CLOUD_USER_PASSWORD }} ${{ inputs.cloud-url != '' && '--remote' || '' }} ${{ inputs.cloud-url }}
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ inputs.branch }}
       - uses: Swatinem/rust-cache@v2
