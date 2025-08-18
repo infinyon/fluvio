@@ -23,7 +23,7 @@ cargo_toml = { workspace = true }
 chrono = { workspace = true }
 const_format = { workspace = true }
 dirs = { workspace = true }
-ed25519-dalek = { version = "2.1", features = ["serde", "rand_core"] }
+ed25519-dalek = { version = "2.2", features = ["serde", "rand_core"] }
 flate2 = { workspace = true }
 hex = { workspace = true }
 http = { workspace = true }
