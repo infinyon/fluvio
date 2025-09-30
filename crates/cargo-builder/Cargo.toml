@@ -13,4 +13,4 @@ authors.workspace = true
 [dependencies]
 anyhow = { workspace = true }
 derive_builder = { workspace = true }
-cargo_metadata = "0.18.0"
+cargo_metadata = "0.23.0"
