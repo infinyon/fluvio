@@ -557,7 +557,7 @@ jobs:
         run: exit 0
       - name: Repo dispatch ci-success
         if: github.event_name == 'merge_group'
-        uses: peter-evans/repository-dispatch@v3
+        uses: peter-evans/repository-dispatch@v4
         with:
           event-type: ci-success
           client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'
