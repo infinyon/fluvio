@@ -84,7 +84,7 @@ jobs:
         timeout-minutes: 5
         run: fluvio cluster diagnostics
       - name: Upload diagnostics
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         timeout-minutes: 5
         if: ${{ !success() }}
         with:
