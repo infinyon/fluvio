@@ -120,7 +120,7 @@ jobs:
 
       # Upload artifacts
       - name: Upload artifact - ${{ matrix.binary }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ${{ matrix.binary }}-${{ matrix.rust-target }}
           path: ${{ env.RUST_BIN_DIR }}/${{ matrix.binary }}
@@ -490,7 +490,7 @@ jobs:
         timeout-minutes: 5
         run: fluvio cluster diagnostics
       - name: Upload diagnostics
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         timeout-minutes: 5
         if: ${{ !success() }}
         with:
@@ -529,7 +529,7 @@ jobs:
       - name: Export Docker Image to tarball
         run: docker image save infinyon/fluvio:${{ github.sha }}-${{ matrix.rust-target }} --output /tmp/infinyon-fluvio-${{ matrix.rust-target }}.tar
       - name: Upload tarball as artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: infinyon-fluvio-${{ matrix.rust-target }}.tar
           path: /tmp/infinyon-fluvio-${{ matrix.rust-target }}.tar
@@ -654,7 +654,7 @@ jobs:
       - name: Upload diagnostics
         timeout-minutes: 5
         if: ${{ !success() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: k8_${{ matrix.run }}-${{ matrix.test }}-log
           path: diagnostics*.gz
@@ -719,7 +719,7 @@ jobs:
       - name: Upload logs
         timeout-minutes: 5
         if: ${{ !success() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: k8_upgrade_${{ matrix.run }}_log
           path: diagnostics*.gz
@@ -769,7 +769,7 @@ jobs:
       - name: Upload logs
         timeout-minutes: 5
         if: ${{ !success() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: local_upgrade_${{ matrix.run }}_log
           path: diagnostics*.gz
@@ -821,7 +821,7 @@ jobs:
       - name: Upload logs
         timeout-minutes: 5
         if: ${{ !success() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: local_upgrade_${{ matrix.run }}_log
           path: diagnostics*.gz
@@ -965,7 +965,7 @@ jobs:
         timeout-minutes: 5
         run: ~/bin/fluvio-dev cluster diagnostics
       - name: Upload diagnostics
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         timeout-minutes: 5
         if: ${{ !success() }}
         with:
@@ -1354,7 +1354,7 @@ jobs:
         run: fluvio cluster diagnostics
 
       - name: Upload diagnostics
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         timeout-minutes: 5
         if: ${{ !success() }}
         with:
