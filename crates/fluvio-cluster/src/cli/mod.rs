@@ -91,8 +91,8 @@ pub enum ClusterCmd {
     #[command(name = "status")]
     Status(StatusOpt),
 
-    /// Shutdown cluster processes without deleting data
-    #[command(name = "shutdown")]
+    /// Shutdown cluster processes without deleting data (alias: stop)
+    #[command(name = "shutdown", alias = "stop")]
     Shutdown(ShutdownOpt),
 }
 
