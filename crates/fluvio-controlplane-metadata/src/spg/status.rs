@@ -45,9 +45,10 @@ impl SpuGroupStatus {
 }
 
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Encoder, Decoder, Debug, Clone, Eq, PartialEq)]
+#[derive(Encoder, Decoder, Debug, Clone, Eq, PartialEq, Default)]
 pub enum SpuGroupStatusResolution {
     #[fluvio(tag = 0)]
+    #[default]
     Init,
     #[fluvio(tag = 1)]
     Invalid,
@@ -58,11 +59,6 @@ pub enum SpuGroupStatusResolution {
 // -----------------------------------
 // Implementation - FlvSpuGroupResolution
 // -----------------------------------
-impl Default for SpuGroupStatusResolution {
-    fn default() -> Self {
-        Self::Init
-    }
-}
 
 impl fmt::Display for SpuGroupStatusResolution {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

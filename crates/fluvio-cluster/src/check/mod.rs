@@ -816,7 +816,7 @@ impl ClusterChecker {
     ///
     /// [`run`]: ClusterChecker::run
     pub fn with_preflight_checks(mut self) -> Self {
-        let checks: Vec<Box<(dyn ClusterCheck)>> = vec![
+        let checks: Vec<Box<dyn ClusterCheck>> = vec![
             Box::new(ActiveKubernetesCluster),
             Box::new(K8Version),
             Box::new(HelmVersion),
@@ -851,7 +851,7 @@ impl ClusterChecker {
     ///
     /// [`run`]: ClusterChecker::run
     pub fn with_k8_checks(mut self) -> Self {
-        let checks: Vec<Box<(dyn ClusterCheck)>> = vec![
+        let checks: Vec<Box<dyn ClusterCheck>> = vec![
             Box::new(ActiveKubernetesCluster),
             Box::new(HelmVersion),
             Box::new(K8Version),
@@ -866,7 +866,7 @@ impl ClusterChecker {
     ///
     /// [`run`]: ClusterChecker::run
     pub fn with_local_checks(mut self) -> Self {
-        let checks: Vec<Box<(dyn ClusterCheck)>> = vec![
+        let checks: Vec<Box<dyn ClusterCheck>> = vec![
             Box::new(HelmVersion),
             Box::new(K8Version),
             Box::new(ActiveKubernetesCluster),

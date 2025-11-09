@@ -399,17 +399,12 @@ impl Serialize for SecretName {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum ConsumerPartitionConfig {
+    #[default]
     All,
     One(PartitionId),
     Many(Vec<PartitionId>),
-}
-
-impl Default for ConsumerPartitionConfig {
-    fn default() -> Self {
-        Self::All
-    }
 }
 
 struct PartitionConfigVisitor;

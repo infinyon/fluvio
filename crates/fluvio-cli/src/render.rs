@@ -1,8 +1,9 @@
 use indicatif::ProgressBar;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub enum ProgressRenderer {
     /// Render the progress using eprintln macro
+    #[default]
     Std,
     /// Render the progress using Indicatiff
     Indicatiff(ProgressBar),
@@ -20,11 +21,5 @@ impl ProgressRenderer {
 impl From<ProgressBar> for ProgressRenderer {
     fn from(pb: ProgressBar) -> Self {
         Self::Indicatiff(pb)
-    }
-}
-
-impl Default for ProgressRenderer {
-    fn default() -> Self {
-        Self::Std
     }
 }

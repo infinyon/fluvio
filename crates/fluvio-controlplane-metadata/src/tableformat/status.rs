@@ -45,9 +45,10 @@ impl TableFormatStatus {
 }
 
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Encoder, Decoder, Debug, Clone, Eq, PartialEq)]
+#[derive(Encoder, Decoder, Debug, Clone, Eq, PartialEq, Default)]
 pub enum TableFormatStatusResolution {
     #[fluvio(tag = 0)]
+    #[default]
     Init,
     #[fluvio(tag = 1)]
     Invalid,
@@ -57,12 +58,6 @@ pub enum TableFormatStatusResolution {
     Pending,
     #[fluvio(tag = 4)]
     Failed,
-}
-
-impl Default for TableFormatStatusResolution {
-    fn default() -> Self {
-        Self::Init
-    }
 }
 
 impl fmt::Display for TableFormatStatusResolution {

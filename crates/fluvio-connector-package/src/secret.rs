@@ -106,7 +106,7 @@ impl<T: AsRef<Path>> From<T> for FileSecretStore {
     }
 }
 
-pub(crate) fn default_secret_store() -> Result<&'static (dyn SecretStore)> {
+pub(crate) fn default_secret_store() -> Result<&'static dyn SecretStore> {
     SECRET_STORE
         .get()
         .map(AsRef::as_ref)

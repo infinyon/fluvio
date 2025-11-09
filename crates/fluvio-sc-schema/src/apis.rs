@@ -16,7 +16,9 @@ static_assertions::const_assert_eq!(
 #[repr(u16)]
 #[derive(Encoder, Decoder, Eq, PartialEq, Debug, Clone, Copy)]
 #[fluvio(encode_discriminant)]
+#[derive(Default)]
 pub enum AdminPublicApiKey {
+    #[default]
     ApiVersion = 18, // VERSIONS_API_KEY
     Create = 1001,
     Delete = 1002,
@@ -24,10 +26,4 @@ pub enum AdminPublicApiKey {
     Watch = 1004,
     Mirroring = 1005,
     Update = 1006,
-}
-
-impl Default for AdminPublicApiKey {
-    fn default() -> Self {
-        Self::ApiVersion
-    }
 }

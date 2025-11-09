@@ -42,18 +42,15 @@ impl TableFormatSpec {
     derive(serde::Serialize, serde::Deserialize),
     serde(rename_all = "UPPERCASE")
 )]
+#[derive(Default)]
 pub enum DataFormat {
     #[fluvio(tag = 0)]
+    #[default]
     JSON,
     //YAML,
     //TOML,
 }
 
-impl Default for DataFormat {
-    fn default() -> Self {
-        Self::JSON
-    }
-}
 #[derive(Encoder, Decoder, Default, Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(
     feature = "use_serde",
@@ -77,20 +74,15 @@ pub struct TableFormatColumnConfig {
     derive(serde::Serialize, serde::Deserialize),
     serde(rename_all = "UPPERCASE")
 )]
-#[derive(Encoder, Decoder, Debug, Eq, PartialEq, Clone)]
+#[derive(Encoder, Decoder, Debug, Eq, PartialEq, Clone, Default)]
 pub enum TableFormatAlignment {
     #[fluvio(tag = 0)]
     Left,
     #[fluvio(tag = 1)]
     Right,
     #[fluvio(tag = 2)]
+    #[default]
     Center,
-}
-
-impl Default for TableFormatAlignment {
-    fn default() -> Self {
-        Self::Center
-    }
 }
 
 impl TableFormatColumnConfig {
@@ -137,18 +129,13 @@ impl TableFormatColumnConfig {
     derive(serde::Serialize, serde::Deserialize),
     serde(rename_all = "UPPERCASE")
 )]
-#[derive(Encoder, Decoder, Debug, Eq, PartialEq, Clone)]
+#[derive(Encoder, Decoder, Debug, Eq, PartialEq, Clone, Default)]
 pub enum Color {
     #[fluvio(tag = 0)]
+    #[default]
     Blue,
     #[fluvio(tag = 1)]
     Yellow,
     #[fluvio(tag = 2)]
     Green,
-}
-
-impl Default for Color {
-    fn default() -> Self {
-        Self::Blue
-    }
 }

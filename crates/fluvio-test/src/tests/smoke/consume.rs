@@ -137,7 +137,7 @@ pub async fn validate_consume_message_api(
                         //drop(lock);
 
                         // for each
-                        if total_records % 100 == 0 {
+                        if total_records.is_multiple_of(100) {
                             let elapsed_chunk_time = chunk_time.elapsed().clone().unwrap().as_secs_f32();
                             println!("total processed records: {total_records} chunk time: {elapsed_chunk_time:.1} secs");
                             info!(total_records,"processed records");

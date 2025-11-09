@@ -10,9 +10,11 @@ use fluvio_future::net::{DomainConnector, DefaultDomainConnector};
 /// Describes whether or not to use TLS and how
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "tls_policy")]
+#[derive(Default)]
 pub enum TlsPolicy {
     /// Do not use TLS
     #[serde(rename = "disabled", alias = "disable")]
+    #[default]
     Disabled,
     /// Use TLS, but do not verify certificates or domains
     ///
@@ -22,12 +24,6 @@ pub enum TlsPolicy {
     /// Use TLS and verify certificates and domains
     #[serde(rename = "verified", alias = "verify")]
     Verified(TlsConfig),
-}
-
-impl Default for TlsPolicy {
-    fn default() -> Self {
-        Self::Disabled
-    }
 }
 
 impl From<TlsConfig> for TlsPolicy {
