@@ -57,15 +57,11 @@ impl Request for MirroringRemoteClusterRequest<MirrorConnect> {
 #[derive(Encoder, Decoder, Eq, PartialEq, Debug, Clone, Copy)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 #[fluvio(encode_discriminant)]
+#[derive(Default)]
 pub enum MirroringApiKey {
+    #[default]
     ApiVersion = 1, // version api key
     Connect = 3000,
-}
-
-impl Default for MirroringApiKey {
-    fn default() -> Self {
-        Self::ApiVersion
-    }
 }
 
 pub trait MirroringRemoteClusterSpec: Encoder + Decoder {}

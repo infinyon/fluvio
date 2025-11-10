@@ -131,13 +131,10 @@ impl EnumProp {
     }
 }
 
+#[derive(Default)]
 pub(crate) enum FieldKind {
     Named(FieldsNamed, Vec<NamedProp>),
     Unnamed(FieldsUnnamed, Vec<UnnamedProp>),
+    #[default]
     Unit,
-}
-impl Default for FieldKind {
-    fn default() -> Self {
-        Self::Unit
-    }
 }

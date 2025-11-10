@@ -10,7 +10,9 @@ static_assertions::const_assert_eq!(
 #[repr(u16)]
 #[derive(Eq, PartialEq, Debug, Encoder, Decoder, Clone, Copy)]
 #[fluvio(encode_discriminant)]
+#[derive(Default)]
 pub enum SpuServerApiKey {
+    #[default]
     ApiVersion = 18, // API_VERSIONS_KEY
 
     Produce = 0,
@@ -25,10 +27,4 @@ pub enum SpuServerApiKey {
     FetchConsumerOffsets = 1008,
 
     StartMirror = 2000,
-}
-
-impl Default for SpuServerApiKey {
-    fn default() -> Self {
-        Self::ApiVersion
-    }
 }

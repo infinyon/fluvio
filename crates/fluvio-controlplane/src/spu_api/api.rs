@@ -17,18 +17,14 @@ use super::update_smartmodule::UpdateSmartModuleRequest;
 #[repr(u16)]
 #[derive(Eq, PartialEq, Debug, Encoder, Decoder, Clone, Copy)]
 #[fluvio(encode_discriminant)]
+#[derive(Default)]
 pub enum InternalSpuApi {
+    #[default]
     UpdateSpu = 1001,
     UpdateReplica = 1002,
     UpdateSmartModule = 1003,
     // UpdateDerivedStream = 1004,
     UpdateMirror = 1004,
-}
-
-impl Default for InternalSpuApi {
-    fn default() -> Self {
-        Self::UpdateSpu
-    }
 }
 
 #[derive(Debug, Encoder)]

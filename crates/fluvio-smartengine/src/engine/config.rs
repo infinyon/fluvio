@@ -11,20 +11,18 @@ pub const DEFAULT_SMARTENGINE_VERSION: Version = SMARTMODULE_TIMESTAMPS_VERSION;
 /// Initial seed data to passed, this will be send back as part of the output
 #[derive(Debug, Clone)]
 #[non_exhaustive]
+#[derive(Default)]
 pub enum SmartModuleInitialData {
+    #[default]
     None,
-    Aggregate { accumulator: Vec<u8> },
+    Aggregate {
+        accumulator: Vec<u8>,
+    },
 }
 
 impl SmartModuleInitialData {
     pub fn with_aggregate(accumulator: Vec<u8>) -> Self {
         Self::Aggregate { accumulator }
-    }
-}
-
-impl Default for SmartModuleInitialData {
-    fn default() -> Self {
-        Self::None
     }
 }
 

@@ -71,9 +71,10 @@ fn display_record_data(record: &RecordData) -> String {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Encoder, Decoder)]
+#[derive(Debug, Clone, Eq, PartialEq, Encoder, Decoder, Default)]
 pub enum SmartModuleKind {
     #[fluvio(tag = 0)]
+    #[default]
     Filter,
     #[fluvio(tag = 1)]
     Map,
@@ -87,12 +88,6 @@ pub enum SmartModuleKind {
     Join,
     #[fluvio(min_version = 17, tag = 6)]
     Generic,
-}
-
-impl Default for SmartModuleKind {
-    fn default() -> Self {
-        Self::Filter
-    }
 }
 
 impl fmt::Display for SmartModuleKind {

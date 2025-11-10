@@ -359,20 +359,15 @@ fn test_try_decode() {
     assert_eq!(e, WideEnum::E);
 }
 
-#[derive(Encoder, Decoder, Eq, PartialEq, Debug)]
+#[derive(Encoder, Decoder, Eq, PartialEq, Debug, Default)]
 pub enum GlColor {
     #[fluvio(tag = 1)]
+    #[default]
     GlTextureRedType = 0x8C10,
     #[fluvio(tag = 0)]
     GlTextureGreenType = 0x8C11,
     #[fluvio(tag = 2)]
     GlTextureBlueType = 0x8C12,
-}
-
-impl Default for GlColor {
-    fn default() -> Self {
-        Self::GlTextureRedType
-    }
 }
 
 #[test]
@@ -390,16 +385,12 @@ fn test_gl_colors() {
     assert_eq!(dest[1], 2);
 }
 
-#[derive(Encoder, Decoder, PartialEq, Debug)]
+#[derive(Encoder, Decoder, PartialEq, Debug, Default)]
 #[fluvio(encode_discriminant)]
 enum EvenOdd {
+    #[default]
     Even = 2,
     Odd = 1,
-}
-impl Default for EvenOdd {
-    fn default() -> Self {
-        Self::Even
-    }
 }
 
 #[test]
@@ -418,17 +409,13 @@ fn test_encode_discriminant() {
     assert_eq!(dest[1], 1);
 }
 
-#[derive(Encoder, Decoder, Eq, PartialEq, Debug, Clone, Copy)]
+#[derive(Encoder, Default, Decoder, Eq, PartialEq, Debug, Clone, Copy)]
 #[fluvio(encode_discriminant)]
 #[repr(u16)]
 pub enum TestWideEnum {
+    #[default]
     Echo = 1000,
     Status = 1001,
-}
-impl Default for TestWideEnum {
-    fn default() -> Self {
-        Self::Echo
-    }
 }
 
 #[test]
