@@ -157,7 +157,7 @@ tar = { version = "0.4.38", default-features = false }
 tempfile = "3.4.0"
 thiserror = "2.0.11"
 timeago = "0.4.2"
-tokio = { version = "1.34.0", default-features = false }
+tokio = { version = "1.48.0", default-features = false }
 tokio-util = { version = "0.7.0", default-features = false }
 toml = { version = "0.8.0", default-features = false }
 tracing = "0.1.19"
