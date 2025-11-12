@@ -70,7 +70,7 @@ authors = ["Fluvio Contributors <team@fluvio.io>"]
 adaptive_backoff = "0.2.1"
 anyhow = "1.0.86"
 async-channel = { version = "2.3.1",  features = ["std"] }
-async-io = "2.4"
+async-io = "2.6"
 async-lock = "3.4.0"
 async-trait = { version = "0.1.88", default-features = false }
 base64 = "0.22.1"
