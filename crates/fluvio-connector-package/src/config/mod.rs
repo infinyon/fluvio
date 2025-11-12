@@ -399,17 +399,12 @@ impl Serialize for SecretName {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum ConsumerPartitionConfig {
+    #[default]
     All,
     One(PartitionId),
     Many(Vec<PartitionId>),
-}
-
-impl Default for ConsumerPartitionConfig {
-    fn default() -> Self {
-        Self::All
-    }
 }
 
 struct PartitionConfigVisitor;
@@ -616,7 +611,7 @@ impl ConnectorConfig {
         Ok(())
     }
 
-    pub fn meta(&self) -> MetaConfig {
+    pub fn meta(&self) -> MetaConfig<'_> {
         match self {
             Self::V0_0_0(inner) => MetaConfig::V0_1_0(&inner.meta),
             Self::V0_1_0(inner) => MetaConfig::V0_1_0(&inner.meta),

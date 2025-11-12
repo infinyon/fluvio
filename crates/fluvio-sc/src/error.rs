@@ -9,6 +9,7 @@ use fluvio_types::PartitionError;
 use fluvio_socket::SocketError;
 use fluvio_auth::AuthError;
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub enum ScError {
     Io(IoError),

@@ -4,12 +4,8 @@ use fluvio_protocol::{Encoder, Decoder};
 #[repr(u16)]
 #[derive(Eq, PartialEq, Debug, Encoder, Decoder, Clone, Copy)]
 #[fluvio(encode_discriminant)]
+#[derive(Default)]
 pub enum SpuClientApiKey {
+    #[default]
     ReplicaOffsetUpdate = 1001,
-}
-
-impl Default for SpuClientApiKey {
-    fn default() -> Self {
-        Self::ReplicaOffsetUpdate
-    }
 }

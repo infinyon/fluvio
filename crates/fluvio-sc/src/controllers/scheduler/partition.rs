@@ -130,13 +130,12 @@ where
             let mut reserved_spus: Vec<i32> = vec![]; // spu reserved
 
             // ensure we don't change old partitions for no reason
-            if let Some(actual_replica_map) = actual_replica_map {
-                if let Some(replicas) = actual_replica_map.get(&(p_idx as PartitionId)) {
-                    if replicas.len() == param.replication_factor as usize {
-                        partition_map.insert(p_idx as PartitionId, replicas.clone());
-                        continue;
-                    }
-                }
+            if let Some(actual_replica_map) = actual_replica_map
+                && let Some(replicas) = actual_replica_map.get(&(p_idx as PartitionId))
+                && replicas.len() == param.replication_factor as usize
+            {
+                partition_map.insert(p_idx as PartitionId, replicas.clone());
+                continue;
             }
 
             for r_idx in 0..param.replication_factor {

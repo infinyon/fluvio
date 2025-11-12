@@ -57,16 +57,15 @@ pub fn impl_smart_opt(input: DeriveInput) -> syn::Result<TokenStream> {
 }
 
 fn ty_inner_type<'a>(ty: &'a syn::Type, wrapper: &'static str) -> Option<&'a syn::Type> {
-    if let syn::Type::Path(p) = ty {
-        if p.path.segments.len() == 1 && p.path.segments[0].ident == wrapper {
-            if let syn::PathArguments::AngleBracketed(ref inner_ty) = p.path.segments[0].arguments {
-                if inner_ty.args.len() == 1 {
-                    let inner_ty = inner_ty.args.first().unwrap();
-                    if let syn::GenericArgument::Type(t) = inner_ty {
-                        return Some(t);
-                    }
-                }
-            }
+    if let syn::Type::Path(p) = ty
+        && p.path.segments.len() == 1
+        && p.path.segments[0].ident == wrapper
+        && let syn::PathArguments::AngleBracketed(ref inner_ty) = p.path.segments[0].arguments
+        && inner_ty.args.len() == 1
+    {
+        let inner_ty = inner_ty.args.first().unwrap();
+        if let syn::GenericArgument::Type(t) = inner_ty {
+            return Some(t);
         }
     }
     None

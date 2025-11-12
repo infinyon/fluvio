@@ -246,10 +246,10 @@ pub fn validate_allowedchars(val: &str, name: &str) -> String {
 }
 
 pub fn validate_noleading_punct(val: &str, name: &str) -> String {
-    if let Some(c) = val.chars().next() {
-        if matches!(c, '_' | '-') {
-            return format!("{name} {val} no leading punctuation allowed '-' or '_'\n");
-        }
+    if let Some(c) = val.chars().next()
+        && matches!(c, '_' | '-')
+    {
+        return format!("{name} {val} no leading punctuation allowed '-' or '_'\n");
     }
     String::new()
 }

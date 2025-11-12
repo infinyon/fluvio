@@ -63,17 +63,13 @@ impl SpuStatus {
 
 #[derive(Decoder, Encoder, Debug, Clone, Eq, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Default)]
 pub enum SpuStatusResolution {
     #[fluvio(tag = 0)]
     Online,
     #[fluvio(tag = 1)]
     Offline,
     #[fluvio(tag = 2)]
+    #[default]
     Init,
-}
-
-impl Default for SpuStatusResolution {
-    fn default() -> Self {
-        Self::Init
-    }
 }

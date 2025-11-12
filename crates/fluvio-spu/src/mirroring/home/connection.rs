@@ -97,14 +97,13 @@ impl MirrorHomeHandler {
                 &req_msg.request.remote_cluster_id,
             )
             .await
+            && !authorized
         {
-            if !authorized {
-                warn!(
-                    "identity mismatch for remote_id: {}",
-                    req_msg.request.remote_cluster_id
-                );
-                return;
-            }
+            warn!(
+                "identity mismatch for remote_id: {}",
+                req_msg.request.remote_cluster_id
+            );
+            return;
         }
 
         // check if remote cluster exists

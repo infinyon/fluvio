@@ -482,10 +482,9 @@ impl PartitionAvailabilityTracker {
                     .partitions
                     .lookup_by_key(&ReplicaKey::new(&self.topic_name, partition_id))
                     .await
+                    && partition.status.is_online()
                 {
-                    if partition.status.is_online() {
-                        available_partitions.push(partition_id);
-                    }
+                    available_partitions.push(partition_id);
                 }
             }
             // Update the shared available partitions if they have changed

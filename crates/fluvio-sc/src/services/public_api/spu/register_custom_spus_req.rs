@@ -44,15 +44,14 @@ impl<C: MetadataItem> RegisterCustomSpu<C> {
             .auth
             .allow_type_action(CustomSpuSpec::OBJECT_TYPE, TypeAction::Create)
             .await
+            && !authorized
         {
-            if !authorized {
-                trace!("authorization failed");
-                return Status::new(
-                    name.clone(),
-                    ErrorCode::PermissionDenied,
-                    Some(String::from("permission denied")),
-                );
-            }
+            trace!("authorization failed");
+            return Status::new(
+                name.clone(),
+                ErrorCode::PermissionDenied,
+                Some(String::from("permission denied")),
+            );
         }
 
         let cmd = Self {

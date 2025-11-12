@@ -14,16 +14,12 @@ use super::fetch_stream_request::FetchStreamRequest;
 #[repr(u16)]
 #[derive(Eq, PartialEq, Debug, Encoder, Decoder, Clone, Copy)]
 #[fluvio(encode_discriminant)]
+#[derive(Default)]
 pub enum SPUPeerApiEnum {
+    #[default]
     FetchStream = 0,
     FetchConsumerOffset = 1,
     UpdateConsumerOffset = 2,
-}
-
-impl Default for SPUPeerApiEnum {
-    fn default() -> Self {
-        Self::FetchStream
-    }
 }
 
 #[derive(Debug, Encoder)]

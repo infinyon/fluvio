@@ -203,16 +203,16 @@ async fn handle_fetch_consumers(
         .filter_map(|(key, consumer)| {
             // filter by replica_id and consumer_id
             if let Some(ref filter_opts) = req_msg.request.filter_opts {
-                if let Some(ref replica_id) = filter_opts.replica_id {
-                    if key.replica_id != *replica_id {
-                        return None;
-                    }
+                if let Some(ref replica_id) = filter_opts.replica_id
+                    && key.replica_id != *replica_id
+                {
+                    return None;
                 }
 
-                if let Some(ref consumer_id) = filter_opts.consumer_id {
-                    if key.consumer_id != *consumer_id {
-                        return None;
-                    }
+                if let Some(ref consumer_id) = filter_opts.consumer_id
+                    && key.consumer_id != *consumer_id
+                {
+                    return None;
                 }
             }
 

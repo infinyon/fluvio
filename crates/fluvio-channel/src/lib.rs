@@ -181,16 +181,12 @@ impl ChannelConfig {
 
 #[derive(Debug, Parser, ValueEnum, Clone, Eq, PartialEq, Serialize, Deserialize)]
 #[clap(rename_all = "kebab-case")]
+#[derive(Default)]
 pub enum ImageTagStrategy {
+    #[default]
     Version,
     VersionGit,
     Git,
-}
-
-impl Default for ImageTagStrategy {
-    fn default() -> Self {
-        Self::Version
-    }
 }
 
 impl Display for ImageTagStrategy {

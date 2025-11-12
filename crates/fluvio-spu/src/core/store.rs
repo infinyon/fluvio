@@ -104,7 +104,7 @@ where
         self.0.write().remove(id)
     }
 
-    pub fn read(&self) -> RwLockReadGuard<BTreeMap<S::Key, S>> {
+    pub fn read(&self) -> RwLockReadGuard<'_, BTreeMap<S::Key, S>> {
         self.0.read()
     }
 

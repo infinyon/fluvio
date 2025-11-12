@@ -960,13 +960,12 @@ impl ClusterInstaller {
                                 K8Watch::DELETED(_) => None
                             };
 
-                            if let Some(service) = service_value {
+                            if let Some(service) = service_value
 
-                                if service.metadata.name == FLUVIO_SC_SERVICE {
+                                && service.metadata.name == FLUVIO_SC_SERVICE {
                                     debug!(service = ?service,"found sc service");
                                     return Ok(service)
                                 }
-                            }
                         }
                     } else {
                         debug!("service stream ended");
@@ -1007,18 +1006,16 @@ impl ClusterInstaller {
                                 K8Watch::DELETED(_) => None
                             };
 
-                            if let Some(deployment) = deployment_value {
+                            if let Some(deployment) = deployment_value
 
-                                if deployment.metadata.name == FLUVIO_SC_DEPLOYMENT {
+                                && deployment.metadata.name == FLUVIO_SC_DEPLOYMENT {
                                     debug!(deployment = ?deployment,"found sc deployment");
-                                    if let Some(available_replicas) = deployment.status.available_replicas {
-                                        if available_replicas > 0 {
+                                    if let Some(available_replicas) = deployment.status.available_replicas
+                                        && available_replicas > 0 {
                                             debug!(deployment = ?deployment,"deployment has atleast 1 replica available");
                                             return Ok(deployment)
                                         }
-                                    }
                                 }
-                            }
                         }
                     } else {
                         debug!("deployment stream ended");

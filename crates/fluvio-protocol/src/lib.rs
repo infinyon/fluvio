@@ -152,8 +152,8 @@ mod inner_deriver {
     /// use fluvio_protocol::api::Request;
     /// use fluvio_protocol::derive::RequestApi as Request;
     ///
-    /// #[fluvio(default,api_min_version = 5, api_max_version = 6, api_key = 10, response = "SimpleResponse")]
     /// #[derive(Debug, Default, Encoder, Decoder, Request)]
+    /// #[fluvio(default,api_min_version = 5, api_max_version = 6, api_key = 10, response = "SimpleResponse")]
     /// pub struct SimpleRequest {
     ///     val: u8
     /// }

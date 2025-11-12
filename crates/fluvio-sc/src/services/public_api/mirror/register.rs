@@ -32,14 +32,14 @@ pub async fn handle_register_mirror<AC: AuthContext, C: MetadataItem>(
 
     // if it's a Remote, check if it already exists
     // if it's a Home, just update it
-    if let Some(mirror) = ctx.mirrors().store().value(&name).await {
-        if let MirrorType::Remote(_) = mirror.spec().mirror_type {
-            return Ok(Status::new(
-                name.clone(),
-                ErrorCode::MirrorAlreadyExists,
-                Some(format!("remote cluster {name:?} already exists")),
-            ));
-        }
+    if let Some(mirror) = ctx.mirrors().store().value(&name).await
+        && let MirrorType::Remote(_) = mirror.spec().mirror_type
+    {
+        return Ok(Status::new(
+            name.clone(),
+            ErrorCode::MirrorAlreadyExists,
+            Some(format!("remote cluster {name:?} already exists")),
+        ));
     }
 
     ctx.mirrors()
