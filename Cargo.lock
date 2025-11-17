@@ -661,8 +661,14 @@ name = "bytesize"
 version = "1.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2e93abca9e28e0a1b9877922aacb20576e05d4679ffa78c3d6dc22a26a216659"
+
+[[package]]
+name = "bytesize"
+version = "2.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c99fa31e08a43eaa5913ef68d7e01c37a2bdce6ed648168239ad33b7d30a9cd8"
 dependencies = [
- "serde",
+ "serde_core",
 ]
 
 [[package]]
@@ -671,7 +677,7 @@ version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "86d1eb2fd2668859e9785b99700c66b7ea9fdeda35d99f95827a4e5493440178"
 dependencies = [
- "bytesize",
+ "bytesize 1.3.3",
  "serde",
 ]
 
@@ -2307,7 +2313,7 @@ dependencies = [
  "anyhow",
  "async-channel",
  "async-lock",
- "bytesize",
+ "bytesize 2.2.0",
  "clap",
  "derive_builder",
  "fluvio",
@@ -2369,7 +2375,7 @@ dependencies = [
  "anyhow",
  "async-channel",
  "async-trait",
- "bytesize",
+ "bytesize 2.2.0",
  "clap",
  "clap_complete",
  "colored",
@@ -2458,7 +2464,7 @@ dependencies = [
  "anyhow",
  "async-channel",
  "async-trait",
- "bytesize",
+ "bytesize 2.2.0",
  "chrono",
  "clap",
  "color-eyre",
@@ -2578,7 +2584,7 @@ name = "fluvio-connector-package"
 version = "0.0.0"
 dependencies = [
  "anyhow",
- "bytesize",
+ "bytesize 2.2.0",
  "bytesize-serde",
  "fluvio-controlplane-metadata",
  "fluvio-smartengine",
@@ -2612,7 +2618,7 @@ dependencies = [
  "anyhow",
  "base64 0.22.1",
  "bytes",
- "bytesize",
+ "bytesize 2.2.0",
  "cfg-if",
  "derive_builder",
  "flate2",
@@ -6799,10 +6805,11 @@ checksum = "cd0b0ec5f1c1ca621c432a25813d8d60c88abe6d3e08a3eb9cf37d97a0fe3d73"
 
 [[package]]
 name = "serde"
-version = "1.0.219"
+version = "1.0.228"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f0e2c6ed6606019b4e29e69dbaba95b11854410e5347d525002456dbbb786b6"
+checksum = "9a8e94ea7f378bd32cbbd37198a4a91436180c5bb472411e48b5ec2e2124ae9e"
 dependencies = [
+ "serde_core",
  "serde_derive",
 ]
 
@@ -6816,10 +6823,19 @@ dependencies = [
 ]
 
 [[package]]
-name = "serde_derive"
-version = "1.0.219"
+name = "serde_core"
+version = "1.0.228"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5b0276cf7f2c73365f7157c8123c21cd9a50fbbd844757af28ca1f5925fc2a00"
+checksum = "41d385c7d4ca58e59fc732af25c3983b67ac852c1a25000afe1175de458b67ad"
+dependencies = [
+ "serde_derive",
+]
+
+[[package]]
+name = "serde_derive"
+version = "1.0.228"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d540f220d3187173da220f885ab66608367b6574e925011a9353e4badda91d79"
 dependencies = [
  "proc-macro2",
  "quote",
