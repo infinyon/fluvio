@@ -23,7 +23,7 @@ jobs:
         os: [ubuntu-latest]
         rust-target: [x86_64-unknown-linux-musl]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup Fluvio
         uses: infinyon/fluvio/.github/actions/setup-fluvio@master
         with:

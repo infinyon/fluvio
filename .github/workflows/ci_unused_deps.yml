@@ -29,7 +29,7 @@ jobs:
       RUSTV: ${{ matrix.rust }}
       TARGET: ${{ matrix.rust-target }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install Rust ${{ matrix.rust }} toolchain
         uses: dtolnay/rust-toolchain@master
         with:
