@@ -26,7 +26,7 @@ jobs:
     name: Release success check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Login GH CLI
         run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
       - name: Get status of latest RELEASE_CHECK run
@@ -53,7 +53,7 @@ jobs:
         version: [semver]
         # version: [none, stable, semver]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Set the expected fluvio version
         run: |
           if [[ -z "${{ env.USE_VERSION }}" ]]; then
@@ -99,7 +99,7 @@ jobs:
     env:
       FLV_SOCKET_WAIT: 600
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup K3d
         if: ${{ matrix.cluster_type == 'k8' }}
         run: curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
@@ -149,7 +149,7 @@ jobs:
       FLV_SOCKET_WAIT: 600
       FLV_DISPATCHER_WAIT: 300
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup K3d
         run: curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
       - name: Create K3d cluster

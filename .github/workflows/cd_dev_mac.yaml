@@ -44,7 +44,7 @@ jobs:
       SLEEP: 10
       TOPIC: foobar
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install Docker for Mac
         if: ${{ matrix.cluster_type == 'k8' }}
         uses: docker-practice/actions-setup-docker@master

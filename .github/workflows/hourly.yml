@@ -39,7 +39,7 @@ jobs:
       RELEASE_NAME: release
       RELEASE: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install Rust ${{ matrix.rust }} Toolchain
         uses: dtolnay/rust-toolchain@master
@@ -100,7 +100,7 @@ jobs:
       TEST_BINARY: fluvio-test-x86_64-unknown-linux-musl
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Login GH CLI
         #      if: ${{ false }}

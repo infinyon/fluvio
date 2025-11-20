@@ -44,7 +44,7 @@ jobs:
       fail-fast: false
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Get status of latest CD_Dev run
         id: cd_dev_check
         run: make latest-cd-dev-status
@@ -99,7 +99,7 @@ jobs:
       TARGET_SHA: ${{ needs.setup_job.outputs.TARGET_SHA }}
       INSTALLER_URL: ${{ needs.setup_job.outputs.INSTALLER_URL }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Download install.sh
         run: curl -sSO $INSTALLER_URL
       - name: Push install.sh to packages S3 bucket
@@ -114,7 +114,7 @@ jobs:
     env:
       VERSION: ${{ needs.setup_job.outputs.VERSION }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       # Check that this release does not already exist by trying to download it
       - name: Attempt to download release by version number
         id: release_check
@@ -158,7 +158,7 @@ jobs:
       VERSION: ${{ needs.setup_job.outputs.VERSION }}
       TARGET_SHA: ${{ needs.setup_job.outputs.TARGET_SHA }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Attempt to pull image tag in docker registry
         id: docker_check
         continue-on-error: true
@@ -204,7 +204,7 @@ jobs:
       INSTALLER_URL: ${{ needs.setup_job.outputs.INSTALLER_URL }}
       BPKG_TOKEN: ${{ secrets.BPKG_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       # Check that this release does not already exist by trying to download it
       - name: Attempt to install Fluvio CLI
         id: check_fluvio
@@ -254,7 +254,7 @@ jobs:
     env:
       BPKG_TOKEN: ${{ secrets.BPKG_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Prerelease pkgset ${{ env.FLUVIO_VERSION }}
         run: |
           make publish-pkgset
@@ -280,7 +280,7 @@ jobs:
       TARGET_SHA: ${{ needs.setup_job.outputs.GIT_SHA }}
       INSTALLER_URL: ${{ needs.setup_job.outputs.INSTALLER_URL }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install fluvio-package
         env:
           CHANNEL_TAG: stable # We want to ensure we install the stable version of CLI
